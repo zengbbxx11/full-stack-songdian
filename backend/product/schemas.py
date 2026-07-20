@@ -1,0 +1,186 @@
+"""产品域 DTO/VO（M1，§3.2.M1.3）。
+
+设计约束：DTO 字段与 §3.2.M1.3 / §4.2 DDL 逐字对齐。
+- slug 唯一，格式 ^[a-z0-9-]+$。
+- status: DRAFT/PUBLISHED；stock_status: instock/outofstock。
+- VO 提供 ``from_model`` 从 Tortoise 模型装配（含预取的分类/相册/规格）。
+"""
+from __future__ import annotations
+
+import re
+from datetime import datetime
+from decimal import Decimal
+
+from pydantic import BaseModel, Field, field_validator
+
+from common.enums import ProductStatus, StockStatus
+
+_SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+
+
+class ProductCreateRequest(BaseModel):
+    title: str = Field(..., max_length=200)
+    slug: str = Field(..., max_length=200)
+    summary: str = Field(..., max_length=500)
+    content_html: str
+    category_id: int
+    sku: str | None = Field(default=None, max_length=100)
+    price: Decimal | None = None
+    currency: str = "CNY"
+    stock_status: str = StockStatus.INSTOCK.value
+    status: str = ProductStatus.DRAFT.value
+
+    @field_validator("slug")
+    @classmethod
+    def _slug(cls, v: str) -> str:
+        if not _SLUG_RE.match(v):
+            raise ValueError("slug 仅允许小写字母、数字与连字符")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def _status(cls, v: str) -> str:
+        if v not in ProductStatus.values():
+            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+        return v
+
+    @field_validator("stock_status")
+    @classmethod
+    def _stock(cls, v: str) -> str:
+        if v not in StockStatus.values():
+            raise ValueError("stock_status 必须为 instock/outofstock")
+        return v
+
+
+class ProductUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, max_length=200)
+    slug: str | None = Field(default=None, max_length=200)
+    summary: str | None = Field(default=None, max_length=500)
+    content_html: str | None = None
+    category_id: int | None = None
+    sku: str | None = Field(default=None, max_length=100)
+    price: Decimal | None = None
+    currency: str | None = None
+    stock_status: str | None = None
+    status: str | None = None
+    version: int | None = None  # 乐观锁占位（当前以 id 为主键）
+
+    @field_validator("slug")
+    @classmethod
+    def _slug(cls, v: str | None) -> str | None:
+        if v is not None and not _SLUG_RE.match(v):
+            raise ValueError("slug 仅允许小写字母、数字与连字符")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def _status(cls, v: str | None) -> str | None:
+        if v is not None and v not in ProductStatus.values():
+            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+        return v
+
+    @field_validator("stock_status")
+    @classmethod
+    def _stock(cls, v: str | None) -> str | None:
+        if v is not None and v not in StockStatus.values():
+            raise ValueError("stock_status 必须为 instock/outofstock")
+        return v
+
+
+class GalleryCreateRequest(BaseModel):
+    image_url: str = Field(..., max_length=500)
+    alt: str | None = Field(default=None, max_length=200)
+    sort_order: int = 0
+
+
+class AttributeCreateRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    slug: str = Field(..., max_length=100)
+    value: str = Field(..., max_length=500)
+
+
+# ───────────────────────── VO ─────────────────────────
+class CategoryVO(BaseModel):
+    id: int
+    name: str
+    slug: str
+    sort_order: int = 0
+
+    @classmethod
+    def from_model(cls, m) -> CategoryVO:  # type: ignore[valid-type]
+        return cls(id=m.id, name=m.name, slug=m.slug, sort_order=m.sort_order)
+
+
+CategoryTreeVO = CategoryVO  # 分类为单级，树即扁平列表
+
+
+class GalleryVO(BaseModel):
+    id: int
+    image_url: str
+    alt: str | None = None
+    sort_order: int = 0
+
+    @classmethod
+    def from_model(cls, m) -> GalleryVO:  # type: ignore[valid-type]
+        return cls(id=m.id, image_url=m.image_url, alt=m.alt, sort_order=m.sort_order)
+
+
+class AttributeVO(BaseModel):
+    id: int
+    name: str
+    slug: str
+    value: str
+
+    @classmethod
+    def from_model(cls, m) -> AttributeVO:  # type: ignore[valid-type]
+        return cls(id=m.id, name=m.name, slug=m.slug, value=m.value)
+
+
+class ProductPageVO(BaseModel):
+    id: int
+    slug: str
+    title: str
+    summary: str
+    sku: str | None = None
+    price: Decimal | None = None
+    currency: str = "CNY"
+    stock_status: str = "instock"
+    status: str = "DRAFT"
+    category: CategoryVO | None = None
+    created_time: datetime | None = None
+    updated_time: datetime | None = None
+    cover_image: str | None = None
+    # tags: 标签名字符串数组，如 ["OEM", "4K", "Waterproof"]；与模型字段同名
+    tags: list[str] = []
+
+    @classmethod
+    def from_model(cls, m) -> ProductPageVO:  # type: ignore[valid-type]
+        cat = CategoryVO.from_model(m.category) if getattr(m, "category", None) else None
+        return cls(
+            id=m.id, slug=m.slug, title=m.title, summary=m.summary, sku=m.sku,
+            price=m.price, currency=m.currency, stock_status=m.stock_status,
+            status=m.status, category=cat,
+            created_time=m.created_time, updated_time=m.updated_time,
+            cover_image=m.cover_image,
+            # DB 为 NULL 时兜底空数组，避免向展示层返回 None
+            tags=m.tags or [],
+        )
+
+
+class ProductDetailVO(ProductPageVO):
+    content_html: str = ""
+    galleries: list[GalleryVO] = []
+    attributes: list[AttributeVO] = []
+
+    @classmethod
+    def from_model(cls, m, galleries=None, attributes=None) -> ProductDetailVO:  # type: ignore[valid-type]
+        base = ProductPageVO.from_model(m)
+        data = base.model_dump()
+        data["content_html"] = m.content_html
+        data["galleries"] = [GalleryVO.from_model(g) for g in (galleries or [])]
+        data["attributes"] = [AttributeVO.from_model(a) for a in (attributes or [])]
+        return cls(**data)
+
+
+# 列表/详情统一以 ProductVO 暴露（detail 含相册与规格）
+ProductVO = ProductDetailVO

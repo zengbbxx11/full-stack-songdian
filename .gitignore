@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# Environment / secrets
+.env
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+dev.db
+
+# IDE
+.idea/
+
+# Local uploads (large binary assets)
+uploads/
+uploads_bak_*/
+
+# Temp diagnostics
+diag*.txt
+ruff_out.txt

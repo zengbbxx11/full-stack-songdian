@@ -17,7 +17,7 @@
 | FastAPI | >= 0.139.2 | 设计冻结版本，已真实可用 |
 | Tortoise ORM | >= 1.1.7 | 设计冻结版本，已真实可用 |
 | aerich | >= 0.9.3 | 迁移工具 |
-| PostgreSQL | 16（可选 zhparser 中文分词） | SQLite 亦可运行（降级） |
+| PostgreSQL | 16（可选 zhparser 中文分词） | 开发/生产统一使用 |
 | Redis | 8（可选） | 未配置自动降级内存字典 |
 
 其余设计要素（13 张表、错误码、幂等、限流、缓存 Key、RBAC、审计、降级 BD-01~04）

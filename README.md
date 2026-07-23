@@ -1,6 +1,6 @@
 # Songdian B2B — 工厂外贸官网
 
-基于 FastAPI + Next.js 的 Songdian 工厂 B2B 外贸全栈系统，后端接管 WordPress 数据并提供 REST API，展示型官网前端（产品目录 + 询盘）与 Next.js 管理后台分离部署。
+基于 FastAPI + Next.js 的 Songdian 工厂 B2B 外贸全栈系统，展示型官网前端（产品目录 + 询盘）与 Next.js 管理后台分离部署。
 
 ---
 
@@ -30,7 +30,7 @@ full-stack-project/
 │   ├── search/                # 全文检索 + 降级 LIKE 搜
 │   ├── inquiry/               # 询盘表单
 │   ├── uploads/               # 图片上传模块（StorageBackend 抽象）
-│   ├── migration/             # WordPress 数据迁移 ETL
+│   ├── migration/             # 数据迁移 ETL（历史 WordPress 数据导入）
 │   ├── seed/                  # 种子数据（admin 账号等）
 │   ├── tests/                 # pytest 测试套件
 │   └── main.py                # 应用入口
@@ -53,7 +53,6 @@ full-stack-project/
 - **PostgreSQL** 16（建议安装 zhparser 中文分词扩展；缺失时自动降级为 `simple` 配置）
 - **Redis** 8（可选；未配置时降级为进程内内存实现）
 - **Node.js** ≥ 24 + pnpm（前端 Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 有兼容性问题）
-- **WordPress**（可选，仅数据迁移时需要）
 
 ---
 
@@ -155,7 +154,7 @@ pnpm dev
 | GET | `/api/v1/news/{slug}` | 新闻详情 |
 | GET | `/api/v1/product-categories` | 产品分类（按 sort_order 排序） |
 | GET | `/api/v1/news-categories` | 新闻分类（按 sort_order 排序） |
-| GET | `/api/v1/search` | 全文搜索（PG TSVector / SQLite LIKE 降级） |
+| GET | `/api/v1/search` | 全文搜索（PG TSVector，未装 zhparser 时降级 simple） |
 | POST | `/api/v1/inquiries` | 提交询盘（幂等键防重） |
 
 ### Admin 接口（需 JWT + RBAC）
@@ -256,19 +255,6 @@ pytest tests/test_product_tags.py -v
 # 运行 Phase 1 新增单元测试
 pytest tests/test_admin_phase1.py -v
 ```
-
----
-
-## 数据迁移（WordPress → 本系统）
-
-```bash
-cd backend
-
-# 标签回填（若 WP 端已有 tags 但本地未同步）
-python -c "import asyncio; from migration.backfill import backfill_tags; asyncio.run(backfill_tags('https://your-wp-site.com'))"
-```
-
-WP 迁移相关代码：`backend/migration/`
 
 ---
 

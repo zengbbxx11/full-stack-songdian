@@ -28,6 +28,7 @@ from news.routers import router as news_router
 from product.routers import router as product_router
 from search.routers import router as search_router
 from uploads.routers import router as upload_router
+from common.settings_router import router as settings_router
 
 logger = get_logger(__name__)
 
@@ -88,6 +89,7 @@ app.include_router(inquiry_router)
 app.include_router(content_router)
 app.include_router(migration_router)
 app.include_router(upload_router)
+app.include_router(settings_router)
 
 # 静态媒体服务：把本地下载的图片（迁移落盘于 MEDIA_ROOT）以 /uploads 前缀对外暴露。
 # 注意：必须在路由聚合之后挂载，避免拦截业务 API；目录不存在时先创建，否则 StaticFiles 报错。

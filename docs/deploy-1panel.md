@@ -394,7 +394,52 @@ sudo ufw enable
 
 ---
 
-## 十五、备份建议
+---
+## 十五、从本地迁移数据到服务器
+
+本地开发环境使用 PostgreSQL，数据量：42 条产品 + 9 条新闻 + 179 张图片（17MB）。
+
+### 15.1 导出本地数据库
+
+在本地 Windows 终端执行（Git Bash 或 PowerShell）：
+
+```bash
+PGPASSWORD=postgres pg_dump -h localhost -U postgres -d songdianB2B \
+  --no-owner --no-privileges --inserts \
+  > songdian_backup.sql
+```
+
+### 15.2 传到服务器
+
+```bash
+scp songdian_backup.sql ubuntu@你的IP:/opt/songdian/
+scp -r backend/uploads/* ubuntu@你的IP:/opt/songdian/backend/uploads/
+```
+
+### 15.3 导入到生产数据库
+
+SSH 进服务器后：
+
+```bash
+cd /opt/songdian/backend
+uv run aerich upgrade
+
+PGPASSWORD=你的数据库密码 psql -h 127.0.0.1 -U songdian -d songdian_b2b \
+  < /opt/songdian/songdian_backup.sql
+
+rm /opt/songdian/songdian_backup.sql
+```
+
+### 15.4 验证数据
+
+```bash
+curl -s http://127.0.0.1:8000/api/v1/products?page_size=1 | python3 -c \
+  "import sys,json; d=json.load(sys.stdin); print(f'产品: {d[\"data\"][\"total\"]} 条')"
+```
+
+---
+
+## 十六、备份建议
 
 ```bash
 # 数据库备份（添加到 crontab）

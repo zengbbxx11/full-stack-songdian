@@ -34,6 +34,7 @@
  */
 
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { initSuperMeta } from "next-super-meta";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
@@ -209,12 +210,23 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }}
         />
-        {/*
-          Google Analytics / GTM
-          Currently handled by WordPress Site Kit plugin.
-          To enable direct GA4 tracking, uncomment the Script blocks below
-          and replace the measurement ID with your own.
-        */}
+        {/* Google Analytics GA4 — 通过 NEXT_PUBLIC_GA_ID 环境变量配置，未配置时不加载 */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
         {/* next-super-meta 自动注入 SEO 元标签 */}
       </head>
       {/* Body：纵向 flex 列布局，将页脚推到底部；白底深字 */}

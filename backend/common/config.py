@@ -42,6 +42,7 @@ class Settings(BaseSettings):
         "content.models",
         "migration.models",
         "uploads.models",
+        "common.settings_model",
     ]
 
     # ── Redis（未配置或连不上 → 内存降级，绝不阻断启动）──

@@ -17,6 +17,7 @@ from common.config import settings
 from common.logger import get_logger
 from common.password import hash_password, verify_password
 from content.models import AdminUser, Role, RolePermission
+from common.settings_model import Setting
 from content.permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     ROLE_ADMIN,
@@ -114,11 +115,22 @@ async def _seed_categories() -> None:
         )
 
 
+async def _seed_settings() -> None:
+    """幂等写入默认系统设置——仅包含需要在线修改的外部服务配置。"""
+    defaults = [
+        ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
+        ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
+    ]
+    for key, value, label, desc in defaults:
+        await Setting.get_or_create(key=key, defaults={"value": value, "label": label, "description": desc})
+
+
 async def run_seed() -> None:
     """幂等写入全部种子数据。可在 lifespan 或 ``python -m seed.seed_data`` 调用。"""
     role_ids = await _seed_roles()
     await _seed_admin(role_ids)
     await _seed_categories()
+    await _seed_settings()
     logger.info("种子数据写入完成（幂等）：产品分类 %d / 新闻分类 %d / 角色 %d / 管理员 %s",
                 len(PRODUCT_CATEGORIES), len(NEWS_CATEGORIES), len(role_ids), ADMIN_USERNAME)
 

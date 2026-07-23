@@ -24,3 +24,7 @@ uploads_bak_*/
 # Temp diagnostics
 diag*.txt
 ruff_out.txt
+
+# Next.js build cache
+.next/
+

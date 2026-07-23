@@ -1,0 +1,43 @@
+classDiagram
+    class Product {
+        +BigInt id
+        +str slug
+        +str title
+        +list~str~ tags
+    }
+    ProductPageVO <|-- ProductDetailVO
+    class ProductPageVO {
+        +int id
+        +str slug
+        +str title
+        +list~str~ tags
+        +from_model(m) ProductPageVO
+    }
+    class ProductDetailVO {
+        +str content_html
+        +list~GalleryVO~ galleries
+        +list~AttributeVO~ attributes
+        +from_model(m, galleries, attributes) ProductDetailVO
+    }
+    ProductPageDTO <|-- ProductDetailDTO
+    class ProductPageDTO {
+        +number id
+        +string slug
+        +string title
+        +string[] tags
+    }
+    class ProductDetailDTO {
+        +string content_html
+        +GalleryDTO[] galleries
+        +AttributeDTO[] attributes
+    }
+    class WordPressProductAdapter {
+        +adapt_product(wp_post, wp_meta, wp_tag_map) dict
+    }
+    class ETL {
+        +run_etl(batch, source_base_url, scope, dry_run)
+        +_write_product(wp_post, cat_map, client, base_url, wp_tag_map) int
+        +backfill_tags(source_base_url) dict
+    }
+    ETL ..> WordPressProductAdapter : 调用
+    ETL ..> Product : 写入 tags

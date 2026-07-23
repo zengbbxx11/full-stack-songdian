@@ -1,0 +1,378 @@
+/**
+ * globals.css — Songdian Technology B2B 官网
+ * ------------------------------------------------------------------
+ * 基于 Tesla 设计哲学的极简设计系统
+ *
+ * 核心原则：
+ *   - 产品（摄影/图片）是设计的全部，UI 只是辅助
+ *   - 无阴影、无渐变、无装饰边框
+ *   - 唯一色：Electric Blue (#3E6AE1) 仅用于 CTA
+ *   - 统一的 0.33s 过渡动画
+ *   - 4px 圆角 = 精确而不俏皮
+ *   - 留白即奢侈信号
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ============================================================
+   Tesla 设计系统 — 配色方案
+   ============================================================ */
+
+@theme inline {
+  /* 主色 — Electric Blue，仅用于 CTA 按钮 */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+
+  /* 品牌红 — 呼应 Logo 中红色 GD，用于导航激活态等点缀 */
+  --color-brand-red: var(--brand-red);
+
+  /* 文字层级 */
+  --color-foreground: var(--foreground);
+
+  /* shadcn/ui 映射 */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* 圆角系统 — 4px 是默认，更大的仅用于图片卡片 */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+  --radius-4xl: 12px;
+
+  /* 字体 */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+}
+
+/* ============================================================
+   CSS 自定义属性 — 设计 Token
+   ============================================================ */
+
+:root {
+  /* ——— 品牌色 ——— */
+  --accent: #3E6AE1;           /* Electric Blue — 唯一色，仅用于 CTA */
+  --accent-hover: #3561CC;     /* 10% 加深的 Electric Blue */
+  --brand-red: #d4343e;         /* 品牌红 — 呼应 Logo 中 GD 的红色，导航激活态 */
+
+  /* ——— 文字 ——— */
+  --foreground: #171A20;       /* Carbon Dark — 标题和主导航文字 */
+
+  /* ——— 表面 ——— */
+  --background: #FFFFFF;       /* Pure White — 页面背景 */
+  --card: #FFFFFF;
+  --card-foreground: #171A20;
+  --popover: #FFFFFF;
+  --popover-foreground: #171A20;
+
+  /* ——— shadcn token ——— */
+  --primary: #3E6AE1;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F4;       /* Light Ash */
+  --secondary-foreground: #171A20;
+  --muted: #F4F4F4;
+  --muted-foreground: #5C5E62; /* Pewter */
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC2626;
+  --border: #EEEEEE;           /* Cloud Gray — 极淡分割线 */
+  --input: #EEEEEE;
+  --ring: #3E6AE1;
+}
+
+/* ============================================================
+   基础样式
+   ============================================================ */
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 移除所有 border 默认行为 — Tesla 风格 */
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  color: var(--foreground);
+  line-height: 1.43;  /* 匹配 Tesla 的 14px/20px 比例 */
+  font-size: 14px;     /* Tesla 默认正文字号 */
+  font-weight: 400;
+  background: var(--background);
+}
+
+/* ============================================================
+   Tesla 统一过渡 — 通过 Tailwind utility 按需使用 duration-[330ms]
+   ============================================================ */
+
+/* ============================================================
+   WordPress Gutenberg 内容样式
+   ============================================================ */
+
+.wp-content {
+  /* --- Astra 主题残余样式重置 --- */
+  /* 移除 Astra 最大宽度约束 */
+  * {
+    max-width: 100% !important;
+    float: none !important;
+  }
+
+  /* 移除 Astra 容器 padding/margin */
+  .ast-container,
+  [class*="ast-"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Astra 网格/列系统重置为块级 */
+  [class*="wp-block-columns"],
+  [class*="wp-block-column"] {
+    display: block !important;
+    width: 100% !important;
+    flex: none !important;
+    grid-template-columns: none !important;
+  }
+
+  /* --- 正文排版 --- */
+  /* 标题 — 用 Carbon Dark，weight 500 */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    color: #171A20;
+    margin-top: 1em;
+    margin-bottom: 0.75em;
+    line-height: 1.2;
+  }
+  h1 { font-size: 2.5rem; }   /* 40px — 匹配 Tesla Hero */
+  h2 { font-size: 1.875rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+
+  /* 段落 — Graphite，14px */
+  p {
+    margin-bottom: 1.25em;
+    color: #393C41;
+    line-height: 1.43;
+    font-size: 14px;
+  }
+
+  /* 链接 — Electric Blue，无下划线装饰 */
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* 图片 — 12px 圆角（仅用于内容图片） */
+  img {
+    border-radius: 12px;
+    max-width: 100%;
+    height: auto;
+    margin: 1.5em 0;
+  }
+
+  figure {
+    margin: 2em 0;
+    text-align: center;
+  }
+  figure img { margin: 0; }
+  figcaption {
+    margin-top: 0.75em;
+    font-size: 14px;
+    color: #8E8E8E;
+  }
+
+  ul, ol {
+    margin: 1.25em 0;
+    padding-left: 1.5em;
+    color: #393C41;
+    line-height: 1.43;
+  }
+  ul li, ol li { margin-bottom: 0.5em; }
+  ul { list-style-type: disc; }
+  ol { list-style-type: decimal; }
+
+  blockquote {
+    border-left: 3px solid #EEEEEE;
+    padding: 1em 0 1em 1.5em;
+    margin: 1.5em 0;
+    font-style: italic;
+    color: #5C5E62;
+    background: #F4F4F4;
+    border-radius: 0 12px 12px 0;
+  }
+
+  pre {
+    background: #F4F4F4;
+    border-radius: 12px;
+    padding: 1.25em;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 1.5em 0;
+  }
+
+  code {
+    background: #F4F4F4;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.875em;
+    font-family: var(--font-geist-mono), monospace;
+  }
+
+  hr { margin: 2.5em 0; border-color: #EEEEEE; }
+
+  .alignleft  { float: left; margin: 0.5em 1.5em 1em 0; max-width: 50%; }
+  .alignright { float: right; margin: 0.5em 0 1em 1.5em; max-width: 50%; }
+  .aligncenter { display: block; margin: 1.5em auto; }
+
+  .wp-block-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 2em 0;
+  }
+  .wp-block-gallery img {
+    margin: 0;
+    border-radius: 12px;
+    width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 2em 0;
+    border: 1px solid #EEEEEE;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  table th, table td {
+    padding: 0.75em 1em;
+    text-align: left;
+    border-bottom: 1px solid #EEEEEE;
+    font-size: 14px;
+  }
+  table th {
+    background: #F4F4F4;
+    font-weight: 500;
+    color: #171A20;
+  }
+  table tr:last-child td { border-bottom: none; }
+
+  iframe, video {
+    border-radius: 12px;
+    max-width: 100%;
+    margin: 1.5em 0;
+  }
+}
+
+/* ============================================================
+   动画 — 仅保留淡入，无平移/缩放（Tesla 只用颜色过渡）
+   ============================================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.33s ease-out both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.33s cubic-bezier(0.5, 0, 0, 0.75) both;
+}
+
+/* ============================================================
+   展会滚动墙 — 横向无缝循环
+   - 列表复制一份，整体位移 -50% 恰好移动一个副本宽度
+   - 由组件内联 animationPlayState 控制悬停/按钮暂停
+   - 尊重 prefers-reduced-motion：关闭动画，静态展示
+   ============================================================ */
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+    transform: none;
+  }
+}
+
+@keyframes loading-bar {
+  0%   { margin-left: -40%; }
+  50%  { margin-left: 40%; }
+  100% { margin-left: 100%; }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   滚动条 — 极简 6px
+   ============================================================ */
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #D0D1D2;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: #8E8E8E; }
+
+/* ============================================================
+   文字选中 — Carbon Dark 背景
+   ============================================================ */
+
+::selection {
+  background: #171A20;
+  color: #FFFFFF;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+  html { @apply font-sans; }
+}

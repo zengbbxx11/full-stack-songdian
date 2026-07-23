@@ -1,0 +1,189 @@
+classDiagram
+    %% ===== 现有数据模型（Tortoise ORM, backend/）=====
+    class ProductCategory {
+        +BigInt id
+        +str name
+        +str slug
+        +int sort_order
+        +SmallInt deleted
+        +DateTime created_time
+        +DateTime updated_time
+        +products: ReverseRelation~Product~
+    }
+    class Product {
+        +BigInt id
+        +str slug
+        +str title
+        +str summary
+        +text content_html
+        +FK category
+        +str sku
+        +Decimal price
+        +str currency
+        +str stock_status
+        +str status
+        +str cover_image
+        +JSON tags
+        +galleries: ReverseRelation~ProductGallery~
+        +attributes: ReverseRelation~ProductAttribute~
+    }
+    class ProductGallery {
+        +BigInt id
+        +FK product
+        +str image_url
+        +str alt
+        +int sort_order
+    }
+    class ProductAttribute {
+        +BigInt id
+        +FK product
+        +str name
+        +str slug
+        +str value
+    }
+    class NewsCategory {
+        +BigInt id
+        +str name
+        +str slug
+        +int sort_order
+        +SmallInt deleted
+    }
+    class News {
+        +BigInt id
+        +str slug
+        +str title
+        +str summary
+        +text content_html
+        +FK category
+        +str author
+        +DateTime published_at
+        +str status
+        +str cover_image
+    }
+    class AdminUser {
+        +BigInt id
+        +str username
+        +str password_hash
+        +FK role
+        +str status
+    }
+    class Role {
+        +BigInt id
+        +str name
+        +str code
+    }
+    class RolePermission {
+        +BigInt id
+        +FK role
+        +str permission_code
+    }
+    class AuditLog {
+        +BigInt id
+        +BigInt user_id
+        +str action
+        +str resource
+        +str result
+    }
+
+    %% ===== 新增：上传记录模型（backend/uploads/models.py）=====
+    class UploadRecord {
+        +BigInt id
+        +str file_name
+        +str url
+        +str bucket
+        +BigInt uploaded_by
+        +DateTime created_time
+    }
+
+    %% ===== 关系 =====
+    ProductCategory "1" *-- "0..*" Product : category_id
+    NewsCategory "1" *-- "0..*" News : category_id
+    Product "1" *-- "0..*" ProductGallery
+    Product "1" *-- "0..*" ProductAttribute
+    Role "1" *-- "0..*" RolePermission
+    Role "1" *-- "0..*" AdminUser
+    AdminUser "1" *-- "0..*" AuditLog : uploaded_by
+    AdminUser "1" *-- "0..*" UploadRecord : uploaded_by
+
+    %% ===== 新增/补强 API 契约（接口签名）=====
+    class AuthAPI {
+        +POST /api/v1/admin/login(LoginRequest) LoginVO
+        +POST /api/v1/admin/logout()
+        +POST /api/v1/admin/refresh(RefreshRequest) LoginVO
+    }
+    class ProductAdminAPI {
+        +GET /api/v1/admin/products(PageRequest) PageResponse~ProductVO~
+        +GET /api/v1/admin/products/{id} ProductDetailVO
+        +POST /api/v1/admin/products(ProductCreateReq) ProductDetailVO
+        +PUT /api/v1/admin/products/{id}(ProductUpdateReq) ProductDetailVO
+        +DELETE /api/v1/admin/products/{id}() Result
+        +POST /api/v1/admin/products/batch(ProductBatchReq) Result
+    }
+    class CategoryAdminAPI {
+        +GET /api/v1/admin/categories(PageRequest) PageResponse~CategoryVO~
+        +POST /api/v1/admin/categories(CategoryCreate) CategoryVO
+        +PUT /api/v1/admin/categories/{id}(CategoryUpdate) CategoryVO
+        +DELETE /api/v1/admin/categories/{id}() Result
+        +PUT /api/v1/admin/categories/sort(ReorderReq) Result
+    }
+    class UploadAPI {
+        +POST /api/v1/admin/upload(file: FormData) UploadVO
+        +POST /api/v1/admin/upload/batch(files: FormData) List~UploadVO~
+    }
+
+    %% ===== 关键补强字段标注 =====
+    class ProductCreateReq {
+        +str title
+        +str slug
+        +str summary
+        +text content_html
+        +int category_id
+        +Decimal price
+        +str status
+        +list~str~ tags
+    }
+    class ProductUpdateReq {
+        +str title?
+        +str slug?
+        +text content_html?
+        +int category_id?
+        +str status?
+        +list~str~ tags
+    }
+    class CategoryCreate {
+        +str name
+        +str slug
+        +int sort_order
+    }
+    class CategoryUpdate {
+        +str name?
+        +str slug?
+        +int sort_order?
+    }
+    class ReorderReq {
+        +list~int~ ids
+    }
+    class LoginVO {
+        +str access_token
+        +str refresh_token
+        +list~str~ roles
+        +list~str~ permissions
+        +int expires_at
+    }
+    class RefreshRequest {
+        +str refresh_token
+    }
+    class UploadVO {
+        +str url
+        +str file_name
+        +int size
+    }
+
+    ProductAdminAPI ..> ProductCreateReq : uses
+    ProductAdminAPI ..> ProductUpdateReq : uses
+    CategoryAdminAPI ..> CategoryCreate : uses
+    CategoryAdminAPI ..> CategoryUpdate : uses
+    CategoryAdminAPI ..> ReorderReq : uses
+    AuthAPI ..> LoginVO : returns
+    AuthAPI ..> RefreshRequest : uses
+    UploadAPI ..> UploadVO : returns

@@ -1,0 +1,58 @@
+classDiagram
+    class client {
+        +API_BASE: string
+        +apiFetch(path, opts): Promise~any~
+    }
+    class products_api {
+        +getProducts(params): {products:ProductSummary[], pagination}
+        +getProductBySlug(slug): ProductDetail|null
+        +getProductCategories(): WCProductCategory[]
+        +getAllProductSlugs(): string[]
+    }
+    class news_api {
+        +getPosts(params): {posts:PostSummary[], pagination}
+        +getPostBySlug(slug): PostDetail|null
+        +getNewsCategories(): WCProductCategory[]
+        +getAdjacentPosts(slug): {prev,next}
+    }
+    class search_api {
+        +search(params): {items, total, degraded}
+    }
+    class ProductPageVO {
+        +id: int
+        +slug: string
+        +title: string
+        +summary: string
+        +sku: string
+        +price: number
+        +stock_status: string
+        +category: CategoryVO
+    }
+    class ProductDetailVO {
+        +content_html: string
+        +galleries: GalleryVO[]
+        +attributes: AttributeVO[]
+    }
+    class NewsPageVO {
+        +author: string
+        +published_at: string
+        +category: NewsCategoryVO
+    }
+    class ProductSummary {
+        +name: string
+        +shortDescription: string
+        +image: string
+        +categories: WCProductCategory[]
+        +stockStatus: string
+    }
+    class PostSummary {
+        +excerpt: string
+        +featuredImage: string
+        +date: string
+    }
+    client <.. products_api : uses
+    client <.. news_api : uses
+    client <.. search_api : uses
+    ProductPageVO <|-- ProductDetailVO
+    ProductPageVO ..> ProductSummary : map
+    NewsPageVO ..> PostSummary : map

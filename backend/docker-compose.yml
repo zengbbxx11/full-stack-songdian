@@ -1,0 +1,58 @@
+# 松典后端本地编排：backend + postgres(zhparser) + redis
+#
+# 安全加固（security-audit F-12）：
+# - 数据库 / Redis 不再向宿主机暴露端口，仅容器网络内部可达；
+# - 密码经环境变量注入（${POSTGRES_PASSWORD} 等），默认值仅为本地占位，生产请覆盖；
+# - 后端以 APP_ENV=development 启动（本地编排），生产部署请用独立部署 + 强 JWT_SECRET。
+services:
+  pg:
+    build:
+      context: .
+      dockerfile: Dockerfile.pg
+    container_name: songdian-pg
+    environment:
+      POSTGRES_USER: songdian
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-S0ngd!an_Pg_2026#xQz}
+      POSTGRES_DB: songdian_b2b
+    # 不向宿主机暴露数据库端口（security-audit F-12）
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U songdian -d songdian_b2b"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2
+    container_name: songdian-redis
+    # 不向宿主机暴露 Redis 端口（security-audit F-12）
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: songdian-backend
+    depends_on:
+      pg:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgres://songdian:${POSTGRES_PASSWORD:-S0ngd!an_Pg_2026#xQz}@pg:5432/songdian_b2b
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-please-override-with-a-strong-random-secret}
+      SMTP_HOST: ""
+      SEED_ON_START: "true"
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  pg-data:

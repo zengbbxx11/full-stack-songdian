@@ -1,0 +1,204 @@
+# 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
+
+产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）、
+数据迁移（M6）六大模块。私有化单租户部署。
+
+---
+
+## 0. 技术栈与运行环境（重要）
+
+> ⚠️ 本文档以**真实 `pyproject.toml`** 为准。早期文档声称的版本「偏差」（Python 3.11–3.13、
+> FastAPI 0.115、Tortoise 0.21、aerich 0.7）已**不再成立**——上述冻结版本现在均已可安装，
+> 代码即按冻结版本落地，无需降级。
+
+| 组件 | 版本要求 | 说明 |
+| --- | --- | --- |
+| Python | **>= 3.14** | `pyproject.toml` 硬性约束；3.13 及以下会被 `requires-python` 直接拒绝 |
+| FastAPI | >= 0.139.2 | 设计冻结版本，已真实可用 |
+| Tortoise ORM | >= 1.1.7 | 设计冻结版本，已真实可用 |
+| aerich | >= 0.9.3 | 迁移工具 |
+| PostgreSQL | 16（可选 zhparser 中文分词） | SQLite 亦可运行（降级） |
+| Redis | 8（可选） | 未配置自动降级内存字典 |
+
+其余设计要素（13 张表、错误码、幂等、限流、缓存 Key、RBAC、审计、降级 BD-01~04）
+**100% 沿用冻结设计，不偏离**。
+
+---
+
+## 1. 目录结构（节选）
+
+```
+backend/
+├── pyproject.toml / aerich.ini / .env.example
+├── Dockerfile / Dockerfile.pg / docker-compose.yml / docker/
+├── main.py                      # 应用入口：聚合 router + 中间件 + 异常 + lifespan
+├── common/                      # 公共内核（config/result/enums/exceptions/jwt/...）
+│   ├── mixins.py                # TimestampedMixin/SoftDeleteMixin/AuditByMixin
+│   ├── redis_client.py          # Redis 封装（无 Redis → 内存降级）
+│   └── search_vector.py         # TSVectorField + update_search_vector + is_sqlite
+├── product/ news/ search/ inquiry/ content/ migration/   # 六大模块
+├── seed/seed_data.py            # 6 产品分类 + 2 新闻分类 + admin 账号（幂等）
+└── tests/                       # conftest 基座 + smoke + QA 用例
+```
+
+---
+
+## 2. 本地运行
+
+### 2.1 依赖安装（务必 Python 3.14）
+
+推荐直接按 `pyproject.toml` 安装（**不要手动 pin 低版本**，否则会与依赖声明冲突）：
+
+```bash
+# 方式一：uv（推荐）
+cd backend
+uv sync
+
+# 方式二：pip（需 Python 3.14）
+python -m venv .venv
+.venv\Scripts\activate        # Windows：激活虚拟环境
+pip install -e .
+```
+
+> 旧版 README 里的 `pip install "fastapi>=0.115,<0.116" ...` 手动 pin 写法**已废弃**，
+> 会导致依赖与 `pyproject.toml` 不一致，请勿照用。
+
+### 2.2 本地（SQLite + 内存 Redis 降级）
+
+```bash
+cd backend
+cp .env.example .env
+#   - DATABASE_URL=sqlite://./dev.db   （默认即用 SQLite，无需 PostgreSQL）
+#   - REDIS_URL 留空                  （自动降级进程内内存字典）
+#   - JWT_SECRET 建议显式设置：       openssl rand -base64 48
+
+# 启动（SEED_ON_START=true 时自动幂等写入种子）
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+- SQLite 下应用启动时会通过 `generate_schemas()` **自动建全部表/列**
+  （含 `Product.tags`、`t_upload_record`、`search_vector`），**无需跑 aerich 迁移**。
+- 搜索引擎在 SQLite 下走 **LIKE 降级（BD-01）**，标注「基础检索」。
+- Redis 未配置时自动降级为**进程内内存字典**，缓存/限流/幂等/权限均不报错。
+- SMTP 未配置时询盘仅持久化，`smtp_status` 保持 PENDING（BD-02/MOCK）。
+
+---
+
+## 3. 数据库迁移（aerich，生产 PostgreSQL）
+
+> ### ⚠️ 已知迁移漂移（已修复）
+> 2026-07-21 审计发现 `Product.tags`（JSONField）、`UploadRecord` 表、`search_vector` 的 GIN 索引缺少迁移。
+> 已于 `migrations/models/3_20260721141024_add_tags_upload_and_search_gin.py` 补齐，
+> 合并为一个标准 aerich 迁移。在干净 PostgreSQL 上 `aerich upgrade` 即可完整建表。
+
+**PG 部署步骤**：
+
+```bash
+cd backend
+
+# 1) 执行全部迁移（含 init + cover_image + tags/upload/gin）
+aerich upgrade
+
+# 2) 种子数据（SEED_ON_START=true 启动时已自动跑，也可手动）
+python -m seed.seed_data
+```
+
+---
+
+## 4. 自验证
+
+```bash
+# a. 导入自检
+python -c "import main; print('import main OK')"
+
+# b. 静态编译 / lint
+python -m py_compile $(find . -name "*.py" -not -path "./.venv/*")
+ruff check .
+
+# c. 全链路冒烟（建表/种子/登录/产品/新闻/搜索降级/询盘幂等/后台读取）
+python tests/smoke.py
+
+# d. 测试基座（全量）
+pytest tests/ -q
+```
+
+初始管理员：`admin` / `Songdian@2026`（角色 `admin`，绑定全部权限码）。
+> 口令可通过环境变量 `ADMIN_PASSWORD` 覆盖；若未设置，种子数据会自动生成随机密码并记录到日志。
+
+---
+
+## 5. 接口清单（前缀 /api/v1）
+
+| 模块 | 方法 | 路径 |
+| --- | --- | --- |
+| M1 产品 | GET | /products、/products/{slug}、/product-categories |
+| M1 产品 | POST/PUT/DELETE | /admin/products、/admin/products/{id}、/admin/products/{id}/gallery、/admin/products/{id}/attributes |
+| M1 产品 | GET | /admin/categories（分类列表含产品计数） |
+| M2 新闻 | GET | /news、/news/{slug}、/news-categories |
+| M2 新闻 | POST/PUT/DELETE | /admin/news、/admin/news/{id} |
+| M3 搜索 | GET | /search?q=&type=&page=&page_size= |
+| M4 询盘 | POST | /inquiries |
+| M4 询盘 | GET/PUT | /admin/inquiries、/admin/inquiries/{id} |
+| M5 内容 | POST | /admin/login、/admin/logout、/admin/refresh（令牌族轮换） |
+| M5 内容 | GET/PUT | /admin/profile（查看/修改当前用户信息） |
+| M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs |
+| M6 迁移 | POST/GET | /admin/migration/run、/admin/migration/batches、/admin/migration/batches/{id} |
+| 上传 | POST | /admin/upload（单文件）、/admin/upload/batch（多文件） |
+| 系统 | GET | /healthz、/readyz |
+
+---
+
+## 6. 关键设计决策
+
+- **统一返回** `Result{code,msg,msgI18n,data,traceId,timestamp}`，成功 `code="0"`；错误码
+  A/B/C 三系（见 `common/exceptions.py`）。
+- **RBAC**：`t_role_permission(role_id, permission_code)` 关联表 + `content/permissions.py`
+  权限码常量，**无独立权限实体表**。
+- **TSVector**：自定义 `TSVectorField`；PG 下写时 `to_tsvector('zh', …)`，SQLite 下降级。
+- **Redis 优雅降级**：连接失败/未配置 → 内存字典，绝不阻断启动。
+- **SMTP 降级**：未配置仅持久化（BD-02）。
+- **单 Tortoise app 标签 `models`**；跨模块外键 `models.Role` 形式。
+- **JWT 安全（H2/H5 修复后）**：HS256，access(2h)/refresh(7d)，jti 黑名单 + 令牌族（`fid`）吊销；
+  `logout` 吊销整族、`refresh` 轮换并吊销旧族（含重用检测）。
+  **生产必须显式设置 `JWT_SECRET`**——未设置时后端自动生成临时随机密钥并告警，
+  但重启即失效、不可用于生产。
+- **审计归因（H3 修复后）**：`@audit(action, resource)` 自动记录操作人（解析 `_user` 依赖）
+  与资源（`resource.format(**kwargs)`），正确写入审计日志。
+
+---
+
+## 7. 环境变量（.env.example）
+
+```
+DATABASE_URL=postgres://songdian:songdian@pg:5432/songdian_b2b   # 或 sqlite://./dev.db
+REDIS_URL=redis://redis:6379/0                                   # 留空=内存降级
+JWT_SECRET=<≥32字节随机值，如 openssl rand -base64 48>            # 生产必设
+JWT_ALG=HS256
+ACCESS_TOKEN_TTL=7200
+REFRESH_TOKEN_TTL=604800
+ADMIN_PASSWORD=Songdian@2026                                      # 初始管理员口令（可覆盖）
+SEED_ON_START=true
+HOST=0.0.0.0
+PORT=8000
+# SMTP_* 不填则询盘只入库不真发邮件
+```
+
+---
+
+## 8. Docker 一键部署（PG + zhparser + Redis）
+
+```bash
+cd backend
+docker compose up -d
+# 应用迁移（PG 下必须，见 §3）
+docker compose exec backend aerich upgrade
+# 种子（SEED_ON_START=true 启动时已自动跑，也可手动）
+docker compose exec backend python -m seed.seed_data
+# 访问
+#   API 文档: http://localhost:8000/docs
+#   探活:     http://localhost:8000/healthz  /  /readyz
+```
+
+> `docker-compose.yml` 中若 `JWT_SECRET=change-me-strong-random`，H5 修复会将其自动随机化
+> （仅本地够用）；**生产请显式注入真实 `JWT_SECRET`**，否则每次重启随机、所有已签发 refresh
+> 失效、用户被强制登出。

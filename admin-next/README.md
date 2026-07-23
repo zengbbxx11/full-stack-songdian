@@ -1,0 +1,129 @@
+# Songdian B2B — 工厂外贸官网（管理后台）
+
+松典科技 B2B 平台的管理后台，基于 **Next.js 16 + React 19 + Tailwind CSS v4**，通过项目自有 **FastAPI 后端** 提供数据服务。用于管理产品、新闻、分类、询盘和媒体资源。
+
+> 基于 [TailAdmin Next.js](https://github.com/TailAdmin/free-nextjs-admin-dashboard) 模板二次开发，已移除演示数据和无用组件。
+
+---
+
+## 技术栈
+
+| 层 | 技术 |
+|----|------|
+| 框架 | Next.js 16.1.6（App Router + Turbopack）+ React 19 |
+| 语言 | TypeScript（strict） |
+| 样式 | Tailwind CSS v4 + 暗色模式 |
+| 后端 | 项目 FastAPI 后端（`../backend/`，端口 8000） |
+| 认证 | JWT（Bearer Token，localStorage + Cookie 双存储） |
+| 路由守卫 | Next.js Middleware（边缘层 token 校验） |
+| 图标 | 内联 SVG 组件（`src/icons/generated.tsx`） |
+
+---
+
+## 环境要求
+
+- **Node.js** ≥ 24（Next.js 16 Turbopack 需要 Node 24）
+- **FastAPI 后端** 运行在 `localhost:8000`
+- 包管理器：npm
+
+---
+
+## 快速开始
+
+```bash
+npm install
+npm run dev        # http://localhost:3001
+```
+
+> ⚠️ 本机必须用 Node 24.18.0，启动命令：
+> `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3001`
+
+---
+
+## 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
+
+---
+
+## 项目结构
+
+```
+admin-next/
+├── src/
+│   ├── app/
+│   │   ├── (admin)/              # 需登录的管理页面
+│   │   │   ├── page.tsx          # Dashboard（统计卡片）
+│   │   │   ├── products/         # 产品列表（搜索/筛选/拖拽排序/删除）
+│   │   │   ├── news/             # 新闻列表（拖拽排序/删除）
+│   │   │   ├── categories/       # 分类列表（含产品计数）
+│   │   │   ├── inquiries/        # 询盘列表
+│   │   │   ├── media/            # 媒体库（上传/分类/复制URL）
+│   │   │   ├── account/          # 账号设置（改用户名/改密码）
+│   │   │   └── (others-pages)/
+│   │   │       ├── product-form/ # 产品编辑表单
+│   │   │       └── news-form/    # 新闻编辑表单
+│   │   ├── (full-width-pages)/(auth)/
+│   │   │   └── signin/           # 登录页
+│   │   ├── layout.tsx             # 根布局（ThemeProvider + SidebarProvider）
+│   │   └── not-found.tsx
+│   ├── components/
+│   │   ├── auth/SignInForm.tsx    # 登录表单
+│   │   ├── header/
+│   │   │   ├── NotificationDropdown.tsx  # 通知铃铛（空状态）
+│   │   │   └── UserDropdown.tsx          # 用户下拉（Sign out）
+│   │   ├── ecommerce/EcommerceMetrics.tsx  # Dashboard 统计卡片
+│   │   ├── form/                 # 表单组件
+│   │   └── ui/                   # 基础 UI 组件
+│   ├── layout/
+│   │   ├── AppHeader.tsx         # 顶栏（侧边栏切换 + 主题 + 通知 + 用户）
+│   │   ├── AppSidebar.tsx        # 侧边栏导航
+│   │   └── Backdrop.tsx          # 移动端遮罩
+│   ├── context/
+│   │   ├── SidebarContext.tsx     # 侧边栏状态
+│   │   └── ThemeContext.tsx       # 暗色模式
+│   ├── icons/                    # SVG 图标
+│   └── middleware.ts             # 路由守卫（token 校验 + 未登录重定向）
+└── public/images/                # 静态资源
+```
+
+---
+
+## 功能清单
+
+| 功能 | 说明 |
+|------|------|
+| 登录 / 登出 | JWT 认证，token 存 localStorage + Cookie |
+| Dashboard | 四大统计卡片（产品/新闻/分类/询盘数量） |
+| 产品管理 | 搜索/分类筛选、拖拽排序、新增/编辑/删除 |
+| 新闻管理 | 拖拽排序、新增/编辑/删除 |
+| 分类管理 | 查看分类及产品计数 |
+| 询盘管理 | 查看询盘列表 |
+| 媒体管理 | 图片上传、分类管理、复制 URL |
+| 账号设置 | 修改用户名、修改密码 |
+| 暗色模式 | 全局切换 |
+
+---
+
+## API 代理
+
+Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
+
+```
+/api/*     → http://localhost:8000/api/*
+/uploads/* → http://localhost:8000/uploads/*
+```
+
+---
+
+## 开发约定
+
+- 所有页面为 `"use client"` 客户端组件
+- Token 读取：`localStorage.getItem("admin_token")`
+- API 调用直接使用 `fetch()` 内联，无独立 service 层
+- 响应格式：`{ code: "0", msg, data }`，code 为字符串 "0" 表示成功
+- 代码注释：中文
+- 禁止使用 `@svgr/webpack`（本机 Turbopack webpack-loader worker 会崩溃）
+- 必须保留 `postcss.config.mjs`（Tailwind v4 管线）

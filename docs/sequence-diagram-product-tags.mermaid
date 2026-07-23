@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant ETL as run_etl (etl.py)
+    participant HTTP as httpx.Client
+    participant WP as WordPress REST
+    participant Adapter as WordPressProductAdapter
+    participant DB as PostgreSQL t_product
+
+    ETL->>HTTP: GET /wp/v2/tags（全量，per_page=100）
+    HTTP->>WP: 请求标签术语
+    WP-->>HTTP: [{id, name}, ...]
+    HTTP-->>ETL: wp_tag_map: {id: name}
+
+    ETL->>HTTP: GET /wp/v2/product（分页）
+    HTTP->>WP: 请求产品
+    WP-->>HTTP: [{id, slug, tags:[1,2], ...}]
+    loop 每个产品
+        ETL->>Adapter: adapt_product(wp_post, meta, wp_tag_map)
+        Adapter-->>ETL: {..., tags:["OEM","4K"], galleries, attributes}
+        ETL->>DB: Product.create(slug, ..., tags=["OEM","4K"])
+        DB-->>ETL: product.id
+    end
+
+---
+
+sequenceDiagram
+    participant BF as backfill_tags (etl.py)
+    participant HTTP as httpx.Client
+    participant WP as WordPress REST
+    participant DB as PostgreSQL t_product
+    BF->>HTTP: GET /wp/v2/tags + /wp/v2/product
+    HTTP->>WP: 拉取源
+    WP-->>HTTP: 产品 + 标签映射
+    loop 每个产品
+        BF->>DB: Product.filter(slug=...).update(tags=[名称数组])
+        DB-->>BF: 更新计数
+    end
+
+---
+
+sequenceDiagram
+    participant Page as 详情页 [slug]/page.tsx
+    participant API as lib/api/products.ts
+    participant BE as GET /api/v1/products/{slug}
+    participant Svc as services.get_product_detail
+    participant VO as ProductDetailVO
+    participant UI as Badge 组件
+    Page->>API: getProductBySlug(slug)
+    API->>BE: apiFetch
+    BE->>Svc: get_product_detail(slug)
+    Svc->>VO: ProductDetailVO.from_model(product)
+    VO-->>Svc: {tags:["OEM","4K"], ...}
+    Svc-->>BE: Result.ok(vo)
+    BE-->>API: data
+    API->>API: toProductDetail → tags = p.tags || []
+    API-->>Page: ProductDetail.tags: string[]
+    Page->>UI: <Badge variant="secondary">{tag}</Badge>（每个标签）

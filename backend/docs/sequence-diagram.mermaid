@@ -1,0 +1,61 @@
+sequenceDiagram
+    autonumber
+    %% ── 创建产品（M1）──
+    participant A as 管理后台
+    participant M as M1 产品服务
+    participant R as Redis
+    participant P as PostgreSQL
+    A->>M: POST /api/v1/admin/products (X-Idempotency-Key)
+    M->>M: 校验 slug 唯一 + 幂等键(SETNX 24h)
+    alt slug 已存在
+        M-->>A: 409 A010002
+    else 校验通过
+        M->>P: INSERT t_product (事务)
+        M->>P: update_search_vector('zh', title+summary+content_html)
+        M->>R: DEL product:detail:{slug}
+        M-->>A: 200 ProductVO
+    end
+
+    %% ── 联合搜索（M3，含降级 BD-01）──
+    participant W as 官网前端
+    W->>M: GET /api/v1/search?q=xxx
+    M->>R: GET search:q:{hash}:{type}:{page}
+    alt 命中缓存
+        R-->>M: 缓存结果
+    else 未命中
+        M->>P: SELECT ... WHERE search_vector @@ plainto_tsquery('zh', q) ORDER BY ts_rank
+        alt 索引慢/超时/SQLite
+            M->>P: 降级 LIKE title（BD-01）
+        end
+        M->>R: SET search:q:... TTL 60s
+    end
+    M-->>W: 200 SearchPageVO (took_ms)
+
+    %% ── 提交询盘（M4，含 SMTP/幂等）──
+    participant S as SMTP
+    A->>M: POST /api/v1/inquiries (biz_req_no)
+    M->>R: SETNX inquiry:idem:{biz_req_no} 24h
+    alt 重复提交
+        M-->>A: 200 返回首次结果
+    else 首次
+        M->>P: INSERT t_inquiry (smtp_status=PENDING)
+        M->>S: SMTP 发信(smtp.qq.com)
+        alt 发信失败/未配置
+            M->>P: UPDATE smtp_status=FAILED/PENDING
+        else 成功
+            M->>P: UPDATE smtp_status=SENT
+        end
+        M-->>A: 200 InquiryVO
+    end
+
+    %% ── 后台登录（M5，JWT+权限缓存+审计）──
+    participant C as M5 内容服务
+    A->>C: POST /api/v1/admin/login
+    C->>P: 校验 username + bcrypt(password)
+    alt 失败
+        C-->>A: 401 A050002（或锁定）
+    else 成功
+        C->>C: 签发 JWT(access 2h, refresh 7d)
+        C->>R: 缓存 auth:perm:{uid} TTL 2h
+        C-->>A: 200 LoginVO
+    end

@@ -29,6 +29,8 @@ class ProductCreateRequest(BaseModel):
     currency: str = "CNY"
     stock_status: str = StockStatus.INSTOCK.value
     status: str = ProductStatus.DRAFT.value
+    # tags：标签名数组，如 ["OEM", "4K", "Waterproof"]；缺省空数组（T04）。
+    tags: list[str] = []
 
     @field_validator("slug")
     @classmethod
@@ -63,6 +65,9 @@ class ProductUpdateRequest(BaseModel):
     currency: str | None = None
     stock_status: str | None = None
     status: str | None = None
+    sort_order: float | None = None
+    # tags：编辑时整体覆盖（T04）。缺省空数组。
+    tags: list[str] = []
     version: int | None = None  # 乐观锁占位（当前以 id 为主键）
 
     @field_validator("slug")
@@ -114,6 +119,29 @@ class CategoryVO(BaseModel):
 CategoryTreeVO = CategoryVO  # 分类为单级，树即扁平列表
 
 
+# ───────────────────────── 分类写/排序 DTO（T02）─────────────────────────
+class CategoryCreate(BaseModel):
+    """创建产品分类。"""
+
+    name: str = Field(..., max_length=100)
+    slug: str = Field(..., max_length=100)
+    sort_order: int | None = None  # 缺省时落到末尾
+
+
+class CategoryUpdate(BaseModel):
+    """更新产品分类（全字段可选）。"""
+
+    name: str | None = None
+    slug: str | None = None
+    sort_order: int | None = None
+
+
+class ReorderReq(BaseModel):
+    """拖拽排序：按目标顺序传入分类 id 数组。"""
+
+    ids: list[int] = Field(default_factory=list)
+
+
 class GalleryVO(BaseModel):
     id: int
     image_url: str
@@ -150,6 +178,7 @@ class ProductPageVO(BaseModel):
     created_time: datetime | None = None
     updated_time: datetime | None = None
     cover_image: str | None = None
+    sort_order: float = 0.0
     # tags: 标签名字符串数组，如 ["OEM", "4K", "Waterproof"]；与模型字段同名
     tags: list[str] = []
 
@@ -162,6 +191,7 @@ class ProductPageVO(BaseModel):
             status=m.status, category=cat,
             created_time=m.created_time, updated_time=m.updated_time,
             cover_image=m.cover_image,
+            sort_order=m.sort_order,
             # DB 为 NULL 时兜底空数组，避免向展示层返回 None
             tags=m.tags or [],
         )

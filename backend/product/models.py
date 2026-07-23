@@ -41,6 +41,7 @@ class Product(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
     cover_image = fields.CharField(max_length=500, null=True)  # 产品主图（封面），迁移自 WP featured_media
     # tags: 标签名字符串数组，如 ["OEM", "4K", "Waterproof"]；PG 下为 JSONB，SQLite 降级为 TEXT
     tags = fields.JSONField(null=True, default=list)
+    sort_order = fields.FloatField(default=0.0)  # 前端拖拽排序，浮点数支持精准插入
     search_vector = TSVectorField()
 
     galleries: fields.ReverseRelation[ProductGallery]

@@ -1,0 +1,72 @@
+%% ===== 流 1：登录鉴权流 =====
+sequenceDiagram
+    autonumber
+    participant U as 登录页(views/login)
+    participant S as userStore
+    participant H as PureHttp(axios)
+    participant B as 后端 /api/v1/admin/login
+    participant SV as content.services.login
+    participant DB as PostgreSQL
+
+    U->>S: loginByUsername({username, password})
+    S->>H: http.post('/api/v1/admin/login', data)
+    Note over H: 白名单 endsWith('/login') → 不加 Authorization
+    H->>B: POST /api/v1/admin/login
+    B->>SV: services.login(username, password, ip)
+    SV->>DB: AdminUser.get_or_none + verify_password
+    DB-->>SV: user
+    SV->>B: LoginVO{access_token, refresh_token, roles, permissions, expires_at}
+    B-->>H: Result{code:"0", data: LoginVO}
+    H-->>S: Result.data
+    S->>S: 映射 access_token→accessToken, 补 expires
+    S->>S: setToken(DataInfo)
+    Note over H: 后续请求自动带 Authorization: Bearer <access_token>
+
+%% ===== 流 2：典型产品 CRUD 流（列表→编辑→保存）=====
+sequenceDiagram
+    autonumber
+    participant P as 产品列表页
+    participant H as PureHttp
+    participant B as 后端 /api/v1/admin/products
+    participant SV as product.services
+    participant DB as PostgreSQL
+
+    P->>H: GET /api/v1/admin/products?page=1
+    H->>B: GET (带 Authorization)
+    B->>SV: list_products(req)
+    SV->>DB: filter(deleted=0).paginate
+    DB-->>SV: rows, total
+    SV-->>B: PageResponse~ProductVO~
+    B-->>P: Result{data:{list,total,page,page_size}}
+
+    P->>H: 点击编辑 → GET /api/v1/admin/products/{id}
+    H->>B: GET (Authorization)
+    B->>SV: get_product_by_id(id) 含 tags/galleries/attributes
+    SV-->>B: ProductDetailVO
+    B-->>P: Result{data: ProductVO}
+
+    P->>H: 保存 → PUT /api/v1/admin/products/{id}
+    H->>B: PUT (Authorization) body=ProductUpdateReq(tags, status, ...)
+    B->>SV: update_product(id, data, operator)
+    SV->>DB: update + clean_html + update_search_vector
+    SV->>DB: AuditLog.create (@audit 装饰器)
+    SV-->>B: ProductDetailVO
+    B-->>P: Result{data: ProductVO}
+
+%% ===== 流 3：图片上传流 =====
+sequenceDiagram
+    autonumber
+    participant F as 产品表单(封面/图库)
+    participant U as UploadAPI(http)
+    participant B as 后端 /api/v1/admin/upload
+    participant FS as 本地磁盘 MEDIA_ROOT
+    participant DB as PostgreSQL
+
+    F->>U: el-upload POST /api/v1/admin/upload (multipart file)
+    U->>B: POST (Authorization) multipart/form-data
+    B->>B: 校验类型/大小 + 生成 slug 文件名
+    B->>FS: 写入 MEDIA_ROOT/2026/xx.jpg
+    B->>DB: UploadRecord.create(url, uploaded_by)
+    B-->>U: Result{data: UploadVO{url:"/uploads/2026/xx.jpg"}}
+    U-->>F: 返回 url
+    F->>F: 绑定 cover_image / gallery.image_url = url

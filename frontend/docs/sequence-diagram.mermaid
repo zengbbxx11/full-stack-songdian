@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant U as 用户浏览器
+    participant P as products/page.tsx (Server Component)
+    participant A as lib/api/products.ts
+    participant C as lib/api/client.ts
+    participant B as FastAPI :8000
+    U->>P: GET /products?page=1&category=mirrorless
+    P->>A: getProductCategories()
+    A->>C: apiFetch('/api/v1/product-categories')
+    C->>B: GET /api/v1/product-categories
+    B-->>C: Result{data:[CategoryVO...]}
+    C-->>A: [CategoryVO]
+    A-->>P: WCProductCategory[] (slug->id 解析)
+    P->>A: getProducts({page:1, categoryId, perPage:12})
+    A->>C: apiFetch('/api/v1/products?page=1&category_id=X&page_size=12')
+    C->>B: GET /api/v1/products...
+    B-->>C: Result{data:{list:[ProductPageVO],total,page,page_size}}
+    C-->>A: PageResponse
+    A->>A: 映射 ProductPageVO -> ProductSummary
+    A-->>P: {products:ProductSummary[], pagination:{total,totalPages}}
+    P-->>U: HTML (ISR revalidate=60)

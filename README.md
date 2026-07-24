@@ -42,6 +42,7 @@ full-stack-project/
 │   ├── src/app/(admin)/       # App Router 管理页面
 │   ├── src/components/        # UI 组件
 │   └── src/layout/            # 布局（侧边栏/顶栏）
+├── db/                        # 数据库备份（SQL dump + CSV 导出）
 └── docs/                      # 架构设计文档 + Mermaid 图
 ```
 
@@ -284,6 +285,21 @@ pytest tests/test_admin_phase1.py -v
 ---
 
 ## 部署
+
+### 一键部署（推荐）
+
+仓库已包含全部代码+图片+数据库备份，克隆即用：
+
+```bash
+git clone <repo-url> && cd full-stack-project
+createdb -U postgres songdianB2B
+psql -U postgres -d songdianB2B < db/songdianB2B_full.sql  # 导入数据
+cd backend && cp .env.example .env && uv sync
+uvicorn main:app --host 0.0.0.0 --port 8000
+cd ../frontend && pnpm install && pnpm build && pnpm start
+cd ../admin-next && pnpm install && pnpm build && pnpm start
+# 仅视频需单独上传: scp Video/SongdianFactoryVideo.mp4 user@server:frontend/public/Video/
+```
 
 ### Docker（后端）
 

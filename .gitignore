@@ -17,9 +17,11 @@ dev.db
 # IDE
 .idea/
 
-# Local uploads (large binary assets)
-uploads/
+# Local uploads backup (large binary assets, excluded)
 uploads_bak_*/
+
+# Video files (large, excluded)
+frontend/public/Video/
 
 # Temp diagnostics
 diag*.txt

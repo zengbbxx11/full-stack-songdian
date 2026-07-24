@@ -1,3 +1,8 @@
+/*
+ * 页面：媒体管理页（/media）
+ * 职责：上传和管理图片/文件资源。支持拖拽上传（DropZone）、文件列表展示、
+ * 复制图片 URL、删除文件。上传走后端 /api/v1/admin/uploads。
+ */
 "use client";
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/context/ToastContext";

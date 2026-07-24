@@ -1,3 +1,9 @@
+/*
+ * Context：主题切换状态管理（ThemeContext）
+ * 职责：管理 dark/light 主题切换，将选择持久化到 localStorage。
+ * 通过往 <html> 添加/移除 "dark" class 驱动 Tailwind 的 dark: 变体。
+ * 被 ThemeToggleButton / ThemeTogglerTwo 消费。
+ */
 "use client";
 
 import type React from "react";

@@ -1,7 +1,8 @@
 # Songdian 官网 — 腾讯云 1Panel 部署手册
 
-> 本文档综合了完整部署过程，适用于 2G2M 腾讯云服务器 + 1Panel Linux 面板。
-> 项目仓库：https://github.com/zengbbxx11/next-js-wordpress-headless-songdian.git
+> ⚠️ **历史文档（2026-07-13）**：本文档描述的是旧架构（WordPress Headless + Next.js）的部署流程。
+> 当前项目已全面迁移至 **FastAPI + PostgreSQL + Next.js** 全栈架构，
+> 后端不再依赖 WordPress。本文档保留供历史参考，新部署请参考根目录 `README.md`。
 
 ---
 

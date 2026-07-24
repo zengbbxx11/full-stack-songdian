@@ -1,3 +1,9 @@
+/*
+ * Context：全局 Toast 通知管理（ToastContext）
+ * 职责：提供 showToast(msg, type) 方法，页面中调用以显示浮动通知条。
+ * 支持 success / error / info / warning 四种类型，3 秒后自动消失。
+ * 被所有后台页面通过 useToast() hook 消费。
+ */
 "use client";
 import React, { createContext, useCallback, useContext, useState } from "react";
 

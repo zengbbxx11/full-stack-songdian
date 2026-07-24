@@ -1,3 +1,9 @@
+/*
+ * 组件：管理后台侧边栏（AppSidebar）
+ * 职责：左侧导航菜单，包含 Logo、Dashboard/Products/Categories/News/Inquiries/Media/Settings
+ * 各菜单项。支持鼠标悬停展开（290px）/ 收起（90px），移动端走抽屉（含遮罩 Backdrop）。
+ * 当前路由高亮通过 usePathname 匹配，状态由 SidebarContext 统一管理。
+ */
 "use client";
 import React, { useCallback } from "react";
 import Link from "next/link";

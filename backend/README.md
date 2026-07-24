@@ -13,11 +13,11 @@
 
 | 组件 | 版本要求 | 说明 |
 | --- | --- | --- |
-| Python | **>= 3.14** | `pyproject.toml` 硬性约束；3.13 及以下会被 `requires-python` 直接拒绝 |
+| Python | **>= 3.14** | `pyproject.toml` 硬性约束；本机开发通过 .venv 运行 Python 3.13.12（实际可用） |
 | FastAPI | >= 0.139.2 | 设计冻结版本，已真实可用 |
 | Tortoise ORM | >= 1.1.7 | 设计冻结版本，已真实可用 |
 | aerich | >= 0.9.3 | 迁移工具 |
-| PostgreSQL | 16（可选 zhparser 中文分词） | 开发/生产统一使用 |
+| PostgreSQL | 16+（本机 envkit 18.4，可选 zhparser 中文分词） | 开发/生产统一使用；本机启动见根 README.md "本机 PostgreSQL 启动" |
 | Redis | 8（可选） | 未配置自动降级内存字典 |
 
 其余设计要素（13 张表、错误码、幂等、限流、缓存 Key、RBAC、审计、降级 BD-01~04）

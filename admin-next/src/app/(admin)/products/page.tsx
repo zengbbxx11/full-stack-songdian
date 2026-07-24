@@ -1,3 +1,10 @@
+/*
+ * 页面：产品管理页（/products）
+ * 职责：产品列表 CRUD + 拖拽排序。从后端 /api/v1/admin/products 获取数据，
+ * 支持按关键词/分类筛选、拖拽调整排序、保存排序到后端、删除（需确认弹窗）。
+ * 拖拽排序使用原生 HTML5 Drag & Drop（onDragStart/onDragOver/onDrop），
+ * 本地维护排序状态后批量 POST 到 /api/v1/admin/products/reorder。
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";

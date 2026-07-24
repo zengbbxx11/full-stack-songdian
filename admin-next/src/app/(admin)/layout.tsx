@@ -1,3 +1,11 @@
+/*
+ * 布局：管理后台通用布局（/admin 路由组）
+ * 职责：提供统一的侧边栏 + 顶部栏 + 内容区三栏布局。
+ * - AppSidebar：左侧导航（可折叠/展开/移动端抽屉）
+ * - AppHeader：顶部栏（主题切换/通知/用户菜单）
+ * - 主内容区：响应式 margin 随侧边栏状态动态调整（290px / 90px / 0）
+ * 此布局包裹所有 / 下的管理页面（products、categories、news 等）。
+ */
 "use client";
 
 import { useSidebar } from "@/context/SidebarContext";

@@ -1,3 +1,8 @@
+/*
+ * 页面：产品分类管理页（/categories）
+ * 职责：产品分类的 CRUD（增删改查）。从后端 /api/v1/admin/categories 获取分类列表，
+ * 支持新建分类、编辑名称/别名、删除（实时刷新）。分类数据用于产品页的分类筛选下拉。
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 

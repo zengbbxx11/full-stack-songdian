@@ -1,3 +1,11 @@
+/*
+ * Context：侧边栏状态管理（SidebarContext）
+ * 职责：统一管理侧边栏的展开/收起/移动端抽屉状态，供 AppSidebar/AppHeader/Backdrop 消费。
+ * - isExpanded：桌面端侧边栏是否完全展开（290px）
+ * - isHovered：鼠标是否悬停在缩起的侧边栏上（触发临时展开）
+ * - isMobileOpen：移动端抽屉是否打开
+ * 窗口 resize 到 <991px 时自动切换到移动端模式。
+ */
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 

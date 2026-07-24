@@ -1,3 +1,9 @@
+/*
+ * 页面：产品编辑/创建表单页（/product-form?id=X）
+ * 职责：产品的创建和编辑表单。支持富文本描述（Quill 编辑器）、分类下拉选择、
+ * 图片上传/删除、规格属性（SKU/库存等）的增删改。编辑模式下通过 URL query ?id=X
+ * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
+ */
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";

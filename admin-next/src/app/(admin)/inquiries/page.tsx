@@ -1,3 +1,8 @@
+/*
+ * 页面：询盘管理页（/inquiries）
+ * 职责：展示用户在官网提交的询盘表单列表。从后端 /api/v1/admin/inquiries 获取数据，
+ * 支持按姓名/邮箱/内容筛选、查看详情、标记已回复状态。
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 

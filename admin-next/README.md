@@ -126,4 +126,5 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 响应格式：`{ code: "0", msg, data }`，code 为字符串 "0" 表示成功
 - 代码注释：中文
 - 禁止使用 `@svgr/webpack`（本机 Turbopack webpack-loader worker 会崩溃）
-- 必须保留 `postcss.config.mjs`（Tailwind v4 管线）
+- 必须保留 `postcss.config.mjs`（`@tailwindcss/postcss`，若删除则 Tailwind 原生扫描漏掉 .tsx 布局类，整页无样式）
+- `middleware.ts` 的 matcher 必须排除 `/api` 和 `/uploads`（否则登录 POST 被守卫拦截）

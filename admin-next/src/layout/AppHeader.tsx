@@ -1,3 +1,9 @@
+/*
+ * 组件：管理后台顶部栏（AppHeader）
+ * 职责：顶部导航栏，包含侧边栏切换按钮（汉堡菜单）、主题切换按钮、
+ * 通知下拉（NotificationDropdown）、用户下拉菜单（UserDropdown）。
+ * 状态从 SidebarContext 读取（控制移动端/桌面端菜单展开行为）。
+ */
 "use client";
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";

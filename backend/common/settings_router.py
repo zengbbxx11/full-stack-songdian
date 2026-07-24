@@ -16,6 +16,10 @@ router = APIRouter(prefix="/api/v1", tags=["settings"])
 async def list_settings(
     _user: AdminUser = Depends(get_current_user),
 ) -> Result:
+    """返回全部系统配置项的 key-value 字典（含 label/description 元信息）。
+
+    供管理后台设置页初始加载使用，无需额外 RBAC 权限（仅需登录）。
+    """
     rows = await Setting.all()
     data = {r.key: {"value": r.value, "label": r.label, "description": r.description} for r in rows}
     return Result.ok(data)
@@ -28,6 +32,13 @@ async def update_setting(
     request: Request,
     _user: AdminUser = Depends(require_permission("settings:update")),
 ) -> Result:
+    """更新单个系统配置项的值。
+
+    需要 `settings:update` RBAC 权限。
+    从请求体 JSON 中读取 `value` 字段，写入 Setting 表对应 key 的行。
+    若 key 不存在则返回 A010001 错误。
+    操作会被写入审计日志（@audit 装饰器）��
+    """
     # 从请求体读取 value
     body = await request.json()
     value = body.get("value", "")
@@ -45,6 +56,12 @@ async def batch_update_settings(
     request: Request,
     _user: AdminUser = Depends(require_permission("settings:update")),
 ) -> Result:
+    """批量覆盖多个系统配置项。
+
+    需要 `settings:update` RBAC 权限。
+    请求体为 `{key: value, ...}` 键值对字典，仅更新已存在的 key（跳过不存在的）。
+    操作写入统一审计日志条目。
+    """
     body = await request.json()
     updated = 0
     for key, value in body.items():

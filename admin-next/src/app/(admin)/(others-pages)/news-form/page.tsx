@@ -1,3 +1,9 @@
+/*
+ * 页面：新闻编辑/创建表单页（/news-form?id=X）
+ * 职责：新闻的创建和编辑表单。支持标题/内容（Quill 编辑器）、分类下拉选择、
+ * 封面图上传。编辑模式下通过 URL query ?id=X 加载既有新闻数据，
+ * 提交走 POST/PUT /api/v1/admin/news。
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";

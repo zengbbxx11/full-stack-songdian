@@ -15,7 +15,7 @@
 | F-05 | HIGH | RBAC 权限缓存未签名 | `common/deps.py` 权限缓存 `auth:perm:{uid}` 加 HMAC（密钥 `jwt_secret`），读时验签，失败回查 DB |
 | F-06 | HIGH | `X-Forwarded-For` 首个段被信任 | `common/middleware.py` `get_client_ip` 仅当直连 IP 在 `trusted_proxies` 才采纳 XFF，否则用真实直连 IP |
 | F-07 | HIGH | Redis 异常时 fail-open | `common/jwt.py` `is_revoked`/`is_family_revoked` 与 `content/services.py` 登录锁，Redis 异常按 `security_fail_closed`（默认 True）fail-closed |
-| F-08 | HIGH | admin 无前端路由守卫 | 新增 `admin-next/src/middleware.ts`（校验 `admin_token` cookie，未登录跳 /signin）；`SignInForm` 登录写可读 cookie；`UserDropdown` 退出清除 cookie+localStorage |
+| F-08 | HIGH | admin 无前端路由守卫 | 新增 `admin-next/src/middleware.ts`（校验 `admin_token` cookie，未登录跳 /signin）；`SignInForm` 登录写可读 cookie；`UserDropdown` 退出清除 cookie+localStorage。**后续修正**：matcher 正则排除 `/api` 和 `/uploads`，否则登录 POST 也被守卫拦截重定向到 /signin（浏览器端无法登录） |
 | F-09 | MEDIUM | CORS 通配 + 凭据 | `main.py` 改显式 `cors_origin_list` + `allow_credentials=False` |
 | F-10 | MEDIUM | 上传无配额 | `uploads/services.py` 加 `check_upload_limits`（数量/总大小），`uploads/routers.py` 单/批上传调用 |
 | F-11 | MEDIUM | 发布无权限门禁 | `content/permissions.py` 加 `product:publish`/`news:publish`（admin 有、operator 无）；`deps.py` 加 `optional_permission`；routers 注入 `can_publish`；services 无发布权时 PUBLISHED 降级 DRAFT |
@@ -43,4 +43,4 @@
 1. **JWT_SECRET**：生产必须通过环境变量注入 ≥32 字节随机值（启动守卫已拒绝占位符）。
 2. **ADMIN_PASSWORD**：首次部署建议显式设置，避免生成随机临时密码（日志可见）。
 3. **CORS / 受信代理 / 迁移主机白名单**：按实际域名在 `.env` 配置 `CORS_ORIGINS`、`TRUSTED_PROXIES`、`MIGRATION_ALLOWED_HOSTS`。
-4. **admin-next 需重新 build / dev 启动**使 `middleware.ts` 与 cookie 守卫生效。
+4. **admin-next 已重新启动**使 `middleware.ts` 与 cookie 守卫生效（含 matcher 排除 /api 和 /uploads 的修正）。

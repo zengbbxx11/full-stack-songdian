@@ -1,3 +1,8 @@
+/*
+ * 组件：登录表单（SignInForm）
+ * 职责：渲染用户名+密码输入表单。"Sign in" 按钮 POST /api/v1/admin/login，
+ * 成功后把 JWT 存入 localStorage + admin_token cookie，跳转 / 进入后台。
+ */
 "use client";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";

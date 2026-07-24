@@ -1,9 +1,13 @@
 /**
  * @fileoverview WordPress + WooCommerce REST API 客户端
  *
+ * ⚠️【注意】此文件为 WordPress 遗留客户端。产品/新闻数据已迁移至后端 FastAPI
+ * （/api/v1/products、/api/v1/news 等），新功能请使用 lib/api/ 下的客户端。
+ * 本文件仅保留用于兼容旧的 WordPress 数据源或调试对照。
+ *
  * 为 WordPress REST API（wp/v2）和 WooCommerce REST API（wc/v3）提供类型化的
  * fetch 封装器与数据获取函数。处理身份认证、ISR 重新验证、请求超时、分页解析，
- * 并将原始 WP/WC 响应转换为 Next.js 前端使用的应用层类型。
+ * 并将原始 WP/WC 响应转换为 Next.js 前端使��的应用层类型。
  *
  * @module wordpress
  * @package Songdian Technology — Next.js WordPress Headless B2B Website

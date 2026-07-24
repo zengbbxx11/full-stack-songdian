@@ -1,3 +1,9 @@
+/*
+ * 页面：新闻管理页（/news）
+ * 职责：新闻列表 CRUD + 拖拽排序。与 products 页面结构一致，
+ * 从后端 /api/v1/admin/news 获取数据，支持拖拽调整排序、关键词筛选、删除（确认弹窗）。
+ * 排序通过 HTML5 Drag & Drop 本地维护后批量 POST 到后端。
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";

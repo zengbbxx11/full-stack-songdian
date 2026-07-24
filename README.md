@@ -9,7 +9,7 @@
 | 层 | 技术 | 版本 |
 |---|---|---|
 | **后端** | FastAPI + Tortoise ORM + asyncpg | Python ≥3.14 / FastAPI 0.139 / Tortoise 1.1.7 |
-| **数据库** | PostgreSQL（全文检索 zhparser/降级 simple） | 16 |
+| **数据库** | PostgreSQL（全文检索 zhparser/降级 simple） | 16+（本机 envkit 18.4） |
 | **缓存** | Redis（降级进程内内存实现） | 8 |
 | **官网前端** | Next.js + React + Tailwind CSS + shadcn/ui | Next 16.2 / React 19.2 |
 | **后台管理** | Next.js + React + Tailwind CSS（admin-next） | Next 16.2 / React 19.2 |
@@ -50,7 +50,7 @@ full-stack-project/
 ## 环境要求
 
 - **Python** ≥ 3.14 + [uv](https://docs.astral.sh/uv/)
-- **PostgreSQL** 16（建议安装 zhparser 中文分词扩展；缺失时自动降级为 `simple` 配置）
+- **PostgreSQL** 16+（本机经 envkit 装在 `C:\ProgramData\envkit\services\postgres\18.4\`，不随系统自启，启动命令见下文）
 - **Redis** 8（可选；未配置时降级为进程内内存实现）
 - **Node.js** ≥ 24 + pnpm（前端 Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 有兼容性问题）
 
@@ -96,7 +96,8 @@ uv run uvicorn main:app --reload --port 8000
 ```bash
 cd frontend
 pnpm install
-pnpm dev
+# 本机启动（必须用 Node 24.18.0，Node 22 与 Turbopack Web Streams 不兼容）：
+"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000
 ```
 
 ### 4. 后台管理 (admin-next, Next.js)
@@ -104,10 +105,23 @@ pnpm dev
 ```bash
 cd admin-next
 pnpm install
-pnpm dev
+# 本机启动（同上，Node 24）：
+"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3001
 ```
 
 管理后台登录：`admin / Songdian@2026`（可由 `ADMIN_PASSWORD` 环境变量覆盖）
+
+---
+## 本机 PostgreSQL 启动
+
+PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`，**不随系统自启**。机器重启后需手动拉起：
+
+```bash
+"C:/ProgramData/envkit/services/postgres/18.4/bin/pg_ctl.exe" -D "C:/ProgramData/envkit/services/postgres/18.4/data" start
+```
+
+> ⚠️ 必须用 Windows 风格路径（`C:\...`），`pg_ctl.exe` 不认 `/c/...` 形式的 Unix 路径。
+> 如果后端所有接口（含公开 `/products`）都返回 `B999001 系统内部错误`，几乎一定是 PG 没起。
 
 ---
 
@@ -126,7 +140,9 @@ pnpm dev
 | `STORAGE_BACKEND` | 存储后端（当前仅 `local`） | `local` |
 | `MAX_UPLOAD_MB` | 上传文件大小上限 | 10 |
 
-前端 `admin/vite.config.ts` 中 `server.proxy` 默认指向 `http://localhost:8000`，若后端端口不同需同步修改。
+> **代理说明**：admin-next 和 frontend 均通过 `next.config.ts` 的 `rewrites()` 将 `/api/*` 和 `/uploads/*` 请求代理到后端 `http://localhost:8000`，无需额外配置。
+
+---
 
 ---
 
@@ -193,7 +209,7 @@ pnpm dev
 | ⑥ | Node 24 迁移 | ✅ | Node 22→24 解决 Next.js 16 Turbopack Web Streams 兼容性问题 |
 
 ### Phase 1 后台管理已交付清单
-- JWT 登录 + 无感刷新 (`/admin/auth/refresh`)
+- JWT 登录 + 无感刷新 (`/api/v1/admin/refresh`)
 - 产品/新闻 CRUD（创建/编辑/删除）
 - 产品/新闻列表拖拽排序（sort_order 持久化到 DB）
 - 分类管理页（含各分类产品计数）
@@ -271,8 +287,8 @@ docker-compose up -d
 
 ### 前端部署
 
-- **官网前端**：`cd frontend && pnpm build` → 静态导出或 Node 服务
-- **后台管理**：`cd admin-next && pnpm build` → 纯静态 `out/`，部署到 Nginx/CDN
+- **官网前端**：`cd frontend && pnpm build` → Node 服务（SSR + ISR 模式）
+- **后台管理**：`cd admin-next && pnpm build` → Node 服务（SSR 模式，含中间件路由守卫）
 
 ---
 
@@ -286,3 +302,12 @@ docker-compose up -d
 - **搜索向量**：Tortoise 信号 `post_save` 自动更新 `search_vector`；中文分词依赖 zhparser（缺失时降级 simple）
 - **代码注释**：中文
 - **包管理**：Python → uv；Node → pnpm
+
+### 关键约束（踩坑备忘）
+
+- **Node 版本**：必须用 **Node 24.18.0**（`C:\Program Files\nodejs\node.exe`），Node 22 与 Next.js 16 Turbopack 的 Web Streams 不兼容
+- **启动命令**：不能走 `pnpm dev`（会调 Node 22），须直调：`"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p <port>`
+- **admin-next 必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：若删除，Turbopack 原生 Tailwind 内容扫描漏掉 `.tsx` 中的布局类（flex/grid/fixed/block），整页无样式
+- **admin-next 严禁使用 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 进程启动即崩（exit 1），会导致所有页面 500
+- **middleware matcher**：`src/middleware.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
+- **PostgreSQL 症状速判**：后端所有接口返回 `B999001 系统内部错误` → 几乎一定是 PG 没起。先 `netstat -ano | grep :5432` 确认，再用 envkit `pg_ctl` 拉起

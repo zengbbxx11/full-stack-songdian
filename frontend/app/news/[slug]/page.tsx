@@ -132,7 +132,7 @@ export default async function NewsDetailPage({
             </div>
           )}
 
-          <div className="wp-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content) }} />
+          <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content) }} />
 
           {/* 标签 —— 背景 #F4F4F4、文字 #5C5E62 */}
           {post.tags.length > 0 && (

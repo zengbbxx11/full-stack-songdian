@@ -58,8 +58,8 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
       </div>
 
       {/* ====================== 内容区域 ====================== */}
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-[15px] font-semibold text-gray-900 group-hover:text-[#3E6AE1] line-clamp-2 leading-snug mb-2 transition-colors" style={{ transitionDuration: "0.3s" }}>
+      <div className="flex flex-1 flex-col p-4 md:p-5">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-[#3E6AE1] line-clamp-2 leading-snug mb-2 transition-colors" style={{ transitionDuration: "0.3s" }}>
           {post.title}
         </h3>
 
@@ -68,7 +68,7 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
         </p>
 
         {/* mt-auto：无论标题/摘要几行，时间行始终贴卡片底部，保证等高对齐 */}
-        <div className="flex items-center gap-3 text-xs text-gray-400 mt-auto pt-1">
+        <div className="flex items-center gap-3 text-xs md:text-sm text-gray-400 mt-auto pt-1">
           <span>{post.date}</span>
           {showAuthor && (
             <>

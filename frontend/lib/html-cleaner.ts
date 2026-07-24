@@ -1,16 +1,16 @@
 /**
- * cleanPostContent — 清洗 WordPress 文章 HTML
+ * cleanPostContent — 清洗文章 HTML，确保格式统一
  * ------------------------------------------------------------------
- * Astra 等 WP 主题会在 REST API 返回的 HTML 中注入大量容器类名、
- * 内联样式、宽度约束等，与 Next.js 的 Tailwind 排版冲突。
- * 此函数移除这些干扰元素，保留纯内容标记。
+ * 从任意来源（WP 迁移、富文本编辑器、手动粘贴）的 HTML 中剥离
+ * 所有内联样式、冗余容器、非标准类名，只保留语义化标签。
+ * 清洗后的 HTML 由 .article-body CSS 统一排版。
  */
 
 /**
- * 清洗 Astra 主题注入的 HTML 结构
- * - 移除 ast-container 等包装 div
- * - 清除内联 width/max-width 样式
- * - 移除空的 span/div 包装
+ * 清洗所有来源 HTML，确保格式统一
+ * - 剥离所有内联 style 属性（格式由 .article-body CSS 接管）
+ * - 移除 Word/WP 注入的容器、类名、宽高约束
+ * - 移除空段落与 HTML 注释
  */
 export function cleanPostContent(html: string): string {
   let cleaned = html;
@@ -56,14 +56,20 @@ export function cleanPostContent(html: string): string {
     ""
   );
 
-  // 8. 移除残留的空 div（配对的 </div></div> 合并为单个）
+  // 8. 剥离所有标签上的内联 style 属性（核心规则）
+  //    任何来源的 style="font-size:..."、style="color:..." 等全部移除，
+  //    格式由 .article-body CSS 统一接管，确保全站排版一致
+  cleaned = cleaned.replace(/\s+style\s*=\s*"[^"]*"/gi, "");
+  cleaned = cleaned.replace(/\s+style\s*=\s*'[^']*'/gi, "");
+
+  // 9. 移除残留的空 div（配对的 </div></div> 合并为单个）
   cleaned = cleaned.replace(/<div>\s*<\/div>/g, "");
 
-  // 9. 移除 HTML 注释（WP/Astra 注入的不可见标注，如 <!-- BODY CONTENT STARTS -->、<!--more-->）
+  // 10. 移除 HTML 注释（WP/Astra 注入的不可见标注，如 <!-- BODY CONTENT STARTS -->、<!--more-->）
   //    这些注释对用户不可见，但常残留在空 <p> 内形成无意义占位段，带来额外间距
   cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, "");
 
-  // 10. 移除清洗后仅剩空白的空段落/块（消除正文开头的无意义占位段，
+  // 11. 移除清洗后仅剩空白的空段落/块（消除正文开头的无意义占位段，
   //     避免其 margin 在图片与正文间制造额外空白）
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");

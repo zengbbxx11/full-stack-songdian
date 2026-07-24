@@ -314,7 +314,7 @@ export default async function ProductDetailPage({
         <section className="py-14 md:py-20 bg-white">
           <div className="max-w-5xl mx-auto px-6">
             <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Product Highlights</h2>
-            <div className="wp-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(product.description) }} />
+            <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(product.description) }} />
           </div>
         </section>
       )}

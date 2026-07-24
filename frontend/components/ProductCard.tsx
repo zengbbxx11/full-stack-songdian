@@ -68,9 +68,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       </Link>
 
       {/* ====================== 信息区域 ====================== */}
-      <div className="flex flex-col flex-1 p-4">
+      <div className="flex flex-col flex-1 p-3 md:p-4">
         <Link href={`/products/${product.slug}`} className="flex-1">
-          <h3 className="text-[14px] font-semibold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
+          <h3 className="text-sm md:text-base font-semibold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
             {product.name}
           </h3>
           {/* 产品标签 —— 最多展示 4 个，沿用 Tesla 设计语言（Light Ash 底 / Pewter 字、无阴影） */}
@@ -86,10 +86,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* ====================== CTA ====================== */}
         <Link
           href={`/products/${product.slug}`}
-          className="flex items-center justify-center w-full mt-3 h-[34px] text-xs font-medium text-white rounded bg-[#3E6AE1] hover:bg-[#3561CC] transition-colors"
+          className="flex items-center justify-center w-full mt-3 h-8 md:h-[34px] text-xs md:text-sm font-medium text-white rounded bg-[#3E6AE1] hover:bg-[#3561CC] transition-colors"
           style={{
-            fontSize: "12px",
-            fontWeight: 500,
             borderRadius: "4px",
             transitionDuration: "0.33s",
           }}

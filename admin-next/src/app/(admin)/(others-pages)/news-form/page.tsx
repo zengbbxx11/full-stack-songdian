@@ -1,6 +1,6 @@
 /*
  * 页面：新闻编辑/创建表单页（/news-form?id=X）
- * 职责：新闻的创建和编辑表单。支持标题/内容（Quill 编辑器）、分类下拉选择、
+ * 职责：新闻的创建和编辑表单。支持标题/内容（富文本编辑器）、分类下拉选择、
  * 封面图上传。编辑模式下通过 URL query ?id=X 加载既有新闻数据，
  * 提交走 POST/PUT /api/v1/admin/news。
  */
@@ -11,6 +11,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import RichTextEditor from "@/components/form/RichTextEditor";
 import { useToast } from "@/context/ToastContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -48,7 +49,7 @@ export default function NewsFormPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "" });
+  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "" });
   const toast = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
@@ -62,7 +63,7 @@ export default function NewsFormPage() {
     }
     setLoadingData(true);
     apiFetch(`/api/v1/admin/news/${id}`).then((p: Record<string, string | null>) => {
-      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "" });
+      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("Failed to load article: " + msg);
@@ -79,8 +80,11 @@ export default function NewsFormPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     try {
-      if (isEdit) await apiFetch(`/api/v1/admin/news/${id}`, { method: "PUT", body: JSON.stringify(form) });
-      else await apiFetch("/api/v1/admin/news", { method: "POST", body: JSON.stringify(form) });
+      // 如果未填写发布时间则从请求体中移除，避免空字符串导致后端 Pydantic 校验失败
+      const payload = { ...form };
+      if (!payload.published_at) delete (payload as Record<string, unknown>).published_at;
+      if (isEdit) await apiFetch(`/api/v1/admin/news/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+      else await apiFetch("/api/v1/admin/news", { method: "POST", body: JSON.stringify(payload) });
       router.push("/news");
     } catch (err) { toast.error(err instanceof Error ? err.message : "Save failed"); } finally { setSaving(false); }
   }
@@ -107,9 +111,10 @@ export default function NewsFormPage() {
             <div><Label>Slug *</Label><Input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} placeholder="article-slug" /></div>
             <div><Label>Author</Label><Input value={form.author} onChange={e => setForm({...form, author: e.target.value})} placeholder="Author name" /></div>
             <div><Label>Status</Label><select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option></select></div>
+            <div><Label>Published At</Label><Input type="datetime-local" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>Summary</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>Content (HTML)</Label><textarea value={form.content_html} onChange={e => setForm({...form, content_html: e.target.value})} rows={10} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm font-mono dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
+          <div><Label>Content (HTML)</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="Write your article content here..." /></div>
         </div>
 
         {/* 封面图 */}

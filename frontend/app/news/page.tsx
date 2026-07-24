@@ -120,11 +120,11 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                     </div>
                     <div className="flex flex-col justify-center p-4 sm:py-4 sm:pr-5 sm:pl-0 flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        {post.categories.length > 0 && <span className="text-[11px] font-medium" style={{ color: "#3E6AE1" }}>{post.categories[0].name}</span>}
-                        <span className="text-[11px] text-gray-400">{post.date}</span>
+                        {post.categories.length > 0 && <span className="text-[11px] md:text-xs font-medium" style={{ color: "#3E6AE1" }}>{post.categories[0].name}</span>}
+                        <span className="text-[11px] md:text-xs text-gray-400">{post.date}</span>
                       </div>
-                      <h3 className="text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 transition-colors mb-1.5" style={{ transitionDuration: "0.33s" }}>{post.title}</h3>
-                      <p className="text-[13px] text-gray-500 line-clamp-2 leading-relaxed">{post.excerpt}</p>
+                      <h3 className="text-sm md:text-base font-semibold text-gray-900 leading-snug line-clamp-2 transition-colors mb-1.5" style={{ transitionDuration: "0.33s" }}>{post.title}</h3>
+                      <p className="text-xs md:text-sm text-gray-500 line-clamp-2 leading-relaxed">{post.excerpt}</p>
                     </div>
                   </Link>
                   </SpotlightCard>
@@ -136,8 +136,8 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   {currentPage > 1 && (
                     <Link
                       href={`/news?page=${currentPage - 1}`}
-                      className="px-5 py-2.5 text-sm font-medium rounded transition-all"
-                      style={{ fontSize: "14px", fontWeight: 500, color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all"
+                      style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Previous
                     </Link>
@@ -146,8 +146,8 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/news?page=${currentPage + 1}`}
-                      className="px-5 py-2.5 text-sm font-medium rounded transition-all"
-                      style={{ fontSize: "14px", fontWeight: 500, color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all"
+                      style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Next
                     </Link>

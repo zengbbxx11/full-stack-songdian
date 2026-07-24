@@ -97,7 +97,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   <Link
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
-                    className={`flex items-center justify-center px-4 py-3 text-[15px] font-medium rounded-lg transition-colors ${
+                    className={`flex items-center justify-center px-4 py-3 text-sm md:text-base font-medium rounded-lg transition-colors ${
                       isActive
                         ? "bg-[#d4343e] text-white"
                         : "bg-[#F4F4F4] text-[#393C41] hover:bg-[#E5E5E5]"
@@ -127,10 +127,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage > 1 && (
                     <Link
                       href={`/products?page=${currentPage - 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
                       style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
                         color: "#393C41",
                         borderRadius: "4px",
                         transitionDuration: "0.33s",
@@ -145,10 +143,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/products?page=${currentPage + 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
                       style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
                         color: "#393C41",
                         borderRadius: "4px",
                         transitionDuration: "0.33s",

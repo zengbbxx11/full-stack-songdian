@@ -60,7 +60,7 @@ export default function ContactPage() {
             <div className="lg:col-span-2">
               <Card className="border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
                 <CardHeader>
-                  <CardTitle className="text-xl font-bold text-gray-900 tracking-tight">Contact Information</CardTitle>
+                  <CardTitle className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   {[
@@ -97,7 +97,7 @@ export default function ContactPage() {
                       <div>
                         <Badge variant="secondary" className="mb-1">{item.label}</Badge>
                         {typeof item.value === "string" ? (
-                          <p className="text-sm text-gray-500 leading-relaxed">{item.value}</p>
+                          <p className="text-sm md:text-base text-gray-500 leading-relaxed">{item.value}</p>
                         ) : item.value}
                       </div>
                     </div>

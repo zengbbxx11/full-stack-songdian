@@ -1,6 +1,6 @@
 /*
  * 页面：产品编辑/创建表单页（/product-form?id=X）
- * 职责：产品的创建和编辑表单。支持富文本描述（Quill 编辑器）、分类下拉选择、
+ * 职责：产品的创建和编辑表单。支持富文本描述（零依赖编辑器）、分类下拉选择、
  * 图片上传/删除、规格属性（SKU/库存等）的增删改。编辑模式下通过 URL query ?id=X
  * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
  */
@@ -12,6 +12,7 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import RichTextEditor from "@/components/form/RichTextEditor";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -240,7 +241,7 @@ export default function ProductFormPage() {
             </div>
           </div>
           <div><Label>Summary</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>Content (HTML)</Label><textarea value={form.content_html} onChange={e => setForm({...form, content_html: e.target.value})} rows={8} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm font-mono dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
+          <div><Label>Content (HTML)</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="Write your product description here..." /></div>
         </div>
 
         {/* 封面图 */}

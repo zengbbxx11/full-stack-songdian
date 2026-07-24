@@ -28,7 +28,13 @@ export function cleanPostContent(html: string): string {
     ""
   );
 
-  // 3. 清除内联 width / max-width 样式（Astra 常设固定像素宽度）
+  // 3. 剥离所有标签上的内联 style 属性（核心规则 — 必须在 width 剥离之前执行）
+  //    必须在 width 剥离之前运行：width 正则可能吞噬 style="..." 的闭合引号，
+  //    导致后续 style 剥离正则匹配失败。先清掉整段 style="..."，再清残余 width。
+  cleaned = cleaned.replace(/\s+style\s*=\s*"[^"]*"/gi, "");
+  cleaned = cleaned.replace(/\s+style\s*=\s*'[^']*'/gi, "");
+
+  // 4. 清除内联 width / max-width 样式（残留的独立 width 声明）
   cleaned = cleaned.replace(
     /\s*(?:max-)?width\s*:\s*[^;"]+[;"]?/gi,
     ""
@@ -56,20 +62,14 @@ export function cleanPostContent(html: string): string {
     ""
   );
 
-  // 8. 剥离所有标签上的内联 style 属性（核心规则）
-  //    任何来源的 style="font-size:..."、style="color:..." 等全部移除，
-  //    格式由 .article-body CSS 统一接管，确保全站排版一致
-  cleaned = cleaned.replace(/\s+style\s*=\s*"[^"]*"/gi, "");
-  cleaned = cleaned.replace(/\s+style\s*=\s*'[^']*'/gi, "");
-
-  // 9. 移除残留的空 div（配对的 </div></div> 合并为单个）
+  // 8. 移除残留的空 div（配对的 </div></div> 合并为单个）
   cleaned = cleaned.replace(/<div>\s*<\/div>/g, "");
 
-  // 10. 移除 HTML 注释（WP/Astra 注入的不可见标注，如 <!-- BODY CONTENT STARTS -->、<!--more-->）
+  // 9. 移除 HTML 注释（WP/Astra 注入的不可见标注，如 <!-- BODY CONTENT STARTS -->、<!--more-->）
   //    这些注释对用户不可见，但常残留在空 <p> 内形成无意义占位段，带来额外间距
   cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, "");
 
-  // 11. 移除清洗后仅剩空白的空段落/块（消除正文开头的无意义占位段，
+  // 10. 移除清洗后仅剩空白的空段落/块（消除正文开头的无意义占位段，
   //     避免其 margin 在图片与正文间制造额外空白）
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");

@@ -1,0 +1,3 @@
+id,name,email,phone,company,country,product_interest,message,source_page,biz_req_no,status,smtp_status,smtp_retry,reply_note,created_time,updated_time
+1,Test User,test@example.com,+86-1234567890,Test Corp,,,This is a test inquiry from audit check,,test-773b80edc7d0,NEW,PENDING,0,,2026-07-23 12:44:10.866924+08,2026-07-23 12:44:10.869658+08
+2,Test User 2,different@example.com,+86-9999999,Different Corp,,,Duplicate should be idempotent,,test-idempotent-001,NEW,PENDING,0,,2026-07-23 12:44:12.912518+08,2026-07-23 12:44:12.917242+08

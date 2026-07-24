@@ -1,0 +1,3 @@
+key,value,label,description
+google_verification,"",Google 验证码,Google Search Console 站点验证
+ga_id,"",Google Analytics ID,GA4 测量 ID，格式 G-XXXXXXXXXX

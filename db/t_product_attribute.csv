@@ -1,0 +1,537 @@
+id,name,slug,value,product_id
+1,image-resolution,image-resolution,2M; 10M; 16M; 24M; 48M; 64M; 96M,1
+2,video-resolution,video-resolution,"1080P, 2K, 4K, 5K, 6K, 8K",1
+3,image-sensor,image-sensor,"Pixel ：13.0MP CMOS sensor (up to 96MP interpolation)
+sensor size：1/3.2 inch",1
+4,display-screen,display-screen,2.8-inch 480*640 IPS display,1
+5,usb,usb,Type-C USB,1
+6,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),1
+7,battery-capacity,battery-capacity,700mA/h，3.7V Rechargeable lithium battery,1
+8,language,language,"Simplified Chinese, Traditional Chinese, English, Japanese, Spanish, Portuguese, Italian, German, French, Dutch, Russian, Greek, Polish, Hebrew, Turkish",1
+9,accessories-for-camcorder,accessories-for-camcorder,"user manual*1, USB cable*1, lithium battery*1, lanyard*1, lens cleaning cloth*1, storage bag*1",1
+10,image-resolution,image-resolution,"96M(13056×7344); 64M(10752×6048); 48M(9344×5248);
+36M(8064×4536); 21M(6144×3456); 12M(4096×3072)",2
+11,video-resolution,video-resolution,"8K 15FPS（interpolation）; 5K 30FPS（interpolation） ; 4K 30FPS ；2.7K 60FPS; 2.7K 30FPS ; FHD 60FPS ; FHD 30FPS;
+HD60FPS ; HD30FPS",2
+12,image-sensor,image-sensor,"Pixel ：21 megapixel CMOS sensor (up to 96MP interpolation)
+sensor size：1/2.4 inch",2
+13,display-screen,display-screen,3.5-inch IPS display,2
+14,usb,usb,Type-C USB,2
+15,expanded-memory-card,expanded-memory-card,TF Card slot (up to 1TB ),2
+16,battery-capacity,battery-capacity,1050mA/h，3.7V Rechargeable lithium battery,2
+17,language,language,"English, Simplified Chinese, Traditional Chinese, German, French, Italian, Spanish, Russian, Portuguese, Japanese",2
+18,accessories-for-camcorder,accessories-for-camcorder,"User Manual *1, USB Cable *1, Lithium Battery (NP40) *1, Wrist Strap *1, Cloth Bag *1, Lens Cleaning Cloth *1",2
+19,image-resolution,image-resolution,"48M: 7680*5760; 24M: 5760*4320; 12M: 4032*2880 ;
+8M: 3800*2160; 5M: 3200*1800; 3M: 2560*1440",3
+20,video-resolution,video-resolution,FHD(1920*1080)/HD(1280*720 )/VGA 640*480,3
+21,game,game,Pinball/Pushing Boxes/Tetris/Snake Snakes,3
+22,usb,usb,Micro USB,3
+23,expanded-memory-card,expanded-memory-card,"TF Card slot (up to 32GB),Support SDHC class 6",3
+24,battery-capacity,battery-capacity,Built-in rechargeable lithium battery 600MA,3
+25,language,language,English/Simplified Chinese/Traditional Chinese/Japanese/Korean/Russian/French/German/Portuguese/Polish/Dutch,3
+26,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable, One Camera lanyard",3
+27,image-resolution,image-resolution,"48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);20M (5120 × 3840); 16M (4640 × 3480);
+12M (4032 × 3024); 8M (3264 × 2448);5M (2592 × 1944)",4
+28,video-resolution,video-resolution,4K 60FPS; 4K 30FPS;2.7K 30FPS;1080P 120FPS;1080P 60FPS;1080P 30FPS;720P 240FPS;720P 120FPS; 720P 60FPS ; 720P 30FPS,4
+29,image-sensor,image-sensor,12 megapixels CMOS sensor(up to 48MP Interpolation),4
+30,dispaly-screen,dispaly-screen,"3.0 inch IPS display, capacitive touch, 270 degrees rotation",4
+31,memory-card,memory-card,"External Memory: SD Card slot (up to 256GB),Support SDXC class 10 U1",4
+32,usb,usb,Type C USB,4
+33,power,power,"1700mAh（actual capacity）, 3.7V , 2000mAh (Label )",4
+34,language,language,"English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese",4
+35,accessories,accessories,"Manual*1, USB cable*1, HD cable*1, Charger*1, Lithium battery*1, Remote control*1, Lens cover*1, Lens wiping cloth*1, DV bag*1",4
+36,image-resolution,image-resolution,"64M（10720×6030）; 48M（9280×5220）; 36M（7952×4472）;
+24M（6544×3680）; 20M（5888×3312）; 16M（5376×3024）;
+12M（4608×2592）; 8M（3840×2160）",5
+37,video-resolution,video-resolution,5K25fps; 4K/30fps; 2.7K/30fps; 1080P/60fps; 1080P/30fps; 720P/60fps,5
+38,image-sensor,image-sensor,"Pixel：8 megapixel CMOS sensor (up to 64MP interpolation)
+sensor size：1/2.8 inch",5
+39,zoom,zoom,8X optical zoom,5
+40,dispaly-screen,dispaly-screen,3.6 inch 720*1280 IPS HD,5
+41,memory-card,memory-card,"External Memory: Single card slot, This camera supports SD memory cards with capacities ranging from 4GB to 256GB.class 10/U3",5
+42,usb,usb,Type C USB,5
+43,power,power,"1400mAh/7.6V, Rechargeable Lithium Battery",5
+44,language,language,English/ Simplified Chinese/ Traditional Chinese Japanese/ Korean/ French/ German/ Italian/ Spanish/ Portuguese/ Russian/ Polish/ Vietnamese,5
+45,image-resolution,image-resolution,"64M(9200*6900);48M(8000×6000); 36M(7936×4480 HD);24M(5600×4200);
+16M(4608×3456); 12M(4000×3000);7M-Wide(3648×2048HD);5M(2592×1944)",6
+46,video-resolution,video-resolution,4K ULTRA HD -10FPS; 2.7K-30FPS; FULL HD-30FPS;HD-30FPS,6
+47,front-image-sensor,front-image-sensor,"Pixel：13 megapixel CMOS sensor (up to 64MP interpolation)
+Dimension：1/3.06 inch",6
+48,rear-image-sensor,rear-image-sensor,"Pixel：13 megapixel CMOS sensor (up to 64MP interpolation)
+Dimension：1/3.06 inch",6
+49,zoom,zoom,Max 16x Digital Zoom,6
+50,display-screen,display-screen,2.8 inches 640 * 480 IPS HD,6
+51,usb,usb,Type-C USB,6
+52,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),6
+53,battery-capacity,battery-capacity,1050MA/H 3.7V rechargeable lithium battery,6
+54,language,language,"English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Turkish, Dutch, Polish",6
+55,accessories-for-camcorder,accessories-for-camcorder,"A user manual, a USB cable, a charger, a lithium battery, a lanyard,
+A mirror cloth",6
+56,video-resolution,video-resolution,4K30,7
+270,usb,usb,Type-C USB,28
+57,control-system,control-system,Industry's Low-power True 4K Video Encoding/Decoding SOC,7
+58,lens-module,lens-module,20MP SENSOR + Wide-angle Lens,7
+59,gyroscope,gyroscope,Built-in 6-axis Stabilization Gyroscope,7
+60,usb,usb,Type-C USB,7
+61,battery-capacity,battery-capacity,"Main Unit：Built-in Rechargeable Lithium Battery 500mA
+Expansion Cabin：Rechargeable Lithium Battery 1300mAh",7
+62,optional-accessories,optional-accessories,"Magnetic Expansion Battery Cabin, Magnetic Quick-release Bracket, 360-degree Adjustable Magnetic Bracket, Magnetic Neck Strap, Compatible with Market Standard Action Camera Accessories",7
+63,waterproof-rating-waterproof-rating,waterproof-rating-waterproof-rating,"Main Unit：10-meter Body Waterproofing
+Expansion Cabin：Not Waterproof",7
+64,language,language,Supports Multi-language System Operation,7
+65,image-resolution,image-resolution,"4:3
+88M；80M；72M；64M；56M；48M；36M；24M；20M；16M；12M；8M；5M
+
+16:9
+66M；60M；53M；48M；43M；37M；27M；18M；15M；12M；9M；6M；4M
+
+1:1
+66M；60M；54M；48M；42M；36M；27M；18M；15M；12M；9M；6M；4M
+
+3:2
+78M；71M；64M；57M；50M；43M；31M；21M；17M；14M；11M；7M；4M
+
+5:4
+83M；75M；68M；60M；52M；45M；33M；22M；18M；15M；11M；7M；5M
+
+2.35:1
+41M；38M；35M；32M；27M；24M；17M；12M；10M；9M；6M；4M；3M
+
+4:5
+53M；48M；43M；38M；34M；29M；21M；14M；12M；10M；7M；5M；3M.",8
+66,video-resolution,video-resolution,8K15; 6K30; 5K30; 4K30; 2.7K30; 1080P120; 1080P60; 1080P30; 720P240; 720P120; 720P60; 720P30;,8
+67,zoom,zoom,6X Optical Zoom,8
+68,front-image-sensor,front-image-sensor,50 megapixel CMOS sensor IMX858,8
+69,rear-selfie-image-sensor,rear-selfie-image-sensor,13M image sensor IMX214,8
+70,display-screen,display-screen,2.8 inch 640*480 IPS HD touch screen display,8
+71,usb,usb,Type-C USB,8
+72,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),8
+73,battery-capacity,battery-capacity,1050mAh 3.7V Rechargeable lithium battery,8
+74,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",8
+75,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1",8
+76,image-resolution,image-resolution,96M(13056*7344);64M(10752×6048); 48M(9344×5248); 36M(8064*×4536); 24M(6528×3672); 21M(6144×3456); 14M(5120×2880);12M(4096×3072).,9
+77,video-resolution,video-resolution,8K 15FPS; 5K 30FPS ; 4K 30FPS ；2.7K 60FPS ；2.7K 30FPS ; FHD 60FPS ; FHD 30FPS ; HD60FPS ; HD30FPS .,9
+78,front-image-sensor,front-image-sensor,21 Mega pixels CMOS sensor（Up to 96MP interpolation）,9
+79,front-lcd-screen,front-lcd-screen,"1.54-inch TFT screen, 1:1 aspect ratio (240 * 240)",9
+80,rear-lcd-screen,rear-lcd-screen,"2.8-inch IPS screen, 4:3 aspect ratio (640 * 480)",9
+81,usb,usb,Type-C USB,9
+82,expanded-memory-card,expanded-memory-card,TF Card slot (up to 1TB ),9
+83,battery-capacity,battery-capacity,1050mAh/3.7V Rechargeable Lithium Battery,9
+84,language,language,"English, French, Spanish, Italian, Russian, Portuguese, Dutch, Simplified Chinese, Traditional Chinese, Japanese",9
+85,accessories-for-camcorder,accessories-for-camcorder,"User manual ×1, USB cable ×1, charger ×1, lithium battery ×1, lens cap ×1, wrist strap ×1, storage bag ×1, lens cleaning cloth ×1",9
+86,image-resolution,image-resolution,"4:3
+88M；80M；72M；64M；56M；48M；36M；24M；20M；16M；12M；8M；5M
+
+16:9
+66M；60M；53M；48M；43M；37M；27M；18M；15M；12M；9M；6M；4M
+
+1:1
+66M；60M；54M；48M；42M；36M；27M；18M；15M；12M；9M；6M；4M
+
+3:2
+78M；71M；64M；57M；50M；43M；31M；21M；17M；14M；11M；7M；4M
+
+5:4
+83M；75M；68M；60M；52M；45M；33M；22M；18M；15M；11M；7M；5M
+
+2.35:1
+41M；38M；35M；32M；27M；24M；17M；12M；10M；9M；6M；4M；3M
+
+4:5
+53M；48M；43M；38M；34M；29M；21M；14M；12M；10M；7M；5M；3M",10
+87,video-resolution,video-resolution,"8K15; 6K30; 5K30; 4K30; 2.7K30;
+1080P120; 1080P60; 1080P30;
+720P240; 720P120; 720P60; 720P30.",10
+88,front-image-sensor,front-image-sensor,50 megapixel CMOS sensor IMX858,10
+89,zoom,zoom,7X Optical Zoom,10
+90,rear-selfie-image-sensor,rear-selfie-image-sensor,13M image sensor IMX214,10
+91,display-screen,display-screen,2.8 inch 640*480 IPS HD touch screen display,10
+92,usb,usb,Type-C USB,10
+93,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),10
+94,battery-capacity,battery-capacity,1050mAh/3.7V Rechargeable Lithium Battery,10
+95,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,
+Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",10
+96,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1",10
+97,image-resolution,image-resolution,"64M(9200×6900);(48M(8000×6000);44M( 7600×5800 );36M(7936×4480 HD); 24M(5600×4200);20M(5200×3900);16M(4608×3456);12M(4000×3000); 10M(3648×2736);7M-Wide(3648×2048 HD);5M(2592×1944);
+3M(2048× 1536);2M-Wide(1920×1080 HD)",11
+98,video-resolution,video-resolution,4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；HD-30FPS ； VGA-30FPS,11
+99,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),11
+100,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),11
+101,display-screen,display-screen,2.8 inch 640*480 IPS HD screen display,11
+102,usb,usb,Type-C USB,11
+103,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),11
+104,battery-capacity,battery-capacity,1050mAh/3.7V Rechargeable Lithium Battery,11
+105,language,language,"English,Traditional Chinese,Simplified Chinese,French,German,Italian,Portuguese,Spanish,Russian,Japanese,Hebrew,Turkish,Dutch,Polish",11
+162,expanded-memory-card,expanded-memory-card,TF Card slot (up to 32GB ),17
+106,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One Lithium battery, One Carrying Strap, One Cleaning Cloth",11
+107,image-resolution,image-resolution,3M(2000*1500); 10M(3648*2736); 16M(4608*3456); 24M(5600*4200); 48M(8000*6000); 64M(9216*6912); 96M(11264*8448),12
+108,video-resolution,video-resolution,1080P/30fps(1920*1080); 2K/30fps(2560*1440); 4K/30fps(3840*2160); 5K/20fps(5120*2880);,12
+109,zoom,zoom,6X Optical Zoom,12
+110,front-image-sensor,front-image-sensor,8 megapixel CMOS sensor GC8613,12
+111,rear-selfie-image-sensor,rear-selfie-image-sensor,13M image sensor IMX214,12
+112,display-screen,display-screen,2.8 inch 640*480 IPS HD screen display,12
+113,usb,usb,Type-C USB,12
+114,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),12
+115,battery-capacity,battery-capacity,1050mAh 3.7V Rechargeable lithium battery,12
+116,language,language,"English, Simplified Chinese, Traditional Chinese, Japanese",12
+117,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, Charger *1, Camera Bag*1, , Glasses Cloth*1, Lanyard*1",12
+118,image-resolution,image-resolution,"4:3
+88M(10848 X 8136); 80M(10336 X 7752);
+72M(9824 X 7368); 64M(9248 X 6936);
+56M(8640 X 6480); 48M(8000 X 6000);
+36M(6880 X 5160);  24M(5600 X 4200);
+20M(5120 X 3840);  16M(4640 X 3480);
+12M(4032 X 3024); 8M(3264 X 2448);
+5M(2592 X 1944)
+16:9
+66M(10880 X 6120); 60M(10368 X 5832);
+53M(9728 X 5472); 48M(9216 X 5184);
+43M(8704 X 4896); 37M(8064 X 4536);
+27M(6912 X 3888);  18M(5632 X 3168);
+15M(5120 X 2880);  12M(4608 X 2592);
+9M(4096 X 2304); 6M(3328 X 1872);
+4M(2560 X 1440)
+1:1
+66M(8182 X 8182); ",13
+119,video-resolution,video-resolution,"8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS;
+5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS;
+2.7K(2688X1512) 30FPS; 1080P(1920X1080) 120FPS;
+1080P(1920X1080) 60FPS; 1080P(1920X1080) 30FPS;
+720P(1280X720) 240FPS; 720P(1280X720) 120FPS；
+720P(1280X720) 60FPS; 720P(1280X720) 30FPS",13
+120,front-image-sensor,front-image-sensor,"Pixel ：48 megapixel CMOS sensor IMX689
+sensor size：1/1.4inch",13
+121,rear-selfie-image-sensor,rear-selfie-image-sensor,"Pixel：13M image sensor IMX214
+sensor size：1/3.06 inch",13
+122,display-screen,display-screen,2.8 inch 640*480 IPS HD touch screen display,13
+123,usb,usb,Type-C USB,13
+124,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),13
+125,battery-capacity,battery-capacity,"NP-40, 1050mAh, 3.7V Rechargeable Lithium Battery",13
+126,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",13
+127,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1",13
+128,image-resolution,image-resolution,"64M; 48M; 44M; 36M; 24M; 20M; 16M;
+12M; 10M; 7M-Wide;
+5M; 3M; 2M-Wide",14
+129,video-resolution,video-resolution,"4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；
+HD-30FPS ； VGA-30FPS",14
+130,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),14
+131,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),14
+132,display-screen,display-screen,2.8 inches 640 * 480 IPS high-definition,14
+133,usb,usb,Type-C USB,14
+134,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),14
+135,battery-capacity,battery-capacity,600MA/H 3.7V Rechargeable Lithium Battery,14
+136,language,language,"English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish",14
+137,accessories-for-camcorder,accessories-for-camcorder,"""User's Manual*1, USB Cable*1, Charger*1, Lithium Battery*1,
+Lanyard*1, Glasses Cloth*1, Camera Bag*1""",14
+138,image-resolution,image-resolution,88M；80M；72M; 64M；56M；48M； 36M；24M；20M；16M；12M；8M；5M；,15
+139,video-resolution,video-resolution,8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS;5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS;2.7K(2688X1512) 30FPS;1080P(1920X1080) 60FPS;1080P(1920X1080) 30FPS;720P(1280X720) 60FPS; 720P(1280X720) 30FPS,15
+140,image-sensor,image-sensor,8 megapixels IMX415 CMOS sensor(up to 88MP Interpolation),15
+141,dispaly-screen,dispaly-screen,"3.0 inch IPS display, capacitive touch, 270 degrees rotation",15
+142,memory-card,memory-card,"SD Card slot (up to 256GB),Support SDXC class 10 U1",15
+143,usb,usb,Type C USB2.0,15
+144,power,power,High-capacity rechargeable lithium battery,15
+145,language,language,English/ Simplified Chinese/ Traditional Chinese Japanese/ Korean/ French/ German/ Italian/ Spanish/ Portuguese/ Russian/ Polish/ Vietnamese,15
+146,accessories,accessories,"Manual*1, USB cable*1, Charger*1, Lithium battery*1, Remote control*1, Lens cover*1, Glasses Cloth*1 , DV bag*1",15
+147,angle-expansion-multiple,angle-expansion-multiple,1.35X,16
+148,number-of-lens-groups,number-of-lens-groups,2 pieces 2 groups,16
+149,connection-method,connection-method,52mm thread,16
+150,focusing-mode,focusing-mode,Fixed focus,16
+151,big-view-angle,big-view-angle,94-118 degree,16
+152,front-thread-interface-size,front-thread-interface-size,62mm,16
+153,distancefrom-macro-lens-to-object,distancefrom-macro-lens-to-object,80-100mm,16
+154,accessories,accessories,User manual; Piece of cloth；One cloth bag,16
+155,prodcut-sizeweight,prodcut-sizeweight,Ф64x40mm ; 150g(without removable eye mask),16
+156,image-resolution,image-resolution,"The main camera: 13 million pixels,
+The selfie camera: 8 million pixels.",17
+157,video-resolution,video-resolution,1920×1080,17
+158,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor IMX135,17
+159,rear-selfie-image-sensor,rear-selfie-image-sensor,8 megapixel CMOS sensor IMX219,17
+160,display-screen,display-screen,4.0-inch 800×480 IPS HD touch display,17
+161,usb,usb,Type-C USB,17
+163,battery-capacity,battery-capacity,2000mAh 3.7V Rechargeable lithium battery,17
+164,language,language,Multiple national languages,17
+165,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One charger, One Camera bag, One Cleaning Cloth, One Carrying Strap",17
+166,image-resolution,image-resolution,2M: 1600*1200 3M:2048*1536 5M: 2592*1944 7M: 3072*2304 10M:3648*2736 12M:4000*3000 16M:4608*3456 20M:5200*3900 24M:5600*4200 36M:6912*5184 44M:7600*5800 48M:8000*6000 64M:9248*6936,18
+167,video-resolution,video-resolution,4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；HD-30FPS ； VGA-30FPS,18
+168,display-screen,display-screen,"Rear Display Screen：2.8-inch, 640*480 IPS Display ；Front Display Screen：1.7-inch, 240*280 IPS Display",18
+169,usb,usb,MicroUSB,18
+170,expanded-memory-card,expanded-memory-card,"TF Card Slot (MAX 256GB), Support SDHC 6",18
+171,battery-capacity,battery-capacity,Built-in Chargable Lithium Battery 700mAh,18
+172,zoom,zoom,16X Digital Zoom,18
+173,language,language,English/Simplified Chinese/Traditional/Chinese/Japanese/Korean/Russian/French/German/Czech/Portuguese/Polish/Dutch/Turkish/Thai,18
+174,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, Wiping Cloth*1, Camera lanyard*1, Micro USB cable*1, NP-6L Battery*1, S531 Charger*1",18
+175,image-resolution,image-resolution,Memory options: 64M/48M/36M/20M/16M,19
+176,video-resolution,video-resolution,4K 60、4K30、1080P120、1080P60、1080P30,19
+177,control-system,control-system,Image sensor used: Sigmastar MSC357,19
+178,lens-module,lens-module,Sony IMX376 20-megapixel 150° wide-angle lens.,19
+179,display-screen,display-screen,Front color screen ：1.5-inch IPS HD display ； Rear main screen ：2.0-inch IPS touchscreen,19
+180,usb,usb,Type-C USB,19
+181,expanded-memory-card,expanded-memory-card,Maximum supported Micro SD card speed: 128G U3 and above,19
+182,battery-capacity,battery-capacity,Available in two capacities: 1050mAh and 1350mAh Removable and rechargeable lithium battery;,19
+183,zoom,zoom,8x digital zoom is supported.,19
+184,language,language,Supports operation in multiple languages.,19
+185,image-resolution,image-resolution,64M; 48M; 36M; 24M; 20M; 16M; 12M; 8M,20
+186,video-resolution,video-resolution,5K25fps；4K30fps；2.7K30fps；1080P60fps；1080P30fps；720P60fps,20
+187,front-image-sensor,front-image-sensor,8 megapixel CMOS sensor (up to 64MP interpolation)；1/2.8 inch,20
+188,rear-image-sensor,rear-image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation)；1/3.06 inch,20
+189,display-screen,display-screen,3.6 inch 720*1280 IPS HD,20
+190,usb,usb,Type-C USB,20
+191,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),20
+192,battery-capacity,battery-capacity,"1350mAh/3.8V, Rechargeable Lithium Battery",20
+193,accessories-for-camcorder,accessories-for-camcorder,"""Battery*1, Data Cable*1, HD Cable*1, Stand Charger*1,
+Charging Head*1, Lens cloth *1, Wrist strap *1, Cloth bag *1, Shoulder strap *1, Lens cap *1, Manual *1""",20
+194,image-resolution,image-resolution,"""64M(10666*6000); 48M(8800*5500); 36M(7952*4472); 24M(6544*3680); 20M(5888*3312); 16M(5376*3024); 12M(4608*2592); """,21
+195,video-resolution,video-resolution,"""5K 25fps(5120*2160); 4K 60fps(3840*2160); 4K 30fps(3840*2160); 2.7K 60fps(2704*1520); 2.7K 30fps(2704*1520); FHD P60(1920*1080);
+FHD P30(1920*1080); HD P60 720*1280""",21
+196,front-image-sensor,front-image-sensor,48 megapixel CMOS sensor,21
+197,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor,21
+198,display-screen,display-screen,3.6 inches 720*1280 IPS high-definition,21
+199,usb,usb,Type-C USB,21
+200,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),21
+201,battery-capacity,battery-capacity,1350mAh 3.8V Rechargeable Lithium Battery,21
+202,language,language,"""English, French, Spanish,Portuguese, German, Italian, Simplified Chinese,Traditional Chinese, Russian, Japanese""",21
+203,accessories-for-camcorder,accessories-for-camcorder,"User's Manual*1, HD Cable*1,USB Cable*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1",21
+204,image-resolution,image-resolution,"""88M(10848 X 8136); 80M(10336 X 7752);72M(9824 X 7368); 64M(9248 X 6936); 56M(8640 X 6480); 48M(8000 X 6000); 36M(6880 X 5160); 24M(5600 X 4200); 20M(5120 X 3840); 16M(4640 X 3480); 12M(4032 X 3024); 8M(3264 X 2448); 5M(2592 X 1944)""",22
+205,video-resolution,video-resolution,"""8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS; 5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS; 2.7K(2688X1512) 30FPS; 1080P(1920X1080) 60FPS; 1080P(1920X1080) 30FPS; 720P(1280X720) 60FPS; 720P(1280X720) 30FPS""",22
+206,front-image-sensor,front-image-sensor,48 megapixel CMOS sensor IMX586,22
+207,rear-selfie-image-sensor,rear-selfie-image-sensor,12M image sensor IMX386,22
+208,display-screen,display-screen,3.2 inch 1024*768 IPS HD touch screen display,22
+209,usb,usb,Type-C USB,22
+210,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),22
+211,battery-capacity,battery-capacity,1220mAh 3.7V Rechargeable lithium battery,22
+212,zoom,zoom,Max 16x Digital Zoom,22
+213,language,language,"""English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese""",22
+214,accessories-for-camcorder,accessories-for-camcorder,"""User's manual*1, USB cable*1, HDMI cable*1, Charger *1, Camera Bag*1, NP-80 Lithium battery*1, Lens Cleaning Cloth *1​，Camera Strap *1​，""",22
+215,image-resolution,image-resolution,64M(9248×6936)；56M(8640×6480)；48M(8000×6000)；36M(6880×5160)；24M(5600×4200)；20M(5120×3840) ；16M(4640×3480)；12M(4032×3024)； 8M(3264×2448)； 5M(2592×1944),23
+216,video-resolution,video-resolution,5K(5120×2880)30FPS; 4K(3840×2160)30FPS; 2.7K(2688×1512)30FPS; 1080P(1920×1080)120FPS; 1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS; 720P(1280×720)120FPS; 720P(1280×720)60FPS; 720P(1280×720)30FPS,23
+217,front-image-sensor,front-image-sensor,16 megapixel CMOS sensor IMX206,23
+218,rear-selfie-image-sensor,rear-selfie-image-sensor,12M image sensor IMX386,23
+219,display-screen,display-screen,3.2 inch 1024*768 IPS HD touch screen display,23
+220,usb,usb,Type-C USB,23
+221,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),23
+222,battery-capacity,battery-capacity,1220mAh 3.7V Rechargeable lithium battery,23
+223,zoom,zoom,Maximum 10x zoom,23
+224,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",23
+225,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, HDMI cable*1, NP-80 Lithium battery*1, Charger *1, Lens Cap*1, Lanyard*1,Glasses Cloth*1, Camera Bag*1",23
+226,image-resolution,image-resolution,"""64M(9248×6936); 56M(8640×6480); 48M(8000×6000); 36M(6880×5160); 24M(5600×4200); 20M(5120×3840); 16M(4640×3480); 12M(4032×3024); 8M(3264×2448); 5M(2592×1944)""",24
+227,video-resolution,video-resolution,"""5K(5120×2880) 30FPS; 4K(3840×2160) 30FPS; 2.7K(2688×1512) 30FPS; 1080P(1920×1080) 60FPS; 1080P(1920×1080) 30FPS; 720P(1280×720) 60FPS; 720P(1280×720) 30FPS""",24
+228,front-image-sensor,front-image-sensor,8 megapixel CMOS sensor IMX415,24
+229,rear-selfie-image-sensor,rear-selfie-image-sensor,12M image sensor IMX386,24
+230,display-screen,display-screen,2.8 inch 640×480 IPS HD screen display,24
+231,usb,usb,Type-C USB,24
+232,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),24
+233,battery-capacity,battery-capacity,"1050mAh, 3.7V, Rechargeable Lithium Battery",24
+234,zoom,zoom,6X Optical Zoom,24
+235,language,language,"""English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese""",24
+236,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, HDMI cable*1, NP-60 Lithium battery*1, Charger *1, Lens Cap*1, Lanyard*1,Glasses Cloth*1, Camera Bag*1",24
+237,image-resolution,image-resolution,"2M:1920×1080 HD 3M:2048×1536 5M: 2592×1944 7M: 3648×2048 HD
+10M:3648×2736 12M:4000×3000 16M:4608×3456 20M:5200×3900
+24M:5600×4200 36M:7936×4480 HD 44M:7600×5800 48M:8000×6000
+64M(9200×6900)",25
+238,video-resolution,video-resolution,"VGA(640×480)30FPS/ HD(1280×720)30FPS / FHD(1920×1080)30FPS/
+2.7K(2688×1520)30FPS/ 4K(3840×2160)10FPS",25
+239,zoom,zoom,16x Digital Zoom,25
+240,image-sensor,image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),25
+241,display-screen,display-screen,2.8-inch 640*480 IPS,25
+242,usb,usb,Type-C USB,25
+243,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),25
+244,battery-capacity,battery-capacity,1050mA/h Rechargeable Lithium Battery,25
+245,language,language,"English/Simplified Chinese/TraditionalChinese/Japanese/Korean/Russian/French/
+German/Czech/Portuguese/Polish/Dutch/Turkish/Thai
+(English/Simplified Chinese/Traditional Chinese/Japanese/русский/français/Deutsch/čeština/português/Polski/Nederlan ds/Türkiye/Thai)",25
+246,accessories-for-camcorder,accessories-for-camcorder,"Type-c Cable * 1, HDMI Cable * 1, NP-60 Lithium Battery * 1, Charger * 1,
+Glasses Cloth * 1, Camera Bag * 1, Lanyard * 1, User's Manual * 1, Lens cap *1",25
+247,image-resolution,image-resolution,48M(8000×6000); 36M(6880×5160) 24M(5600×4200); 20M(5120×3840) 16M(4640×3480); 12M(4032×3024)8M(3264×2448); 5M(2592×1944),26
+248,video-resolution,video-resolution,5K 30FPS; 4K 30FPS; 2.7K 30FPS ;1080P 120FPS; 1080P 60FPS; 1080P 30FPS;720P 240FPS; 720P 120FPS; 720P 60FPS; 720P 30FPS,26
+249,image-sensor,image-sensor,12 megapixel CMOS sensor (up to 48MP interpolation),26
+250,display-screen,display-screen,2.8 inches 640 * 480 IPS high-definition,26
+251,usb,usb,Type-C USB,26
+252,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),26
+253,battery-capacity,battery-capacity,1050mAh 3.7V Rechargeable Lithium Battery,26
+254,zoom,zoom,16x digital zoom,26
+255,language,language,"English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese",26
+256,accessories-for-camcorder,accessories-for-camcorder,"USB Cable*1, HDMI Cable*1, Lithium Battery*1,Lanyard*1, Glasses Cloth*1, Camera Bag*1, User's Manual*1",26
+257,image-resolution,image-resolution,"48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);
+20M (5120 × 3840);16M (4640 × 3480);12M (4032 × 3024); 
+8M (3264 × 2448);5M (2592 × 1944)",27
+258,video-resolution,video-resolution,"5K 30FPS; 4K 30FPS;2.7K 30FPS;1080P120FPS; 1080P 60FPS;
+1080P 30FPS;720P240FPS;720P 120FPS;720P 60FPS; 720P 30FPS",27
+259,image-sensor,image-sensor,12 Megapixel CMOS Sensor (Up to 48MP Interpolation),27
+260,display-screen,display-screen,3.5 Inches 16: 9 IPS Screen,27
+261,usb,usb,Type-C USB,27
+262,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),27
+263,language,language,"English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese",27
+264,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB cable*1, HDMI cable*1, Charger*1, Camera Bag*1,
+Lithium battery*1, UV Lens*1, Lens Cap*1, Glasses Cloth*1, Lanyard*1
+Wide Len*1(Optional)",27
+265,image-resolution,image-resolution,"64M(9200×6900); 48M(8000×6000);
+44M(7600×5800); 36M(7936×4480);
+24M(5600×4200); 20M(5200×3900);
+16M(4608×3456); 12M(4000×3000);
+10M(3648×2736); 7M-Wide(3648×2048 HD);
+5M(2592×1944); 3M(2048×1536);
+2M-Wide(1920×1080 HD)",28
+266,video-resolution,video-resolution,"4K ULTRA HD -10FPS ；2.7K-30FPS ；
+FULL HD-30FPS ；HD-30FPS ； VGA-30FPS",28
+267,zoom,zoom,16x digital zoom,28
+268,image-sensor,image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),28
+269,display-screen,display-screen,3.0-inch IPS screen，16:9 screen（640*360）,28
+271,expanded-memory-card,expanded-memory-card,Expanded memory card,28
+272,battery-capacity,battery-capacity,850mA/h 3.7V Rechargeable lithium battery,28
+273,language,language,"English , Deutsch , Français, Español , Italiano , Turkce , Pycский , Português , Nederlands ，Simplified Chinese , Traditional Chinese, Japanese ，Polski",28
+274,accessories-for-camcorder,accessories-for-camcorder,"User's manual *1, USB cable *1, Lithium batteries*1 , Lens cap *1, Camera lanyard *1, Camera bag*1，Lens cleaning cloth *1",28
+275,image-resolution,image-resolution,48M(8000×6000); 24M(5600×4200); 12M(4000×3000); 8M(3648×2736); 5M(2592×1944); 3M(2048×1536),29
+276,video-resolution,video-resolution,HD; FHD,29
+277,front-image-sensor,front-image-sensor,0.3 megapixel CMOS sensor,29
+278,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor,29
+279,display-screen,display-screen,2.4 inches 640*480 IPS high-definition,29
+280,usb,usb,Type-C USB,29
+281,expanded-memory-card,expanded-memory-card,"TF card slot (up to 128GB ), Support Support SDHC 6 level",29
+282,battery-capacity,battery-capacity,1150mAh 3.7V Rechargeable Lithium Battery,29
+283,language,language,"English, Simplified Chinese, Traditional Chinese, Japanese, Korean, Portuguese, French, German, Italian, Spanish, Russian, Hebrew, Turkish, Dutch, Polish",29
+284,accessories-for-camcorder,accessories-for-camcorder,"A user manual, A USB cable, A lanyard, A mirror cloth, 4 rolls of printing paper",29
+285,image-resolution,image-resolution,1M:1366*768 2M: 1920*1080 3M:2560×1440 5M: 3072*1728 8M:3840*2160 10M:4096*2394 12M:4608*2592,30
+286,video-resolution,video-resolution,HD(1280*720) /FHD(1920*1080),30
+287,print-head,print-head,"Low Voltage Thermal Printing； High definition, high precision printing（8PM/mm；fast printing(Print speed of up to 80mm / s)；low noise",30
+288,print-paper-size,print-paper-size,length:25mm * width:56mm,30
+289,usb,usb,Type-C,30
+290,expanded-memory-card,expanded-memory-card,"TF Card slot (up to 128GB ),Support SDHC class 6 above",30
+291,battery-capacity,battery-capacity,Built-in rechargeable lithium battery 1000mAh/7.4V,30
+292,zoom,zoom,16X digital zoom,30
+293,language,language,English/Deutsch/Français/Español/Italiano/Türkçe/Pусский/ภาษาไทย/Português/Nederlands/Simplified Chinese/Traditional Chinese/Japanese,30
+294,accessories-for-camcorder,accessories-for-camcorder,"User manual*1, TYPE-C interface data cable*1, lanyard*1, thermal printing paper*4, Glasses Cloth*1",30
+295,image-resolution,image-resolution,64MP；48MP；44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP,31
+296,video-resolution,video-resolution,1080P 30FPS；720P 30FPS；480P 30FPS,31
+297,image-sensor,image-sensor,5 megapixel CMOS sensor (up to 64MP interpolation),31
+298,display-screen,display-screen,2.4 inches 320*240 IPS high-definition,31
+299,usb,usb,Type-C USB,31
+300,expanded-memory-card,expanded-memory-card,"TF card slot (4-256GB ), Support Support SDHC level 6",31
+301,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium Battery,31
+302,zoom,zoom,16x digital zoom,31
+303,language,language,"English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Dutch,",31
+304,accessories-for-camcorder,accessories-for-camcorder,"User's Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1",31
+305,image-resolution,image-resolution,48MP；44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP,32
+306,video-resolution,video-resolution,1080P；720P；480P,32
+307,image-sensor,image-sensor,5 megapixel CMOS sensor (up to 48MP interpolation),32
+308,display-screen,display-screen,2.4-inch 320*240 IPS,32
+309,usb,usb,Type-C USB,32
+310,expanded-memory-card,expanded-memory-card,"TF Card slot (up to 64GB ),Support SDHC/SDXC class 10 U1",32
+311,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium battery,32
+312,zoom,zoom,16X powerful zoom,32
+313,language,language,"English,Español, Português, Français, Deutsch, Italiano,Nederlands,Traditional Chinese, Simplified Chinese, Japanese",32
+314,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One Charger, One Lithium battery, One Camera lanyard",32
+315,image-resolution,image-resolution,Front camera: 4654×2792，Rear selfie camera: 3650×2190，,33
+316,video-resolution,video-resolution,1920×1080,33
+317,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor IMX135,33
+318,rear-selfie-image-sensor,rear-selfie-image-sensor,8 megapixel CMOS sensor IMX219,33
+319,display-screen,display-screen,3.6-inch 800×480 IPS HD touch display,33
+320,usb,usb,Type-C USB,33
+321,expanded-memory-card,expanded-memory-card,"MicroSD card slot (Maximum 32GB), supportSDXC C10 U1, FAT32",33
+322,battery,battery,2000mAh 3.7V Rechargeable Lithium Battery,33
+323,control-chip,control-chip,"MT6582V, ARM Cortex-A7 core architecture, 1.3GHz clock speed.",33
+324,language,language,"Simplified Chinese, Traditional Chinese, Dutch, English, French, Filipino/Tagalog, German, Hebrew, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Romanian, Russian, Spanish, Thai, Turkish, Ukrainian, Vietnamese, etc.",33
+325,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One charger, One Camera bag, One Cleaning Cloth, One Carrying Strap",33
+326,image-resolution,image-resolution,"64M(9248×6936)；56M(8640×6480)
+48M(8000×6000)；36M(6880×5160)
+24M(5600×4200)；20M(5120×3840) 
+16M(4640×3480)；12M(4032×3024)
+8M(3264×2448)； 5M(2592×1944)",34
+327,video-resolution,video-resolution,"5K(5120×2880)30FPS; 4K(3840×2160)30FPS;
+2.7K(2688×1512)30FPS; 1080P(1920×1080)120FPS;
+1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS;
+720P(1280×720)120FPS; 720P(1280×720)60FPS;
+720P(1280×720)30FPS",34
+328,front-image-sensor,front-image-sensor,8 megapixel CMOS sensor GC8613,34
+329,rear-selfie-image-sensor,rear-selfie-image-sensor,13M image sensor IMX214,34
+330,zoom,zoom,6X Optical Zoom,34
+331,display-screen,display-screen,2.8 inch 640*480 IPS HD touch screen display,34
+332,usb,usb,Type-C USB,34
+333,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),34
+334,battery-capacity,battery-capacity,800mAh/3.7V Rechargeable Lithium Battery,34
+335,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,
+Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",34
+336,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, Lithium battery*1, Charger *1, Lanyard*1,
+Glasses Cloth*1, Camera Bag*1",34
+337,image-resolution,image-resolution,48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD),35
+338,video-resolution,video-resolution,4K ULTRA HD -10FPS；2.7K-30FPS； FULL HD-30FPS；HD-30FPS； VGA-30FPS,35
+339,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor (up to 48MP interpolation),35
+340,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor (up to 48MP interpolation),35
+341,display-screen,display-screen,2.8 inches 640*480 IPS high-definition,35
+342,usb,usb,Type-C USB,35
+343,expanded-memory-card,expanded-memory-card,"TF card slot (up to 256GB ), Support Support SDHC 6 level",35
+344,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium Battery,35
+345,zoom,zoom,16x digital zoom,35
+346,language,language,"English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish",35
+347,accessories-for-camcorder,accessories-for-camcorder,"User's Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1",35
+348,image-resolution,image-resolution,48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD),36
+349,video-resolution,video-resolution,4K ULTRA HD -10FPS；2.7K-30FPS； FULL HD-30FPS；HD-30FPS；VGA-30FPS,36
+350,front-image-sensor,front-image-sensor,13 megapixel CMOS sensor (up to 48MP interpolation),36
+351,rear-selfie-image-sensor,rear-selfie-image-sensor,13 megapixel CMOS sensor (up to 48MP interpolation),36
+352,display-screen,display-screen,2.8 inches 640*480 IPS high-definition,36
+353,usb,usb,Type-C USB,36
+354,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),36
+355,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium Battery,36
+356,zoom,zoom,16x digital zoom,36
+357,language,language,"English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish",36
+358,accessories-for-camcorder,accessories-for-camcorder,"User's Manual*1, USB Cable*1, Charger*1, Lithium Battery*1,Lanyard*1, Glasses Cloth*1, Camera Bag*1",36
+359,image-resolution,image-resolution,56M(8640 × 6840);48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);20M (5120 × 3840);16M (4640 × 3480); 12M (4032 × 3024); 8M (3264 × 2448); 5M (2592 × 1944）,37
+360,video-resolution,video-resolution,5K-30FPS;4K-30FPS; 2.7K-30FPS; 1080P-120FPS; 1080P-60FPS; 1080P-30FPS ;720P-120FPS; 720P-60FPS; 720P-30FPS,37
+361,front-image-sensor,front-image-sensor,16 Mega pixels CMOS sensor（Up to 56MP interpolation）IMX206,37
+362,rear-selfie-image-sensor,rear-selfie-image-sensor,12 Mega pixels CMOS sensor（Up to 56MP interpolation）IMX386,37
+363,display-screen,display-screen,2.8 inch，640*480IPS HD display，IPS- LCD touch screen,37
+364,usb,usb,Type-C USB,37
+365,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),37
+366,battery-capacity,battery-capacity,800mAh Lithium battery,37
+367,zoom,zoom,"10X Optical Zoom, Support optical zoom",37
+368,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",37
+369,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1,USB cable*1, Lithium battery*1, Camera lanyard*1,Camera Bag*1,",37
+370,image-resolution,image-resolution,64M(9200×6900); 48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080),38
+371,video-resolution,video-resolution,4K(3840×2160)-10FPS; 2.7K(2688×1520)-30FPS; Full HD(1920×1080)-30FPS; HD(1280×720)-30FPS; VGA(640×480)-30FPS,38
+372,image-sensor,image-sensor,8 megapixel CMOS sensor (up to 64MP interpolation),38
+373,display-screen,display-screen,2.8 inches 640*480 IPS high-definition,38
+374,usb,usb,Type-C USB,38
+375,expanded-memory-card,expanded-memory-card,"TF card slot (up to 256GB ), Support SDHC Level 6",38
+376,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium Battery,38
+377,zoom,zoom,16x digital zoom,38
+378,language,language,"English, German, French, Spanish, Italian, Turkish, Russian, Portuguese, Dutch, Simplified Chinese, Traditional Chinese, Japanese, Polish, Hebrew",38
+379,accessories-for-camcorder,accessories-for-camcorder,"User's Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1",38
+380,image-resolution,image-resolution,64M(9200×6900); 48M(8000×6000); 44M(7600×5800); 36M(7936×4480); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD),39
+381,video-resolution,video-resolution,"""4K ULTRA HD -10FPS ；2.7K-30FPS ；FULL HD-30FPS ；HD-30FPS ；VGA-30FPS""",39
+382,image-sensor,image-sensor,13 megapixel CMOS sensor (up to 64MP interpolation),39
+383,display-screen,display-screen,3.0-inch IPS screen，16:9 screen,39
+384,usb,usb,Type-C USB,39
+385,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),39
+386,battery-capacity,battery-capacity,800mAh 3.7V Rechargeable lithium battery,39
+387,zoom,zoom,Max 16x Digital Zoom,39
+388,language,language,"""English , Deutsch , Français, Español , Italiano , Turkce , Pycский , Português , Nederlands ，Simplified Chinese , Traditional Chinese, Japanese ，Polski""",39
+389,accessories-for-camcorder,accessories-for-camcorder,"""User's manual *1, USB cable *1, HD cable *1, Charger *1, Lithium batteries*1 , Lens cap *1, Camera lanyard *1, Camera bag*1，Lens cleaning cloth *1""",39
+390,image-resolution,image-resolution,44M( 7600×5800 ); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048× 1536);2M-Wide（n/a）,40
+391,video-resolution,video-resolution,2688×1520 2.7K; 1920×1080 FULL HD; 1280×720 HD; 640×480 VGA,40
+392,image-sensor,image-sensor,8 megapixel CMOS sensor (up to 44MP interpolation),40
+393,usb,usb,Type-C USB,40
+394,expanded-memory-card,expanded-memory-card,TF Card slot (up to 128GB),40
+395,battery-life,battery-life,"Taking Video≤ 90mins,taking photos≤ 150mins",40
+396,zoom,zoom,16X digital zoom,40
+397,language,language,"English,Français, Español, Português, Deutsch, Italiano,Simplified Chinese, Traditional Chinese, Simplified Chinese,Pycский, Japanese，Hebrew",40
+398,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One Charger, One lithium battery, One Camera lanyard",40
+399,image-resolution,image-resolution,44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP,41
+400,video-resolution,video-resolution,1080P-30FPS；720P-30FPS；480P-30FPS,41
+401,image-sensor,image-sensor,5 megapixel CMOS sensor (up to 44MP interpolation),41
+402,display-screen,display-screen,"2.4-inch ,320*240 IPS",41
+403,usb,usb,Type-C USB,41
+404,expanded-memory-card,expanded-memory-card,TF Card slot (up to 64GB ),41
+405,battery-capacity,battery-capacity,700mAh 3.7V Rechargeable Lithium battery,41
+406,zoom,zoom,Max 16X Digital Zoom,41
+407,language,language,"English,Español, Português, Français, Deutsch, Italiano,Nederlands,Traditional Chinese, Simplified Chinese, Japanese",41
+408,accessories-for-camcorder,accessories-for-camcorder,"One User's manual,One USB cable,One Charger, One Lithium battery, One Camera lanyard",41
+409,image-resolution,image-resolution,64M(9248×6936)；56M(8640×6480)；48M(8000×6000)；36M(6880×5160)；24M(5600×4200)；20M(5120×3840) ；16M(4640×3480)；12M(4032×3024)； 8M(3264×2448)； 5M(2592×1944),42
+410,video-resolution,video-resolution,5K(5120×2880)30FPS；4K(3840×2160)30FPS；2.7K(2688×1512)30FPS；1080P(1920×1080)120FPS；1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS；720P(1280×720)120FPS；720P(1280×720)60FPS；720P(1280×720)30FPS,42
+411,front-image-sensor,front-image-sensor,16 megapixel CMOS sensor IMX206,42
+412,rear-selfie-image-sensor,rear-selfie-image-sensor,12M image sensor,42
+413,display-screen,display-screen,2.8 inch 640*480 IPS HD touch screen display,42
+414,usb,usb,Type-C USB,42
+415,expanded-memory-card,expanded-memory-card,TF Card slot (up to 256GB ),42
+416,battery-capacity,battery-capacity,800mAh 3.7V Rechargeable lithium battery,42
+417,zoom,zoom,5X Optical Zoom，2X Digital Zoom，Maximum 10X zoom,42
+418,language,language,"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese",42
+419,accessories-for-camcorder,accessories-for-camcorder,"User's manual*1, USB-TYPE C cable*1, NP-80 Lithium battery*1, Charger *1, Lanyard*1,Glasses Cloth*1, Camera Bag*1",42

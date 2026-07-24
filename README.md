@@ -291,7 +291,7 @@ pytest tests/test_admin_phase1.py -v
 仓库已包含全部代码+图片+数据库备份，克隆即用：
 
 ```bash
-git clone <repo-url> && cd full-stack-project
+git clone https://github.com/zengbbxx11/full-stack-songdian.git && cd full-stack-songdian
 createdb -U postgres songdianB2B
 psql -U postgres -d songdianB2B < db/songdianB2B_full.sql  # 导入数据
 cd backend && cp .env.example .env && uv sync

@@ -134,7 +134,7 @@ UPDATE wp_postmeta SET meta_value = REPLACE(meta_value, 'http://localhost:10004'
 cd ~
 mkdir songdianweb
 cd songdianweb
-git clone https://github.com/zengbbxx11/next-js-wordpress-headless-songdian.git .
+git clone https://github.com/zengbbxx11/full-stack-songdian.git .
 ```
 
 ### 4.2 配置环境变量

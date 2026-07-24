@@ -136,7 +136,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   {currentPage > 1 && (
                     <Link
                       href={`/news?page=${currentPage - 1}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Previous
@@ -146,7 +146,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/news?page=${currentPage + 1}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Next

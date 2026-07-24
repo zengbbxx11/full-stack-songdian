@@ -127,7 +127,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage > 1 && (
                     <Link
                       href={`/products?page=${currentPage - 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors bg-[#F4F4F4] hover:bg-[#EEEEEE] inline-block w-[90px] text-center"
                       style={{
                         color: "#393C41",
                         borderRadius: "4px",
@@ -143,7 +143,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/products?page=${currentPage + 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-all bg-[#F4F4F4] hover:bg-[#EEEEEE]"
+                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors bg-[#F4F4F4] hover:bg-[#EEEEEE] inline-block w-[90px] text-center"
                       style={{
                         color: "#393C41",
                         borderRadius: "4px",

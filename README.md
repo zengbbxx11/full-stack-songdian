@@ -286,7 +286,9 @@ pytest tests/test_admin_phase1.py -v
 
 ## 部署
 
-### 一键部署（推荐）
+### 一键部署（Ubuntu + 1Panel，推荐）
+
+详细步骤见 [`frontend/deploy-guide.md`](frontend/deploy-guide.md)，核心流程：
 
 仓库已包含全部代码+图片+数据库备份，克隆即用：
 

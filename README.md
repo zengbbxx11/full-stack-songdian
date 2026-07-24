@@ -217,6 +217,15 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 - 询盘列表与状态管理
 - 图片上传（单/批，本地磁盘）
 - 响应式侧边栏 + Dark Mode
+- **富文本编辑器**：零依赖 contentEditable 所见即所得编辑器，工具栏支持 H2/H3/B/I/Link/列表/引用
+- **发布时间编辑**：新闻表单支持 `published_at` 日期时间编辑
+
+### 前�� UI 完善（2026-07-24）
+- 全面响应式适配：ProductCard/PostCard/列表页/文章正文/联系页加 sm/md 断点
+- 文章正文字号 14px→16px，行高 1.43→1.75，h2/h3 加底部分隔线
+- WordPress 残留清理：`wp-content`→`article-body` 重命名，`lib/media.ts` 去 WP URL 依赖
+- HTML 清洗加固：`cleanPostContent()` 强制剥离所有内联 style，格式由 `.article-body` CSS 统一接管
+- 翻页按钮宽高对齐 + 过渡动画精确化
 
 ### 待开发（P1/P2）
 

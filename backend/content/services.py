@@ -1,12 +1,7 @@
-"""内容管理服务（M5，§3.2.M5 / §6.5 / §6.6）。
-
-设计约束：
-- 登录：bcrypt 校验 + 连续 5 次失败锁定 15 分钟（Redis 锁键 TTL 900s，避免改 DDL）。
-- 签发 JWT（access 2h / refresh 7d）；权限缓存 ``auth:perm:{uid}``（7200s）。
-- 登出：将 access ``jti`` 写入黑名单 ``auth:black:{jti}``，并吊销其令牌族 ``fid``，
-  使该次登录签发的 access+refresh 全部失效。
-- 刷新：校验旧 refresh 未吊销；签发新令牌族（新 ``fid``），并吊销旧 ``fid`` 实现轮换。
-- RBAC：角色→权限码多对多（RolePermission）；绑定权限时清对应权限缓存。
+"""内容管理 — 登录 / 登出 / JWT / RBAC 权限（核心业务逻辑）
+────────────────────────────────────────────────
+这一层是"服务层"——被 routers.py 的 API 端点调用，不直接收 HTTP 请求。
+流程详见各函数内的逐步骤注释。
 """
 from __future__ import annotations
 
@@ -62,51 +57,73 @@ async def _clear_user_perm_cache(user: AdminUser) -> None:
 
 
 async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
+    """用户登录 — 完整流程
+
+    ① 根据用户名查数据库 t_admin_user 表
+    ② 如果账号状态是 LOCKED（锁定）：
+       - Redis 里查锁是否过期 → 过期了自动解锁，没过期拒绝登录
+    ③ 如果账号状态是 DISABLED（禁用）→ 直接拒绝
+    ④ 用 bcrypt 比对用户输入的密码和数据库存的哈希值
+    ⑤ 密码错误 → 失败次数 +1，满了 5 次 → 锁定 15 分钟
+    ⑥ 密码正确 → 清空失败计数，签发两个 JWT：
+       access_token（2h） + refresh_token（7d），共享一个令牌族 ID
+    返回 LoginVO（含 token、角色、权限列表）
+    """
+    # ① 查用户
     user = await AdminUser.get_or_none(username=username)
     if user is None:
         raise BizException(ErrorCode.A050001)
 
-    # 锁定时检查 Redis 锁键是否过期
+    # ② 检查账号是否被锁定
     if user.status == AdminStatus.LOCKED.value:
         try:
+            # Redis 里查锁是否还在（key: login:lock:{用户名}）
             locked = await get_redis().exists(f"login:lock:{username}")
-        except Exception:  # noqa: BLE001
-            # security-audit F-07：Redis 不可用时 fail-closed，视同仍处锁定，拒绝登录防爆破。
+        except Exception:
+            # Redis 挂了 → 保守起见，拒绝登录（安全优先）
             locked = settings.security_fail_closed
         if not locked:
+            # 锁已过期 → 自动解锁，允许重新尝试
             user.status = AdminStatus.ENABLED.value
             user.login_fail = 0
             await user.save()
         else:
             raise BizException(ErrorCode.A050002, "账号已锁定，请 15 分钟后再试")
 
+    # ③ 检查账号是否被禁用
     if user.status == AdminStatus.DISABLED.value:
         raise BizException(ErrorCode.A050002, "账号已禁用")
 
+    # ④⑤ 比对密码
     if not verify_password(password, user.password_hash):
+        # 密码错误：累计失败次数
         user.login_fail = (user.login_fail or 0) + 1
         if user.login_fail >= 5:
+            # 失败 5 次 → 锁定账号 15 分钟（数据库 + Redis 双重保障）
             user.status = AdminStatus.LOCKED.value
             try:
                 await get_redis().setex(f"login:lock:{username}", LOGIN_LOCK_TTL, "1")
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                pass  # Redis 挂了也不影响数据库锁，下次登录会被拦截
         await user.save()
         raise BizException(ErrorCode.A050002)
 
-    # 成功：重置失败计数与锁
+    # ⑥ 登录成功 — 重置失败计数，签发 JWT
     user.login_fail = 0
     user.status = AdminStatus.ENABLED.value
     user.last_login = datetime.now(UTC)
     await user.save()
-    await _clear_user_perm_cache(user)
+    await _clear_user_perm_cache(user)  # 清除旧权限缓存，强制下次重新加载
 
+    # 获取用户的角色和权限码
     roles, perms = await load_user_claims(user)
-    # 令牌族：同一次登录签发的 access 与 refresh 共用同一 fid，以支持令牌族吊销
+
+    # 生成令牌族 ID（fid）— 同一次登录的 access+refresh 共享
     fid = uuid.uuid4().hex
     access = create_access_token(user.id, user.username, roles, perms, fid=fid)
     refresh = create_refresh_token(user.id, user.username, fid=fid)
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
+
     return LoginVO(
         access_token=access, refresh_token=refresh, roles=roles,
         permissions=perms, expires_at=expires_at,
@@ -114,17 +131,19 @@ async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
 
 
 async def logout(token: str) -> None:
-    """登出：吊销当前 access 的 jti 以及其令牌族 fid，使该族所有令牌立即失效。
+    """登出 — 让当前 token 及同族 token 全部失效
 
-    best-effort：无法解析的令牌直接忽略，不阻断主流程。
+    ① 解析 token 拿到 jti（token ID）和 fid（令牌族 ID）
+    ② 先吊销整个令牌族（fid 进黑名单）→ 同次登录的 access+refresh 全废
+    ③ 再吊销当前 token 的 jti → 防止这个 token 本身被重复使用
     """
     try:
         payload = decode_token(token)
-    except Exception:  # noqa: BLE001
-        return
-    jti = payload.get("jti")
-    fid = payload.get("fid")
-    # 先吊销令牌族（覆盖该次登录的全部 access+refresh），再吊销当前 access jti
+    except Exception:
+        return  # 解析不了的 token 直接忽略，不报错
+    jti = payload.get("jti")  # token 的唯一 ID
+    fid = payload.get("fid")  # 令牌族 ID（同次登录的 access+refresh 共享）
+    # 先吊销整个族，再吊销单个 token
     if fid:
         await revoke_family(fid)
     if jti:
@@ -132,38 +151,44 @@ async def logout(token: str) -> None:
 
 
 async def refresh(refresh_token: str) -> LoginVO:
-    """无感刷新（T01）：校验旧 refresh 后签发新的 LoginVO（令牌族轮换）。
+    """无感刷新 — 用 refresh_token 换一对新�� token
 
-    - 仅接受 scope=refresh 的合法 token；非法/过期/算法不符一律 C401001。
-    - 旧 refresh 所属令牌族若已吊销（登出/已被轮换），拒绝刷新（重用检测）。
-    - 新签发的 access/refresh 使用全新 fid；签发后吊销旧 fid，使旧 refresh 立即失效。
+    前端在 access_token 快过期时调用这个接口。
+    会校验 refresh_token 是否合法、有没有被吊销（登出后不可刷新）。
+    成功时签发全新令牌族，旧族立刻作废——旧的 refresh_token 只能用一次。
+
+    ① 解析 refresh_token，必须是 scope=refresh 的合法 JWT
+    ② 检查这个 token 所属的令牌族有没有被吊销（被吊销=已登出/已刷新过=拒绝）
+    ③ 查用户是否存在、账号是否正常
+    ④ 签发全新令牌族（新 fid），旧族立即失效
     """
+    # ① 解析
     try:
         payload = decode_token(refresh_token)
-    except Exception:  # noqa: BLE001
+    except Exception:
         raise BizException(ErrorCode.C401001)
     if payload.get("scope") != "refresh":
         raise BizException(ErrorCode.C401001)
 
+    # ② 检查旧族是否已吊销（防止重用已登出/已刷新的 refresh_token）
     old_fid = payload.get("fid")
-    # 令牌族重用检测：旧 refresh 所属族已被吊销则拒绝（旧 refresh 不再可用）
     if old_fid and await is_family_revoked(old_fid):
         raise BizException(ErrorCode.C401001)
 
+    # ③ 查用户
     user = await AdminUser.get_or_none(id=int(payload["sub"]))
     if user is None:
         raise BizException(ErrorCode.C401001)
     if user.status != AdminStatus.ENABLED.value:
         raise BizException(ErrorCode.C403001, "账号已被禁用或锁定")
 
+    # ④ 轮换：签发新族，吊销旧族
     roles, perms = await load_user_claims(user)
-    # 轮换：使用全新令牌族 fid 签发新令牌对
     new_fid = uuid.uuid4().hex
     access = create_access_token(user.id, user.username, roles, perms, fid=new_fid)
     new_refresh = create_refresh_token(user.id, user.username, fid=new_fid)
-    # 新令牌签发完成后，吊销旧令牌族，使旧 refresh 立即失效（无感刷新安全轮换）
     if old_fid:
-        await revoke_family(old_fid)
+        await revoke_family(old_fid)  # 旧 refresh 立刻作废，只能刷一次
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
     return LoginVO(
         access_token=access, refresh_token=new_refresh, roles=roles,

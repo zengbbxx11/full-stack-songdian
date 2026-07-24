@@ -1,10 +1,8 @@
-"""应用配置与数据库/Tortoise 初始化（Shared Kernel）。
-
-设计约束（ARCHITECTURE_PLAN §1 / §5）：
-- 所有配置经 pydantic-settings 读取 .env（L3）。
-- 所有模型注册到**同一个 Tortoise app 标签 ``models``**，跨模块外键用 ``'models.Role'`` 形式引用。
-- aerich 的 ``tortoise_modules=["common.config"]``，即本模块在导入时执行 ``Tortoise.init`` 并登记全部模型。
-- 数据库支持 PostgreSQL（生产，TSVector + zhparser）与 SQLite（本地/测试，搜索降级 LIKE）。
+"""应用配置 — 环境变量 + 数据库连接
+────────────────────────────────────────────────
+两个作用：
+1. Settings 类 — 读取 .env 配置（数据库地址/JWT密钥/Redis等）
+2. init_db() / close_db() — 连接和断开数据库（Tortoise ORM）
 """
 from __future__ import annotations
 
@@ -203,22 +201,24 @@ def is_sqlite() -> bool:
 
 
 async def init_db() -> None:
-    """初始化 Tortoise ORM，注册全部模型到 app 标签 ``models``。
+    """连接数据库并注册所有数据表模型。
 
-    由 ``main.py`` 的 lifespan 在应用启动时调用；测试基座 ``conftest.py`` 也可直接调用。
+    SQLite 模式下会自动建表（CREATE TABLE IF NOT EXISTS）。
+    PostgreSQL 模式下需要用 aerich 工具手动跑迁移（见 README §3）。
     """
+    # Tortoise.init 连数据库 + 注册全部 model
     await Tortoise.init(
         db_url=settings.database_url,
         modules={"models": settings.tortoise_modules},
-        _enable_global_fallback=True,
+        _enable_global_fallback=True,  # 允许在非 async context 中访问 ORM
     )
-    # generate_schemas 仅对 SQLite 等简单库有效；PG 由 aerich 迁移负责。
+    # SQLite 自动建表；PG 由 aerich 迁移负责
     if is_sqlite():
         await Tortoise.generate_schemas()
 
 
 async def close_db() -> None:
-    """关闭连接（lifespan shutdown 调用）。"""
+    """断开数据库连接（应用关闭时调用）"""
     await Tortoise.close_connections()
 
 

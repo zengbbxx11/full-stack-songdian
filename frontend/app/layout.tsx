@@ -231,6 +231,14 @@ export default function RootLayout({
       </head>
       {/* Body：纵向 flex 列布局，将页脚推到底部；白底深字 */}
       <body className="min-h-screen flex flex-col bg-white text-gray-900">
+        {/* 跳转到主内容 — 键盘/读屏用户可达，平时视觉隐藏，聚焦时浮现 */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-[#3E6AE1] focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        >
+          Skip to content
+        </a>
+
         {/* 顶部路由切换进度条 — 点击链接瞬间触发 */}
         <NavigationProgress />
 
@@ -242,7 +250,7 @@ export default function RootLayout({
           - flex-1 将页脚推至底部署短页面
           - pt-14 匹配 Tesla 风格固定页头高度（h-14 = 56px）
         */}
-        <main className="flex-1 pt-14 pb-14">{children}</main>
+        <main id="main" className="flex-1 pt-14 pb-14">{children}</main>
 
         {/* 站点级页脚：公司信息、链接与版权 */}
         <Footer />

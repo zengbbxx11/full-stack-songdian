@@ -9,7 +9,7 @@
 
 import { superMeta } from "next-super-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import ContactMap from "@/components/ContactMap";
+import ContactMap from "@/components/ContactMapLoader";
 import InquiryForm from "@/components/form/InquiryForm";
 import { generateBreadcrumbs, localBusinessSchema } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";

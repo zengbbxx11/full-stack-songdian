@@ -143,6 +143,15 @@ export default function InstantSearch({ className }: { className?: string }) {
           </svg>
           <input
             type="search"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showDropdown && items.length > 0}
+            aria-controls="instant-search-listbox"
+            aria-activedescendant={
+              activeIndex >= 0 && items[activeIndex]
+                ? `instant-search-option-${items[activeIndex].id}`
+                : undefined
+            }
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -181,11 +190,21 @@ export default function InstantSearch({ className }: { className?: string }) {
 
           {/* 结果列表：只显示主图 + 型号 */}
           {!loading && !error && items.length > 0 && (
-            <ul className="max-h-[50vh] overflow-y-auto py-1">
+            <ul
+              id="instant-search-listbox"
+              role="listbox"
+              aria-label="Product suggestions"
+              className="max-h-[50vh] overflow-y-auto py-1"
+            >
               {items.map((item, i) => {
                 const isActive = i === activeIndex;
                 return (
-                  <li key={`product-${item.id}`}>
+                  <li
+                    key={`product-${item.id}`}
+                    id={`instant-search-option-${item.id}`}
+                    role="option"
+                    aria-selected={isActive}
+                  >
                     <Link
                       href={item.url}
                       onClick={() => setOpen(false)}
@@ -194,8 +213,8 @@ export default function InstantSearch({ className }: { className?: string }) {
                         isActive ? "bg-[#F4F4F4]" : "hover:bg-[#F4F4F4]"
                       }`}
                     >
-                      {/* 产品缩略图（加载失败自动显示占位） */}
-                      <Thumbnail src={item.coverImage} alt={item.title} />
+                      {/* 产品缩略图（加载失败自动显示占位）；key=src 使 src 变化时重挂载重置状态 */}
+                      <Thumbnail key={item.coverImage ?? "placeholder"} src={item.coverImage} alt={item.title} />
                       {/* 型号 */}
                       <span className="truncate text-sm font-medium text-[#171A20]">
                         {modelLabel(item)}
@@ -218,11 +237,6 @@ export default function InstantSearch({ className }: { className?: string }) {
  */
 function Thumbnail({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
-
-  // src 变化时重置 failed 状态
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
 
   if (!src || failed) {
     return (

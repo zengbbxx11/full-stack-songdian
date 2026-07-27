@@ -27,6 +27,7 @@ import NewsGrid from "@/components/NewsGrid";
 import HeroSection from "@/components/motion/HeroSection";
 import AnimatedSection from "@/components/motion/AnimatedSection";
 import ExhibitionMarquee from "@/components/ExhibitionMarquee";
+import StatsBand from "@/components/StatsBand";
 import { getExhibitions } from "@/lib/exhibitions";
 import { ShieldCheck, ArrowRight, Camera, Award, Zap, Factory, Lightbulb, Globe, Package, type LucideIcon } from "lucide-react";
 import { superMeta } from "next-super-meta";
@@ -191,7 +192,7 @@ async function NewsSection() {
           <NewsGrid posts={posts} />
         ) : (
           <div className="text-center py-12 text-gray-400 bg-white border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
-            <p className="text-sm">No articles published yet. Add posts in your WordPress admin panel.</p>
+            <p className="text-sm">No articles published yet. Add posts in the admin panel.</p>
           </div>
         )}
 
@@ -322,6 +323,9 @@ export default function HomePage() {
       </section>
       </AnimatedSection>
 
+      {/* ═══ 静态区块：核心经营数据带（深色，数字滚动入场） ═══ */}
+      <StatsBand />
+
       {/* ═══ 静态区块：全球 ODM 合作伙伴 ═══ */}
       <AnimatedSection>
       <section className="py-16 md:py-24 bg-gray-50">
@@ -340,11 +344,11 @@ export default function HomePage() {
           <div className="relative overflow-hidden border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
             <Image
               src={MEDIA.globalOdmPartners}
-              alt="Global export network map showing shipments from China to 60+ countries, with internationally renowned imaging brand ODM partner logos including Konica Minolta, Kenko, Rollei, YASHICA, aiwa, ILFORD, B+H, Gripo, and AKITO"
+              alt="Global ODM partner and export network map"
               width={1200}
               height={500}
               className="w-full h-auto"
-              priority
+              loading="lazy"
             />
           </div>
 

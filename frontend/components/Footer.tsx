@@ -136,7 +136,7 @@ export default function Footer() {
             &copy; {year} {COMPANY.fullName}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/sitemap.xml" target="_blank" className="text-[14px] text-[#767676] hover:text-[#171A20] transition-colors duration-[330ms]">
+            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#767676] hover:text-[#171A20] transition-colors duration-[330ms]">
               Sitemap
             </Link>
             <Link href="/privacy-policy" className="text-[14px] text-[#767676] hover:text-[#171A20] transition-colors duration-[330ms]">

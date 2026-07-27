@@ -2,10 +2,9 @@
 
 /*
  * HeroSection —— 首页全屏 Banner（项目自定义动画组件）
- * 100vh 全屏 hero，以 SMT 产线实拍图为背景，叠加深色蒙层保证文字可读。
- * 标题/副标题/CTA 通过 framer-motion 的 staggerChildren 依次淡入；
- * 尊重系统“减少动态效果”偏好，开启时关闭错位动画。
- * 文案与配色取自 HERO / MEDIA 常量与品牌色（Electric Blue 等）。
+ * 100vh 全屏 hero，以产线实拍图为背景，叠加渐变蒙层保证文字可读。
+ * 标题/副标题/CTA 通过 framer-motion 的 staggerChildren 依次上浮淡入；
+ * 底部带滚动引导指示；尊重系统“减少动态效果”偏好，开启时关闭错位动画。
  */
 
 import Link from "next/link";
@@ -14,37 +13,25 @@ import { motion, useReducedMotion } from "framer-motion";
 import { HERO } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 
-/**
- * HeroSection — 首页全屏 Banner
- * ------------------------------------------------------------------
- * 100vh 全屏 hero，SMT 产线实拍图作背景。
- * 深色叠加层确保文字清晰可读，大号标题 + 居中布局。
- * 尊重 prefers-reduced-motion。
- */
-
-const COLORS = {
-  electricBlue: "#3E6AE1",
-  electricBlueHover: "#3457B8",
-  graphite: "#393C41",
-  white: "#FFFFFF",
-} as const;
-
 interface HeroSectionProps {
-  /** Banner 图片 URL（从 WordPress 页面读取，fallback 到 media.ts） */
+  /** Banner 图片 URL（缺省时回退到 media.ts 的 heroBanner） */
   bannerUrl?: string;
 }
 
 export default function HeroSection({ bannerUrl }: HeroSectionProps) {
-  // useReducedMotion：读取系统“减少动态效果”偏好，据此关闭错位动画。
+  // useReducedMotion：读取系统“减少动态效果”偏好，据此关闭错位与循环动画。
   const prefersReducedMotion = useReducedMotion();
 
   // 减少动态时 staggerChildren 置 0，避免子元素依次动画。
-  const staggerChildren = prefersReducedMotion ? 0 : 0.1;
+  const staggerChildren = prefersReducedMotion ? 0 : 0.12;
+
+  // 子元素统一为上浮淡入（y: 24 → 0），比纯透明度过渡更有层次
   const itemVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0 },
   };
-  const TRANSITION = { duration: 0.33, ease: "easeOut" as const };
+  // 与 AnimatedSection 一致的高级减速缓动，动效更顺滑
+  const TRANSITION = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     <section className="relative overflow-hidden min-h-screen flex items-center">
@@ -57,8 +44,8 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         className="object-cover"
       />
 
-      {/* 深色叠加层 — 40% 不透明度保证白字清晰 */}
-      <div className="absolute inset-0 bg-black/40" />
+      {/* 渐变蒙层 — 底部最深、顶部最浅：文字区清晰可读，同时保留图片上部细节 */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/25" />
 
       {/* Hero 内容 — 左侧对齐，更大气 */}
       <motion.div
@@ -67,22 +54,16 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         animate="visible"
         variants={{
           visible: {
-            transition: { staggerChildren, delayChildren: 0.1 },
+            transition: { staggerChildren, delayChildren: 0.15 },
           },
         }}
       >
         <div className="max-w-3xl">
-        {/* 行业徽章 */}
+        {/* 行业徽章 — 描边 + 毛玻璃，更精致 */}
         <motion.span
           variants={itemVariants}
           transition={TRANSITION}
-          className="inline-block px-4 py-1.5 text-white text-sm font-medium rounded-full mb-8"
-          style={{
-            fontSize: "14px",
-            fontWeight: 500,
-            backgroundColor: "rgba(255, 255, 255, 0.15)",
-            color: COLORS.white,
-          }}
+          className="inline-block rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm mb-8"
         >
           {HERO.badge}
         </motion.span>
@@ -96,7 +77,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           {HERO.title}
         </motion.h1>
 
-        {/* 副标题 — 20px，白色半透明 */}
+        {/* 副标题 — 白色半透明 */}
         <motion.p
           variants={itemVariants}
           transition={TRANSITION}
@@ -114,11 +95,11 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           {/* 主按钮 — 蓝色，48px 高 */}
           <Link
             href={HERO.cta.primary.href}
-            className="inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-white rounded bg-[#3E6AE1] hover:bg-[#3457B8] transition-colors duration-[330ms]"
+            className="group inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-white rounded bg-[#3E6AE1] hover:bg-[#3457B8] transition-colors duration-[330ms]"
             style={{ borderRadius: "4px" }}
           >
             {HERO.cta.primary.label}
-            <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </Link>
@@ -133,6 +114,26 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           </Link>
         </motion.div>
         </div>
+      </motion.div>
+
+      {/* 滚动引导指示 — 底部居中，缓慢上下浮动，引导用户下滚 */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.1, duration: 0.6 }}
+        aria-hidden="true"
+      >
+        <motion.div
+          animate={prefersReducedMotion ? {} : { y: [0, 8, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          className="flex flex-col items-center gap-2 text-white/70"
+        >
+          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Scroll</span>
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </motion.div>
       </motion.div>
     </section>
   );

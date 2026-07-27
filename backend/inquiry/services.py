@@ -81,7 +81,13 @@ async def list_inquiries(
     if status is not None:
         q = q.filter(status=status)
     total = await q.count()
-    rows = await q.order_by(req.order_by).offset(req.offset).limit(req.limit)
+    # Inquiry 模型无 sort_order 字段（那是 product/category 拖拽排序用的），
+    # 必须约束为真实存在的字段，否则 Tortoise order_by 抛 FieldError → 500。
+    order_by = req.order_by or "-created_time"
+    _allowed = {"created_time", "id", "status", "name", "email", "company"}
+    if order_by.lstrip("-") not in _allowed:
+        order_by = "-created_time"
+    rows = await q.order_by(order_by).offset(req.offset).limit(req.limit)
     return [InquiryVO.from_model(r) for r in rows], total
 
 

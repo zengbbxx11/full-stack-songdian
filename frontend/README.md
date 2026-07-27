@@ -65,6 +65,7 @@ npm run start
 | `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | — | 站点描述（SEO） |
 | `NEXT_PUBLIC_ISR_REVALIDATE` | `60` | ISR 缓存时间（秒） |
+| `NEXT_PUBLIC_GA_ID` | — | Google Analytics 4 测量 ID（如 `G-XXXX`）。**仅当用户在 Cookie 同意横幅接受「分析」类后才加载**；不配置则 GA 完全不加载，站点零追踪 |
 
 ### SMTP 邮件通知（可选）
 
@@ -130,6 +131,8 @@ frontend/
 │  ├─ AnimatedCounter.tsx       # 数字滚动动画
 │  ├─ form/                     # InquiryForm + FormField（RHF + Zod）
 │  ├─ motion/                   # framer-motion 封装
+│  ├─ CookieConsent.tsx         # Cookie 同意横幅（底部横向条幅：左文案右按钮；同意后才注入 GA）
+│  ├─ CookieSettingsTrigger.tsx # 页脚「Cookie Settings」重开入口（派发 cookie-settings:open 事件）
 │  └─ ui/                       # shadcn/ui 基础组件
 │
 ├─ lib/
@@ -239,6 +242,16 @@ frontend/
 - 全局 `metadata` 定义在 `app/layout.tsx`
 - JSON-LD：`Organization`、`WebSite`、`BreadcrumbList`、`Article`、`Product`、`FAQPage`、`LocalBusiness`
 - `app/robots.ts` 与 `app/sitemap.ts` 自动生成
+
+---
+
+## 隐私与 Cookie 同意
+
+- 官网底部以**横向条幅**呈现 Cookie 同意（`components/CookieConsent.tsx`）：左文案、右按钮（Accept all / Reject / Manage），更宽更矮，视觉沿用 Tesla 极简体系（`bg-card` + 极淡 `ring` 无阴影、Electric Blue 仅主 CTA）。
+- 分类：**Strictly necessary（必要，始终开启、不可关）** 与 **Analytics（分析，opt-in）**。偏好存于 `localStorage` 键 `sd-cookie-consent`（含版本号 `v` 与时间戳）。
+- **Google Analytics 仅在用户接受「分析」类 Cookie 且配置了 `NEXT_PUBLIC_GA_ID` 时才注入**（见「环境变量」），即「同意后才加载」的 GDPR/ePrivacy 合规门控；未配置则不发任何分析 Cookie。
+- 页脚「Cookie Settings」（`components/CookieSettingsTrigger.tsx`）随时重新打开偏好面板。
+- 后台 `admin-next` 为登录后内部工具，仅用严格必要的 `admin_token` Cookie + JWT/主题 `localStorage`，**不**展示此横幅。
 
 ---
 

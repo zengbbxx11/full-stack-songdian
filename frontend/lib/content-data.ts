@@ -307,7 +307,7 @@ export const STRENGTHS = [
  */
 export const PRIVACY = {
   /** 最近更新日期 */
-  lastUpdated: "July 10, 2026",
+  lastUpdated: "July 27, 2026",
   /** 开篇说明（数据控制者 + 适用范围） */
   intro:
     "Songdian Technology (Guangdong) Co., Ltd. (\"Songdian\", \"we\", \"us\") operates this website to present our OEM/ODM digital camera manufacturing services to business customers worldwide. This Privacy Policy explains what personal information we collect, how we use and protect it, and the choices and rights you have. By using this site, you agree to the practices described below.",
@@ -330,7 +330,7 @@ export const PRIVACY = {
         "Inquiry & contact forms — your name, company name, business email, optional phone number, and the message you submit.",
         "Subscriptions — your email address if you sign up for product updates or newsletters.",
         "Partner accounts — login credentials and profile details if you are granted access to a customer portal.",
-        "Automatically collected data — IP address, browser and device type, referring pages, and aggregated usage analytics gathered through cookies and similar technologies (see Section 5).",
+        "Automatically collected data — IP address, browser and device type, and referring pages. Aggregated, non-identifying usage analytics are collected only where you have accepted analytics cookies (see Section 5).",
       ],
     },
     {
@@ -355,11 +355,11 @@ export const PRIVACY = {
       id: "cookies",
       title: "5. Cookies and Similar Technologies",
       paragraphs: [
-        "We use cookies and comparable technologies to keep the site functioning, remember preferences, and understand how visitors use it. You can control or disable cookies through your browser settings; some features may not work if you do so.",
+        "We use cookies and comparable technologies to keep the site functioning, remember preferences, and understand how visitors use it. On your first visit a consent banner lets you choose which categories to allow: strictly necessary cookies are always active, while analytics cookies load only after you accept them. You can change your choice any time via “Cookie Settings” in the footer. You can also control or disable cookies through your browser settings; some features may not work if you do so.",
       ],
       bullets: [
         "Strictly necessary — required for core site functionality and security.",
-        "Analytics — help us measure traffic and improve the site (aggregated, non-identifying).",
+        "Analytics — help us measure traffic and improve the site (aggregated, non-identifying). Loaded only after you accept them.",
         "Preference — remember choices such as language or region.",
       ],
     },

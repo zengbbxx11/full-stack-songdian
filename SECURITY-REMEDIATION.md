@@ -45,6 +45,7 @@ run-1 / run-2 的修复集中在后端。本次在**前端渲染层**补一道�
 | # | 严重度 | 问题 | 修复位置 |
 |---|--------|------|----------|
 | F-20 | HIGH | 详情页 `dangerouslySetInnerHTML` 仅做格式清洗未白名单消毒，存在存储型 XSS 入口 | `frontend/lib/html-cleaner.ts` 在格式清洗后新增 `sanitize-html` 白名单消毒层（拦截 `script`/`iframe`/`on*`/`javascript:`，外链自动补 `rel="noopener noreferrer"`）；新增 `sanitize-html` 依赖 |
+| F-21 | MEDIUM | 官网缺少 Cookie 同意机制，开启 GA 即构成 GDPR/ePrivacy 违规 | 新增 `frontend/components/CookieConsent.tsx`（底部横向条幅，左文案右按钮）+ `CookieSettingsTrigger.tsx`（页脚重开）；分类 Strictly necessary（始终开）/ Analytics（opt-in）；Google Analytics 改为**仅当用户接受「分析」类且配置 `NEXT_PUBLIC_GA_ID` 时才注入**，实现「同意后才加载」合规门控；偏好存 `localStorage` 键 `sd-cookie-consent`（含版本号）。后台 `admin-next` 仅用严格必要 `admin_token` Cookie，不展示此横幅 |
 
 > 说明：run-2 的 F-19 修复的是「CSS 注入顺序」（`style` 剥离先于 `width` 剥离，提交 `3109b9c`）；本次 F-20 是新增白名单消毒层，二者互补，覆盖不同攻击向量（CSS 注入 vs. 脚本/事件注入）。
 

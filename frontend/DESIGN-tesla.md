@@ -284,3 +284,28 @@ When refining existing screens generated with this design system:
 3. Use natural language descriptions, not CSS values — "barely rounded corners" not "border-radius: 4px"
 4. Describe the desired "feel" alongside specific measurements — "gallery-like silence between sections" communicates the whitespace philosophy better than "margin-bottom: 100vh"
 5. Always verify that photography is doing the emotional heavy-lifting — if the UI itself feels "designed," it's too much
+
+---
+
+## 9. 本项目增量实现（符合 Tesla 精神）
+
+本官网在「Tesla 极简」框架内落地时，新增了下列元素。它们均不违背上述原则（无装饰阴影、无多余色相、过渡统一 0.33s），作为设计系统的**有意扩展**记录于此，便于后续维护者区分「Tesla 禁止项」与「本项目增量项」：
+
+### 9.1 深色数据带（StatsBand）
+- 用 Carbon Dark（`#171A20`）作整条背景 + 大号数字（经营指标：面积 / 国家数 / 产能 / 专利等），插入首页浅色区块之间，形成明暗节奏。
+- 这是 Tesla「viewport-height 明暗 section」思路的变体，深色背景不引入新色相，仍属 monochrome。
+
+### 9.2 数字滚动（count-up）
+- 数据带数字入场时从 0 滚动到目标值（framer-motion），属 opacity / 数值动画，**非**位移/缩放变换，不破坏「color-only motion」基调。
+
+### 9.3 Hero 渐变蒙层
+- 首屏图片上叠加「底部深 → 顶部浅」的线性渐变，**仅用于提升白字可读性**，属功能性蒙层而非装饰性渐变（Design System 第 2 节禁用的是装饰渐变）。
+
+### 9.4 滚动引导 & 平滑滚动
+- Hero 底部加向下滚动引导箭头；全站 `scroll-behavior: smooth` + 锚点 `scroll-padding-top` 避开固定页头，属于导航辅助，不影响视觉。
+
+### 9.5 可访问性必需项（不影响视觉）
+- 全局 `:focus-visible` 焦点环（键盘导航可见）、全站 skip-link（跳到主内容）、搜索框 combobox/listbox ARIA。这些是为合规性必须存在、视觉上默认隐藏的元素。
+
+### 9.6 有意偏离点（需知会）
+- 首屏 Hero 与数据带使用了进场**位移**（translateY / y）配合透明度，轻微偏离「hover/interaction 仅 color-only」的纯交互约束——这是为换取首屏冲击力，**且尊重 `prefers-reduced-motion`**（用户开启减少动效时全部降级为直接显示）。常规 hover 态仍严格保持 color-only（无 scale/translate）。

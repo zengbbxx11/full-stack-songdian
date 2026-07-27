@@ -19,7 +19,8 @@
 | 邮件 | nodemailer SMTP（询盘通知，可选配置） |
 | 动画 | framer-motion（`components/motion/*`） |
 | 图标 | lucide-react（`^1.23.0`） |
-| 地图 | Leaflet（仅在客户端 `useEffect` 内动态 `import`，规避 SSR） |
+| HTML 消毒 | `sanitize-html`（服务端白名单过滤，`lib/html-cleaner.ts`） |
+| 地图 | Leaflet（经 `components/ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 按需加载，不进首屏 bundle） |
 | SEO | next-super-meta（元信息）+ `lib/seo.ts`（JSON-LD 结构化数据）+ `app/robots.ts` / `app/sitemap.ts` |
 | 性能 | React `cache()` 请求去重 + Streaming SSR + Suspense 边界 + 5 个 loading.tsx 骨架屏 + 顶部进度条 |
 
@@ -112,13 +113,17 @@ frontend/
 │  ├─ NavigationProgress.tsx    # 顶部路由进度条（品牌红 #d4343e）
 │  ├─ FloatingInquiry.tsx       # 全站底部常驻询盘栏
 │  ├─ Breadcrumbs.tsx           # Tesla 风格面包屑
-│  ├─ ProductCard.tsx           # 产品卡片（next/image）
+│  ├─ ProductCard.tsx           # 产品卡片（RSC，图片用 SafeImage 兜底）
+│  ├─ SafeImage.tsx             # 图片加载失败占位（客户端子组件，卡片本体保持 RSC）
 │  ├─ ProductGallery.tsx        # 产品图集（客户端缩略图切换）
-│  ├─ PostCard.tsx              # 文章卡片
+│  ├─ PostCard.tsx              # 文章卡片（RSC，图片用 SafeImage 兜底）
 │  ├─ NewsGrid.tsx              # 文章网格
 │  ├─ ExhibitionMarquee.tsx     # 展会图片横向滚动墙
 │  ├─ FaqToc.tsx                # FAQ 分类目录（滚动高亮 + 平滑锚点跳转）
 │  ├─ ContactMap.tsx            # Leaflet 地图（客户端动态加载）
+│  ├─ ContactMapLoader.tsx     # Leaflet 按需加载包装（next/dynamic ssr:false）
+│  ├─ StatsBand.tsx             # 首页深色数据带（framer-motion count-up）
+│  ├─ InstantSearch.tsx         # 顶部即时搜索框（combobox/listbox ARIA）
 │  ├─ CertificateGallery.tsx    # 证书 Lightbox 画廊
 │  ├─ FactoryVideo.tsx          # 工厂视频播放器
 │  ├─ SpotlightCard.tsx         # 鼠标聚光灯卡片
@@ -129,6 +134,8 @@ frontend/
 │
 ├─ lib/
 │  ├─ api/                      # FastAPI 客户端（products / news / search / categories）
+│  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
+│  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
 │  ├─ content-data.ts           # 全站可编辑文案
 │  ├─ inquiry-service.ts        # 询盘服务端 action（文件持久化 + SMTP）
 │  ├─ seo.ts                    # 结构化数据：organization / breadcrumb / article / product / faq
@@ -179,7 +186,7 @@ frontend/
 | `/products/[slug]` | FastAPI 产品详情 + 相关产品 | ISR 60s + **Suspense** |
 | `/news` | FastAPI 新闻列表 | ISR 60s |
 | `/news/[slug]` | FastAPI 新闻详情 | ISR 60s |
-| `/search` | FastAPI 全文搜索 | SSR |
+| `/search` | FastAPI 全文搜索 | SSR（实时 `no-store`，新内容即时可搜） |
 | `/about` | `content-data.ts` 静态内容 | 静态 |
 | `/solutions` | `content-data.ts` | 静态 |
 | `/solutions/faq` | `content-data.ts` | 静态（revalidate 3600s） |
@@ -255,4 +262,4 @@ pm2 restart songdian
 - **沙箱环境**：`npm run dev` 可能因 fork 限制失败，改用 `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000`
 - **Node 24 必须**：Next.js 16.2 Turbopack 的 `next/image` 远程优化在 Node 22 下有 Web Streams 兼容性 bug（`controller[kState].transformAlgorithm is not a function`），导致 ```Jest worker``` 错误，必须用 Node ≥24
 - **`next build` 在受限沙箱会被 safe-delete 防护拦死**，请用 dev server 验证
-- **Leaflet 必须客户端加载**：`ContactMap` 在 `useEffect` 内 `await import("leaflet")`
+- **Leaflet 走按需加载**：`ContactMap` 经 `ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 包裹，仅联系页加载，不进首屏 bundle

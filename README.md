@@ -208,6 +208,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | ④ | 后台管理界面 (Phase 1) | ✅ | JWT 登录/刷新、产品/新闻 CRUD、分类管理、产品拖拽排序、询盘管理 |
 | ⑤ | 排序管理 | ✅ | Product/News 加 sort_order，admin 拖拽排序持久化，前端图片 404 兜底 |
 | ⑥ | Node 24 迁移 | ✅ | Node 22→24 解决 Next.js 16 Turbopack Web Streams 兼容性问题 |
+| ⑦ | 前端优化与美化 | ✅ | 安全消毒/错误降级/搜索实时/清 WP 残留/可访问性/性能/美化 |
 
 ### Phase 1 后台管理已交付清单
 - JWT 登录 + 无感刷新 (`/api/v1/admin/refresh`)
@@ -227,6 +228,15 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 - WordPress 残留清理：`wp-content`→`article-body` 重命名，`lib/media.ts` 去 WP URL 依赖
 - HTML 清洗加固：`cleanPostContent()` 强制剥离所有内联 style，格式由 `.article-body` CSS 统一接管
 - 翻页按钮宽高对齐 + 过渡动画精确化
+
+### 前端优化与美化（2026-07-27）
+- **安全消毒**：`lib/html-cleaner.ts` 在格式清洗后加 `sanitize-html` 白名单消毒，拦截 `script`/`iframe`/`on*`/`javascript:`；外链自动补 `rel="noopener noreferrer"`
+- **错误降级**：产品/新闻列表 fetch 加 try/catch，后端异常时渲染「内容暂不可用 + 重试」而非整页 error
+- **搜索实时化**：搜索请求改 `cache:"no-store"`，新上内容即时可搜
+- **清理 WP 残留**：删除 `lib/wordpress.ts` 死代码（约 600 行）；empty 文案 WordPress/WooCommerce 改 admin panel；`next.config.ts` 移除含硬编码 IP 的废弃 WP 图床
+- **可访问性**：全站 skip-link、全局 focus-visible 焦点环；Footer 外链补 rel；搜索框补 combobox/listbox ARIA
+- **性能**：抽 `SafeImage` 子组件使 `ProductCard`/`PostCard` 回归 RSC；`ContactMap` 改 `next/dynamic` 按需加载（Leaflet 不进首屏）
+- **美化**：Hero 重做（上浮 stagger + 渐变蒙层 + 毛玻璃徽章 + 滚动引导）；新增深色数据带 `StatsBand`（真实经营指标 + 数字滚动）；全站平滑滚动
 
 ### 待开发（P1/P2）
 

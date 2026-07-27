@@ -38,6 +38,16 @@
 - **类型检查**：`admin-next` `tsc --noEmit` 无本次引入的新错误（`products/page.tsx` 与 `SignInForm` 的 `Input required` 报错为改造前遗留，与本次无关）；`frontend` 改动文件无错。
 - **重启生效**：后端已重启（:8000，PID 19180），日志显示种子幂等完成、无报错；既有 admin 密码非空，`_seed_admin` 补设逻辑未触发（无副作用）。
 
+## 后续加固（2026-07-27，前端渲染层纵深防御）
+
+run-1 / run-2 的修复集中在后端。本次在**前端渲染层**补一道存储型 XSS 的纵深防御，与后端 `common/html_cleaner.py` 的白名单消毒形成双层防护：
+
+| # | 严重度 | 问题 | 修复位置 |
+|---|--------|------|----------|
+| F-20 | HIGH | 详情页 `dangerouslySetInnerHTML` 仅做格式清洗未白名单消毒，存在存储型 XSS 入口 | `frontend/lib/html-cleaner.ts` 在格式清洗后新增 `sanitize-html` 白名单消毒层（拦截 `script`/`iframe`/`on*`/`javascript:`，外链自动补 `rel="noopener noreferrer"`）；新增 `sanitize-html` 依赖 |
+
+> 说明：run-2 的 F-19 修复的是「CSS 注入顺序」（`style` 剥离先于 `width` 剥离，提交 `3109b9c`）；本次 F-20 是新增白名单消毒层，二者互补，覆盖不同攻击向量（CSS 注入 vs. 脚本/事件注入）。
+
 ## 部署提醒
 
 1. **JWT_SECRET**：生产必须通过环境变量注入 ≥32 字节随机值（启动守卫已拒绝占位符）。

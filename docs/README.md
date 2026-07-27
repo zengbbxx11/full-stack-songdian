@@ -18,6 +18,10 @@ Songdian B2B 工厂外贸全栈项目的架构设计文档。
 ### 已完成但文档待补充
 - **排序管理**：Product/News 已加 `sort_order`，admin 拖拽排序通过 `PUT {sort_order: N}` 持久化，前端 `onError` 兜底缺失图片
 
+### 其他子项目的 docs 目录
+- `../frontend/docs/`：`integration-plan.md`（WP→FastAPI 对接方案，**已落地**，见文首状态横幅）、`class-diagram.mermaid` / `sequence-diagram.mermaid`（前端数据流向：`lib/api/*` → FastAPI）
+- `../backend/docs/`：`ARCHITECTURE_PLAN.md`（后端架构规划）、`class-diagram.mermaid` / `sequence-diagram.mermaid`（后端模块关系与请求时序）
+
 ---
 
 ## 项目顶层 README

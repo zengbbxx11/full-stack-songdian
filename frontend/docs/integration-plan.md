@@ -4,13 +4,17 @@
 > 说明：本文所有结论均来自**亲读源码**（backend routers/schemas/models、frontend pages/lib），非凭记忆。
 > 后端根：`backend/` ｜ 前端根：`frontend/`（代码在根目录，非 src/）
 
+> ⚠️ **文档状态（2026-07 更新）**：本文是 **WordPress → FastAPI 迁移方案的原始设计稿**，迁移**已完成**。
+> `lib/wordpress.ts` 已删除，前端全面改用 `lib/api/*`（products / news / search）对接自研 FastAPI（`:8000`，前缀 `/api/v1`）。
+> 文中「当前数据来自 `lib/wordpress.ts`」「待明确 #1~#7」等为**迁移前状态**，对应问题（列表封面图 `cover_image`、搜索结果页、相邻文章、banner 静态化等）均已落地。下方保留为历史设计记录，最新架构以 `frontend/AGENTS.md`、`backend/AGENTS.md` 及根 `README.md`「前端优化与美化」小节为准。
+
 ---
 
 ## 0. 关键结论速览（先读这段）
 
 | # | 结论 | 影响 |
 |---|------|------|
-| 1 | 四个展示页目前数据**全部来自 `lib/wordpress.ts`（实时调 WP/WC REST）**，`content-data.ts` 只用于静态文案（COMPANY/分类/优势等），不参与产品/资讯数据 | 本轮只需替换 `lib/wordpress.ts` 的取数函数 |
+| 1 | （迁移前状态）四个展示页数据曾全部来自 `lib/wordpress.ts`（实时调 WP/WC REST）；**现已完成迁移**，改用 `lib/api/*` 对接自研 FastAPI | 对应工作已完成：`wordpress.ts` 已删除，见 `frontend/AGENTS.md` |
 | 2 | 后端端口 **8000**（`common/config.py` 默认 & `.env` PORT=8000），路由前缀 **`/api/v1`**，静态图 `/uploads`（`media_url`）。CORS 全开 | 前端 baseURL = `http://localhost:8000` |
 | 3 | ⚠️ **公开 VO（ProductPageVO / NewsPageVO / SearchItemVO）均不含 `cover_image` 字段**，详情 VO 才有 `galleries[].image_url`。列表/搜索页**拿不到封面图** | 本轮最大阻塞点，需后端补 `cover_image` 或前端用占位（见待明确 #1） |
 | 4 | 后端分页字段名是 **`list`**（非 `items`），外层包 **`Result{code,msg,msgI18n,data,traceId,timestamp}`**，成功 `code="0"` | API client 必须解 Result + 把 `list` 映射成前端 `{total,totalPages}` |
@@ -33,7 +37,7 @@
 | `app/page.tsx`（首页） | `getPosts` / `getProducts` / `getProductCategories` / `getSiteBanner`（WP 页面 home-banner） | L24 import；L54 `getSiteBanner`；L60/71/173 |
 | `lib/site-config.ts` | `content-data.ts` 的 `COMPANY` / `PRODUCT_CATEGORIES`（导航/页脚） | L9 import；L39-45 |
 
-**结论**：产品/资讯/搜索的「真实数据」全部经 `lib/wordpress.ts` 实时拉 WP；`content-data.ts` 仅提供站点级静态内容（公司信息、分类展示名、优势、信任条、首页文案），**本轮不改**。
+**结论（迁移前）**：产品/资讯/搜索数据曾全部经 `lib/wordpress.ts` 实时拉 WP；**迁移后**真实数据改由 `lib/api/*` 取自 FastAPI，`content-data.ts` 仍提供站点级静态内容（公司信息、分类展示名、优势、信任条、首页文案）。
 
 ### 1.2 `content-data.ts` 中产品/资讯相关字段清单（与后端 schema 逐字段对比）
 

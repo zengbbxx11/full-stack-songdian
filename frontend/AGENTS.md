@@ -17,7 +17,7 @@
 |---|------|
 | 框架 | Next.js 16 + React 19 + TypeScript（strict） |
 | 样式 | Tailwind CSS v4 + shadcn/ui |
-| 后端 | 项目 FastAPI（`localhost:8000`），数据从 WordPress ETL 迁移而来 |
+| 后端 | 项目 FastAPI（`localhost:8000`），数据已从旧 WordPress 后端经 ETL 迁至 PostgreSQL（WP 残留代码已清理） |
 | 表单 | react-hook-form + Zod + Server Actions |
 | SEO | next-super-meta + JSON-LD 结构化数据 |
 | 动画 | framer-motion |
@@ -77,7 +77,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `/solutions` | content-data.ts 解决方案列表（OEM/ODM/经销） | Static |
 | `/solutions/faq` | content-data.ts FAQ 列表 | Static |
 | `/contact` | 联系表单 + Leaflet 地图 + SMTP | Static |
-| `/search` | FastAPI 全文搜索 | SSR |
+| `/search` | FastAPI 全文搜索 | SSR（实时 `no-store`，新内容即时可搜） |
 | `/privacy-policy` | content-data.ts 隐私政策 | Static |
 
 ### 重定向（`next.config.ts` → 308 permanent）
@@ -109,22 +109,26 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | 文件 | 职责 |
 |------|------|
 | `lib/content-data.ts` | 全站可编辑文本（公司信息、产品分类、服务、FAQ、About 时间轴等） |
-| `lib/api/client.ts` | FastAPI 客户端 — `apiFetch()` 封装 + Result 信封解析 + ISR 60s |
+| `lib/api/client.ts` | FastAPI 客户端 — `apiFetch()` 封装 + Result 信封解析 + 缓存控制（revalidate / no-store / tags） |
 | `lib/api/products.ts` | 产品数据访问层（列表/详情/分类/slug） |
 | `lib/api/news.ts` | 新闻数据访问层 |
 | `lib/api/search.ts` | 全文搜索数据访问层 |
 | `lib/inquiry-service.ts` | 询盘提交 Server Action（文件持久化 + SMTP 邮件通知） |
 | `lib/seo.ts` | JSON-LD 结构化数据生成器 |
-| `lib/html-cleaner.ts` | Astra 主题 HTML 清洗器（去除容器/元信息/内联样式） |
+| `lib/html-cleaner.ts` | 富文本 HTML 清洗器（去内联样式/容器）+ `sanitize-html` 白名单消毒（堵存储型 XSS），新闻/产品详情 `dangerouslySetInnerHTML` 必经此层 |
 | `lib/site-config.ts` | 页脚链接等静态配置 |
 | `lib/types.ts` | TypeScript 类型定义（ProductSummary, ProductDetail, WCProductCategory 等） |
 | `components/Header.tsx` | 导航栏（白底黑字，品牌红 hover，CSS transition） |
 | `components/Footer.tsx` | 页脚 |
 | `components/NavigationProgress.tsx` | 顶部路由切换进度条（品牌红 #d4343e，零依赖） |
 | `components/motion/HeroSection.tsx` | 首页 Hero |
-| `components/ProductCard.tsx` | 产品卡片（hover 红框+阴影+缩放+标签） |
+| `components/ProductCard.tsx` | 产品卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 红框+阴影+缩放） |
 | `components/ProductGallery.tsx` | 产品详情页左侧缩略图+右侧大图（next/image + priority） |
-| `components/PostCard.tsx` | 新闻卡片（hover 蓝框+阴影+亮度变化） |
+| `components/PostCard.tsx` | 新闻卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 蓝框+阴影+亮度变化） |
+| `components/SafeImage.tsx` | 客户端图片组件（仅处理 onError 换占位），供 RSC 卡片复用，减少 hydration |
+| `components/ContactMapLoader.tsx` | 客户端加载器，`next/dynamic({ ssr:false })` 按需引入 Leaflet，不进首屏 bundle |
+| `components/StatsBand.tsx` | 首页深色数据带（真实经营指标 + 数字滚动 count-up 入场，framer-motion） |
+| `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义，键盘可选） |
 
 ---
 
@@ -156,6 +160,10 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | 字体 display: "swap" | `app/layout.tsx` — Geist 字体 | 消除文字不可见闪烁（FOIT） |
 | `apiFetch()` 统一封装 | `lib/api/client.ts` | 所有 API 调用共享 ISR revalidate 逻辑 |
 | Tree-shaking | `next.config.ts` — `optimizePackageImports` | framer-motion / lucide-react 按需加载 |
+| 卡片回归 RSC | `SafeImage.tsx` + `ProductCard/PostCard` | 图片兜底逻辑下沉到客户端子组件，卡片本体为服务端组件，减少 hydration |
+| 地图按需加载 | `ContactMapLoader.tsx` | `next/dynamic({ ssr:false })`，Leaflet 仅在联系页加载，不进首屏 bundle |
+| 列表错误降级 | `app/products`、`app/news` | fetch 加 try/catch，后端异常时渲染「暂不可用+重试」而非整页 error |
+| 可访问性 | `app/layout.tsx` + `globals.css` | 全站 skip-link 跳主内容 + 全局 focus-visible 焦点环；外链补 `rel="noopener"` |
 
 ---
 
@@ -211,7 +219,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | 改询盘表单 | `components/form/InquiryForm.tsx` |
 | 改询盘收件邮箱 | `.env.local` → `INQUIRY_EMAIL_TO` |
 | 添加重定向 | `next.config.ts` → `redirects()` |
-| 新闻详情样式乱 | Astra 主题 HTML 遗留，由 `html-cleaner.ts` 自动清洗 |
+| 新闻详情样式乱 | 历史富文本 HTML 遗留，由 `html-cleaner.ts` 自动清洗（去内联样式）+ `sanitize-html` 白名单消毒 |
 
 ---
 

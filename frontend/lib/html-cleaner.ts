@@ -6,6 +6,40 @@
  * 清洗后的 HTML 由 .article-body CSS 统一排版。
  */
 
+import sanitizeHtml from "sanitize-html";
+
+// sanitize-html 白名单：只允许文章内容所需的安全标签与属性。
+// script/iframe/object 等危险标签、on* 事件属性、javascript:/data: 协议一律被移除（防存储型 XSS）。
+const ARTICLE_WHITELIST: sanitizeHtml.IOptions = {
+  allowedTags: [
+    "h1", "h2", "h3", "h4", "h5", "h6", "p", "a", "ul", "ol", "li", "blockquote",
+    "img", "figure", "figcaption",
+    "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
+    "strong", "b", "em", "i", "u", "s", "mark", "small", "sup", "sub", "code", "pre",
+    "hr", "br", "div", "span", "section", "video", "source",
+  ],
+  allowedAttributes: {
+    a: ["href", "name", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height", "loading"],
+    video: ["src", "controls", "poster", "width", "height"],
+    source: ["src", "type"],
+    td: ["colspan", "rowspan"],
+    th: ["colspan", "rowspan"],
+    // 保留 class（.article-body 依赖 alignleft/wp-block-gallery 等类名排版）
+    "*": ["class", "id"],
+  },
+  // 仅允许安全协议，拦截 javascript:/data:/vbscript: 协议注入
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+  allowedSchemesAppliedToAttributes: ["href", "src"],
+  // 外链 target=_blank 自动补 rel="noopener noreferrer"，防 reverse tabnabbing
+  transformTags: {
+    a: (tagName, attribs) =>
+      attribs.target === "_blank"
+        ? { tagName, attribs: { ...attribs, rel: "noopener noreferrer" } }
+        : { tagName, attribs },
+  },
+};
+
 /**
  * 清洗所有来源 HTML，确保格式统一
  * - 剥离所有内联 style 属性（格式由 .article-body CSS 接管）
@@ -74,5 +108,6 @@ export function cleanPostContent(html: string): string {
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");
 
-  return cleaned;
+  // 最后做白名单安全消毒：移除危险标签 / on* 事件属性 / 不安全协议（防存储型 XSS）
+  return sanitizeHtml(cleaned, ARTICLE_WHITELIST);
 }

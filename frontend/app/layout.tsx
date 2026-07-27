@@ -20,7 +20,7 @@
  *   - JSON-LD structured data (Organization + WebSite schemas)
  *   - Persistent UI shell: Header, main content area, Footer
  *   - FloatingInquiry quick-contact widget visible on all pages
- *   - Google Analytics scaffolding (commented-out GA4 snippet)
+ *   - CookieConsent banner (consent-gated Google Analytics injection)
  *   - Robots directives allowing full indexing / crawling
  *   - Canonical URL via `alternates` for duplicate-content avoidance
  *   - Tailwind CSS v4 + custom theme variables via globals.css
@@ -34,13 +34,13 @@
  */
 
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { initSuperMeta } from "next-super-meta";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingInquiry from "@/components/FloatingInquiry";
 import NavigationProgress from "@/components/NavigationProgress";
+import CookieConsent from "@/components/CookieConsent";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import { organizationSchema, webSiteSchema } from "@/lib/seo";
@@ -210,23 +210,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }}
         />
-        {/* Google Analytics GA4 — 通过 NEXT_PUBLIC_GA_ID 环境变量配置，未配置时不加载 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
+        {/* Google Analytics — 已迁移至 CookieConsent 组件，仅在用户同意「分析」类 Cookie 后注入 */}
         {/* next-super-meta 自动注入 SEO 元标签 */}
       </head>
       {/* Body：纵向 flex 列布局，将页脚推到底部；白底深字 */}
@@ -257,6 +241,9 @@ export default function RootLayout({
 
         {/* 浮动询盘按钮 —— 全站可见的常驻组件 */}
         <FloatingInquiry />
+
+        {/* Cookie 同意横幅 —— 公开官网合规组件（z-60 覆盖于浮动询盘之上） */}
+        <CookieConsent />
       </body>
     </html>
   );

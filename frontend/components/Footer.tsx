@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { COMPANY, FOOTER_LINKS } from "@/lib/site-config";
 import { MEDIA } from "@/lib/media";
+import CookieSettingsTrigger from "@/components/CookieSettingsTrigger";
 
 /**
  * 极简 Tesla 页脚
@@ -142,6 +143,7 @@ export default function Footer() {
             <Link href="/privacy-policy" className="text-[14px] text-[#767676] hover:text-[#171A20] transition-colors duration-[330ms]">
               Privacy
             </Link>
+            <CookieSettingsTrigger />
             <Link href="/solutions/faq" className="text-[14px] text-[#767676] hover:text-[#171A20] transition-colors duration-[330ms]">
               FAQ
             </Link>

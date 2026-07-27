@@ -38,7 +38,6 @@ class Settings(BaseSettings):
         "news.models",
         "inquiry.models",
         "content.models",
-        "migration.models",
         "uploads.models",
         "common.settings_model",
     ]

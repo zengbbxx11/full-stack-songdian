@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Loader2, Clock, BadgeCheck, Globe, Check } from "lucide-react";
-import { submitInquiry } from "@/lib/inquiry-service";
 
 const cameraCategories = [
   { label: "Compact Cameras", value: "compact-digital-cameras" },
@@ -54,6 +53,7 @@ const TRUST_ITEMS = [
 
 export default function InquiryForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -74,20 +74,47 @@ export default function InquiryForm() {
     },
   });
 
-  // 提交处理：调用服务端 action 保存询盘并发送邮件通知
+  // 提交处理：POST 到后端 /api/v1/inquiries，后端落 PG 库并 SMTP 发信
   const onSubmit = async (values: InquiryFormValues) => {
-    const result = await submitInquiry({
-      fullName: values.fullName,
-      email: values.email,
-      productInterest: values.productInterest,
-      message: values.message,
-      phone: values.phone || null,
-      company: values.company || null,
-      quantity: values.quantity || null,
-    });
-    if (result.success) {
+    setError(null);
+    try {
+      const bizReqNo = crypto.randomUUID();
+      const body: Record<string, string | null> = {
+        name: values.fullName,
+        email: values.email,
+        product_interest: values.productInterest,
+        message: values.quantity
+          ? `[数量需求: ${values.quantity}]\n\n${values.message}`
+          : values.message,
+        phone: values.phone || null,
+        company: values.company || null,
+        source_page:
+          typeof window !== "undefined" ? window.location.pathname : "/",
+        biz_req_no: bizReqNo,
+      };
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/inquiries`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      const json = await res.json();
+      if (json.code !== 0) {
+        throw new Error(json.msg || "Submission failed. Please try again.");
+      }
+
       setSubmitted(true);
       reset();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Network error. Please check your connection and try again."
+      );
     }
   };
 
@@ -109,7 +136,7 @@ export default function InquiryForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setSubmitted(false)}
+            onClick={() => { setSubmitted(false); setError(null); }}
             className="mt-6"
             style={{ borderRadius: "4px" }}
           >
@@ -243,6 +270,11 @@ export default function InquiryForm() {
               </div>
             </details>
 
+            {error && (
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+                {error}
+              </div>
+            )}
             <div className="pt-2">
               <Button
                 type="submit"

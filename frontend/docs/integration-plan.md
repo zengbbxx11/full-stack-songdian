@@ -158,7 +158,7 @@
 | `lib/api/search.ts` | `search({q,type,page,pageSize})` → `{items: 映射后结果[], total, degraded}` |
 
 **映射放哪一层**：在 `products.ts` / `news.ts` 内把后端 VO → 应用层 `ProductSummary/Detail`、`PostSummary/Detail`（见 §1.2 对照表）。页面组件零改动。
-**与现有 `lib/wordpress.ts` 的关系**：本轮**不再调用 WP**。方案 A（推荐）：新建 `lib/api/*` 并在页面把 `import ... from "@/lib/wordpress"` 改为 `@/lib/api/products|news|search`；保留 `wordpress.ts` 与 `formatDate`（被 news.ts 复用）暂不删，避免误伤。方案 B：在 `wordpress.ts` 内直接改实现——不推荐（污染语义）。
+**与现有 `lib/wordpress.ts` 的关系**：本轮**不再调用 WP**。方案 A（推荐）：新建 `lib/api/*` 并在页面把 `import ... from "@/lib/wordpress"` 改为 `@/lib/api/products|news|search`；保留 `wordpress.ts` 与 `formatDate`（被 news.ts 复用）暂不删，避免误伤。方案 B：在 `wordpress.ts` 内直接改实现——不推荐（污染语义）。（注：`wordpress.ts` 已于 2026-07-27 删除，相关页面已全面改用 `lib/api/*`，见文首状态横幅。）
 
 ### 3.2 Next.js App Router 数据获取策略
 

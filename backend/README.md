@@ -1,7 +1,7 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）、
-数据迁移（M6）六大模块。私有化单租户部署。
+产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
+五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
 
 ---
 
@@ -20,7 +20,7 @@
 | PostgreSQL | 16+（本机 envkit 18.4，可选 zhparser 中文分词） | 开发/生产统一使用；本机启动见根 README.md "本机 PostgreSQL 启动" |
 | Redis | 8（可选） | 未配置自动降级内存字典 |
 
-其余设计要素（13 张表、错误码、幂等、限流、缓存 Key、RBAC、审计、降级 BD-01~04）
+其余设计要素（核心业务表（M6 迁移表已随模块移除）、错误码、幂等、限流、缓存 Key、RBAC、审计、降级 BD-01~04）
 **100% 沿用冻结设计，不偏离**。
 
 ---
@@ -36,7 +36,7 @@ backend/
 │   ├── mixins.py                # TimestampedMixin/SoftDeleteMixin/AuditByMixin
 │   ├── redis_client.py          # Redis 封装（无 Redis → 内存降级）
 │   └── search_vector.py         # TSVectorField + update_search_vector + is_sqlite
-├── product/ news/ search/ inquiry/ content/ migration/   # 六大模块
+├── product/ news/ search/ inquiry/ content/   # 五大模块（数据迁移 M6 已移除）
 ├── seed/seed_data.py            # 6 产品分类 + 2 新闻分类 + admin 账号（幂等）
 └── tests/                       # conftest 基座 + smoke + QA 用例
 ```
@@ -142,7 +142,6 @@ pytest tests/ -q
 | M5 内容 | POST | /admin/login、/admin/logout、/admin/refresh（令牌族轮换） |
 | M5 内容 | GET/PUT | /admin/profile（查看/修改当前用户信息） |
 | M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs |
-| M6 迁移 | POST/GET | /admin/migration/run、/admin/migration/batches、/admin/migration/batches/{id} |
 | 上传 | POST | /admin/upload（单文件）、/admin/upload/batch（多文件） |
 | 系统 | GET | /healthz、/readyz |
 

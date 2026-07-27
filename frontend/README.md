@@ -14,7 +14,7 @@
 | 语言 | TypeScript 5（`strict: true`） |
 | 样式 | Tailwind CSS v4（`@tailwindcss/postcss`）+ shadcn/ui 组件库 |
 | 后端 | 项目自有 FastAPI REST API（`backend/`，端口 8000） |
-| 数据迁移 | 从 WordPress 通过 ETL 导入（`backend/migration/`），前端仅消费 FastAPI |
+| 数据迁移 | 旧 WordPress 数据经一次性 ETL 迁至 PostgreSQL（`backend/migration/` 模块已随 M6 移除），前端仅消费 FastAPI |
 | 表单 | react-hook-form + Zod（客户端校验 + 服务端 action 提交） |
 | 邮件 | nodemailer SMTP（询盘通知，可选配置） |
 | 动画 | framer-motion（`components/motion/*`） |

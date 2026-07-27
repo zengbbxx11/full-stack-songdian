@@ -10,7 +10,7 @@
 |---|--------|------|----------|
 | F-01 | CRITICAL | 标题 `</script>` 注入 JSON-LD 致全站存储型 XSS | 后端 `common/html_cleaner.py` 新增 `clean_text`；`product/news/services.py` 写入清洗标题/摘要/作者；前端 `lib/seo.ts` 新增 `safeJsonLd`（`<`→`\u003c`），替换 3 处 `JSON.stringify` 注入 |
 | F-02 | HIGH | 匿名可传 `?status=DRAFT` 读未发布内容 | `product/routers.py`、`news/routers.py` 公开列表强制 `status="PUBLISHED"`；detail 服务层强制 `status=PUBLISHED` |
-| F-03 | HIGH | 迁移 ETL SSRF + 任意图片下载 | 新增 `common/ssrf.py`（仅 http/https + 受信主机白名单）；`config.py` 加 `migration_wp_host`/`migration_allowed_hosts`；`migration/schemas.py` 校验源站；`migration/image_sync.py` 仅限白名单主机、拒 svg/html（魔数 `_is_real_image` 校验）、10MB 上限 |
+| F-03 | HIGH | 迁移 ETL SSRF + 任意图片下载 | 新增 `common/ssrf.py`（仅 http/https + 受信主机白名单）；`config.py` 加 `migration_wp_host`/`migration_allowed_hosts`；`migration/schemas.py` 校验源站；`migration/image_sync.py` 仅限白名单主机、拒 svg/html（魔数 `_is_real_image` 校验）、10MB 上限。**（M6 模块已于 2026-07-27 移除，`migration/*` 相关代码已删；`common/ssrf.py` 通用 SSRF 防护基础设施保留）** |
 | F-04 | HIGH | 硬编码/可空默认管理员密码 | `seed/seed_data.py` 不再默认弱密码；`ADMIN_PASSWORD` 为空则生成一次性随机密码并记录日志；空密码历史账号自动补设；`docker-compose.yml` 强 PG 密码经 `${POSTGRES_PASSWORD}` 注入 |
 | F-05 | HIGH | RBAC 权限缓存未签名 | `common/deps.py` 权限缓存 `auth:perm:{uid}` 加 HMAC（密钥 `jwt_secret`），读时验签，失败回查 DB |
 | F-06 | HIGH | `X-Forwarded-For` 首个段被信任 | `common/middleware.py` `get_client_ip` 仅当直连 IP 在 `trusted_proxies` 才采纳 XFF，否则用真实直连 IP |
@@ -52,5 +52,5 @@ run-1 / run-2 的修复集中在后端。本次在**前端渲染层**补一道�
 
 1. **JWT_SECRET**：生产必须通过环境变量注入 ≥32 字节随机值（启动守卫已拒绝占位符）。
 2. **ADMIN_PASSWORD**：首次部署建议显式设置，避免生成随机临时密码（日志可见）。
-3. **CORS / 受信代理 / 迁移主机白名单**：按实际域名在 `.env` 配置 `CORS_ORIGINS`、`TRUSTED_PROXIES`、`MIGRATION_ALLOWED_HOSTS`。
+3. **CORS / 受信代理**：按实际域名在 `.env` 配置 `CORS_ORIGINS`、`TRUSTED_PROXIES`。（`MIGRATION_ALLOWED_HOSTS` 等迁移主机白名单配置随 M6 模块移除已失效，可忽略。）
 4. **admin-next 已重新启动**使 `middleware.ts` 与 cookie 守卫生效（含 matcher 排除 /api 和 /uploads 的修正）。

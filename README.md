@@ -30,7 +30,6 @@ full-stack-project/
 │   ├── search/                # 全文检索 + 降级 LIKE 搜
 │   ├── inquiry/               # 询盘表单
 │   ├── uploads/               # 图片上传模块（StorageBackend 抽象）
-│   ├── migration/             # 数据迁移 ETL（历史 WordPress 数据导入）
 │   ├── seed/                  # 种子数据（admin 账号等）
 │   ├── tests/                 # pytest 测试套件
 │   └── main.py                # 应用入口
@@ -204,7 +203,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 |---|---|---|---|
 | ① | w3 → Lens 产品重新分类 | ✅ | 修改 slug + category_id |
 | ② | 搜索页面美化 | ✅ | Next.js 搜索 UI 优化 |
-| ③ | 产品标签恢复 | ✅ | WP tags → Product.tags JSONField；ETL 回填；前后端字段全链路 |
+| ③ | 产品标签恢复 | ✅ | 后台手动录入标签 → `Product.tags` JSONField；前后端字段全链路（M6 ETL 回填已移除） |
 | ④ | 后台管理界面 (Phase 1) | ✅ | JWT 登录/刷新、产品/新闻 CRUD、分类管理、产品拖拽排序、询盘管理 |
 | ⑤ | 排序管理 | ✅ | Product/News 加 sort_order，admin 拖拽排序持久化，前端图片 404 兜底 |
 | ⑥ | Node 24 迁移 | ✅ | Node 22→24 解决 Next.js 16 Turbopack Web Streams 兼容性问题 |
@@ -252,11 +251,11 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | 文档 | 说明 |
 |---|---|
 | `docs/design-admin-ui.md` | 后台管理界面系统设计 + 任务分解 |
-| `docs/design-product-tags.md` | 产品标签恢复设计 |
+| `docs/design-product-tags.md` | 产品标签恢复设计（**已作废**：依赖的 M6 迁移模块已移除，见该文档文首横幅） |
 | `docs/admin-ui-class-diagram.mermaid` | 后台管理类图 |
 | `docs/admin-ui-sequence-diagram.mermaid` | 后台管理时序图 |
-| `docs/class-diagram-product-tags.mermaid` | 标签恢复类图 |
-| `docs/sequence-diagram-product-tags.mermaid` | 标签恢复时序图 |
+| `docs/class-diagram-product-tags.mermaid` | 标签恢复类图（基于已移除的 M6 模块，仅供参考） |
+| `docs/sequence-diagram-product-tags.mermaid` | 标签恢复时序图（基于已移除的 M6 模块，仅供参考） |
 
 ---
 

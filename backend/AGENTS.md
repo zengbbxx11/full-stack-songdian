@@ -59,7 +59,6 @@ backend/
 ├── content/             # 管理员用户 + 角色 + RBAC 权限 + 审计日志
 ├── inquiry/             # 询盘表单 + SMTP 邮件
 ├── search/              # 联合搜索（PG TSVector / 降级）
-├── migration/           # WordPress 数据迁移 ETL
 ├── uploads/             # 上传管理路由
 ├── seed/                # 幂等种子数据
 └── tests/               # pytest 测试

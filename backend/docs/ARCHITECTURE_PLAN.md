@@ -3,6 +3,7 @@
 > ✅ **计划已执行完毕（2026-07）**：本文档为设计阶段产物，所有冻结版本（FastAPI 0.139、Tortoise 1.1.7、Python 3.14）均已可用并落地实施。
 > §0 的「版本偏差」已不再适用——当前代码即按冻结版本运行。
 > 实际技术栈与目录结构见根 `README.md` 和 `backend/README.md`。
+> ⚠️ **M6 数据迁移模块（WordPress ETL）已移除（2026-07-27）**：原 `backend/migration/`（wp_adapter/etl/image_sync/backfill 等）、`/api/v1/admin/migration/*` 端点、RBAC 权限 `migration:read`/`migration:run` 已全部删除。WP→PG 主迁移已完成，该模块为一次性工具，日常业务不依赖。**注意区分**：本文档其余处的「迁移」多指 **aerich 数据库 schema 迁移（DDL）**——该项保留，与 M6 无关。
 
 > **作者**：软件架构师（高见远，software-architect）
 > **定位**：把已冻结的设计文档（系统设计 / 高层架构 / 安全设计 / 部署设计）**收敛为「工程师可直接照写的文件级有序实现计划 + 合并后的数据模型定义」**。
@@ -88,7 +89,7 @@ songdian-b2b/backend/
 │   ├── routers.py                # /api/v1/admin/login、/logout、/roles、/roles/{id}/permissions、/audit-logs
 │   ├── services.py               # 登录校验(bcrypt+锁定)、签发 JWT、角色权限缓存(auth:perm:{uid})、审计写库
 │   └── permissions.py            # 权限码常量目录（PRODUCT_CREATE="product:create" 等）+ 初始角色→权限映射
-├── migration/                     # ── M6 数据迁移模块（ETL + ACL）──
+├── migration/                     # ── M6 数据迁移模块（ETL + ACL）──（已移除 2026-07-27）
 │   ├── __init__.py
 │   ├── models.py                 # MigrationBatch / MigrationRecord
 │   ├── schemas.py                # MigrationRunRequest / MigrationBatchVO / MigrationBatchDetailVO
@@ -129,7 +130,7 @@ songdian-b2b/backend/
 | **T07** | M4 询盘服务 | `inquiry/{schemas,routers,services,smtp_mailer}.py` | T03, T06(权限) | P0 |
 | **T08** | M3 联合搜索服务 | `search/{schemas,routers,services}.py` | T03, T04, T05 | P0 |
 | **T09** | main.py 路由聚合 + 中间件/异常注册 | `main.py`（完整）、各模块 router 挂载、全局异常处理器、`/healthz`、`/readyz` | T04~T08 | P0 |
-| **T10** | M6 数据迁移模块（ETL+ACL） | `migration/{schemas,routers,services,wp_adapter,etl}.py` | T03, T04, T05 | P1 |
+| **T10** | M6 数据迁移模块（ETL+ACL） | `migration/{schemas,routers,services,wp_adapter,etl}.py` | T03, T04, T05 | P1 |（模块已移除 2026-07-27）
 | **T11** | 种子数据 + Docker/CI 收尾 | `seed/seed_data.py`、`tests/*`、README 补充 | T09, T10 | P1 |
 | **T12** | 本地联调与测试（SQLite 跑通非搜索；PG 跑搜索） | `tests/conftest.py` + 各 test_*.py；`docker-compose up` 冒烟 | T11 | P1 |
 
@@ -561,7 +562,7 @@ TENANT_ID=songdian
 - **未配置 SMTP（SMTP_HOST 为空）时仅持久化，smtp_status 保持 PENDING**（MOCK/BD-02）；配置后由定时任务（cron/BackgroundTasks）扫描 `PENDING/FAILED` 且 `smtp_retry<=5` 重试，成功置 SENT，超限置 ERROR 并告警 AL-06。
 - 幂等：`biz_req_no` 建唯一索引作最终防线；提交时先 SETNX `inquiry:idem:{biz_req_no}` 24h，重复提交返回首次结果。
 
-### 6.4 迁移 ETL（M6）
+### 6.4 迁移 ETL（M6）【已移除：模块已删除，见顶部说明】
 - `migration/wp_adapter.py` 为 ACL 防腐层：`WordPressProductAdapter` 把 `wp_postmeta`（`_sku/_price/_stock_status/_product_image_gallery`）清洗为 规格/相册/价格；WP 分类法→`t_product_category`/`t_news_category`。
 - `migration/etl.py`：WP REST 分页拉取 → 清洗 → 批量写入 PG + 重建 `search_vector`；单条失败写 `t_migration_record(status=FAILED, error_msg)`。
 - 校验对账（§4.5.4）：行数 COUNT 偏差=0、内容抽样 1‰ checksum 不一致率≤0.001%、业务对账偏差≤0.01%、`failed>0` 即告警。
@@ -586,7 +587,7 @@ TENANT_ID=songdian
 ## 7. 附录速查
 
 ### 7.1 错误码（§3.5.1，全量，落 common/exceptions.py）
-`A010001`(产品不存在/下架) `A010002`(产品slug重复) `A020001`(新闻不存在) `A020002`(新闻slug重复) `A030001`(搜索词空) `A040001`(邮箱非法) `A040002`(留言过长/必填缺失) `A050001`(账号不存在) `A050002`(密码错误) `A050003`(无权限) `A060001`(迁移批次不存在) `A060002`(迁移校验失败) `B999001`(系统错误) `C400001`(参数校验) `C401001`(未登录) `C403001`(无权限) `C404001`(资源不存在) `C429001`(限流)。
+`A010001`(产品不存在/下架) `A010002`(产品slug重复) `A020001`(新闻不存在) `A020002`(新闻slug重复) `A030001`(搜索词空) `A040001`(邮箱非法) `A040002`(留言过长/必填缺失) `A050001`(账号不存在) `A050002`(密码错误) `A050003`(无权限) `A060001`(迁移批次不存在) `A060002`(迁移校验失败)【已移除】 `B999001`(系统错误) `C400001`(参数校验) `C401001`(未登录) `C403001`(无权限) `C404001`(资源不存在) `C429001`(限流)。
 
 ### 7.2 限流阈值（§3.5.3）
 全局 500 / 单租户 200 / 单 IP 60 / 单用户 30（QPS）；登录/发信重保：单 IP 10 次/分钟，锁定 15 分钟。

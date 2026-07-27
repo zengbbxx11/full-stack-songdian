@@ -30,7 +30,6 @@ from common.middleware import TraceMiddleware
 from common.redis_client import close_redis, init_redis
 from content.routers import router as content_router
 from inquiry.routers import router as inquiry_router
-from migration.routers import router as migration_router
 from news.routers import router as news_router
 from product.routers import router as product_router
 from search.routers import router as search_router
@@ -113,7 +112,6 @@ app.include_router(news_router)       # /api/v1/news（新闻 CRUD + 分类）
 app.include_router(search_router)     # /api/v1/search（全文搜索）
 app.include_router(inquiry_router)    # /api/v1/inquiries（询盘表单）
 app.include_router(content_router)    # /api/v1/admin/login（登录/角色/权限）
-app.include_router(migration_router)  # /api/v1/admin/migration（数据迁移）
 app.include_router(upload_router)     # /api/v1/admin/upload（图片上传）
 app.include_router(settings_router)   # /api/v1/admin/settings（系统设置）
 

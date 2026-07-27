@@ -1,5 +1,7 @@
 # 恢复 WordPress 产品标签（product tags）方案与任务清单
 
+> ⚠️ **本文档已作废（2026-07-27）**：所依赖的 WordPress 数据迁移模块（`backend/migration/wp_adapter.py`、`etl.py`、`backfill.py` 等）已彻底移除，WP 源站已弃用，本方案不可执行。其中「给产品加 `tags` 字段（JSONB）+ aerich 迁移 + 前端展示」的纯功能演进思路仍有参考价值——若未来要做，应改为后台手动录入标签，而非从 WP 迁移。
+
 > 作者：架构师 高见远（software-architect）
 > 范围：Desktop 真实副本 `full-stack-project`（backend = FastAPI + Tortoise ORM + aerich + Postgres；frontend = Next.js + shadcn/ui）
 > 目标：让产品页重新展示 WP 产品标签。根因是 `product_tag` 分类法从未被迁移——现有 adapter 只搬了 `product_cat`（分类）与 `wc_attributes`（属性），标签压根没同步。本方案覆盖：adapter 抓取 → 模型/字段 → ETL 落库 → 存量回填 → API 暴露 → 前端展示。

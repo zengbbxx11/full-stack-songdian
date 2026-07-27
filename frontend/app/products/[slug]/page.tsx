@@ -39,17 +39,23 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product Not Found" };
+  const plainDesc = stripHtml(product.shortDescription || "").slice(0, 160);
   return {
     title: product.name,
-    description: product.shortDescription?.slice(0, 160) || `OEM/ODM ${product.name} — ${COMPANY.name}`,
+    description: plainDesc || `OEM/ODM ${product.name} — ${COMPANY.name}`,
     alternates: { canonical: `/products/${slug}` },
     openGraph: {
       title: product.name,
-      description: product.shortDescription?.slice(0, 160),
+      description: plainDesc,
       images: product.images?.[0]?.src ? [{ url: product.images[0].src, width: 800, height: 800 }] : [],
-      type: "article",
+      type: "website",
     },
   };
+}
+
+// 去除 HTML 标签并压缩空白，用于生成纯文本描述（SEO description / Schema）
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // 从产品短描述 HTML 中提取要点列表（去标签、去项目符号）
@@ -153,7 +159,7 @@ export default async function ProductDetailPage({
 
   const schema = productSchema({
     name: product.name,
-    description: product.shortDescription?.slice(0, 160) || "",
+    description: stripHtml(product.shortDescription || "").slice(0, 160),
     image: product.images?.[0]?.src || null,
     sku: product.sku,
     url: `/products/${slug}`,

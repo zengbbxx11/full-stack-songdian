@@ -161,7 +161,7 @@ export default async function NewsDetailPage({
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    上一篇
+                    Previous
                   </span>
                   <span className="text-[15px] font-medium leading-snug text-[#171A20] transition-colors group-hover:text-[#d4343e]">
                     {prevPost.title}
@@ -178,7 +178,7 @@ export default async function NewsDetailPage({
                   className="group flex flex-col gap-1 rounded-xl border border-[#EEEEEE] px-5 py-4 sm:items-end sm:text-right transition-colors hover:border-[#d4343e]"
                 >
                   <span className="flex items-center gap-1.5 text-xs" style={{ color: "#5C5E62" }}>
-                    下一篇
+                    Next
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>

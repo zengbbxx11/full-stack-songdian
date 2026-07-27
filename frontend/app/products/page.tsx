@@ -1,9 +1,9 @@
 /*
  * 文件：app/products/page.tsx（产品列表 / Products）
  * 职责：产品列表页，含分类筛选、产品网格与分页。
- * 数据来源（WP REST API）：
- *   - getProducts()         → WP 产品列表（支持 page 分页与 category 筛选，每页 12 个）
- *   - getProductCategories()→ WP 产品分类（用于筛选按钮）
+ * 数据来源（后端 FastAPI /api/v1）：
+ *   - getProducts()         → 产品列表（支持 page 分页与 category 筛选，每页 12 个）
+ *   - getProductCategories()→ 产品分类（用于筛选按钮）
  * 渲染方式：Async Server Component + ISR（revalidate = 60 秒）。
  * 是否含 client 组件：否。
  */
@@ -47,18 +47,28 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const currentPage = Number(params.page) || 1;
   const categorySlug = params.category || undefined;
 
-  // 先取分类列表，再把 slug 解析为 WP 数字分类 ID（getProducts 需要 ID）
+  // 先取分类列表，再把 slug 解析为后端数字分类 ID（getProducts 需要 ID）
   const rawCategories = await getProductCategories().catch(() => []);
   const matchedCategory = categorySlug
     ? rawCategories.find((c) => c.slug.toLowerCase() === categorySlug.toLowerCase())
     : undefined;
   const categoryFilterId = matchedCategory?.id;
 
-  const { products, pagination } = await getProducts({
-    page: currentPage,
-    perPage: 12,
-    category: categoryFilterId,
-  });
+  // 接口失败时优雅降级：渲染友好提示而非整页崩溃
+  let products: Awaited<ReturnType<typeof getProducts>>["products"] = [];
+  let pagination: Awaited<ReturnType<typeof getProducts>>["pagination"] = null;
+  let loadError: string | null = null;
+  try {
+    const data = await getProducts({
+      page: currentPage,
+      perPage: 12,
+      category: categoryFilterId,
+    });
+    products = data.products;
+    pagination = data.pagination;
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "产品服务暂时不可用，请稍后重试。";
+  }
 
   // 按指定顺序排列分类按钮
   const categoryOrder = ["mirrorless", "compact", "action", "video", "kids", "lens"];
@@ -97,6 +107,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   <Link
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
+                    aria-current={isActive ? "page" : undefined}
                     className={`flex items-center justify-center px-4 py-3 text-sm md:text-base font-medium rounded-lg transition-colors ${
                       isActive
                         ? "bg-[#d4343e] text-white"
@@ -111,8 +122,19 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </div>
           )}
 
-          {/* 产品网格 */}
-          {products.length > 0 ? (
+          {/* 产品网格 / 接口失败降级 / 空态 */}
+          {loadError ? (
+            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Products Unavailable</h3>
+              <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{loadError}</p>
+              <Link
+                href="/products"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[#3E6AE1] px-5 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#3561CC]"
+              >
+                Retry
+              </Link>
+            </div>
+          ) : products.length > 0 ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product, i) => (
@@ -123,7 +145,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </div>
 
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-12">
+                <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-12">
                   {currentPage > 1 && (
                     <Link
                       href={`/products?page=${currentPage - 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
@@ -153,7 +175,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                       Next
                     </Link>
                   )}
-                </div>
+                </nav>
               )}
             </>
           ) : (
@@ -165,7 +187,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Yet</h3>
               <p className="text-sm text-gray-500 max-w-md mx-auto">
-                Add products in WooCommerce — they will appear here automatically.
+                Add products in the admin panel — they will appear here automatically.
               </p>
             </div>
           )}

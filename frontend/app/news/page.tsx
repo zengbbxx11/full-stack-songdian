@@ -1,7 +1,7 @@
 /*
  * 文件：app/news/page.tsx（新闻列表 / News）
  * 职责：新闻/资讯列表页，含头条推荐、文章网格与分页导航。
- * 数据来源（WP REST API）：getPosts() —— WP 文章列表（支持 page 分页，每页 9 篇）。
+ * 数据来源（后端 FastAPI /api/v1）：getPosts() —— 文章列表（支持 page 分页，每页 9 篇）。
  * 渲染方式：Async Server Component + ISR（revalidate = 60 秒）。
  * 是否含 client 组件：否（列表为服务端渲染，卡片为展示型组件）。
  */
@@ -32,7 +32,17 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
 
-  const { posts, pagination } = await getPosts({ page: currentPage, perPage: 9 });
+  // 接口失败时优雅降级：渲染友好提示而非整页崩溃
+  let posts: Awaited<ReturnType<typeof getPosts>>["posts"] = [];
+  let pagination: Awaited<ReturnType<typeof getPosts>>["pagination"] = null;
+  let loadError: string | null = null;
+  try {
+    const data = await getPosts({ page: currentPage, perPage: 9 });
+    posts = data.posts;
+    pagination = data.pagination;
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "新闻服务暂时不可用，请稍后重试。";
+  }
 
   const breadcrumbs = generateBreadcrumbs([{ label: "News" }]);
 
@@ -51,7 +61,18 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       {/* 文章列表 */}
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          {posts.length > 0 ? (
+          {loadError ? (
+            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">News Unavailable</h3>
+              <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{loadError}</p>
+              <Link
+                href="/news"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-[#3E6AE1] px-5 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#3561CC]"
+              >
+                Retry
+              </Link>
+            </div>
+          ) : posts.length > 0 ? (
             <>
               {/* 精选 */}
               {featured && (
@@ -132,7 +153,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
               </div>
 
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-12">
+                <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-12">
                   {currentPage > 1 && (
                     <Link
                       href={`/news?page=${currentPage - 1}`}
@@ -152,13 +173,13 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                       Next
                     </Link>
                   )}
-                </div>
+                </nav>
               )}
             </>
           ) : (
             <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Articles Yet</h3>
-              <p className="text-sm text-gray-500">News articles will appear here once published in WordPress.</p>
+              <p className="text-sm text-gray-500">News articles will appear here once published in the admin panel.</p>
             </div>
           )}
         </div>

@@ -17,19 +17,6 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/**",
       },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "10004",
-        pathname: "/**",
-      },
-      {
-        protocol: "http",
-        hostname: "106.53.220.184",
-        port: "10004",
-        pathname: "/**",
-      },
-
       // Production: 后端静态资源域名（部署时取消注释并替换）
       {
         protocol: "https",
@@ -37,9 +24,9 @@ const nextConfig: NextConfig = {
         pathname: "/uploads/**",
       },
     ],
-    // Allow WP images from localhost in development
+    // 允许优化本机回环地址的图片（本地后端开发环境）
     dangerouslyAllowLocalIP: true,
-    // Ensure Next.js Image optimization works with external WP images
+    // 外部图片优化的缓存时长（秒）
     minimumCacheTTL: 3600,
     // 根据实际布局断点优化响应式图片尺寸
     deviceSizes: [480, 640, 768, 1024, 1280, 1536],

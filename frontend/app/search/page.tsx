@@ -21,8 +21,8 @@ import SearchResultCard from "@/components/SearchResultCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
 
-// ISR 重新验证间隔（秒）
-export const revalidate = 60;
+// 搜索结果需实时反映后端最新数据：禁用整页静态缓存，强制每次请求动态渲染
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   searchParams,

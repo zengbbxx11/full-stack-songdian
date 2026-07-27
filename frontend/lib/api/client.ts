@@ -43,6 +43,7 @@ export function formatDate(dateStr: string): string {
 export async function apiFetch<T>(
   path: string,
   params?: Record<string, string | number | undefined | null>,
+  options?: { revalidate?: number | false; tags?: string[] },
 ): Promise<T> {
   const url = new URL(`${API_BASE}${path}`);
   if (params) {
@@ -53,9 +54,17 @@ export async function apiFetch<T>(
     }
   }
 
+  // 缓存策略：默认 ISR 60 秒；options.revalidate === false 时实时拉取（no-store，
+  // 用于搜索等要求实时结果的场景）；可传 tags 以支持 revalidateTag 按需刷新。
+  const revalidate = options?.revalidate ?? 60;
+  const cacheInit =
+    revalidate === false
+      ? ({ cache: "no-store" } as const)
+      : ({ next: { revalidate, ...(options?.tags ? { tags: options.tags } : {}) } } as const);
+
   const res = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
-    next: { revalidate: 60 },
+    ...cacheInit,
   });
 
   if (!res.ok) {

@@ -41,12 +41,17 @@ export async function search(
   // 空查询：不请求后端，耗时记为 0（补全 tookMs 以满足 SearchResult 类型）
   if (!query) return { items: [], total: 0, tookMs: 0, degraded: false, note: "" };
 
-  const data = await apiFetch<SearchPageDTO>("/api/v1/search", {
-    q: query,
-    type: opts?.type || "all",
-    page: opts?.page || 1,
-    page_size: opts?.pageSize || 20,
-  });
+  // 搜索结果要求实时：revalidate:false → no-store，避免新上内容因 ISR 缓存而搜不到
+  const data = await apiFetch<SearchPageDTO>(
+    "/api/v1/search",
+    {
+      q: query,
+      type: opts?.type || "all",
+      page: opts?.page || 1,
+      page_size: opts?.pageSize || 20,
+    },
+    { revalidate: false },
+  );
 
   const items: SearchResultItem[] = data.items.map((it) => ({
     id: it.id,

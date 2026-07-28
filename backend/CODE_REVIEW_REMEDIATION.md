@@ -32,3 +32,16 @@
 - **前端类型检查**：`cd frontend && npx tsc --noEmit` 通过（EXIT 0，WP/WC 死类型移除后无悬空引用）。
 - **管理后台**：`npm run dev` 起服成功，`tsc --noEmit` 通过（EXIT 0）；并**实时验证中间件**：配置与后端一致的 `JWT_SECRET` 后，合法 token 访问 `/` → 200，伪造/无 token → 307 重定向 `/signin`（jose 签名校验生效，无「JWT_SECRET 未配置」降级告警）。
 - **#14 验证**：修复后创建分类接口返回 200（此前恒定 500）。
+
+## 测试数据清理（2026-07-28）
+
+验证过程中后端冒烟脚本写入的临时数据已清理，**不影响任何种子 / 真实业务数据**：
+
+| 表 | 已删除 id | 内容 |
+|----|-----------|------|
+| `t_product_category` | 13、14 | `冒烟分类1785202601`、`冒烟分类1785202631` |
+| `t_product` | 43、44 | 均 `冒烟DRAFT` / `DRAFT`，分别挂在分类 13、14 下 |
+
+- 删除前确认 `t_product_gallery` / `t_product_attribute` 子表引用为 **0**；事务原子删除后复核残留 **0**。
+- 临时验证脚本 `_smoke.py` / `_logic_check.py` 及临时日志（`_uvicorn.log` / `_nextdev.log` / `token.txt`）已删除，不进仓库。
+- **`admin-next/.env.local` 保留**：含 `JWT_SECRET`（与 backend 一致，使 #13 jose 签名校验真正生效），属本地开发配置而非测试垃圾，且已 gitignore，不泄露进仓库。

@@ -98,7 +98,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
       <section className="py-6 md:py-8 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          {/* 产品分类筛选 — 等宽网格，撑满整行 */}
+          {/* 产品分类筛选 — 等宽网格 + 半透明药丸 */}
           {categories.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
               {categories.map((cat) => {
@@ -108,12 +108,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center justify-center px-4 py-3 text-sm md:text-base font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-[#d4343e] text-white"
-                        : "bg-[#F4F4F4] text-[#393C41] hover:bg-[#E5E5E5]"
-                    }`}
-                    style={{ transitionDuration: "0.2s" }}
+                    className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-300
+                      ${isActive
+                        ? "border-[#d4343e] text-[#d4343e] bg-[#d4343e]/10"
+                        : "border-[#EEEEEE] text-[#393C41] hover:border-[#d4343e] hover:text-[#d4343e] hover:bg-[#d4343e]/5"}`}
                   >
                     {cat.name}
                   </Link>

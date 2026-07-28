@@ -134,7 +134,7 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 复制 `env.example` 为 `.env.local` 后填写：
 
 - `NEXT_PUBLIC_API_URL`：后端地址（客户端组件读取，须 `NEXT_PUBLIC_` 前缀）。
-- `JWT_SECRET`：**服务端**中间件读取，用于校验 `admin_token` 的 HS256 签名（2026-07-28 修复，
+- `JWT_SECRET`：**服务端**中间件读取，用于校验 `access_token` 的 HS256 签名（2026-07-28 修复，
   此前仅 base64 解码 payload，伪造 cookie 可绕过）。必须与后端 `.env` 的 `JWT_SECRET` **完全一致**，
   **切勿加 `NEXT_PUBLIC_` 前缀**（否则密钥泄露到浏览器）。生产环境必须配置；未配置时降级为仅校验
   `exp` 并输出告警（仅本地开发）。

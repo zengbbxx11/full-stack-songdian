@@ -1,7 +1,8 @@
 /*
  * 组件：登录表单（SignInForm）
  * 职责：渲染用户名+密码输入表单。"Sign in" 按钮 POST /api/v1/admin/login，
- * 成功后把 JWT 存入 localStorage + admin_token cookie，跳转 / 进入后台。
+ * 成功后把 JWT 存入 localStorage 供接口 Bearer 鉴权，并依赖后端下发的 HttpOnly
+ * access_token Cookie 供路由守卫校验；跳转 / 进入后台。
  */
 "use client";
 import Input from "@/components/form/input/InputField";
@@ -12,20 +13,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-// 从 JWT 推断剩余有效期（秒），用于设置守卫 cookie 的 max-age
-function tokenMaxAge(token: string): number {
-  try {
-    const payload = token.split(".")[1];
-    const json = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-    );
-    if (json.exp) return Math.max(0, json.exp - Math.floor(Date.now() / 1000));
-  } catch {
-    /* ignore */
-  }
-  return 7200;
-}
 
 export default function SignInForm() {
   const router = useRouter();
@@ -48,9 +35,9 @@ export default function SignInForm() {
       const json = await res.json();
       if (json.code !== "0") throw new Error(json.msg || "Login failed");
       const token = json.data.access_token as string;
+      // 存入 localStorage 供接口 Bearer 鉴权；路由守卫改用后端下发的 HttpOnly
+      // access_token Cookie（security-audit F-15：JS 不可读，降低 XSS 窃取风险）。
       localStorage.setItem("admin_token", token);
-      // 同步写入可读 cookie，供 middleware 路由守卫校验（security-audit F-08）
-      document.cookie = `admin_token=${token}; path=/; max-age=${tokenMaxAge(token)}; samesite=lax`;
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");

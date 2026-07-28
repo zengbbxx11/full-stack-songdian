@@ -14,7 +14,7 @@ from tortoise.transactions import in_transaction
 from common.enums import NewsStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from news.models import News, NewsCategory
@@ -38,7 +38,7 @@ DETAIL_TTL = 300
 
 async def _cache_get_detail(slug: str) -> dict | None:
     try:
-        raw = await get_redis().get(f"news:detail:{slug}")
+        raw = await get_redis().get(cache_key("news", "detail", slug))
         return json.loads(raw) if raw else None
     except Exception:  # noqa: BLE001
         return None
@@ -46,14 +46,14 @@ async def _cache_get_detail(slug: str) -> dict | None:
 
 async def _cache_set_detail(slug: str, payload: dict) -> None:
     try:
-        await get_redis().setex(f"news:detail:{slug}", DETAIL_TTL, json.dumps(payload, default=str))
+        await get_redis().setex(cache_key("news", "detail", slug), DETAIL_TTL, json.dumps(payload, default=str))
     except Exception:  # noqa: BLE001
         pass
 
 
 async def _cache_del_detail(slug: str) -> None:
     try:
-        await get_redis().delete(f"news:detail:{slug}")
+        await get_redis().delete(cache_key("news", "detail", slug))
     except Exception:  # noqa: BLE001
         pass
 
@@ -198,9 +198,14 @@ async def list_news_categories_page(req: PageRequest) -> tuple[list[NewsCategory
 
 
 async def _next_news_category_sort_order() -> int:
-    """返回新分类的默认排序值（当前最大 + 1，空表为 0）。"""
-    agg = await NewsCategory.filter(deleted=0).aggregate(max_order=Max("sort_order"))
-    return (agg.get("max_order") or -1) + 1
+    """返回新分类的默认排序值（当前最大 + 1，空表为 0）。
+
+    Tortoise 1.x 已移除 ``QuerySet.aggregate``，改用 ``functions.Max`` +
+    ``annotate``/``values`` 取全局最大值（逐行取 max 兜底），否则分类创建会 500。
+    """
+    rows = await NewsCategory.filter(deleted=0).annotate(m=Max("sort_order")).values("m")
+    max_order = max((r["m"] for r in rows), default=None)
+    return (max_order or -1) + 1
 
 
 async def create_news_category(data: NewsCategoryCreate, operator: str = "") -> NewsCategoryVO:

@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     # ── 安全失败策略（security-audit F-07）：Redis 不可用时安全关键操作 fail-closed ──
     security_fail_closed: bool = True
 
+    # ── 缓存键环境前缀（security-audit F-18）：多环境共用同一 Redis 时避免串号 ──
+    # 留空则不前缀；如 "songdian:prod"。通过环境变量 CACHE_KEY_PREFIX 注入。
+    cache_key_prefix: str = ""
+
     # ── 单租户常量（§1.3 / §8.2）──
     tenant_id: str = "songdian"
 

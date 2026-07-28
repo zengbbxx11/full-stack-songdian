@@ -128,14 +128,14 @@ app.mount(settings.media_url, StaticFiles(directory=str(MEDIA_ROOT)), name="uplo
 @app.get("/healthz", tags=["system"], summary="存活探针")
 async def healthz() -> dict:
     """存活检查 — 只要 Python 进程还活着就返回 ok。
-    用于 k8s/Docker 判断"容器是否在运行"（不检查数据库）。"""
+    用于健康检查/编排平台（如 1Panel）判断"进程是否在运行"（不检查数据库）。"""
     return {"status": "alive"}
 
 
 @app.get("/readyz", tags=["system"], summary="就绪探针（探 DB + Redis）")
 async def readyz() -> dict:
     """就绪检查 — 检查数据库和 Redis 是否可用。
-    用于 k8s/Docker 判断"容器是否可以接流量"。
+    用于健康检查/编排平台（如 1Panel）判断"是否可以接流量"。
     返回 ready（都正常）或 degraded（部分不可用）。"""
     db_ok = False
     redis_ok = False

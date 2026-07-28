@@ -312,15 +312,6 @@ cd ../admin-next && pnpm install && pnpm build && pnpm start
 # 仅视频需单独上传: scp Video/SongdianFactoryVideo.mp4 user@server:frontend/public/Video/
 ```
 
-### Docker（后端）
-
-后端含 Dockerfile + docker-compose（含 PostgreSQL）：
-
-```bash
-cd backend/docker
-docker-compose up -d
-```
-
 ### 前端部署
 
 - **官网前端**：`cd frontend && pnpm build` → Node 服务（SSR + ISR 模式）

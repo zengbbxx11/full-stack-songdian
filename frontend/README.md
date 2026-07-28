@@ -255,7 +255,7 @@ frontend/
 - 分类：**Strictly necessary（必要，始终开启、不可关）** 与 **Analytics（分析，opt-in）**。偏好存于 `localStorage` 键 `sd-cookie-consent`（含版本号 `v` 与时间戳）。
 - **Google Analytics 仅在用户接受「分析」类 Cookie 且配置了 `NEXT_PUBLIC_GA_ID` 时才注入**（见「环境变量」），即「同意后才加载」的 GDPR/ePrivacy 合规门控；未配置则不发任何分析 Cookie。
 - 页脚「Cookie Settings」（`components/CookieSettingsTrigger.tsx`）随时重新打开偏好面板。
-- 后台 `admin-next` 为登录后内部工具，仅用严格必要的 `admin_token` Cookie + JWT/主题 `localStorage`，**不**展示此横幅。
+- 后台 `admin-next` 为登录后内部工具，仅用严格必要的 `access_token` HttpOnly Cookie + JWT/主题 `localStorage`，**不**展示此横幅。
 
 ---
 

@@ -16,7 +16,7 @@ class ProductCategory(TimestampedMixin, SoftDeleteMixin, Model):
     id = fields.BigIntField(primary_key=True)
     name = fields.CharField(max_length=100)
     slug = fields.CharField(max_length=100, unique=True)
-    sort_order = fields.IntField(default=0)
+    sort_order = fields.FloatField(default=0.0)  # 与 Product.sort_order 统一为浮点，支持精准插入排序
 
     products: fields.ReverseRelation[Product]
 

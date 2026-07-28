@@ -8,7 +8,7 @@
 > **作者**：软件架构师（高见远，software-architect）
 > **定位**：把已冻结的设计文档（系统设计 / 高层架构 / 安全设计 / 部署设计）**收敛为「工程师可直接照写的文件级有序实现计划 + 合并后的数据模型定义」**。
 > **本轮范围**：仅后端 `songdian-b2b/backend/`。前端（Next.js）与管理后台（Vue-Pure-Admin）本轮不做。
-> **设计基线已冻结**：技术栈 FastAPI + Tortoise ORM + PostgreSQL 16（zhparser TSVector）+ Redis 7.2 + Docker Compose；JWT(2h/refresh 7d) + RBAC。本文件**不重新设计**，只做落地编排。
+> **设计基线已冻结**：技术栈 FastAPI + Tortoise ORM + PostgreSQL 16（zhparser TSVector）+ Redis 7.2 + uv 虚拟环境 / 1Panel 部署；JWT(2h/refresh 7d) + RBAC。本文件**不重新设计**，只做落地编排。
 
 ---
 
@@ -34,11 +34,7 @@
 songdian-b2b/backend/
 ├── pyproject.toml                # 依赖、requires-python、ruff/pytest 配置、[tool.aerich] 配置
 ├── aerich.ini                    # aerich 迁移工具入口配置（连接 PG / SQLite）
-├── Dockerfile                    # backend 多阶段镜像（非 root、uvicorn 启动）
-├── Dockerfile.pg                 # PostgreSQL 16 镜像 + zhparser 扩展 + 初始化 zh 配置（生产/本地）
-├── docker-compose.yml            # 本地编排：backend + postgres(zhparser) + redis
 ├── .env.example                  # 全部环境变量样例（DB/Redis/JWT/SMTP/限流/特征值）
-├── .dockerignore
 ├── README.md                     # 启动/测试/迁移/部署说明 + §0 版本偏差声明
 ├── main.py                       # 应用入口：创建 FastAPI(app)、聚合各模块 router、注册中间件/异常/ lifespan
 ├── common/                       # ── 公共内核（Shared Kernel，M1~M6 共用）──
@@ -121,7 +117,7 @@ songdian-b2b/backend/
 
 | 任务 | 名称 | 产出文件（节选） | 依赖 | 优先级 |
 | --- | --- | --- | --- | --- |
-| **T01** | 项目基础设施与配置 | `pyproject.toml`、`aerich.ini`、`Dockerfile`、`Dockerfile.pg`、`docker-compose.yml`、`.env.example`、`.dockerignore`、`README.md`、`main.py`（骨架+health）、`common/config.py`、`common/logger.py`、`common/__init__.py` | — | P0 |
+| **T01** | 项目基础设施与配置 | `pyproject.toml`、`aerich.ini`、`.env.example`、`README.md`、`main.py`（骨架+health）、`common/config.py`、`common/logger.py`、`common/__init__.py` | — | P0 |
 | **T02** | 公共内核（Shared Kernel） | `common/result.py`、`enums.py`、`exceptions.py`、`middleware.py`、`deps.py`、`jwt.py`、`password.py`、`html_cleaner.py`、`idempotency.py`、`ratelimit.py`、`search_vector.py`、`audit.py` | T01 | P0 |
 | **T03** | 全部数据模型（Tortoise）+ 初始迁移 | `product/models.py`、`news/models.py`、`inquiry/models.py`、`content/models.py`、`migration/models.py`、aerich 初始迁移（`upgrade()` 内含 GIN 索引 + CHECK 约束 + zh 配置） | T02 | P0 |
 | **T04** | M1 产品服务 | `product/{schemas,routers,services}.py` | T03 | P0 |
@@ -131,8 +127,8 @@ songdian-b2b/backend/
 | **T08** | M3 联合搜索服务 | `search/{schemas,routers,services}.py` | T03, T04, T05 | P0 |
 | **T09** | main.py 路由聚合 + 中间件/异常注册 | `main.py`（完整）、各模块 router 挂载、全局异常处理器、`/healthz`、`/readyz` | T04~T08 | P0 |
 | **T10** | M6 数据迁移模块（ETL+ACL） | `migration/{schemas,routers,services,wp_adapter,etl}.py` | T03, T04, T05 | P1 |（模块已移除 2026-07-27）
-| **T11** | 种子数据 + Docker/CI 收尾 | `seed/seed_data.py`、`tests/*`、README 补充 | T09, T10 | P1 |
-| **T12** | 本地联调与测试（SQLite 跑通非搜索；PG 跑搜索） | `tests/conftest.py` + 各 test_*.py；`docker-compose up` 冒烟 | T11 | P1 |
+| **T11** | 种子数据 + uv/CI 收尾 | `seed/seed_data.py`、`tests/*`、README 补充 | T09, T10 | P1 |
+| **T12** | 本地联调与测试（SQLite 跑通非搜索；PG 跑搜索） | `tests/conftest.py` + 各 test_*.py；`uv run` 本地联调冒烟 | T11 | P1 |
 
 **关键依赖链**：T01 → T02 → T03 → {T04,T05,T06} → {T07(需T06),T08(需T04+T05)} → T09 → T10 → T11 → T12。
 **并行建议**：T04/T05/T06 在 T03 后并行；T07 等 T06；T08 等 T04+T05。
@@ -394,7 +390,7 @@ GIN 索引、CHECK 约束、zh 配置在 aerich 初始迁移的 `upgrade()` 中�
 ```sql
 -- 仅 PG 执行（SQLite 跳过）
 CREATE EXTENSION IF NOT EXISTS zhparser;
-CREATE TEXT SEARCH CONFIGURATION zh (PARSER = zhparser) WITH (mappings...); -- 见 Dockerfile.pg 初始化
+CREATE TEXT SEARCH CONFIGURATION zh (PARSER = zhparser) WITH (mappings...); -- 见部署文档（1Panel PG 容器内初始化 zh 配置，或 PG 主机手动安装 zhparser）
 CREATE INDEX IF NOT EXISTS ft_search_vector ON t_product USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS ft_search_vector ON t_news USING GIN (search_vector);
 ALTER TABLE t_product  ADD CONSTRAINT chk_product_status CHECK (status IN ('DRAFT','PUBLISHED'));
@@ -483,14 +479,14 @@ target-version = "py311"
 
 | 项 | 务实选择 | 备注 |
 | --- | --- | --- |
-| 本地测试 | **SQLite（aiosqlite）** 跑通非搜索接口 | 测试/CI 用 `sqlite://:memory:` 或文件库；**搜索/TSVector 接口必须用 PG**（docker-compose 提供） |
+| 本地测试 | **SQLite（aiosqlite）** 跑通非搜索接口 | 测试/CI 用 `sqlite://:memory:` 或文件库；**搜索/TSVector 接口必须用 PG**（1Panel / uv 部署提供） |
 | PG 驱动 | asyncpg | 生产 `DATABASE_URL=postgres://...` |
-| 中文分词 | zhparser 作为 **PG 扩展**（Dockerfile.pg 安装 + 初始化 `zh` 配置），**非 Python 依赖** | 运行时 `to_tsvector('zh', ...)` |
+| 中文分词 | zhparser 作为 **PG 扩展**（在 1Panel 的 PostgreSQL 容器内安装并初始化 `zh` 配置，见 `docs/deploy-1panel.md`），**非 Python 依赖**；未安装时自动降级 `simple` 配置 | 运行时 `to_tsvector('zh', ...)` |
 | JWT | pyjwt（HS256，单一算法，禁用 alg=none） | 密钥取自 `kms-1panel` 保密文件 / 环境变量（L4），90 天轮换 |
 | 密码 | bcrypt 直接调用 | 不用 passlib（维护停滞） |
 | 迁移 | aerich | `aerich init` / `aerich migrate` / `aerich upgrade`；CI 门禁要求迁移可生成 |
 
-### 4.3 Docker / 环境变量（见 .env.example）
+### 4.3 环境变量（见 .env.example）
 
 ```
 # 数据库（PG 生产；本地测可用 sqlite://./test.db）

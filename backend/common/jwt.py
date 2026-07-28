@@ -16,7 +16,7 @@ import jwt
 
 from common.config import settings
 from common.logger import get_logger
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 
 logger = get_logger(__name__)
 
@@ -102,7 +102,7 @@ async def revoke_token(jti: str, ttl: int) -> None:
     """将 jti 加入黑名单（登出）。"""
     redis = get_redis()
     try:
-        await redis.setex(f"auth:black:{jti}", ttl, "1")
+        await redis.setex(cache_key("auth", "black", jti), ttl, "1")
     except Exception as exc:  # noqa: BLE001
         logger.warning("写入 JWT 黑名单失败（降级忽略）：%s", exc)
 
@@ -117,7 +117,7 @@ async def revoke_family(fid: str, ttl: int | None = None) -> None:
     redis = get_redis()
     expire = ttl if ttl is not None else settings.refresh_token_ttl
     try:
-        await redis.setex(f"auth:family:{fid}", expire, "1")
+        await redis.setex(cache_key("auth", "family", fid), expire, "1")
     except Exception as exc:  # noqa: BLE001
         logger.warning("写入令牌族黑名单失败（降级忽略）：%s", exc)
 
@@ -126,9 +126,9 @@ async def is_revoked(jti: str, fid: str | None = None) -> bool:
     """jti 是否已在黑名单；若提供 fid 则同时检查令牌族（任一命中即视为吊销）。"""
     redis = get_redis()
     try:
-        if fid and await redis.exists(f"auth:family:{fid}"):
+        if fid and await redis.exists(cache_key("auth", "family", fid)):
             return True
-        return bool(await redis.exists(f"auth:black:{jti}"))
+        return bool(await redis.exists(cache_key("auth", "black", jti)))
     except Exception:  # noqa: BLE001
         # security-audit F-07：Redis 不可用时按安全策略 fail-closed（默认拒绝已吊销校验）。
         return settings.security_fail_closed
@@ -140,7 +140,7 @@ async def is_family_revoked(fid: str) -> bool:
         return False
     redis = get_redis()
     try:
-        return bool(await redis.exists(f"auth:family:{fid}"))
+        return bool(await redis.exists(cache_key("auth", "family", fid)))
     except Exception:  # noqa: BLE001
         # security-audit F-07：Redis 不可用时 fail-closed，拒绝刷新轮换。
         return settings.security_fail_closed

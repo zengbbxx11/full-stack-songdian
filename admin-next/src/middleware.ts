@@ -5,7 +5,8 @@ import { jwtVerify } from "jose";
  * 管理后台路由守卫（security-audit F-08 / review #13）。
  *
  * 全栈项目此前无任何前端路由守卫，未登录用户可直接访问 /products、/categories 等
- * 管理页面（仅靠接口层 RBAC 兜底）。本中间件在边缘运行时校验 ``admin_token`` cookie：
+ * 管理页面（仅靠接口层 RBAC 兜底）。本中间件在边缘运行时校验 HttpOnly ``access_token`` cookie
+ * （由后端 /api/v1/admin/login 下发，JS 不可读，降低 XSS 窃取风险）：
  * - 登录页 /signin、/signup 始终放行；
  * - 其余页面若缺少有效 token（签名无效或过期）则重定向到 /signin；
  * - 已登录访问登录页则跳回首页。
@@ -59,7 +60,7 @@ export async function middleware(req: NextRequest) {
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
-  const token = req.cookies.get("admin_token")?.value;
+  const token = req.cookies.get("access_token")?.value;
 
   if (isPublic) {
     // 已登录却访问登录页 → 跳回首页

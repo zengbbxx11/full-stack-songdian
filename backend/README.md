@@ -30,7 +30,6 @@
 ```
 backend/
 ├── pyproject.toml / aerich.ini / .env.example
-├── Dockerfile / Dockerfile.pg / docker-compose.yml / docker/
 ├── main.py                      # 应用入口：聚合 router + 中间件 + 异常 + lifespan
 ├── common/                      # 公共内核（config/result/enums/exceptions/jwt/...）
 │   ├── mixins.py                # TimestampedMixin/SoftDeleteMixin/AuditByMixin
@@ -188,8 +187,8 @@ pytest tests/ -q
 ## 7. 环境变量（.env.example）
 
 ```
-DATABASE_URL=postgres://songdian:songdian@pg:5432/songdian_b2b   # 或 sqlite://./dev.db
-REDIS_URL=redis://redis:6379/0                                   # 留空=内存降级
+DATABASE_URL=postgres://songdian:songdian@localhost:5432/songdian_b2b   # 生产改为 1Panel PG 实际地址；或 sqlite://./dev.db
+REDIS_URL=redis://localhost:6379/0                                        # 留空=内存降级
 JWT_SECRET=<≥32字节随机值，如 openssl rand -base64 48>            # 生产必设
 JWT_ALG=HS256
 ACCESS_TOKEN_TTL=7200
@@ -203,23 +202,32 @@ PORT=8000
 
 ---
 
-## 8. Docker 一键部署（PG + zhparser + Redis）
+## 8. 运行与部署（uv + 1Panel）
+
+**本地（Win10 / macOS / Linux，uv 虚拟环境）**
 
 ```bash
 cd backend
-docker compose up -d
-# 应用迁移（PG 下必须，见 §3）
-docker compose exec backend aerich upgrade
-# 种子（SEED_ON_START=true 启动时已自动跑，也可手动）
-docker compose exec backend python -m seed.seed_data
-# 访问
-#   API 文档: http://localhost:8000/docs
-#   探活:     http://localhost:8000/healthz  /  /readyz
+uv sync                                   # 按 uv.lock 安装依赖（含 dev）
+cp .env.example .env                      # 按需改 DATABASE_URL / JWT_SECRET
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
+# 迁移（PG 下必须，见 §3）/ 种子
+uv run aerich upgrade
+uv run python -m seed.seed_data
+# 探活: http://localhost:8000/healthz  /  /readyz
 ```
 
-> `docker-compose.yml` 中若 `JWT_SECRET=change-me-strong-random`，H5 修复会将其自动随机化
-> （仅本地够用）；**生产请显式注入真实 `JWT_SECRET`**，否则每次重启随机、所有已签发 refresh
-> 失效、用户被强制登出。
+> 未配置 Redis 时自动降级内存字典；未配置 SMTP 时询盘只入库不真发邮件；
+> 未装 zhparser 的 PG 下全文检索自动降级 `simple` 配置，**功能正常**。
+
+**生产（Ubuntu + 1Panel，推荐）**
+
+后端以 uv venv 跑在 1Panel 主机上，PostgreSQL / Redis 由 1Panel 应用商店安装并管理
+（默认不暴露宿主机端口）。完整步骤见根目录 [`docs/deploy-1panel.md`](../../docs/deploy-1panel.md)
+与根 `README.md`「一键部署（Ubuntu + 1Panel，推荐）」。
+
+> **生产必须显式设置 `JWT_SECRET`**（≥32 字节随机值）——未设置时后端自动生成临时随机密钥并告警，
+> 但重启即失效、不可用于生产（所有已签发 refresh 令牌失效、用户被强制登出）。
 
 ## 9. 代码审查修复记录
 
@@ -235,3 +243,10 @@ docker compose exec backend python -m seed.seed_data
 - 内存限流/缓存降级增加过期键回收，避免内存泄漏；
 - 审计日志 `order_by` 增加字段白名单；
 - 搜索分页（LIMIT/OFFSET + COUNT）下沉到数据库。
+
+2026-07-28 安全审计加固（认证 + 迁移 + 后台回归）：登录同时下发 HttpOnly
+`access_token`/`refresh_token` Cookie（XSS 纵深防御，`Secure` 按请求协议判定，不再强制依赖
+`APP_ENV`）；`t_*_category.sort_order` 改为 double precision、`t_news.status` 默认 `DRAFT`、清理
+WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两处致全站 500 的回归
+（`ToastContext` TDZ、`categories` 页 Modal 具名导入）。详见
+[`SECURITY-REMEDIATION.md`](./SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。

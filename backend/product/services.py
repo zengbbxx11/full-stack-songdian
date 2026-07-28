@@ -16,7 +16,7 @@ from tortoise.functions import Max
 from common.enums import ProductStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from product.models import (
@@ -50,7 +50,7 @@ DETAIL_TTL = 300  # 5min
 
 async def _cache_get_detail(slug: str) -> dict | None:
     try:
-        raw = await get_redis().get(f"product:detail:{slug}")
+        raw = await get_redis().get(cache_key("product", "detail", slug))
         return json.loads(raw) if raw else None
     except Exception:  # noqa: BLE001
         return None
@@ -58,14 +58,14 @@ async def _cache_get_detail(slug: str) -> dict | None:
 
 async def _cache_set_detail(slug: str, payload: dict) -> None:
     try:
-        await get_redis().setex(f"product:detail:{slug}", DETAIL_TTL, json.dumps(payload, default=str))
+        await get_redis().setex(cache_key("product", "detail", slug), DETAIL_TTL, json.dumps(payload, default=str))
     except Exception:  # noqa: BLE001
         pass
 
 
 async def _cache_del_detail(slug: str) -> None:
     try:
-        await get_redis().delete(f"product:detail:{slug}")
+        await get_redis().delete(cache_key("product", "detail", slug))
     except Exception:  # noqa: BLE001
         pass
 
@@ -137,15 +137,18 @@ async def create_product(
         status = ProductStatus.DRAFT.value
     cleaned = clean_html(data.content_html)
     # security-audit F-01：标题/摘要作为纯文本清洗，杜绝内嵌 HTML/脚本。
-    product = await Product.create(
-        slug=data.slug,
-        title=clean_text(data.title),
-        summary=clean_text(data.summary),
-        content_html=cleaned,
-        category_id=data.category_id, sku=data.sku, price=data.price, currency=data.currency,
-        stock_status=data.stock_status, status=status, tags=data.tags,
-        created_by=operator or None, updated_by=operator or None,
-    )
+    # 创建包事务保证原子性；注意 update_search_vector 使用原生 execute_query，
+    # 不能置于 in_transaction() 内（asyncpg 会重置连接），故放在事务提交之后。
+    async with in_transaction():
+        product = await Product.create(
+            slug=data.slug,
+            title=clean_text(data.title),
+            summary=clean_text(data.summary),
+            content_html=cleaned,
+            category_id=data.category_id, sku=data.sku, price=data.price, currency=data.currency,
+            stock_status=data.stock_status, status=status, tags=data.tags,
+            created_by=operator or None, updated_by=operator or None,
+        )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     await _cache_del_detail(data.slug)
     return await get_product_detail_admin(data.slug)

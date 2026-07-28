@@ -19,6 +19,17 @@ from common.logger import get_logger
 logger = get_logger(__name__)
 
 
+def cache_key(*parts: str) -> str:
+    """拼接缓存键，自动加环境前缀（避免多环境共用 Redis 串号）。
+
+    用法：``cache_key("product", "detail", slug)`` →
+    ``"{CACHE_KEY_PREFIX}:product:detail:{slug}"``（无前缀时省略前缀段）。
+    """
+    base = ":".join(str(p) for p in parts)
+    prefix = settings.cache_key_prefix.strip()
+    return f"{prefix}:{base}" if prefix else base
+
+
 class RedisLike:
     """Redis 客户端统一异步接口（真实 Redis 与内存降级共用）。"""
 

@@ -5,7 +5,8 @@
  * 被所有后台页面通过 useToast() hook 消费。
  */
 "use client";
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { registerToast } from "@/lib/toast";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -41,6 +42,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
   }, []);
+
+  // 将真实实现注册到解耦的 toast 桥接层，供非组件代码（如 apiFetch 兜底）调用（issue #16）。
+  // 必须放在 addToast 声明之后：否则依赖数组引用到 TDZ 中的 const 会抛
+  // "Cannot access 'addToast' before initialization"。
+  useEffect(() => {
+    registerToast(addToast);
+  }, [addToast]);
 
   const success = useCallback((msg: string) => addToast(msg, "success"), [addToast]);
   const error = useCallback((msg: string) => addToast(msg, "error"), [addToast]);

@@ -20,7 +20,7 @@ from common.jwt import (
     revoke_token,
 )
 from common.password import hash_password, verify_password
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 from common.result import PageRequest
 from content.models import AdminUser, AuditLog, Role, RolePermission
 from content.permissions import ALL_PERMISSIONS
@@ -51,7 +51,7 @@ async def load_user_claims(user: AdminUser) -> tuple[list[str], list[str]]:
 
 async def _clear_user_perm_cache(user: AdminUser) -> None:
     try:
-        await get_redis().delete(f"auth:perm:{user.id}")
+        await get_redis().delete(cache_key("auth", "perm", user.id))
     except Exception:  # noqa: BLE001
         pass
 
@@ -78,7 +78,7 @@ async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
     if user.status == AdminStatus.LOCKED.value:
         try:
             # Redis 里查锁是否还在（key: login:lock:{用户名}）
-            locked = await get_redis().exists(f"login:lock:{username}")
+            locked = await get_redis().exists(cache_key("login", "lock", username))
         except Exception:
             # Redis 挂了 → 保守起见，拒绝登录（安全优先）
             locked = settings.security_fail_closed
@@ -102,7 +102,7 @@ async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
             # 失败 5 次 → 锁定账号 15 分钟（数据库 + Redis 双重保障）
             user.status = AdminStatus.LOCKED.value
             try:
-                await get_redis().setex(f"login:lock:{username}", LOGIN_LOCK_TTL, "1")
+                await get_redis().setex(cache_key("login", "lock", username), LOGIN_LOCK_TTL, "1")
             except Exception:
                 pass  # Redis 挂了也不影响数据库锁，下次登录会被拦截
         await user.save()

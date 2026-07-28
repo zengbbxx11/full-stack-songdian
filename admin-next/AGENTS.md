@@ -9,7 +9,7 @@
 
 松典科技 B2B 官网的**管理后台**，端口 `3001`，服务 `../backend/` 的 `/api/v1/admin/*`。
 Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 风格组件。
-`middleware.ts` 做前端路由守卫（校验 `admin_token` cookie），接口层另有 RBAC 兜底。
+`middleware.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` cookie），接口层另有 RBAC 兜底。
 
 ---
 
@@ -33,7 +33,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | UI | 内置 `components/ui/`（shadcn 风格）+ lucide-react 图标 |
 | 图表 | apexcharts / react-apexcharts、@fullcalendar/*、swiper |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
-| 守卫 | `middleware.ts`（Edge Runtime，校验 admin_token cookie） |
+| 守卫 | `middleware.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` cookie） |
 
 ---
 
@@ -96,7 +96,7 @@ admin-next/src/
 
 ## 路由守卫安全（2026-07-28 修复）
 
-`middleware.ts` 现使用 `jose` 校验 `admin_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
+`middleware.ts` 现使用 `jose` 校验 `access_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
 要求：
 
 - `admin-next` 必须配置与后端一致的 `JWT_SECRET`（服务端变量，`env.example` 有模板）；

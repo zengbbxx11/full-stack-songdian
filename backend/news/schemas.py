@@ -23,7 +23,7 @@ class NewsCreateRequest(BaseModel):
     category_id: int
     author: str | None = Field(default=None, max_length=100)
     published_at: datetime | None = None
-    status: str = NewsStatus.PUBLISHED.value
+    status: str = NewsStatus.DRAFT.value  # 默认草稿，需显式发布（security-audit：防新闻被自动公开）
 
     @field_validator("slug")
     @classmethod
@@ -72,7 +72,7 @@ class NewsCategoryVO(BaseModel):
     id: int
     name: str
     slug: str
-    sort_order: int = 0
+    sort_order: float = 0.0
 
     @classmethod
     def from_model(cls, m) -> NewsCategoryVO:  # type: ignore[valid-type]
@@ -88,7 +88,7 @@ class NewsCategoryCreate(BaseModel):
 
     name: str = Field(..., max_length=100)
     slug: str = Field(..., max_length=100)
-    sort_order: int | None = None  # 缺省时落到末尾
+    sort_order: float | None = None  # 缺省时落到末尾
 
 
 class NewsCategoryUpdate(BaseModel):
@@ -96,7 +96,7 @@ class NewsCategoryUpdate(BaseModel):
 
     name: str | None = None
     slug: str | None = None
-    sort_order: int | None = None
+    sort_order: float | None = None
 
 
 class NewsCategoryReorderReq(BaseModel):

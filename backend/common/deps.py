@@ -18,7 +18,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from common.config import settings
 from common.exceptions import BizException, ErrorCode
 from common.jwt import decode_token, is_revoked
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 
 # 避免循环依赖：直接引用模型，不引用 content.services
 from content.models import AdminUser, RolePermission
@@ -40,10 +40,14 @@ async def get_current_user(
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> AdminUser:
     """解析并校验 JWT，返回当前管理员。失败抛 BizException。"""
-    if creds is None or not creds.credentials:
+    token = creds.credentials if creds else None
+    # security-audit F-15：兼容 HttpOnly Cookie 下发方式，优先 Bearer，缺失时回退 Cookie。
+    if not token:
+        token = request.cookies.get("access_token")
+    if not token:
         raise BizException(ErrorCode.C401001)
     try:
-        payload = decode_token(creds.credentials)
+        payload = decode_token(token)
     except Exception:  # noqa: BLE001
         # 不向上透出原始解码错误（避免泄露 token 细节），统一为未鉴权。
         raise BizException(ErrorCode.C401001) from None
@@ -90,9 +94,9 @@ def _verify_perms(signed: str) -> list[str] | None:
 async def get_user_permissions(user: AdminUser) -> list[str]:
     """获取用户权限码（带 HMAC 签名缓存，security-audit F-05）。"""
     redis = get_redis()
-    cache_key = f"auth:perm:{user.id}"
+    perm_cache_key = cache_key("auth", "perm", user.id)
     try:
-        cached = await redis.get(cache_key)
+        cached = await redis.get(perm_cache_key)
         if cached:
             verified = _verify_perms(cached)
             if verified is not None:
@@ -110,7 +114,7 @@ async def get_user_permissions(user: AdminUser) -> list[str]:
             )
         )
     try:
-        await redis.setex(cache_key, settings.access_token_ttl, _sign_perms(perms))
+        await redis.setex(perm_cache_key, settings.access_token_ttl, _sign_perms(perms))
     except Exception:  # noqa: BLE001
         pass
     return perms

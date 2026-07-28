@@ -2,6 +2,9 @@
 
 > 适用：Ubuntu 22.04/24.04 + 1Panel Linux 面板  
 > 架构：FastAPI 后端(:8000) + Next.js 官网(:3000) + Next.js 管理后台(:3001) + PostgreSQL + Redis
+>
+> ⚠️ **这是本项目唯一的部署路径**：后端已移除 Docker / docker-compose（改为 uv 虚拟环境直接运行）；
+> 本地开发也是 Win10 / Linux + uv，不再依赖容器编排。PG 与 Redis 均由 1Panel 应用商店安装并管理。
 
 ---
 

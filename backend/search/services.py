@@ -12,7 +12,7 @@ import json
 import time
 
 from common.exceptions import BizException, ErrorCode
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 from common.search_vector import is_sqlite, resolve_tsconfig
 from news.models import News
 from product.models import Product
@@ -23,7 +23,7 @@ CACHE_TTL = 60
 
 def _cache_key(q: str, stype: str, page: int) -> str:
     h = hashlib.md5(f"{q}|{stype}".encode()).hexdigest()[:12]
-    return f"search:q:{h}:{stype}:{page}"
+    return cache_key("search", "q", h, stype, page)
 
 
 async def _cache_get(key: str) -> SearchPageVO | None:

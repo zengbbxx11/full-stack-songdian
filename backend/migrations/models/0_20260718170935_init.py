@@ -130,26 +130,6 @@ CREATE TABLE IF NOT EXISTS "t_role_permission" (
     CONSTRAINT "uid_t_role_perm_role_id_f04afd" UNIQUE ("role_id", "permission_code")
 );
 COMMENT ON TABLE "t_role_permission" IS 'RBAC 多对多：角色 → 权限码（页面+按钮级）。无独立权限实体表。';
-CREATE TABLE IF NOT EXISTS "t_migration_batch" (
-    "id" BIGSERIAL NOT NULL PRIMARY KEY,
-    "batch_no" VARCHAR(100) NOT NULL UNIQUE,
-    "scope" VARCHAR(30) NOT NULL,
-    "status" VARCHAR(30) NOT NULL,
-    "total" INT NOT NULL,
-    "processed" INT NOT NULL,
-    "failed" INT NOT NULL,
-    "started_at" TIMESTAMPTZ,
-    "finished_at" TIMESTAMPTZ
-);
-CREATE TABLE IF NOT EXISTS "t_migration_record" (
-    "id" BIGSERIAL NOT NULL PRIMARY KEY,
-    "entity_type" VARCHAR(30) NOT NULL,
-    "source_id" VARCHAR(100) NOT NULL,
-    "target_id" BIGINT,
-    "status" VARCHAR(30) NOT NULL,
-    "error_msg" VARCHAR(1000),
-    "batch_id" BIGINT NOT NULL REFERENCES "t_migration_batch" ("id") ON DELETE CASCADE
-);
 CREATE TABLE IF NOT EXISTS "aerich" (
     "id" SERIAL NOT NULL PRIMARY KEY,
     "version" VARCHAR(255) NOT NULL,

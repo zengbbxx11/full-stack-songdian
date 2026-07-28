@@ -109,7 +109,7 @@ class CategoryVO(BaseModel):
     id: int
     name: str
     slug: str
-    sort_order: int = 0
+    sort_order: float = 0.0
 
     @classmethod
     def from_model(cls, m) -> CategoryVO:  # type: ignore[valid-type]
@@ -125,7 +125,7 @@ class CategoryCreate(BaseModel):
 
     name: str = Field(..., max_length=100)
     slug: str = Field(..., max_length=100)
-    sort_order: int | None = None  # 缺省时落到末尾
+    sort_order: float | None = None  # 缺省时落到末尾
 
 
 class CategoryUpdate(BaseModel):
@@ -133,7 +133,7 @@ class CategoryUpdate(BaseModel):
 
     name: str | None = None
     slug: str | None = None
-    sort_order: int | None = None
+    sort_order: float | None = None
 
 
 class ReorderReq(BaseModel):

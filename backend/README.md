@@ -201,3 +201,18 @@ docker compose exec backend python -m seed.seed_data
 > `docker-compose.yml` 中若 `JWT_SECRET=change-me-strong-random`，H5 修复会将其自动随机化
 > （仅本地够用）；**生产请显式注入真实 `JWT_SECRET`**，否则每次重启随机、所有已签发 refresh
 > 失效、用户被强制登出。
+
+## 9. 代码审查修复记录
+
+2026-07-28 一轮代码审查发现的 13 项问题已全部修复，详见
+[`CODE_REVIEW_REMEDIATION.md`](./CODE_REVIEW_REMEDIATION.md)。要点：
+
+- 改密码接口误用 `user.password` → 已改为 `user.password_hash`；
+- 草稿态产品/新闻回查不再因 `status=PUBLISHED` 过滤而 500；
+- `BizException` 关键字 `message=` 误用 → 统一 `msg=`；
+- `X-Forwarded-For` 仅受信代理的直连 IP 才被采纳；
+- 新增 `.env.example` 模板（脱敏）；
+- HTML 清洗通配符移除 `style`（防 CSS 注入）；
+- 内存限流/缓存降级增加过期键回收，避免内存泄漏；
+- 审计日志 `order_by` 增加字段白名单；
+- 搜索分页（LIMIT/OFFSET + COUNT）下沉到数据库。

@@ -232,10 +232,21 @@ async def bind_permissions(role_id: int, data: RolePermRequest) -> RoleVO:
     return RoleVO.from_model(role, valid)
 
 
+# 审计日志排序字段白名单（review #11）：AuditLog 无 sort_order 字段，
+# 客户端传入不存在的字段会令 Tortoise order_by 抛 FieldError → 500，故必须白名单校验。
+_AUDIT_ORDER_WHITELIST = {
+    "id", "user_id", "username", "action", "resource", "result", "ip", "created_time",
+}
+
+
 async def list_audit_logs(req: PageRequest) -> tuple[list[AuditPageVO], int]:
     q = AuditLog.all()
+    # 必须约束为真实存在的字段，否则 Tortoise order_by 抛 FieldError → 500。
+    order_by = req.order_by or "-created_time"
+    if order_by.lstrip("-") not in _AUDIT_ORDER_WHITELIST:
+        order_by = "-created_time"
     total = await q.count()
-    rows = await q.order_by(req.order_by).offset(req.offset).limit(req.limit)
+    rows = await q.order_by(order_by).offset(req.offset).limit(req.limit)
     return [AuditPageVO.from_model(r) for r in rows], total
 
 
@@ -256,9 +267,9 @@ async def update_profile(user: AdminUser, data: UpdateProfileRequest) -> Profile
     if data.new_password is not None:
         if not data.current_password:
             raise BizException(ErrorCode.A040001, "修改密码须提供当前密码")
-        if not verify_password(data.current_password, user.password):
+        if not verify_password(data.current_password, user.password_hash):
             raise BizException(ErrorCode.A050001, "当前密码不正确")
-        user.password = hash_password(data.new_password)
+        user.password_hash = hash_password(data.new_password)
 
     await user.save()
     return ProfileVO.from_model(user)

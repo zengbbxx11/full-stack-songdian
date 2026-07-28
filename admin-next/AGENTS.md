@@ -91,3 +91,16 @@ admin-next/src/
 | 加图标 | 在 `icons/generated.tsx` 加内联 SVG 组件（**勿用 @svgr/webpack**） |
 | 改路由守卫 | `middleware.ts`（注意 matcher 排除项，见雷区 ④） |
 | 改配色/主题 | `app/globals.css` + `tailwind` 配置 |
+
+---
+
+## 路由守卫安全（2026-07-28 修复）
+
+`middleware.ts` 现使用 `jose` 校验 `admin_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
+要求：
+
+- `admin-next` 必须配置与后端一致的 `JWT_SECRET`（服务端变量，`env.example` 有模板）；
+- 未配置 `JWT_SECRET` 时降级为仅校验 `exp` 并告警（仅本地开发，不安全）；
+- 仍需保持 matcher 排除 `/api` 与 `/uploads`（见雷区 ④），否则登录被拦截。
+
+详见 `../backend/CODE_REVIEW_REMEDIATION.md` #13。

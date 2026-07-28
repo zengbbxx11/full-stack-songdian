@@ -23,10 +23,12 @@ ALLOWED_TAGS = [
 ]
 
 # 允许的属性（含图片/链接安全属性）
+# security-audit F-06 收敛：通配符仅保留 class，禁止 style 以防 CSS 注入
+# （expression()/url() 等向量）。富文本样式统一走 class（Tailwind）。
 ALLOWED_ATTRIBUTES = {
     "a": ["href", "title", "target", "rel"],
     "img": ["src", "alt", "title", "width", "height"],
-    "*": ["class", "style"],
+    "*": ["class"],
 }
 
 # 允许使用的 URL 协议（防止 javascript: 等）

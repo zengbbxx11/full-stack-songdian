@@ -33,9 +33,9 @@ def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
     if not forwarded:
         return direct_ip
-    if not settings.trusted_proxy_list or direct_ip in settings.trusted_proxy_list:
+    # 仅当直连来源位于受信代理列表时，才采纳 XFF 首个 IP；否则使用真实直连 IP。
+    if settings.trusted_proxy_list and direct_ip in settings.trusted_proxy_list:
         return forwarded.split(",")[0].strip()
-    # 来源不在信任列表：忽略注入的 XFF，使用真实直连 IP。
     return direct_ip
 
 

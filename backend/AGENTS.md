@@ -103,3 +103,18 @@ backend/
 | 改全局配置 | `.env` + `common/config.py` |
 | 加新业务模块 | 新建模块文件夹（models/routers/services）→ 在 `main.py` `include_router` |
 | 写测试 | `tests/`（pytest，注意 `_enable_global_fallback`） |
+
+---
+
+## 代码审查修复（2026-07-28）
+
+13 项审查问题已修复，详见 `CODE_REVIEW_REMEDIATION.md`。涉及后端的要点：
+- `content/services.py` 改密用 `user.password_hash`；
+- `product`/`news` services 新增 `_admin` 详情变体，草稿回查不再被 `PUBLISHED` 过滤；
+- `BizException` 统一用 `msg=` 关键字；
+- `common/middleware.py` 的 `get_client_ip` 仅受信代理才采纳 XFF；
+- `common/html_cleaner.py` 通配符去除 `style`；
+- `common/ratelimit.py` / `common/redis_client.py` 增加过期键回收；
+- `asyncio.get_event_loop()` → `get_running_loop()`；
+- `content/list_audit_logs` 的 `order_by` 加白名单；
+- `search/services.py` 分页下沉到 DB。

@@ -109,6 +109,21 @@ async def get_product_detail(slug: str) -> ProductDetailVO:
     return vo
 
 
+async def get_product_detail_admin(slug: str) -> ProductDetailVO:
+    """后台用详情：不限制 status（含 DRAFT），不写公共缓存。
+
+    create/update 写操作后回查用，避免 DRAFT（无发布权限时）被
+    ``get_product_detail`` 的 ``status=PUBLISHED`` 过滤误判为不存在。
+    """
+    product = await Product.get_or_none(slug=slug, deleted=0)
+    if product is None:
+        raise BizException(ErrorCode.A010001)
+    await product.fetch_related("category", "galleries", "attributes")
+    return ProductDetailVO.from_model(
+        product, galleries=product.galleries, attributes=product.attributes
+    )
+
+
 async def create_product(
     data: ProductCreateRequest, operator: str = "", can_publish: bool = True
 ) -> ProductDetailVO:
@@ -133,7 +148,7 @@ async def create_product(
     )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     await _cache_del_detail(data.slug)
-    return await get_product_detail(data.slug)
+    return await get_product_detail_admin(data.slug)
 
 
 async def update_product(
@@ -169,7 +184,7 @@ async def update_product(
     await product.save()
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     await _cache_del_detail(product.slug)
-    return await get_product_detail(product.slug)
+    return await get_product_detail_admin(product.slug)
 
 
 async def delete_product(product_id: int, operator: str = "") -> None:
@@ -197,7 +212,7 @@ async def delete_gallery(product_id: int, gallery_id: int) -> None:
     """按 ID 删除相册图并清除缓存。"""
     g = await ProductGallery.get_or_none(id=gallery_id, product_id=product_id)
     if g is None:
-        raise BizException(ErrorCode.A010001, message="相册图不存在")
+        raise BizException(ErrorCode.A010001, msg="相册图不存在")
     product = await Product.get_or_none(id=product_id)
     slug = product.slug if product else None
     await g.delete()
@@ -220,7 +235,7 @@ async def delete_attribute(product_id: int, attr_id: int) -> None:
     """按 ID 删除产品属性并清除缓存。"""
     a = await ProductAttribute.get_or_none(id=attr_id, product_id=product_id)
     if a is None:
-        raise BizException(ErrorCode.A010001, message="属性不存在")
+        raise BizException(ErrorCode.A010001, msg="属性不存在")
     product = await Product.get_or_none(id=product_id)
     slug = product.slug if product else None
     await a.delete()
@@ -239,9 +254,14 @@ async def list_categories_page(req: PageRequest) -> tuple[list[CategoryVO], int]
 
 
 async def _next_category_sort_order() -> int:
-    """返回新分类的默认排序值（当前最大 + 1，空表为 0）。"""
-    agg = await ProductCategory.filter(deleted=0).aggregate(max_order=Max("sort_order"))
-    return (agg.get("max_order") or -1) + 1
+    """返回新分类的默认排序值（当前最大 + 1，空表为 0）。
+
+    验证期发现：Tortoise 1.x 已移除 ``QuerySet.aggregate``，改用
+    ``functions.Max`` + ``annotate``/``values`` 取全局最大值（逐行取 max 兜底）。
+    """
+    rows = await ProductCategory.filter(deleted=0).annotate(m=Max("sort_order")).values("m")
+    max_order = max((r["m"] for r in rows), default=None)
+    return (max_order or -1) + 1
 
 
 async def create_category(data: CategoryCreate, operator: str = "") -> CategoryVO:

@@ -246,3 +246,11 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 - 偏好现代简洁设计，不喜欢冗余装饰
 - 修改代码前先读文件确认当前状态
 - 面向全球 B2B 采购商，所有用户可见文案使用英文
+
+---
+
+## 代码审查修复（2026-07-28）
+
+`lib/types.ts` 已清理 WordPress/WooCommerce 原始结构类型（死代码）：移除 WP 核心全量类型与
+`WCProductTag` / `WCProductAttribute` / `WCProduct`，仅保留仍被应用层类型引用的
+`WCProductImage` / `WCProductCategory` / `WCAttribute`。详见 `../backend/CODE_REVIEW_REMEDIATION.md` #9。

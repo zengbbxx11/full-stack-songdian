@@ -95,6 +95,19 @@ async def get_news_detail(slug: str) -> NewsDetailVO:
     return vo
 
 
+async def get_news_detail_admin(slug: str) -> NewsDetailVO:
+    """后台用详情：不限制 status（含 DRAFT），不写公共缓存。
+
+    create/update 写操作后回查用，避免 DRAFT（无发布权限时）被
+    ``get_news_detail`` 的 ``status=PUBLISHED`` 过滤误判为不存在。
+    """
+    news = await News.get_or_none(slug=slug, deleted=0)
+    if news is None:
+        raise BizException(ErrorCode.A020001)
+    await news.fetch_related("category")
+    return NewsDetailVO.from_model(news)
+
+
 async def create_news(
     data: NewsCreateRequest, operator: str = "", can_publish: bool = True
 ) -> NewsDetailVO:
@@ -125,7 +138,7 @@ async def create_news(
     news = await News.create(**create_kwargs)
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
     await _cache_del_detail(data.slug)
-    return await get_news_detail(data.slug)
+    return await get_news_detail_admin(data.slug)
 
 
 async def update_news(
@@ -161,7 +174,7 @@ async def update_news(
     await news.save()
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
     await _cache_del_detail(news.slug)
-    return await get_news_detail(news.slug)
+    return await get_news_detail_admin(news.slug)
 
 
 async def delete_news(news_id: int, operator: str = "") -> None:

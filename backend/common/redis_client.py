@@ -53,11 +53,29 @@ class MemoryBackend(RedisLike):
         self._expire_at: dict[str, float] = {}
         self._lock = asyncio.Lock()
 
+    @staticmethod
+    def _now() -> float:
+        # review #10：协程内必须用 get_running_loop，get_event_loop 已废弃。
+        return asyncio.get_running_loop().time()
+
     async def _check_expire(self, key: str) -> None:
+        """访问时清理单个过期键（read 路径惰性剔除）。"""
         exp = self._expire_at.get(key)
-        if exp is not None and exp <= asyncio.get_event_loop().time():
+        if exp is not None and exp <= self._now():
             self._store.pop(key, None)
             self._expire_at.pop(key, None)
+
+    async def _sweep_expired(self) -> None:
+        """写时一次性清除所有已过期键（review #8）。
+
+        避免未被访问的过期键常驻内存：仅在被访问时剔除会漏掉长期无访问的键，
+        故在写路径统一回收，使内存占用有界。
+        """
+        now = self._now()
+        expired = [k for k, exp in self._expire_at.items() if exp <= now]
+        for k in expired:
+            self._store.pop(k, None)
+            self._expire_at.pop(k, None)
 
     async def ping(self) -> bool:
         return True
@@ -65,20 +83,21 @@ class MemoryBackend(RedisLike):
     async def set(self, key: str, value: str, ex: int | None = None,
                   nx: bool = False) -> bool:
         async with self._lock:
-            await self._check_expire(key)
+            await self._sweep_expired()
             if nx and key in self._store:
                 return False
             self._store[key] = value
             if ex is not None:
-                self._expire_at[key] = asyncio.get_event_loop().time() + ex
+                self._expire_at[key] = self._now() + ex
             else:
                 self._expire_at.pop(key, None)
             return True
 
     async def setex(self, key: str, seconds: int, value: str) -> None:
         async with self._lock:
+            await self._sweep_expired()
             self._store[key] = value
-            self._expire_at[key] = asyncio.get_event_loop().time() + seconds
+            self._expire_at[key] = self._now() + seconds
 
     async def get(self, key: str) -> str | None:
         async with self._lock:
@@ -109,7 +128,7 @@ class MemoryBackend(RedisLike):
     async def expire(self, key: str, seconds: int) -> bool:
         async with self._lock:
             if key in self._store:
-                self._expire_at[key] = asyncio.get_event_loop().time() + seconds
+                self._expire_at[key] = self._now() + seconds
                 return True
             return False
 
@@ -118,7 +137,7 @@ class MemoryBackend(RedisLike):
             exp = self._expire_at.get(key)
             if exp is None:
                 return -1
-            remaining = int(exp - asyncio.get_event_loop().time())
+            remaining = int(exp - self._now())
             return max(remaining, -2)
 
 

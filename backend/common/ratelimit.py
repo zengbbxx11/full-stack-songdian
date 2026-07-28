@@ -77,11 +77,26 @@ _memory_ips: dict[str, list[float]] = {}
 _memory_lock = asyncio.Lock()
 
 
+def _memory_sweep_expired(now: float) -> None:
+    """回收所有过期缓冲并剔除空键（review #7）。IP 窗口 1s，登录窗口 60s。
+
+    仅在被访问时剔除会漏掉长期无访问的 IP 键，故在写路径统一回收，
+    避免 ``_memory_ips`` 随唯一 IP 数无限增长（内存泄漏）。
+    """
+    for k in list(_memory_ips.keys()):
+        window = 60.0 if k.startswith("login:") else 1.0
+        buf = _memory_ips[k]
+        buf[:] = [t for t in buf if t > now - window]
+        if not buf:
+            _memory_ips.pop(k, None)
+
+
 async def _memory_ip_allow(ip: str, max_count: int) -> None:
     now = time.monotonic()
     async with _memory_lock:
+        # review #7：写时统一回收所有过期缓冲并剔除空键。
+        _memory_sweep_expired(now)
         buf = _memory_ips.setdefault(ip, [])
-        buf[:] = [t for t in buf if t > now - 1.0]
         if len(buf) >= max_count:
             raise BizException(ErrorCode.C429001)
         buf.append(now)
@@ -108,8 +123,9 @@ async def login_rate_limit(request: Request) -> None:
 async def _memory_login_allow(ip: str) -> None:
     now = time.monotonic()
     async with _memory_lock:
+        # review #7：写时统一回收所有过期缓冲并剔除空键。
+        _memory_sweep_expired(now)
         buf = _memory_ips.setdefault(f"login:{ip}", [])
-        buf[:] = [t for t in buf if t > now - 60.0]
         if len(buf) >= settings.rate_login_per_min:
             raise BizException(ErrorCode.C429001)
         buf.append(now)

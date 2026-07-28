@@ -1,36 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 /**
- * 管理后台路由守卫（security-audit F-08）。
+ * 管理后台路由守卫（security-audit F-08 / review #13）。
  *
  * 全栈项目此前无任何前端路由守卫，未登录用户可直接访问 /products、/categories 等
  * 管理页面（仅靠接口层 RBAC 兜底）。本中间件在边缘运行时校验 ``admin_token`` cookie：
  * - 登录页 /signin、/signup 始终放行；
- * - 其余页面若缺少有效 token（含过期）则重定向到 /signin；
+ * - 其余页面若缺少有效 token（签名无效或过期）则重定向到 /signin；
  * - 已登录访问登录页则跳回首页。
  *
- * 注：token 以可读 cookie 形式存储（仅供守卫做存在性/过期校验），实际接口鉴权仍由
- * 客户端从 localStorage 读取并以 Bearer 头发送，XSS 暴露面与改造前一致。
+ * review #13：此前仅 base64 解码 payload 校验 exp，伪造 cookie 即可绕过守卫。
+ * 现使用 jose 校验 HS256 签名（密钥须与后端 JWT_SECRET 一致），签名/过期任一不符即判无效。
+ *
+ * 安全约束：``JWT_SECRET`` 为服务端环境变量（切勿加 ``NEXT_PUBLIC_`` 前缀，否则泄露到客户端）。
+ * 必须与后端 ``.env`` 的 ``JWT_SECRET`` 相同。生产环境必须配置；未配置时降级为仅校验 exp 的
+ * 不安全模式并输出告警（仅用于本地开发）。
  */
 
 const PUBLIC_PATHS = ["/signin", "/signup"];
 
-function isTokenValid(token: string | undefined): boolean {
+const JWT_SECRET = process.env.JWT_SECRET;
+
+async function isTokenValid(token: string | undefined): Promise<boolean> {
   if (!token) return false;
+
+  // 生产/正式环境：用 jose 校验 HS256 签名 + 过期（review #13）。
+  if (JWT_SECRET) {
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      await jwtVerify(token, secret, { algorithms: ["HS256"] });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // 未配置 JWT_SECRET（仅本地开发）：降级为仅校验 exp 的存在性检查，并告警。
+  console.warn(
+    "[middleware] JWT_SECRET 未配置，token 仅做 exp 校验（不安全降级）。" +
+      "生产环境请配置与后端一致的 JWT_SECRET 以启用签名验证。"
+  );
   try {
     const payload = token.split(".")[1];
     if (!payload) return false;
     const json = JSON.parse(
       atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
     );
-    if (!json.exp) return true; // 无过期声明则仅校验存在性
+    if (!json.exp) return true;
     return Date.now() < json.exp * 1000;
   } catch {
     return false;
   }
 }
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
@@ -39,13 +63,13 @@ export function middleware(req: NextRequest) {
 
   if (isPublic) {
     // 已登录却访问登录页 → 跳回首页
-    if (token && isTokenValid(token)) {
+    if (token && (await isTokenValid(token))) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }
 
-  if (!isTokenValid(token)) {
+  if (!(await isTokenValid(token))) {
     const url = new URL("/signin", req.url);
     return NextResponse.redirect(url);
   }

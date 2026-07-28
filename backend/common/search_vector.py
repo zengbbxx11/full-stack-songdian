@@ -93,3 +93,34 @@ async def update_search_vector(table: str, pk: int, *text_fields: str) -> None:
         await connections.get("default").execute_query(sql, [pk])
     except Exception as exc:  # 搜索向量失败不影响主数据落库，仅告警，可后续统一重建
         logger.warning("search_vector 重建失败 table=%s pk=%s: %s", table, pk, exc)
+
+
+# 全文检索 GIN 索引名（与迁移 migrations/models/3_*.py 保持一致）
+_PRODUCT_GIN = "ix_t_product_search_vector"
+_NEWS_GIN = "ix_t_news_search_vector"
+
+
+async def ensure_search_indexes() -> None:
+    """确保 t_product / t_news 的 search_vector 列上存在 GIN 索引（幂等）。
+
+    背景：``search_vector`` 是 TSVECTOR 列，GIN 索引只能以原生 SQL 创建，
+    写在迁移文件 migrations/models/3_*.py 的 upgrade() 里。但本项目启动依赖
+    Tortoise 自动建表、并不自动执行 aerich 迁移，全新库会漏建该索引，导致搜索
+    退化为全表顺序扫描。这里在 init_db() 中以 ``CREATE INDEX IF NOT EXISTS``
+    幂等兜底，保证无论是否跑过 aerich，索引都一定存在。
+
+    SQLite 无 TSVECTOR 列（搜索走 LIKE），直接跳过。索引缺失/创建失败均只告警，
+    不阻断启动。
+    """
+    if is_sqlite():
+        return
+    stmts = [
+        f'CREATE INDEX IF NOT EXISTS {_PRODUCT_GIN} ON t_product USING GIN (search_vector)',
+        f'CREATE INDEX IF NOT EXISTS {_NEWS_GIN} ON t_news USING GIN (search_vector)',
+    ]
+    conn = connections.get("default")
+    for sql in stmts:
+        try:
+            await conn.execute_query(sql)
+        except Exception as exc:  # 索引已存在或权限不足等，告警但不阻断
+            logger.warning("确保 search_vector GIN 索引失败（可忽略）：%s | %s", sql, exc)

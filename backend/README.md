@@ -90,6 +90,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 > 2026-07-21 审计发现 `Product.tags`（JSONField）、`UploadRecord` 表、`search_vector` 的 GIN 索引缺少迁移。
 > 已于 `migrations/models/3_20260721141024_add_tags_upload_and_search_gin.py` 补齐，
 > 合并为一个标准 aerich 迁移。在干净 PostgreSQL 上 `aerich upgrade` 即可完整建表。
+>
+> **GIN 索引启动自愈（2026-07-28）**：`search_vector` 是 TSVECTOR 列，GIN 索引只能以原生 SQL
+> 创建（写在迁移 #3 的 `upgrade()` 里）。但本项目启动依赖 Tortoise 自动建表、**不自动执行 aerich 迁移**，
+> 全新库会漏建该索引，导致搜索退化为全表顺序扫描。因此在 `common/config.py` 的 `init_db()` 中
+> 调用 `common/search_vector.py:ensure_search_indexes()`，以 `CREATE INDEX IF NOT EXISTS` **幂等兜底**——
+> 无论是否跑过 aerich，索引都一定存在（SQLite 无该列则跳过）。
 
 **PG 部署步骤**：
 
@@ -102,6 +108,19 @@ aerich upgrade
 # 2) 种子数据（SEED_ON_START=true 启动时已自动跑，也可手动）
 python -m seed.seed_data
 ```
+
+---
+
+## 3.1 运行时性能优化（2026-07-28）
+
+- **响应压缩**：`main.py` 注册 `GZipMiddleware`（`minimum_size=500`）作为最外层中间件，
+  对所有 API JSON 响应做 gzip 压缩（默认仅压缩 >500 字节、且跳过图片等已压缩类型）。
+  客户端带 `Accept-Encoding: gzip` 时返回 `Content-Encoding: gzip` + `Vary: Accept-Encoding`。
+- **全文检索索引自愈**：见上方 §3「GIN 索引启动自愈」。搜索命中 GIN 索引，
+  数据量增大后由 PostgreSQL 规划器自动从顺序扫描切到 `Bitmap Index Scan`，无需手动干预。
+
+> 图片优化边界：当前 `/uploads/*` 由后端 `StaticFiles` 直出原图（无 CDN / 无 `Cache-Control`
+> / 无预裁剪），属下一阶段优化项，不影响上述两项已落地收益。
 
 ---
 

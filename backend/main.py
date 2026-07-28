@@ -21,6 +21,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from common.config import MEDIA_ROOT, close_db, init_db, settings
@@ -86,6 +87,10 @@ app = FastAPI(
 )
 
 # ── 中间件（请求 → 中间件处理 → 路由处理 → 返回）──
+
+# GZipMiddleware：压缩 API JSON 响应（默认仅压缩 >500 字节、且非已压缩类型如图片）。
+# 放在最外层，确保所有响应（含异常处理器返回的 JSON）都被压缩，省带宽。
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # TraceMiddleware：给每个请求注入 traceId（用于日志追踪），
 #   解析客户端真实 IP（而不是代理 IP），设置单租户标识

@@ -214,6 +214,15 @@ async def init_db() -> None:
     # SQLite 自动建表；PG 由 aerich 迁移负责
     if is_sqlite():
         await Tortoise.generate_schemas()
+    else:
+        # PG：Tortoise 自动同步不创建 raw-SQL 索引（GIN），这里幂等兜底，
+        # 保证全新库也能用上全文检索索引，避免搜索退化为全表顺序扫描。
+        from common.search_vector import ensure_search_indexes
+
+        try:
+            await ensure_search_indexes()
+        except Exception as exc:
+            logger.warning("search_vector GIN 索引确保失败（可忽略，不影响启动）：%s", exc)
 
 
 async def close_db() -> None:

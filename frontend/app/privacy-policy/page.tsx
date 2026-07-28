@@ -11,6 +11,7 @@
 import { superMeta } from "next-super-meta";
 import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, PRIVACY } from "@/lib/content-data";
 
@@ -104,25 +105,14 @@ export default function PrivacyPage() {
             </div>
           </div>
 
-          {/* 行动号召 —— 电光蓝，与全站 CTA 一致 */}
+          {/* 行动号召 —— 红底悬停，与全站 CTA 统一 */}
           <div className="mt-14 pt-8 border-t border-[#EEEEEE]">
-            <Link
+            <CtaButton
               href="/contact"
-              className="inline-flex items-center px-8 text-white text-sm font-medium rounded bg-[#3E6AE1] hover:bg-[#3561CC]"
-              style={{
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "#FFFFFF",
-                height: "44px",
-                borderRadius: "4px",
-                transitionDuration: "0.33s",
-              }}
+              className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-8 text-[14px]"
             >
               Contact Us
-              <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
+            </CtaButton>
           </div>
         </div>
       </section>

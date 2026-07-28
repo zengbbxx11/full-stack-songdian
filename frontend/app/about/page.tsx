@@ -15,6 +15,7 @@ import HorizontalTimeline from "@/components/HorizontalTimeline";
 import SectionHeading from "@/components/SectionHeading";
 import FactoryVideo from "@/components/FactoryVideo";
 import CertificateGallery from "@/components/CertificateGallery";
+import { CtaButton } from "@/components/CtaButton";
 import { MEDIA } from "@/lib/media";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, ABOUT } from "@/lib/content-data";
@@ -175,23 +176,12 @@ export default function AboutPage() {
           <p className="max-w-md mx-auto mb-8" style={{ color: "#8E8E8E" }}>
             Let&apos;s discuss your camera project and explore how we can bring your vision to market.
           </p>
-          <Link
+          <CtaButton
             href="/contact"
-            className="inline-flex items-center px-8 text-white text-sm font-medium rounded transition-colors bg-[#3E6AE1] hover:bg-[#3561CC]"
-            style={{
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "#FFFFFF",
-              height: "44px",
-              borderRadius: "4px",
-              transitionDuration: "0.33s",
-            }}
+            className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-8 text-[14px]"
           >
             Get in Touch
-            <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
+          </CtaButton>
         </div>
       </section>
     </>

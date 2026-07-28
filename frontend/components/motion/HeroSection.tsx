@@ -12,6 +12,7 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { HERO } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 interface HeroSectionProps {
   /** Banner 图片 URL（缺省时回退到 media.ts 的 heroBanner） */
@@ -92,22 +93,19 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           transition={TRANSITION}
           className="flex flex-wrap items-center gap-4"
         >
-          {/* 主按钮 — 蓝色，48px 高 */}
-          <Link
-            href={HERO.cta.primary.href}
-            className="group inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-white rounded bg-[#3E6AE1] hover:bg-[#3457B8] transition-colors duration-[330ms]"
-            style={{ borderRadius: "4px" }}
+          {/* 主按钮 — 交互式悬停按钮（白底+红点，hover 时红点放大填满、白字滑入） */}
+          <InteractiveHoverButton
+            onClick={() => window.location.href = HERO.cta.primary.href}
+            fill="bg-[#d4343e]"
+            className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[48px] px-10 text-[16px]"
           >
             {HERO.cta.primary.label}
-            <svg className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
+          </InteractiveHoverButton>
 
-          {/* 副按钮 — 白底黑字，48px 高 */}
+          {/* 副按钮 — 幽灵描边，与主按钮形成层次对比 */}
           <Link
             href={HERO.cta.secondary.href}
-            className="inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-[#393C41] rounded bg-white hover:bg-[#F4F4F4] transition-colors duration-[330ms]"
+            className="inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-white rounded border border-white/60 bg-white/5 hover:bg-white/10 hover:border-[#d4343e] hover:text-[#d4343e] transition-colors duration-[330ms]"
             style={{ borderRadius: "4px" }}
           >
             {HERO.cta.secondary.label}

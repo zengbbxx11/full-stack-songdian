@@ -17,6 +17,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { Badge } from "@/components/ui/badge";
+import { CtaButton } from "@/components/CtaButton";
 import { cleanPostContent } from "@/lib/html-cleaner";
 import { generateBreadcrumbs, productSchema, safeJsonLd } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
@@ -247,23 +248,12 @@ export default async function ProductDetailPage({
 
               {/* 行动号召按钮 */}
               <div className="flex flex-wrap gap-3 mb-8">
-                <Link
+                <CtaButton
                   href="/contact"
-                  className="inline-flex items-center px-8 text-white text-sm font-medium rounded transition-colors bg-[#3E6AE1] hover:bg-[#3561CC]"
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#FFFFFF",
-                    height: "42px",
-                    borderRadius: "4px",
-                    transitionDuration: "0.33s",
-                  }}
+                  className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[42px] px-8 text-[14px]"
                 >
                   Send Inquiry
-                  <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </Link>
+                </CtaButton>
                 <Link
                   href={primaryCategory ? `/products?category=${primaryCategory.slug}` : "/products"}
                   className="inline-flex items-center px-6 py-3 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"

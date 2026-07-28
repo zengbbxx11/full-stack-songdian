@@ -59,7 +59,7 @@ export default function FloatingInquiry() {
       <div className="flex items-center gap-2">
         <Link
           href="/contact"
-          className="inline-flex items-center rounded bg-[#3E6AE1] px-6 text-sm font-medium text-white transition-colors duration-[330ms] hover:bg-[#3561CC]"
+          className="inline-flex items-center rounded bg-[#d4343e] px-6 text-sm font-medium text-white transition-colors duration-[330ms] hover:bg-[#b91c1c]"
           style={{ height: "36px", borderRadius: "4px" }}
         >
           Send Inquiry

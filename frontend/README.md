@@ -2,7 +2,7 @@
 
 松典科技（广东）有限公司面向全球 OEM / ODM 数码相机采购商的 B2B 展示型官网。前端为 **Next.js（App Router）**，通过项目自有 FastAPI 后端获取产品/新闻/分类数据，支持 ISR 增量静态再生 + Streaming SSR。
 
-> 定位：面向全球 OEM / ODM 数码相机采购商。设计语言为「Tesla 极简」——无阴影、靠 border 分隔、品牌红仅用于激活态、Electric Blue 仅用于 CTA。
+> 定位：面向全球 OEM / ODM 数码相机采购商。设计语言为「Tesla 极简」——靠 border 分隔、克制圆角；语义双色信号：🔴 品牌红 `#d4343e` = 转化型 CTA（询盘 / 报价 / 联系），🔵 Electric Blue `#3E6AE1` = 工具 / 功能按钮（搜索 / 筛选）。转化型 CTA 允许极淡投影以增强可点击感。
 
 ---
 
@@ -113,6 +113,8 @@ frontend/
 │  ├─ Header.tsx / Footer.tsx   # 站点导航与页脚（Footer 为 Server Component）
 │  ├─ NavigationProgress.tsx    # 顶部路由进度条（品牌红 #d4343e）
 │  ├─ FloatingInquiry.tsx       # 全站底部常驻询盘栏
+│  ├─ CtaButton.tsx             # 转化型 CTA 客户端包装（Server Component 页用其做 `window.location.href` 跳转）
+│  ├─ HomeCtaSection.tsx        # 首页底部转化 CTA 区块（客户端组件，承载 InteractiveHoverButton）
 │  ├─ Breadcrumbs.tsx           # Tesla 风格面包屑
 │  ├─ ProductCard.tsx           # 产品卡片（RSC，图片用 SafeImage 兜底）
 │  ├─ SafeImage.tsx             # 图片加载失败占位（客户端子组件，卡片本体保持 RSC）
@@ -134,6 +136,7 @@ frontend/
 │  ├─ CookieConsent.tsx         # Cookie 同意横幅（底部横向条幅：左文案右按钮；同意后才注入 GA）
 │  ├─ CookieSettingsTrigger.tsx # 页脚「Cookie Settings」重开入口（派发 cookie-settings:open 事件）
 │  └─ ui/                       # shadcn/ui 基础组件
+│     └─ interactive-hover-button.tsx # Magic UI 风格交互悬停按钮（dot 展开 + 文字滑出 + 箭头滑入；纯 CSS 过渡，`fill` 自定义悬停色）
 │
 ├─ lib/
 │  ├─ api/                      # FastAPI 客户端（products / news / search / categories）
@@ -211,15 +214,16 @@ frontend/
 
 | 令牌 | 值 | 用途 |
 |------|----|------|
-| Electric Blue | `#3E6AE1` | 主 CTA 按钮 |
-| Electric Blue Hover | `#3561CC` | CTA hover 态 |
-| 品牌红 | `#d4343e` | 导航 hover/激活态、Logo 中 GD 红、进度条颜色 |
+| 品牌红 | `#d4343e` | 转化型 CTA（询盘 / 报价 / 联系）+ 导航 hover/激活态、Logo 中 GD 红、进度条颜色 |
+| 品牌红 Hover | `#b91c1c` | 转化型 CTA hover 态（如询盘表单提交按钮） |
+| Electric Blue | `#3E6AE1` | 工具 / 功能按钮（搜索 / 筛选等） |
+| Electric Blue Hover | `#3561CC` | 工具按钮 hover 态 |
 | Carbon Dark | `#171A20` | 标题 + Hero 区域底色 |
 | Graphite | `#393C41` | 正文 |
 | Pewter | `#5C5E62` | 辅助文字/描述 |
 | Light Ash | `#F4F4F4` | 卡片/区域背景 |
 
-风格约定：无阴影、仅用 `1px` border（`#EEEEEE`）分隔；圆角 4px / 12px；过渡 `transition-colors duration-300`。
+风格约定：以 `1px` border（`#EEEEEE`）分隔为主、克制圆角（4px / 12px）；转化型 CTA 允许极淡投影（`shadow-sm` / 滚动玻璃态 `shadow-[0_2px_16px_rgba(212,52,62,0.45)]`）增强可点击感；按钮统一 `rounded-lg`；过渡 `transition-colors duration-300`。
 
 ---
 
@@ -247,7 +251,7 @@ frontend/
 
 ## 隐私与 Cookie 同意
 
-- 官网底部以**横向条幅**呈现 Cookie 同意（`components/CookieConsent.tsx`）：左文案、右按钮（Accept all / Reject / Manage），更宽更矮，视觉沿用 Tesla 极简体系（`bg-card` + 极淡 `ring` 无阴影、Electric Blue 仅主 CTA）。
+- 官网底部以**横向条幅**呈现 Cookie 同意（`components/CookieConsent.tsx`）：左文案、右按钮（Accept all / Reject / Manage），更宽更矮，视觉沿用 Tesla 极简体系（`bg-card` + 极淡 `ring` 无阴影；主操作按钮用 Electric Blue `#3E6AE1`，属工具 / 功能类按钮语义）。
 - 分类：**Strictly necessary（必要，始终开启、不可关）** 与 **Analytics（分析，opt-in）**。偏好存于 `localStorage` 键 `sd-cookie-consent`（含版本号 `v` 与时间戳）。
 - **Google Analytics 仅在用户接受「分析」类 Cookie 且配置了 `NEXT_PUBLIC_GA_ID` 时才注入**（见「环境变量」），即「同意后才加载」的 GDPR/ePrivacy 合规门控；未配置则不发任何分析 Cookie。
 - 页脚「Cookie Settings」（`components/CookieSettingsTrigger.tsx`）随时重新打开偏好面板。

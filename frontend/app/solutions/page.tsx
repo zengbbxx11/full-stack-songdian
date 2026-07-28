@@ -10,6 +10,7 @@ import Link from "next/link";
 import { superMeta } from "next-super-meta";
 import { Factory, PencilRuler, Store, Check, ArrowRight } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, SOLUTIONS, SOLUTIONS_HERO } from "@/lib/content-data";
 
@@ -113,14 +114,12 @@ export default function SolutionsPage() {
                       <p className="mt-3 text-sm md:text-base leading-relaxed" style={{ color: "#5C5E62" }}>
                         {sol.summary}
                       </p>
-                      <Link
+                      <CtaButton
                         href="/contact"
-                        className="inline-flex items-center mt-6 px-5 text-white text-sm font-medium rounded transition-colors hover:bg-[#3561CC]"
-                        style={{ backgroundColor: "#3E6AE1", color: "#fff", height: "42px", borderRadius: "4px" }}
+                        className="mt-6 border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[42px] px-5 text-[14px]"
                       >
                         Request a Quote
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Link>
+                      </CtaButton>
                     </div>
 
                     {/* 右：功能要点 */}
@@ -161,14 +160,12 @@ export default function SolutionsPage() {
               cost-effective path to launch.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
+              <CtaButton
                 href="/contact"
-                className="inline-flex items-center justify-center px-6 text-white text-sm font-medium rounded transition-colors hover:bg-[#3561CC]"
-                style={{ backgroundColor: "#3E6AE1", height: "44px", borderRadius: "4px" }}
+                className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-6 text-[14px]"
               >
                 Request a Quote
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
+              </CtaButton>
               <Link
                 href="/solutions/faq"
                 className="inline-flex items-center justify-center px-6 text-sm font-medium rounded border border-white/25 text-white transition-colors hover:bg-white/10"

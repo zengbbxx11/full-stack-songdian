@@ -54,9 +54,10 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 
 | 颜色 | 色值 | 用途 |
 |------|------|------|
-| Electric Blue | `#3E6AE1` | 主 CTA 按钮 |
-| Electric Blue Hover | `#3561CC` | CTA hover 态 |
-| 品牌红 | `#d4343e` | 导航 hover/激活态 + 进度条 |
+| 品牌红 | `#d4343e` | 转化型 CTA（询盘/报价/联系）+ 导航 hover/激活态 + 进度条 |
+| 品牌红 Hover | `#b91c1c` | 转化型 CTA hover 态（如询盘表单提交） |
+| Electric Blue | `#3E6AE1` | 工具/功能按钮（搜索/筛选等） |
+| Electric Blue Hover | `#3561CC` | 工具按钮 hover 态 |
 | Carbon Dark | `#171A20` | 标题 + Hero 区域底色 |
 | Graphite | `#393C41` | 正文 |
 | Pewter | `#5C5E62` | 辅助文字/描述 |
@@ -131,18 +132,22 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义，键盘可选） |
 | `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`） |
 | `components/CookieSettingsTrigger.tsx` | 页脚「Cookie Settings」重开入口（派发 `cookie-settings:open` 事件） |
+| `components/CtaButton.tsx` | 转化型 CTA 客户端包装：`InteractiveHoverButton` + `onClick` 跳转 `window.location.href`，供 Server Component 页面使用 |
+| `components/HomeCtaSection.tsx` | 首页底部转化 CTA 区块（客户端组件，承载 InteractiveHoverButton） |
+| `components/ui/interactive-hover-button.tsx` | Magic UI 风格交互悬停按钮（dot 展开 + 文字滑出 + 箭头滑入；纯 CSS 过渡，`fill` 自定义悬停色） |
 
 ---
 
 ## Hover 效果规范
 
-所有 hover 效果均使用 **CSS**（Tailwind `hover:` 类 + `transition-colors`），不使用 JS 事件处理器。
+所有 hover 视觉动效均使用 **CSS**（Tailwind `hover:` / `group-hover:` 类 + `transition`），不使用 JS 动画库；CTA 的导航跳转由客户端 `onClick`（如 `CtaButton`、`Header`）处理，与 hover 动效解耦。
 
 | 元素 | 效果 | 实现 |
 |------|------|------|
 | 导航链接 | 黑→红 `#d4343e`，0.3s | `hover:text-[#d4343e] transition-colors duration-300` |
 | 下拉菜单项 | 黑→红 `#d4343e`，0.15s | `hover:text-[#d4343e] transition-colors duration-150` |
-| CTA 按钮 | Blue→Blue Hover | `hover:bg-[#3561CC] transition-colors duration-300` |
+| 转化型 CTA（InteractiveHoverButton） | 白底红框 → hover 红点 `scale-[100.8]` 铺满变红底、文字滑出箭头滑入（`fill="bg-[#d4343e]"`） | 纯 CSS `group-hover` 过渡，无 JS 动画库 |
+| 工具/功能按钮 | Blue→Blue Hover | `hover:bg-[#3561CC] transition-colors duration-300` |
 | 产品卡片 | 红框 `#d4343e` + shadow-lg + 图片 scale(1.03) + 标题变红 | CSS `hover:` 类 |
 | 新闻卡片 | 蓝框 `#3E6AE1` + shadow-sm + 图片 brightness(1.06) + 标题变蓝 | CSS `hover:` 类 |
 | 时间轴节点 | 红底圆圈 + 数字变白 | CSS `hover:` 类 |

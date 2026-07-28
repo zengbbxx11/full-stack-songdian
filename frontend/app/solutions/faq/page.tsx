@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { superMeta } from "next-super-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { CtaButton } from "@/components/CtaButton";
 import FaqToc, { CATEGORY_ICONS } from "@/components/FaqToc";
 import { generateBreadcrumbs, faqSchema } from "@/lib/seo";
 import { FAQS } from "@/lib/content-data";
@@ -122,12 +123,12 @@ export default function FAQPage() {
                 <p className="mt-2 text-sm mx-auto max-w-md" style={{ color: "#5C5E62" }}>
                   Our team typically replies within 24 hours with a free, no-obligation quote.
                 </p>
-                <Link
+                <CtaButton
                   href="/contact"
-                  className="inline-flex items-center justify-center px-6 py-3 mt-5 rounded text-white text-sm font-medium bg-[#3E6AE1] hover:bg-[#3561CC] transition-colors"
+                  className="mt-5 border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[46px] px-6 text-[14px]"
                 >
                   Contact Our Team
-                </Link>
+                </CtaButton>
               </div>
             </div>
           </div>

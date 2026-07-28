@@ -22,12 +22,13 @@ Typography recently transitioned from Gotham to Universal Sans — a custom fami
 ## 2. Color Palette & Roles
 
 ### Primary
-- **Electric Blue** (`#3E6AE1`): Primary CTA button background — a confident, mid-saturation blue (rgb 62, 106, 225) that stands alone as the only chromatic color in the entire interface. Used exclusively for "Order Now" and other primary action buttons
+- **Electric Blue** (`#3E6AE1`): Tool / utility action color — search, filter, pagination, and small in-card buttons. A confident, mid-saturation blue (rgb 62, 106, 225) used for *functional* actions that are not conversion CTAs.
 - **Pure White** (`#FFFFFF`): Dominant background color for all surfaces, panels, navigation, and secondary button fills — the canvas that lets photography breathe
 
 ### Secondary & Accent
-- **Promo Blue** (`#3E6AE1`): Blue also serves for promotional text ("0% APR Available") displayed over hero imagery in the same hue as the CTA — creating a visual link between incentive messaging and action
-- No secondary accent colors exist. Tesla deliberately avoids color variety to maintain extreme visual discipline
+- **Brand Red** (`#d4343e`): Conversion CTA accent — the *only* chromatic color for "talk to us" actions (Inquiry / Quote / Contact / Get a Quote). Drives the InteractiveHoverButton's hover fill and the persistent FloatingInquiry / form-submit styling. Chosen as the brand's point color to make conversion paths pop against the otherwise blue/white/neutral UI.
+- **Promo Blue** (`#3E6AE1`): Blue also serves for promotional text ("0% APR Available") displayed over hero imagery in the same hue as the tool buttons — creating a visual link between incentive messaging and action
+- **语义分层（关键）**：全站按钮按「角色」而非「位置」赋色 —— 🔴 红动画胶囊 = 转化（找我们聊），🔵 蓝实心 = 工具（操作）。两者并存不冲突，反而用颜色把「转化」与「功能」清晰分开。
 
 ### Surface & Background
 - **White Canvas** (`#FFFFFF`): Page background, navigation panel, dropdown menus, and all surface containers
@@ -45,7 +46,7 @@ Typography recently transitioned from Gotham to Universal Sans — a custom fami
 
 ### Semantic & Accent
 - Tesla's marketing site avoids semantic color coding (no green/red/yellow status indicators). Error, success, and warning states follow standard browser defaults in form contexts
-- The blue CTA (`#3E6AE1`) serves as the sole interactive color signal
+- 交互色信号分两类：🔵 Electric Blue（`#3E6AE1`）= 工具/功能操作；🔴 Brand Red（`#d4343e`）= 转化 CTA（Inquiry / Quote / Contact）
 
 ### Gradient System
 - No gradients are used anywhere in the interface
@@ -83,15 +84,27 @@ Typography recently transitioned from Gotham to Universal Sans — a custom fami
 ## 4. Component Stylings
 
 ### Buttons
-All buttons use barely-rounded rectangles (4px border-radius) — creating a sharp, technical aesthetic that mirrors the precision of the vehicles.
+全站按钮按「角色」分两类（详见下文「语义分层」）：
 
-**Primary CTA** — The main action button:
-- Default: bg `#3E6AE1` (Electric Blue), text `#FFFFFF`, fontSize 14px, fontWeight 500, padding 4px with inner content centering, borderRadius 4px, minHeight 40px, width 200px
-- Border: 3px solid transparent (reserves space for focus/active border animation)
-- Box Shadow: `rgba(0,0,0,0) 0px 0px 0px 2px inset` (invisible at rest, animates to visible on focus)
-- Transition: `border-color 0.33s, background-color 0.33s, color 0.33s, box-shadow 0.25s`
-- Hover: subtle darkening of blue background
-- Used for: "Order Now" calls to action
+- **转化 CTA（Conversion）** → 红动画胶囊 `InteractiveHoverButton`，品牌红 `#d4343e`
+- **工具操作（Tool/Utility）** → 蓝实心 `bg-[#3E6AE1]`，Electric Blue
+
+圆角统一为 `rounded-lg`（约 8px 软圆角矩形），比 Tesla 原教旨的 4px 略柔，避免与全站矩形语言冲突，又不至于变成药丸。
+
+**InteractiveHoverButton（转化 CTA）** — 组件 `components/ui/interactive-hover-button.tsx` + 导航壳 `components/CtaButton.tsx`：
+- 默认态：白底 `bg-white` + 红边 `border-[#d4343e]` + 深灰字 `#171A20` + 一个红点 `bg-[#d4343e]`（h-2 w-2）
+- Hover 态（核心动效，纯 CSS transition，**允许 scale/translate**）：
+  1. 红点 `scale-[100.8]` 放大填满整颗按钮 → 背景变品牌红
+  2. 默认文字 `translate-x-12 + opacity-0` 右滑淡出
+  3. 覆盖层文字 + `ArrowRight` 从右侧 `-translate-x-5` 滑入、`opacity-100`，文字色 `text-primary-foreground`（白）
+- 尺寸：常规 CTA 用 `h-[44px] px-8 text-[14px]`；顶栏紧凑 `h-[40px] px-5 text-[14px]`
+- `fill` prop 可换填充色（默认 `bg-primary` 蓝，转化场景传 `bg-[#d4343e]`）
+- 用法：Server Component 页面用 `<CtaButton href="/contact">`；客户端组件直接 `<InteractiveHoverButton onClick=...>`
+- 用于：Hero 主按钮、首页底部 Send an Inquiry、顶栏 Request Quote（桌面+移动）、产品详情 Send Inquiry、About Get in Touch、Solutions×2 Request a Quote、FAQ Contact Our Team、隐私页 Contact Us
+
+**Tool / Utility Button（工具按钮）** — 蓝实心：
+- 搜索、筛选、分页、卡片内小按钮（如 ProductCard「查看」）—— `bg-[#3E6AE1] hover:bg-[#3561CC] text-white`，`rounded-lg`
+- 表单提交（InquiryForm Submit）、常驻悬浮 Inquiry（FloatingInquiry）因属「转化链路」也用红：`bg-[#d4343e] hover:bg-[#b91c1c]`
 
 **Secondary CTA** — The alternative action button:
 - Default: bg `#FFFFFF`, text `#393C41` (Graphite), same dimensions and border pattern as primary
@@ -101,7 +114,7 @@ All buttons use barely-rounded rectangles (4px border-radius) — creating a sha
 **Nav Button** — Top navigation items:
 - Default: bg transparent, text `#171A20` (Carbon Dark), fontSize 14px, fontWeight 500, borderRadius 4px, padding 4px 16px, minHeight 32px
 - Transition: `color 0.33s, background-color 0.33s`
-- Active/expanded: subtle background highlight
+- Active/expanded: subtle background highlight；当前激活项文字转品牌红 `#d4343e`
 - Used for: "Vehicles", "Energy", "Charging", "Discover", "Shop"
 
 **Text Link** — In-content actions:
@@ -207,26 +220,28 @@ Tesla's approach to elevation is essentially "none." The site avoids box-shadows
 
 ### Do
 - Let photography dominate every screen — the product IS the design
-- Use Electric Blue (`#3E6AE1`) exclusively for primary CTAs — never for decorative purposes
+- 用🔴 Brand Red (`#d4343e`) 做转化 CTA（Inquiry/Quote/Contact），🔵 Electric Blue (`#3E6AE1`) 做工具/功能按钮 —— 两色并存、按角色分层
 - Maintain viewport-height sections for major content blocks — one message per screen
 - Keep typography at weight 400-500 only — no bold, no light, no extremes
-- Use 4px border-radius for all interactive elements — precision over playfulness
+- 转化 CTA 用 `rounded-lg`（约 8px 软圆角），工具按钮沿用 4px；避免 `rounded-full` 药丸（与全站矩形语言冲突，显毛）
 - Trust whitespace as a luxury signal — never fill available space just because it's empty
 - Keep all transitions at 0.33s — consistency in motion is as important as consistency in color
 - Use transparent PNG vehicle imagery on white backgrounds for product showcases
 - Center CTAs horizontally below model names — the vertical rhythm is model → subtitle → buttons
 - Maintain the Display/Text font split — Display for hero-scale text only, Text for everything else
+- 允许转化 CTA 使用「圆点放大填满 + 文字滑出 + 箭头滑入」的 hover 动效（纯 CSS transition，非 framer-motion）
+- 转化 CTA 可加极淡阴影 `shadow-sm`；顶栏滚动毛玻璃态下可加红晕光 `shadow-[0_2px_16px_rgba(212,52,62,0.45)]` 保持显眼
 
 ### Don't
-- Add shadows to any element — elevation through shadow contradicts the flat, gallery aesthetic
-- Use more than one chromatic color besides the blue CTA — the palette is intentionally monochrome-plus-one
+- Add shadows to body/card surfaces — elevation through shadow contradicts the flat, gallery aesthetic（CTA 按钮的极淡阴影除外）
+- 把蓝/红两色混用在同一种角色上 —— 转化与工具按钮必须按语义分层，不要某个 CTA 既蓝又红
 - Apply gradients, patterns, or decorative backgrounds to surfaces — white and photography are the only backgrounds
 - Use text larger than 40px on the web — the typography is deliberately restrained even at hero scale
 - Add borders to cards or containers — separation is achieved through spacing, not lines
 - Use uppercase text transforms — Tesla's confidence is expressed through lowercase calm
-- Introduce rounded-pill buttons or large border-radii — the 4px radius is deliberate and precise
+- 用 `rounded-full` 做 CTA —— 全站是 4px 矩形语言，药丸按钮会显突兀（已统一改 `rounded-lg`）
 - Override the Universal Sans family with other typefaces — cross-platform consistency is a core brand value
-- Add hover animations with scale/translate transforms — Tesla's interactions are color-only (background and border transitions)
+- 在工具/导航按钮上加 scale/translate hover 动效 —— 该动效仅限转化 CTA 的 InteractiveHoverButton，保持「工具=color-only、转化=动画」的层次
 - Clutter the viewport with multiple CTAs — every screen should have at most two action buttons
 
 ## 8. Responsive Behavior

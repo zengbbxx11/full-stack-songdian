@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ProductSummary } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import SafeImage from "@/components/SafeImage";
+import { ArrowRight } from "lucide-react";
 
 /**
  * ProductCard 组件的 Props。
@@ -39,7 +40,7 @@ const imageFallback = (
  *
  * - 默认：淡边框 #EEEEEE，无阴影
  * - Hover：品牌红边框 #d4343e + 轻微阴影 + 图片 scale(1.03)
- * - CTA 按钮：bg #3E6AE1，hover 加深
+ * - CTA：幽灵文字链 "View Details →"，默认 Graphite 灰、卡片 hover 变红 #d4343e + 箭头滑入（蓝色实心按钮已弃用，避免与红 hover 语言撞色且消除重复色块）
  */
 export default function ProductCard({ product }: ProductCardProps) {
   const tags = product.tags || [];
@@ -72,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* 信息区域 */}
       <div className="flex flex-col flex-1 p-3 md:p-4">
         <Link href={`/products/${product.slug}`} className="flex-1">
-          <h3 className="text-sm md:text-base font-semibold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
+          <h3 className="text-[15px] md:text-[17px] font-bold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
             {product.name}
           </h3>
           {/* 产品标签 —— 最多展示 4 个，沿用 Tesla 设计语言（Light Ash 底 / Pewter 字、无阴影） */}
@@ -85,16 +86,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </Link>
 
-        {/* CTA */}
+        {/* CTA —— 幽灵文字链：默认 Graphite 灰，卡片 hover 变红 + 箭头滑入 */}
         <Link
           href={`/products/${product.slug}`}
-          className="flex items-center justify-center w-full mt-3 h-8 md:h-[34px] text-xs md:text-sm font-medium text-white rounded bg-[#3E6AE1] hover:bg-[#3561CC] transition-colors"
-          style={{
-            borderRadius: "4px",
-            transitionDuration: "0.33s",
-          }}
+          aria-label={`View details of ${product.name}`}
+          className="mt-3 inline-flex items-center gap-1 text-xs md:text-sm font-medium text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e]"
         >
-          View Details
+          <span>View Details</span>
+          <ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
         </Link>
       </div>
     </div>

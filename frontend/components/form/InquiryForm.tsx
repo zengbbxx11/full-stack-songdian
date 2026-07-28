@@ -279,7 +279,7 @@ export default function InquiryForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[#3E6AE1] hover:bg-[#3561CC] text-white"
+                className="w-full sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[#d4343e] hover:bg-[#b91c1c] text-white"
                 style={{ borderRadius: "4px" }}
               >
                 {isSubmitting ? (

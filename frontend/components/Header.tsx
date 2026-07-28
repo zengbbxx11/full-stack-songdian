@@ -15,6 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MEDIA } from "@/lib/media";
 import InstantSearch from "@/components/InstantSearch";
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 
 interface NavLink {
   label: string;
@@ -200,19 +201,15 @@ export default function Header() {
           {/* 右侧：搜索 + CTA + 汉堡 */}
           <div className="flex-1 flex items-center justify-end gap-3">
             <InstantSearch className="hidden md:block" />
-            <Link
-              href="/contact"
-              className="hidden md:inline-flex items-center px-5 text-white text-[15px] font-medium rounded bg-[#3E6AE1] hover:bg-[#3457B8] transition-colors duration-[330ms]"
-              style={{
-                fontSize: "15px",
-                fontWeight: 500,
-                color: COLORS.white,
-                height: "40px",
-                borderRadius: "4px",
-              }}
+            <InteractiveHoverButton
+              onClick={() => { window.location.href = "/contact"; }}
+              fill="bg-[#d4343e]"
+              className={`hidden md:inline-flex border-[#d4343e] bg-white text-[#171A20] h-[40px] px-5 text-[14px] transition-[box-shadow] duration-300 ${
+                scrolled ? "shadow-[0_2px_16px_rgba(212,52,62,0.45)]" : "shadow-sm"
+              }`}
             >
               Request Quote
-            </Link>
+            </InteractiveHoverButton>
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -291,14 +288,13 @@ export default function Header() {
           </div>
 
           <div className="pt-5 mt-3" style={{ borderTop: "1px solid #EEEEEE" }}>
-            <Link
-              href="/contact"
-              onClick={() => setMobileOpen(false)}
-              className="block text-center px-6 py-3 text-white text-[15px] font-medium rounded bg-[#3E6AE1] hover:bg-[#3457B8] transition-colors duration-[330ms]"
-              style={{ fontSize: "15px", fontWeight: 500, color: COLORS.white, borderRadius: "4px" }}
+            <InteractiveHoverButton
+              onClick={() => { setMobileOpen(false); window.location.href = "/contact"; }}
+              fill="bg-[#d4343e]"
+              className="block w-full border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-6 text-[15px]"
             >
               Request Quote
-            </Link>
+            </InteractiveHoverButton>
           </div>
         </nav>
       </div>

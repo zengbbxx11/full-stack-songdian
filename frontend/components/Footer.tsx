@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { COMPANY, FOOTER_LINKS } from "@/lib/site-config";
+import { COMPANY, FOOTER_LINKS, SOCIAL_LINKS } from "@/lib/site-config";
 import { MEDIA } from "@/lib/media";
 import CookieSettingsTrigger from "@/components/CookieSettingsTrigger";
 
@@ -19,21 +19,6 @@ const COLORS = {
   silverFog: "#767676",
   border: "#EEEEEE",
 } as const;
-
-const SOCIALS = [
-  {
-    name: "Facebook",
-    icon: "/MediaIcon/facebook.png",
-    url: "https://www.facebook.com/people/Songdian-Camera/61580702439375/",
-  },
-  {
-    name: "YouTube",
-    icon: "/MediaIcon/youtube.png",
-    url: "https://www.youtube.com/@SongDianCam",
-  },
-  { name: "Instagram", icon: "/MediaIcon/instagram.png", url: null },
-  { name: "TikTok", icon: "/MediaIcon/tik-tok.png", url: null },
-] as const;
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -55,7 +40,7 @@ export default function Footer() {
               />
             </Link>
             <div className="flex items-center gap-4 mb-4">
-              {SOCIALS.map((s) => {
+              {SOCIAL_LINKS.map((s) => {
                 const url = s.url;
                 const interactive = Boolean(url);
                 const img = (

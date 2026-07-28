@@ -8,11 +8,12 @@
  * 相关 issue：#5（统一 API 客户端）、#16（统一错误提示）、#22（回复 + 状态流转）、#24（表格横向滚动）。
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Button from "@/components/ui/button/Button";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, swrFetcher } from "@/lib/api-client";
 import type { Inquiry, InquiryStatus, Paginated } from "@/types";
 
 /** 各状态对应的徽章样式。 */
@@ -24,9 +25,12 @@ const STATUS_BADGE: Record<InquiryStatus, string> = {
 
 export default function InquiriesPage() {
   const toast = useToast();
-  const [items, setItems] = useState<Inquiry[]>([]);
-  const [filtered, setFiltered] = useState<Inquiry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 列表数据交由 SWR 管理（issue #23）：data 即已解包的分页信封，加载/错误状态由 hook 提供。
+  const { data, error, isLoading, mutate } = useSWR<Paginated<Inquiry>, Error>(
+    "/admin/inquiries?page_size=100",
+    (path: string) => swrFetcher<Paginated<Inquiry>>(path)
+  );
+  const items = data?.list ?? [];
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -47,40 +51,21 @@ export default function InquiriesPage() {
   });
   const [statusSaving, setStatusSaving] = useState(false);
 
+  // 列表加载失败：沿用原行为弹出错误提示（SWR 仅在 fetcher 抛错时置 error）。
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (error) toast.error(error instanceof Error ? error.message : "加载询盘失败");
+  }, [error]);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const json = await apiFetch<Paginated<Inquiry>>("/admin/inquiries?page_size=100");
-      const list = json.list || [];
-      setItems(list);
-      setFiltered(list);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载询盘失败");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 本地搜索过滤
-  useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(items);
-      return;
-    }
+  // 本地搜索过滤（基于 SWR 返回的 items 派生，无需独立 state）
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
     const q = search.toLowerCase();
-    setFiltered(
-      items.filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          i.email.toLowerCase().includes(q) ||
-          (i.company?.toLowerCase().includes(q) ?? false) ||
-          i.message.toLowerCase().includes(q)
-      )
+    return items.filter(
+      (i) =>
+        i.name.toLowerCase().includes(q) ||
+        i.email.toLowerCase().includes(q) ||
+        (i.company?.toLowerCase().includes(q) ?? false) ||
+        i.message.toLowerCase().includes(q)
     );
   }, [search, items]);
 
@@ -99,12 +84,12 @@ export default function InquiriesPage() {
     if (!reply.target) return;
     setReplySaving(true);
     try {
-      const updated = await apiFetch<Inquiry>(`/admin/inquiries/${reply.target.id}/status`, {
+      await apiFetch<Inquiry>(`/admin/inquiries/${reply.target.id}/status`, {
         method: "PUT",
         body: { status: reply.status, reply_note: reply.note },
       });
-      setItems((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
-      setFiltered((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+      // 变更成功后让 SWR 重新拉取列表，保证与后端一致（issue #23）。
+      await mutate();
       toast.success("回复已保存");
       setReply({ open: false, target: null, note: "", status: "REPLIED" });
     } catch (err) {
@@ -118,12 +103,11 @@ export default function InquiriesPage() {
     if (!statusConfirm.target) return;
     setStatusSaving(true);
     try {
-      const updated = await apiFetch<Inquiry>(`/admin/inquiries/${statusConfirm.target.id}/status`, {
+      await apiFetch<Inquiry>(`/admin/inquiries/${statusConfirm.target.id}/status`, {
         method: "PUT",
         body: { status: statusConfirm.next, reply_note: statusConfirm.target.reply_note },
       });
-      setItems((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
-      setFiltered((prev) => prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)));
+      await mutate();
       toast.success(`已标记为 ${statusConfirm.next}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "操作失败");
@@ -166,7 +150,7 @@ export default function InquiriesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {loading ? (
+            {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
                   {Array.from({ length: 6 }).map((_, j) => (

@@ -63,8 +63,8 @@ export const COMPANY = {
   social: {
     /** LinkedIn 公司主页 */
     linkedin: "https://linkedin.com/company/songdian-technology",
-    /** YouTube 频道 */
-    youtube: "https://youtube.com/@songdiantech",
+    /** YouTube 频道（与页脚 SOCIAL_LINKS 保持一致，避免双份维护漂移） */
+    youtube: "https://www.youtube.com/@SongDianCam",
     /** 阿里巴巴店铺 */
     alibaba: "https://songdiantech.en.alibaba.com",
   },

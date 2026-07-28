@@ -72,6 +72,14 @@ function resolveUrl(path: string): string {
 }
 
 /**
+ * apiFetch 的 options 类型：在原生 RequestInit 基础上放宽 body 约束，
+ * 允许直接传入普通对象（运行时自动 JSON 序列化），避免每层调用都需手动 stringify。
+ */
+type ApiFetchOptions = Omit<RequestInit, "body"> & {
+  body?: BodyInit | Record<string, unknown> | object | null;
+};
+
+/**
  * 统一请求方法。
  *
  * @param path    相对或完整 API 路径（如 "/admin/categories"）。
@@ -81,15 +89,15 @@ function resolveUrl(path: string): string {
  */
 export async function apiFetch<T = unknown>(
   path: string,
-  options: RequestInit = {}
+  options: ApiFetchOptions = {}
 ): Promise<T> {
   const token = getToken();
 
   // 自动序列化普通对象 body 为 JSON。
-  let body = options.body;
+  let body: BodyInit | null | undefined = options.body as BodyInit | null | undefined;
   const headers = new Headers(options.headers);
-  if (body && !(body instanceof FormData) && typeof body !== "string") {
-    body = JSON.stringify(body);
+  if (options.body && !(options.body instanceof FormData) && typeof options.body !== "string") {
+    body = JSON.stringify(options.body);
     if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   }
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
@@ -141,4 +149,15 @@ export async function apiFetch<T = unknown>(
 
   // 解包：返回信封中的 data；无 data 字段时返回整个对象（兼容个别直接返回对象的接口）。
   return (payload?.data ?? payload) as T;
+}
+
+/**
+ * SWR 默认 fetcher（见 issue #23 渐进式接入）。
+ *
+ * 直接复用 `apiFetch` 的鉴权（Bearer）、信封解包与 401 跳转逻辑，
+ * 各页面可用 `useSWR<DataType>(key, swrFetcher)` 拿到已解包的业务数据，
+ * 无需在每个页面重复编写 fetch + try/catch + toast 样板。
+ */
+export function swrFetcher<T = unknown>(path: string): Promise<T> {
+  return apiFetch<T>(path);
 }

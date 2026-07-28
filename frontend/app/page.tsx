@@ -52,9 +52,9 @@ export const revalidate = 60;
 // Streaming async sections — 各自独立获取数据，流式到达
 // ============================================================
 
-/** Hero 区块 — 使用本地 public 下的 Banner 图（不再依赖 WordPress） */
+/** Hero 区块 — 使用本地 public 下的 Banner 图（路径统一收口到 lib/media.ts 的 MEDIA.heroBanner） */
 async function HeroSectionAsync() {
-  return <HeroSection bannerUrl="/banner/banner.webp" />;
+  return <HeroSection bannerUrl={MEDIA.heroBanner} />;
 }
 
 /** 产品类目展示 — 异步获取分类及每个分类下的最新产品图 */

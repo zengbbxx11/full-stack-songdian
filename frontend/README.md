@@ -216,7 +216,7 @@ frontend/
 |------|----|------|
 | 品牌红 | `#d4343e` | 转化型 CTA（询盘 / 报价 / 联系）+ 导航 hover/激活态、Logo 中 GD 红、进度条颜色 |
 | 品牌红 Hover | `#b91c1c` | 转化型 CTA hover 态（如询盘表单提交按钮） |
-| Electric Blue | `#3E6AE1` | 工具 / 功能按钮（搜索 / 筛选等） |
+| Electric Blue | `#3E6AE1` | 工具 / 功能按钮（搜索提交 / 分页等主动操作；分类筛选栏为红色激活指示，见 DESIGN-tesla.md） |
 | Electric Blue Hover | `#3561CC` | 工具按钮 hover 态 |
 | Carbon Dark | `#171A20` | 标题 + Hero 区域底色 |
 | Graphite | `#393C41` | 正文 |

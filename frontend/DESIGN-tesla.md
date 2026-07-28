@@ -103,8 +103,16 @@ Typography recently transitioned from Gotham to Universal Sans — a custom fami
 - 用于：Hero 主按钮、首页底部 Send an Inquiry、顶栏 Request Quote（桌面+移动）、产品详情 Send Inquiry、About Get in Touch、Solutions×2 Request a Quote、FAQ Contact Our Team、隐私页 Contact Us
 
 **Tool / Utility Button（工具按钮）** — 蓝实心：
-- 搜索、筛选、分页、卡片内小按钮（如 ProductCard「查看」）—— `bg-[#3E6AE1] hover:bg-[#3561CC] text-white`，`rounded-lg`
+- 搜索提交、分页、卡片内小按钮（如 ProductCard「View Details」）—— `bg-[#3E6AE1] hover:bg-[#3561CC] text-white`，`rounded-lg`
 - 表单提交（InquiryForm Submit）、常驻悬浮 Inquiry（FloatingInquiry）因属「转化链路」也用红：`bg-[#d4343e] hover:bg-[#b91c1c]`
+
+**Category Filter（分类筛选栏）** — 红色半透明 pill（激活指示，非工具按钮）：
+- 位于 `/products` 列表页顶部，等宽网格 `grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2`，无 "All" 项；纯 `<Link>` 走 `?category=slug`，由 Server Component 直读 `searchParams`，保持 SSR 直出与可书签
+- 静止态：`border border-[#EEEEEE] text-[#393C41]`（1px 灰边框 + Graphite 字）
+- Hover：`hover:border-[#d4343e] hover:text-[#d4343e] hover:bg-[#d4343e]/5`（边框 / 文字 / 底色三联动变红）
+- 激活（`aria-current`）：`border-[#d4343e] text-[#d4343e] bg-[#d4343e]/10`（红框 + 红字 + 10% 红底，非实心块）
+- 统一 `rounded-lg` + `transition-all duration-300`，契合全站矩形语言（非 `rounded-full` 真药丸）
+- 语义归属：属「选中态指示」而非「功能操作」，故用品牌红（与导航 hover/激活同语言），与 🔵 蓝色工具按钮（搜索提交 / 分页等主动操作）区分，符合「按角色赋色」原则
 
 **Secondary CTA** — The alternative action button:
 - Default: bg `#FFFFFF`, text `#393C41` (Graphite), same dimensions and border pattern as primary

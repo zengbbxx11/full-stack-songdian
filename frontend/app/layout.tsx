@@ -43,7 +43,7 @@ import NavigationProgress from "@/components/NavigationProgress";
 import CookieConsent from "@/components/CookieConsent";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
-import { organizationSchema, webSiteSchema } from "@/lib/seo";
+import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
 import "./globals.css";
 
 // 初始化 next-super-meta 全局配置
@@ -203,12 +203,12 @@ export default function RootLayout({
         {/* Organization 架构：名称、Logo、URL、sameAs 社交档案 */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(orgSchema) }}
         />
         {/* WebSite 架构：启用 Google 搜索结果中的站内搜索框 */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(siteSchema) }}
         />
         {/* Google Analytics — 已迁移至 CookieConsent 组件，仅在用户同意「分析」类 Cookie 后注入 */}
         {/* next-super-meta 自动注入 SEO 元标签 */}

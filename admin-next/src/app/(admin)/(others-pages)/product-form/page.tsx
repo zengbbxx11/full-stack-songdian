@@ -13,24 +13,9 @@ import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
+import { apiFetch, API_BASE } from "@/lib/api-client";
+import type { ProductCategory, Paginated } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null; }
-
-async function apiFetch(path: string, opts?: RequestInit) {
-  const token = getToken();
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  // 只在有 body 且非 FormData 时加 Content-Type，避免 GET 请求触发 CORS 预检
-  if (opts?.body && !(opts.body instanceof FormData)) headers["Content-Type"] = "application/json";
-  const res = await fetch(path, { ...opts, headers: { ...headers, ...opts?.headers } });
-  const json = await res.json();
-  if (json.code !== "0") throw new Error(json.msg || "Failed");
-  return json.data;
-}
-
-interface Cat { id: number; name: string; }
 interface GalleryItem { id: number; image_url: string; alt: string | null; sort_order: number; }
 interface AttributeItem { id: number; name: string; slug: string; value: string; }
 
@@ -41,7 +26,7 @@ export default function ProductFormPage() {
   const isEdit = !!id;
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [cats, setCats] = useState<Cat[]>([]);
+  const [cats, setCats] = useState<ProductCategory[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [galleries, setGalleries] = useState<GalleryItem[]>([]);
@@ -73,22 +58,21 @@ export default function ProductFormPage() {
   }
 
   const loadCats = useCallback(async () => {
-    try { const d = await apiFetch("/api/v1/admin/categories?page_size=50"); setCats(d.list || []); } catch {}
-  }, []);
+    try {
+      const d = await apiFetch<Paginated<ProductCategory>>("/admin/categories?page_size=50");
+      setCats(d.list || []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load categories");
+    }
+  }, [toast]);
 
   useEffect(() => { loadCats(); }, [loadCats]);
 
   // 编辑模式加载产品 + 画廊
   useEffect(() => {
     if (!id) return;
-    // 无 token 直接跳登录，不要无谓地调 API
-    const token = getToken();
-    if (!token) {
-      router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-      return;
-    }
     setLoadingData(true);
-    apiFetch(`/api/v1/admin/products/${id}`).then((p: Record<string, unknown>) => {
+    apiFetch<Record<string, unknown>>(`/admin/products/${id}`).then((p) => {
       setForm({ title: String(p.title || ""), slug: String(p.slug || ""), sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: String(p.status || "DRAFT"), cover_image: String(p.cover_image || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
@@ -96,21 +80,17 @@ export default function ProductFormPage() {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("Failed to load product: " + msg);
     }).finally(() => setLoadingData(false));
-  }, [id]);
+  }, [id, toast]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
-    const token = getToken();
-    const res = await fetch("/api/v1/admin/upload", {
+    const result = await apiFetch<{ url: string }>("/admin/upload", {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
-    const json = await res.json();
-    if (json.code !== "0") throw new Error(json.msg);
-    return `${API_BASE}${json.data.url}`;
+    return `${API_BASE}${result.url}`;
   }
 
   // 添加画廊图
@@ -121,9 +101,9 @@ export default function ProductFormPage() {
     try {
       for (let i = 0; i < files.length; i++) {
         const url = await uploadImage(files[i]);
-        const newG = await apiFetch(`/api/v1/admin/products/${id}/gallery`, {
+        const newG = await apiFetch<GalleryItem>(`/admin/products/${id}/gallery`, {
           method: "POST",
-          body: JSON.stringify({ image_url: url.replace(API_BASE, ""), alt: files[i].name, sort_order: galleries.length + i }),
+          body: { image_url: url.replace(API_BASE, ""), alt: files[i].name, sort_order: galleries.length + i },
         });
         setGalleries(prev => [...prev, { id: newG.id, image_url: newG.image_url, alt: newG.alt, sort_order: newG.sort_order }]);
       }
@@ -137,8 +117,8 @@ export default function ProductFormPage() {
     if (!name || !value || !id) return;
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-      const res = await apiFetch(`/api/v1/admin/products/${id}/attributes`, {
-        method: "POST", body: JSON.stringify({ name, slug, value }),
+      const res = await apiFetch<AttributeItem>(`/admin/products/${id}/attributes`, {
+        method: "POST", body: { name, slug, value },
       });
       setAttrs(prev => [...prev, { id: res.id, name: res.name, slug: res.slug, value: res.value }]);
       setNewAttr({ name: "", value: "" });
@@ -149,14 +129,14 @@ export default function ProductFormPage() {
   function handleDeleteAttr(attrId: number) {
     if (!id) return;
     openConfirm("Delete Specification", "Delete this specification?", async () => {
-      await apiFetch(`/api/v1/admin/products/${id}/attributes/${attrId}`, { method: "DELETE" });
+      await apiFetch(`/admin/products/${id}/attributes/${attrId}`, { method: "DELETE" });
       setAttrs(prev => prev.filter(a => a.id !== attrId));
     });
   }
   function handleGalleryDelete(galleryId: number) {
     if (!id) return;
     openConfirm("Delete Image", "Delete this image?", async () => {
-      await apiFetch(`/api/v1/admin/products/${id}/gallery/${galleryId}`, { method: "DELETE" });
+      await apiFetch(`/admin/products/${id}/gallery/${galleryId}`, { method: "DELETE" });
       setGalleries(prev => prev.filter(g => g.id !== galleryId));
     });
   }
@@ -175,8 +155,8 @@ export default function ProductFormPage() {
     e.preventDefault(); setSaving(true);
     try {
       const payload = { ...form, category_id: form.category_id ? Number(form.category_id) : null };
-      if (isEdit) await apiFetch(`/api/v1/admin/products/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-      else await apiFetch("/api/v1/admin/products", { method: "POST", body: JSON.stringify(payload) });
+      if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
+      else await apiFetch("/admin/products", { method: "POST", body: payload });
       router.push("/products");
     } catch (err) { toast.error(err instanceof Error ? err.message : "Save failed"); }
     finally { setSaving(false); }
@@ -186,7 +166,7 @@ export default function ProductFormPage() {
     openConfirm("Delete Product", "Are you sure you want to delete this product?", async () => {
       setDeleting(true);
       try {
-        await apiFetch(`/api/v1/admin/products/${id}`, { method: "DELETE" });
+        await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
         router.push("/products");
       } finally {
         setDeleting(false);

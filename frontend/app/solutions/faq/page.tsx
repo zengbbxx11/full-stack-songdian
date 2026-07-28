@@ -13,7 +13,7 @@ import { superMeta } from "next-super-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import FaqToc, { CATEGORY_ICONS } from "@/components/FaqToc";
-import { generateBreadcrumbs, faqSchema } from "@/lib/seo";
+import { generateBreadcrumbs, faqSchema, safeJsonLd } from "@/lib/seo";
 import { FAQS } from "@/lib/content-data";
 
 export const metadata = await superMeta({
@@ -54,7 +54,7 @@ export default function FAQPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }}
       />
 
       {/* 首屏 —— 仅含面包屑，与其他页面保持一致 */}

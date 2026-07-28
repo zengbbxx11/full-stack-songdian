@@ -110,10 +110,11 @@ class CategoryVO(BaseModel):
     name: str
     slug: str
     sort_order: float = 0.0
+    product_count: int = 0
 
     @classmethod
-    def from_model(cls, m) -> CategoryVO:  # type: ignore[valid-type]
-        return cls(id=m.id, name=m.name, slug=m.slug, sort_order=m.sort_order)
+    def from_model(cls, m, product_count: int = 0) -> CategoryVO:  # type: ignore[valid-type]
+        return cls(id=m.id, name=m.name, slug=m.slug, sort_order=m.sort_order, product_count=product_count)
 
 
 CategoryTreeVO = CategoryVO  # 分类为单级，树即扁平列表

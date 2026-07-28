@@ -14,6 +14,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, PRIVACY } from "@/lib/content-data";
+import { getPublicSettings } from "@/lib/api/settings";
 
 export const metadata = await superMeta({
   title: "Privacy Policy",
@@ -24,7 +25,13 @@ export const metadata = await superMeta({
 // ISR 重新验证间隔（秒）：静态法律内容每小时刷新一次
 export const revalidate = 3600;
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  // 从后端获取可配置的联系信息，fallback 到硬编码常量
+  const settings = await getPublicSettings();
+  const email = settings.company_email || COMPANY.contact.email;
+  const phone = settings.company_phone || COMPANY.contact.phone;
+  const address = settings.company_address || COMPANY.contact.address;
+
   const breadcrumbs = generateBreadcrumbs([{ label: "Privacy Policy" }]);
 
   return (
@@ -88,18 +95,18 @@ export default function PrivacyPage() {
               </p>
               <div className="mt-3 space-y-1 text-[15px] md:text-base leading-relaxed text-gray-600">
                 <p className="font-semibold text-gray-900">{COMPANY.fullName}</p>
-                <p>Address: {COMPANY.contact.address}</p>
+                <p>Address: {address}</p>
                 <p>
                   Email:{" "}
                   <a
-                    href={`mailto:${COMPANY.contact.email}`}
+                    href={`mailto:${email}`}
                     className="text-[#3E6AE1] hover:underline"
                     style={{ fontWeight: 500 }}
                   >
-                    {COMPANY.contact.email}
+                    {email}
                   </a>
                 </p>
-                <p>Phone / WhatsApp: {COMPANY.contact.phone}</p>
+                <p>Phone / WhatsApp: {phone}</p>
                 <p>Business hours: {COMPANY.contact.hours}</p>
               </div>
             </div>

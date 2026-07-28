@@ -13,33 +13,8 @@ import Button from "@/components/ui/button/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
 import { useToast } from "@/context/ToastContext";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null; }
-
-async function apiFetch(path: string, opts?: RequestInit) {
-  const token = getToken();
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  // POST/PUT 需要 Content-Type
-  if (opts?.method && opts.method !== "GET" && !(opts.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-  }
-  const res = await fetch(path, { ...opts, headers: { ...headers, ...opts?.headers } });
-  const json = await res.json();
-  if (json.code !== "0") throw new Error(json.msg || "Failed");
-  return json.data;
-}
-
-async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData(); formData.append("file", file);
-  const token = getToken();
-  const res = await fetch("/api/v1/admin/upload", { method: "POST", body: formData, headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  const json = await res.json();
-  if (json.code !== "0") throw new Error(json.msg);
-  return `${API_BASE}${json.data.url}`;
-}
+import { apiFetch, API_BASE } from "@/lib/api-client";
+import type { NewsItem } from "@/types";
 
 export default function NewsFormPage() {
   const router = useRouter();
@@ -55,20 +30,25 @@ export default function NewsFormPage() {
 
   useEffect(() => {
     if (!id) return;
-    // 无 token 直接跳登录，不要无谓地调 API
-    const token = getToken();
-    if (!token) {
-      router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-      return;
-    }
     setLoadingData(true);
-    apiFetch(`/api/v1/admin/news/${id}`).then((p: Record<string, string | null>) => {
-      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
+    apiFetch<NewsItem>(`/admin/news/${id}`).then((p) => {
+      setForm({ title: p.title || "", slug: p.slug || "", summary: (p as Record<string, unknown>).summary as string || "", content_html: (p as Record<string, unknown>).content_html as string || "", author: p.author || "", status: p.status || "DRAFT", cover_image: (p as Record<string, unknown>).cover_image as string || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("Failed to load article: " + msg);
     }).finally(() => setLoadingData(false));
-  }, [id]);
+  }, [id, toast]);
+
+  // 上传图片文件到后端 → 返回 URL
+  async function uploadImage(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const result = await apiFetch<{ url: string }>("/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+    return `${API_BASE}${result.url}`;
+  }
 
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
@@ -83,8 +63,8 @@ export default function NewsFormPage() {
       // 如果未填写发布时间则从请求体中移除，避免空字符串导致后端 Pydantic 校验失败
       const payload = { ...form };
       if (!payload.published_at) delete (payload as Record<string, unknown>).published_at;
-      if (isEdit) await apiFetch(`/api/v1/admin/news/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-      else await apiFetch("/api/v1/admin/news", { method: "POST", body: JSON.stringify(payload) });
+      if (isEdit) await apiFetch(`/admin/news/${id}`, { method: "PUT", body: payload });
+      else await apiFetch("/admin/news", { method: "POST", body: payload });
       router.push("/news");
     } catch (err) { toast.error(err instanceof Error ? err.message : "Save failed"); } finally { setSaving(false); }
   }
@@ -96,7 +76,7 @@ export default function NewsFormPage() {
   async function handleConfirmDelete() {
     setDeleteConfirm(false);
     setDeleting(true);
-    try { await apiFetch(`/api/v1/admin/news/${id}`, { method: "DELETE" }); toast.success("Article deleted"); router.push("/news"); }
+    try { await apiFetch(`/admin/news/${id}`, { method: "DELETE" }); toast.success("Article deleted"); router.push("/news"); }
     catch (err) { toast.error(err instanceof Error ? err.message : "Delete failed"); setDeleting(false); }
   }
 

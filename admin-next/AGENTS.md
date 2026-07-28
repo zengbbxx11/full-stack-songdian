@@ -33,6 +33,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | UI | 内置 `components/ui/`（shadcn 风格）+ lucide-react 图标 |
 | 图表 | apexcharts / react-apexcharts、@fullcalendar/*、swiper |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
+| 数据获取 | SWR (v2) + 全局 `SWRProvider`（封装 `apiFetch`，详见 `lib/api-client.ts`） |
 | 守卫 | `middleware.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` cookie） |
 
 ---
@@ -46,7 +47,7 @@ admin-next/src/
 │   ├── (full-width-pages)/  # 登录等全宽页：signin / signup
 │   ├── layout.tsx / globals.css / not-found.tsx
 ├── components/          # auth/calendar/charts/common/ecommerce/example/form/header/tables/ui/user-profile/videos
-├── context/             # 全局状态（如侧边栏折叠）
+├── context/             # 全局状态：SidebarContext / ThemeContext / SWRProvider
 ├── hooks/               # 自定义 hooks
 ├── icons/               # ⚠️ SVG 图标用 generated.tsx（内联 React 组件），不要走 @svgr/webpack
 ├── layout/              # 侧边栏 / 顶部栏布局
@@ -77,6 +78,7 @@ admin-next/src/
 5. **客户端组件必须显式 `"use client"`**：含 `useState/useRef/useEffect` 的组件忘了加 → 报 500「importing a module that depends on useState into a RSC module」。
 6. **中文注释不能写进 JSDoc `/** */`**：Rust 写的 `next-code-frame` 按 byte 索引定位 JSDoc 字符串，遇 UTF-8 多字节字符会 panic（`end byte index X is not a char boundary`）。统一用 `//` 行注释写中文。
 7. **React 19 禁止 useEffect 同步 setState**：lint 规则 `react-hooks/set-state-in-effect`。prop 变化时重置子组件 state 用 `key={prop}` 强制重挂载，而非 useEffect+setState。
+8. **`.next/dev` 缓存写冲突（Turbopack 整组 500）**：浏览器报 `An unexpected Turbopack error`、dev 日志出现 `Persisting failed: Another write batch or compaction is already active` / `拒绝访问 (os error 5)`，是**两个 next dev 进程抢写同一 `.next/dev` 缓存**所致，整个 `(admin)` 路由组页面一起 500（仅 `/signin` 因重定向才返回 307）。修法三板斧：① `netstat -ano | grep ":3001 "` 拿 PID → `taskkill /F /PID <pid>` 杀冲突进程（**注意别误杀 :3000 的 frontend**）；② `rm -rf .next/dev` 清空缓存；③ 单进程重起（Node 24 直调 next bin）。
 
 ---
 
@@ -88,6 +90,7 @@ admin-next/src/
 | 改列表/拖拽排序 | `app/(admin)/products` / `news` + `components/ecommerce` / `react-dnd` |
 | 改侧边栏/顶部栏 | `components/layout/*` + `context/` |
 | 改 API 调用 | `lib/`（封装 fetch 到 `/api/v1/admin/*`） |
+| 改数据获取/SWR | `lib/api-client.ts`（`swrFetcher`/`apiFetch`）+ 各 list 页 `useSWR` |
 | 加图标 | 在 `icons/generated.tsx` 加内联 SVG 组件（**勿用 @svgr/webpack**） |
 | 改路由守卫 | `middleware.ts`（注意 matcher 排除项，见雷区 ④） |
 | 改配色/主题 | `app/globals.css` + `tailwind` 配置 |

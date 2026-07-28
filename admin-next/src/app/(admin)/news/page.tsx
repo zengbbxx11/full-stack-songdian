@@ -2,45 +2,47 @@
  * 页面：新闻管理页（/news）
  * 职责：新闻列表 CRUD + 拖拽排序。与 products 页面结构一致，
  * 从后端 /api/v1/admin/news 获取数据，支持拖拽调整排序、关键词筛选、删除（确认弹窗）。
- * 排序通过 HTML5 Drag & Drop 本地维护后批量 POST 到后端。
+ * 排序通过 HTML5 Drag & Drop 本地维护后逐个 PUT 到后端。
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-
-interface NewsItem { id: number; title: string; slug: string; status: string; sort_order: number; author: string | null; published_at: string | null; created_time: string | null; }
-
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null; }
+import { apiFetch, swrFetcher } from "@/lib/api-client";
+import type { NewsItem, Paginated } from "@/types";
 
 export default function NewsPage() {
-  const [items, setItems] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [original, setOriginal] = useState<NewsItem[]>([]); // 原始顺序快照，供取消还原
+  const toast = useToast();
+  const { mutate } = useSWRConfig();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false); // 是否有未保存的排序变更
+  const [dirty, setDirty] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; title: string } | null>(null);
   const [search, setSearch] = useState("");
-  const toast = useToast();
+  const [localItems, setLocalItems] = useState<NewsItem[] | null>(null);
+
+  const newsKey = "/news?page_size=50";
+  const { data, isLoading } = useSWR<Paginated<NewsItem>>(newsKey, swrFetcher);
+
+  const items = localItems ?? (data?.list ?? []).sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+  const [original, setOriginal] = useState<NewsItem[] | null>(null);
+  const loading = isLoading && !data;
+
+  // 当 SWR 数据变化时重置本地状态
+  React.useEffect(() => {
+    if (data?.list) {
+      const sorted = [...data.list].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+      setLocalItems(null);
+      setOriginal(sorted);
+      setDirty(false);
+    }
+  }, [data]);
 
   const filtered = search.trim()
     ? items.filter(i => i.title.toLowerCase().includes(search.toLowerCase()))
     : items;
-
-  useEffect(() => {
-    const token = getToken();
-    fetch("/api/v1/news?page_size=50", {
-      headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    }).then(r => r.json()).then(j => {
-      const list = (j.data?.list || []) as NewsItem[];
-      list.sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-      setItems(list);
-      setOriginal(list); // 保存原始顺序快照
-      setDirty(false);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
 
   function handleDelete(id: number, title: string) {
     setDeleteConfirm({ id, title });
@@ -48,11 +50,15 @@ export default function NewsPage() {
 
   async function handleConfirmDelete() {
     if (!deleteConfirm) return;
-    const token = getToken();
-    await fetch(`/api/v1/admin/news/${deleteConfirm.id}`, { method: "DELETE", headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
-    setItems(prev => prev.filter(n => n.id !== deleteConfirm.id));
-    setDeleteConfirm(null);
-    toast.success("Article deleted");
+    try {
+      await apiFetch(`/admin/news/${deleteConfirm.id}`, { method: "DELETE" });
+      setLocalItems(prev => (prev ?? items).filter(n => n.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+      toast.success("Article deleted");
+      mutate(newsKey);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   }
 
   function handleDragStart(e: React.DragEvent, index: number) {
@@ -67,30 +73,36 @@ export default function NewsPage() {
     const reordered = [...items];
     const [moved] = reordered.splice(dragIdx, 1);
     reordered.splice(targetIdx, 0, moved);
-    setItems(reordered);
+    setLocalItems(reordered);
     setDragIdx(null);
-    setDirty(true); // 标记有未保存的变更
+    setDirty(true);
   }
 
   // 保存排序
   async function handleSaveOrder() {
     setSaving(true);
-    const token = getToken();
-    await Promise.all(items.map((n, i) =>
-      fetch(`/api/v1/admin/news/${n.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ sort_order: i }),
-      }).catch(() => {})
-    ));
-    setOriginal([...items]); // 更新原始快照
-    setDirty(false);
-    setSaving(false);
+    try {
+      await Promise.all(items.map((n, i) =>
+        apiFetch(`/admin/news/${n.id}`, {
+          method: "PUT",
+          body: { sort_order: i },
+        }).catch((err) => {
+          toast.error(`Failed to save order for "${n.title}": ${err instanceof Error ? err.message : "Unknown error"}`);
+        })
+      ));
+      setOriginal([...items]);
+      setDirty(false);
+      mutate(newsKey);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save order");
+    } finally {
+      setSaving(false);
+    }
   }
 
   // 取消排序，恢复到原始顺序
   function handleCancelOrder() {
-    setItems([...original]);
+    setLocalItems(original ? [...original] : null);
     setDirty(false);
   }
 

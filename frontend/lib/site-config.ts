@@ -29,8 +29,7 @@ export const NAV_LINKS = [
 
 /**
  * 页脚社交链接（单一数据源）。
- * 此前 Footer 组件内联硬编码了这套列表，导致与内容层 COMPANY.social（SEO sameAs）
- * 双份维护、YouTube 账号还不一致。现统一收口到本配置模块，
+ * URL 统一从 COMPANY.social 派生，避免与 SEO sameAs 双份维护。
  * 图标文件位于 public/MediaIcon/（仅 Facebook/YouTube/Instagram/TikTok 四种）。
  * 未开通的平台 url 置 null，渲染为非交互的「coming soon」占位。
  */
@@ -38,12 +37,12 @@ export const SOCIAL_LINKS = [
   {
     name: "Facebook",
     icon: "/MediaIcon/facebook.png",
-    url: "https://www.facebook.com/people/Songdian-Camera/61580702439375/",
+    url: COMPANY.social.facebook,
   },
   {
     name: "YouTube",
     icon: "/MediaIcon/youtube.png",
-    url: "https://www.youtube.com/@SongDianCam",
+    url: COMPANY.social.youtube,
   },
   { name: "Instagram", icon: "/MediaIcon/instagram.png", url: null },
   { name: "TikTok", icon: "/MediaIcon/tik-tok.png", url: null },

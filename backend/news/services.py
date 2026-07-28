@@ -135,7 +135,10 @@ async def create_news(
     # 交由 ORM 自动填充创建时间（草稿/发布均给合理默认值）。
     if data.published_at is not None:
         create_kwargs["published_at"] = data.published_at
-    news = await News.create(**create_kwargs)
+    # 创建包事务保证原子性；注意 update_search_vector 使用原生 execute_query，
+    # 不能置于 in_transaction() 内（asyncpg 会重置连接），故放在事务提交之后。
+    async with in_transaction():
+        news = await News.create(**create_kwargs)
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
     await _cache_del_detail(data.slug)
     return await get_news_detail_admin(data.slug)

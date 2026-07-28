@@ -61,6 +61,8 @@ export const COMPANY = {
 
   /** 社交媒体和 marketplace 资料 */
   social: {
+    /** Facebook 公司主页 */
+    facebook: "https://www.facebook.com/people/Songdian-Camera/61580702439375/",
     /** LinkedIn 公司主页 */
     linkedin: "https://linkedin.com/company/songdian-technology",
     /** YouTube 频道（与页脚 SOCIAL_LINKS 保持一致，避免双份维护漂移） */

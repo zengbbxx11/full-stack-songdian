@@ -52,22 +52,3 @@ class AdminStatus(BaseEnum):
     DISABLED = "DISABLED"
     LOCKED = "LOCKED"
 
-
-class MigrationBatchStatus(BaseEnum):
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
-    PARTIAL = "PARTIAL"
-
-
-class MigrationRecordStatus(BaseEnum):
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
-    SKIP = "SKIP"
-
-
-class MigrationScope(BaseEnum):
-    ALL = "all"
-    PRODUCT = "product"
-    NEWS = "news"

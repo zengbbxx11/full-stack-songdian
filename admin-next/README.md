@@ -16,6 +16,7 @@
 | 后端 | 项目 FastAPI 后端（`../backend/`，端口 8000） |
 | 认证 | JWT（Bearer Token，localStorage + Cookie 双存储） |
 | 路由守卫 | Next.js Middleware（边缘层 token 校验） |
+| 数据获取 | SWR (v2) + 全局 `SWRProvider`，`swrFetcher` 封装 `apiFetch` |
 | 图标 | 内联 SVG 组件（`src/icons/generated.tsx`） |
 
 ---
@@ -83,7 +84,8 @@ admin-next/
 │   │   └── Backdrop.tsx          # 移动端遮罩
 │   ├── context/
 │   │   ├── SidebarContext.tsx     # 侧边栏状态
-│   │   └── ThemeContext.tsx       # 暗色模式
+│   │   ├── ThemeContext.tsx       # 暗色模式
+│   │   └── SWRProvider.tsx        # SWR 全局配置（注入 fetcher + 关闭聚焦重校）
 │   ├── icons/                    # SVG 图标
 │   └── middleware.ts             # 路由守卫（token 校验 + 未登录重定向）
 └── public/images/                # 静态资源
@@ -122,7 +124,9 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 
 - 所有页面为 `"use client"` 客户端组件
 - Token 读取：`localStorage.getItem("admin_token")`
-- API 调用直接使用 `fetch()` 内联，无独立 service 层
+- **数据获取统一用 SWR + 共享 api-client**：根布局已用 `SWRProvider` 注入全局 `fetcher`（`swrFetcher`，复用 `apiFetch` 鉴权 + 信封解包）。所有列表页（products / news / categories / inquiries / media）均已迁移为 `useSWR(path)` 拉取，本地派生用 `useMemo`，变更后 `mutate()` 重校（不再手写 `useEffect+setState` 样板）。共享类型集中在 `src/types/index.ts`。
+- 媒体库（`/media`）已改为 API 驱动：通过 `GET /api/v1/admin/upload/records` 分页获取上传记录（替代原 localStorage 双存储方案），上传仍走 `POST /api/v1/admin/upload`。
+- 底层统一请求入口 `lib/api-client.ts` 的 `apiFetch<T>(path, options: ApiFetchOptions)`：自动带 Bearer token、解包 `{code,data}` 信封、`body` 支持普通对象（自动 `JSON.stringify`）。一次性调用才直接 `fetch`。
 - 响应格式：`{ code: "0", msg, data }`，code 为字符串 "0" 表示成功
 - 代码注释：中文
 - 禁止使用 `@svgr/webpack`（本机 Turbopack webpack-loader worker 会崩溃）

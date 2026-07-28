@@ -1,22 +1,46 @@
 """上传域路由（M6，T03）。
 
-路径前缀 /api/v1。仅后台写接口：
+路径前缀 /api/v1。后台接口：
+- ``GET /admin/upload/records``：分页查询上传记录（media:upload）。
 - ``POST /admin/upload``：单文件上传（media:upload）。
 - ``POST /admin/upload/batch``：多文件上传（media:upload）。
 成功后写 ``UploadRecord`` 溯源，返回 ``UploadVO`` / ``list[UploadVO]``。
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 
 from common.audit import audit
 from common.deps import require_permission
 from common.result import Result
 from content.models import AdminUser
 from uploads import services
-from uploads.schemas import UploadVO
+from uploads.schemas import UploadRecordVO, UploadVO
 
 router = APIRouter(prefix="/api/v1", tags=["uploads"])
+
+
+@router.get("/admin/upload/records", summary="分页查询上传记录")
+async def list_upload_records(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(50, ge=1, le=200, description="每页条数"),
+    _user: AdminUser = Depends(require_permission("media:upload")),
+) -> Result:
+    """返回上传记录分页列表，供媒体库页面展示已上传图片。
+
+    需要 `media:upload` RBAC 权限。按创建时间倒序排列。
+    """
+    total = await services.count_upload_records()
+    records = await services.list_upload_records(page=page, page_size=page_size)
+    data = {
+        "list": [UploadRecordVO.from_model(r).model_dump(mode="json") for r in records],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return Result.ok(data)
 
 
 @router.post("/admin/upload", summary="单文件上传")

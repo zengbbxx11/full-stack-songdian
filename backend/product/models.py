@@ -58,7 +58,7 @@ class ProductGallery(Model):
     )
     image_url = fields.CharField(max_length=500)
     alt = fields.CharField(max_length=200, null=True)
-    sort_order = fields.IntField(default=0)
+    sort_order = fields.FloatField(default=0.0)  # 前端拖拽排序，浮点数支持精准插入
 
     class Meta:
         table = "t_product_gallery"

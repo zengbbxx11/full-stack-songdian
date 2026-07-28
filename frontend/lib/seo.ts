@@ -87,6 +87,7 @@ export function organizationSchema(): StructuredData {
       telephone: COMPANY.contact.phone,
     },
     sameAs: [
+      COMPANY.social.facebook,
       COMPANY.social.linkedin,
       COMPANY.social.youtube,
       COMPANY.social.alibaba,

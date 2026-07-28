@@ -7,18 +7,25 @@
  */
 
 import { superMeta } from "next-super-meta";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import HorizontalTimeline from "@/components/HorizontalTimeline";
 import SectionHeading from "@/components/SectionHeading";
 import FactoryVideo from "@/components/FactoryVideo";
-import CertificateGallery from "@/components/CertificateGallery";
 import { CtaButton } from "@/components/CtaButton";
 import { MEDIA } from "@/lib/media";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, ABOUT } from "@/lib/content-data";
+
+// 懒加载非首屏重型客户端组件 —— 减少 About 页初始 JS 体积
+const HorizontalTimeline = dynamic(() => import("@/components/HorizontalTimeline"), {
+  loading: () => <div className="h-32 animate-pulse rounded-xl bg-gray-100" />,
+});
+const CertificateGallery = dynamic(() => import("@/components/CertificateGallery"), {
+  loading: () => <div className="h-48 animate-pulse rounded-xl bg-gray-100" />,
+});
 
 export const metadata = await superMeta({
   title: "About Us",

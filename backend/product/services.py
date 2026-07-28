@@ -249,11 +249,23 @@ async def delete_attribute(product_id: int, attr_id: int) -> None:
 # ───────────────── 分类写/排序（T02）─────────────────
 
 async def list_categories_page(req: PageRequest) -> tuple[list[CategoryVO], int]:
-    """后台分类分页列表（已按 sort_order 排序）。"""
+    """后台分类分页列表（已按 sort_order 排序），含产品计数。"""
     q = ProductCategory.filter(deleted=0)
     total = await q.count()
     rows = await q.order_by("sort_order", "id").offset(req.offset).limit(req.limit)
-    return [CategoryVO.from_model(r) for r in rows], total
+
+    # 统计每个分类下的产品数（已发布 + 未软删）
+    category_ids = [r.id for r in rows]
+    from tortoise.expressions import Q
+    product_counts: dict[int, int] = {}
+    if category_ids:
+        products = await Product.filter(
+            Q(category_id__in=category_ids), deleted=0, status="PUBLISHED"
+        ).values("category_id")
+        from collections import Counter
+        product_counts = Counter(p["category_id"] for p in products)
+
+    return [CategoryVO.from_model(r, product_count=product_counts.get(r.id, 0)) for r in rows], total
 
 
 async def _next_category_sort_order() -> int:

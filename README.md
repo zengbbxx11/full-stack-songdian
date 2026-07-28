@@ -172,6 +172,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | GET | `/api/v1/news-categories` | 新闻分类（按 sort_order 排序） |
 | GET | `/api/v1/search` | 全文搜索（PG TSVector，未装 zhparser 时降级 simple） |
 | POST | `/api/v1/inquiries` | 提交询盘（幂等键防重） |
+| GET | `/api/v1/public/settings` | 公开系统设置（联系信息/社交链接，官网 Frontend 通过 ISR 拉取） |
 
 ### Admin 接口（需 JWT + RBAC）
 
@@ -190,8 +191,12 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | GET/PUT | `/api/v1/admin/profile` | — | 查看/修改当前用户信息（用户名/密码） |
 | GET/POST | `/api/v1/admin/roles` | `role:*` | 角色管理 |
 | GET | `/api/v1/admin/audit-logs` | `audit:read` | 审计日志 |
+| GET | `/api/v1/admin/settings` | — | 系统设置列表（含 label/description） |
+| PUT | `/api/v1/admin/settings/{key}` | `settings:update` | 更新单个系统设置 |
+| PUT | `/api/v1/admin/settings` | `settings:update` | 批量更新系统设置 |
 | POST | `/api/v1/admin/upload` | `media:upload` | 单文件上传 |
 | POST | `/api/v1/admin/upload/batch` | `media:upload` | 批量上传 |
+| GET | `/api/v1/admin/upload/records` | `media:upload` | 上传记录分页列表（供媒体库） |
 
 所有写操作均带 `@audit` 审计装饰器和 RBAC 权限校验。
 
@@ -236,6 +241,10 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 - **可访问性**：全站 skip-link、全局 focus-visible 焦点环；Footer 外链补 rel；搜索框补 combobox/listbox ARIA
 - **性能**：抽 `SafeImage` 子组件使 `ProductCard`/`PostCard` 回归 RSC；`ContactMap` 改 `next/dynamic` 按需加载（Leaflet 不进首屏）
 - **美化**：Hero 重做（上浮 stagger + 渐变蒙层 + 毛玻璃徽章 + 滚动引导）；新增深色数据带 `StatsBand`（真实经营指标 + 数字滚动）；全站平滑滚动
+
+### 后台管理优化（2026-07-28）
+- **SWR 渐进式接入**：安装 `swr` (v2)，新增 `SWRProvider` 客户端 Provider 注入全局 `fetcher`；询盘列表 `inquiries` 试点改 `useSWR` 拉取 + `mutate()` 重校，删掉手写 `useEffect+setState` 样板；`apiFetch` 放宽 `body` 允许普通对象，消掉 categories/inquiries 的 `TS2322`（运行时本就 JSON 序列化）。
+- **运维**：记录 `.next/dev` 缓存写冲突（双 next dev 进程抢写导致整组 `(admin)` 页面 500）的速判与三板斧修复（杀冲突进程 → 清缓存 → 单进程重起）。
 
 ### 待开发（P1/P2）
 
@@ -337,4 +346,5 @@ cd ../admin-next && pnpm install && pnpm build && pnpm start
 - **admin-next 必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：若删除，Turbopack 原生 Tailwind 内容扫描漏掉 `.tsx` 中的布局类（flex/grid/fixed/block），整页无样式
 - **admin-next 严禁使用 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 进程启动即崩（exit 1），会导致所有页面 500
 - **middleware matcher**：`src/middleware.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
+- **Turbopack `.next/dev` 缓存写冲突**：若后台所有 `(admin)` 页面同时 500、浏览器报 `An unexpected Turbopack error`，多为两个 next dev 进程抢写同一缓存目录。修法：杀掉 3001 占用进程 → `rm -rf admin-next/.next/dev` → 单进程重起（详见 `admin-next/AGENTS.md` 雷区 ⑧，**别误杀 :3000 的 frontend**）
 - **PostgreSQL 症状速判**：后端所有接口返回 `B999001 系统内部错误` → 几乎一定是 PG 没起。先 `netstat -ano | grep :5432` 确认，再用 envkit `pg_ctl` 拉起

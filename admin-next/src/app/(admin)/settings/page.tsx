@@ -3,71 +3,50 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
-import React, { useEffect, useState } from "react";
-
-interface SettingItem {
-  value: string;
-  label: string;
-  description: string;
-}
-
-function getToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
-}
+import React, { useState } from "react";
+import useSWR from "swr";
+import { apiFetch, swrFetcher } from "@/lib/api-client";
+import type { SettingItem } from "@/types";
 
 export default function SettingsPage() {
   const toast = useToast();
-  const [settings, setSettings] = useState<Record<string, SettingItem>>({});
   const [editValues, setEditValues] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editInitialized, setEditInitialized] = useState(false);
 
-  useEffect(() => {
-    const token = getToken();
-    fetch("/api/v1/admin/settings", {
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    })
-      .then((r) => r.json())
-      .then((j) => {
-        if (j.code === "0") {
-          setSettings(j.data || {});
-          const values: Record<string, string> = {};
-          Object.entries(j.data || {}).forEach(([k, v]: [string, any]) => {
-            values[k] = v.value || "";
-          });
-          setEditValues(values);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: settings, isLoading } = useSWR<Record<string, SettingItem>>(
+    "/admin/settings",
+    swrFetcher,
+  );
+
+  // 当 settings 加载完成后初始化 editValues
+  React.useEffect(() => {
+    if (settings && !editInitialized) {
+      const values: Record<string, string> = {};
+      Object.entries(settings).forEach(([k, v]) => {
+        values[k] = v.value || "";
+      });
+      setEditValues(values);
+      setEditInitialized(true);
+    }
+  }, [settings, editInitialized]);
 
   async function handleSave() {
     setSaving(true);
-    const token = getToken();
     try {
-      const res = await fetch("/api/v1/admin/settings", {
+      await apiFetch("/admin/settings", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(editValues),
+        body: editValues,
       });
-      const json = await res.json();
-      if (json.code === "0") {
-        toast.success(json.msg || "Settings saved");
-      } else {
-        toast.error(json.msg || "Save failed");
-      }
-    } catch {
-      toast.error("Save failed");
+      toast.success("Settings saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div>
         <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">Settings</h2>
@@ -90,7 +69,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-4">
-        {Object.entries(settings).map(([key, item]) => (
+        {settings && Object.entries(settings).map(([key, item]) => (
           <div key={key} className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
             <div className="mb-2 flex items-center justify-between">
               <Label>{item.label || key}</Label>
@@ -107,7 +86,7 @@ export default function SettingsPage() {
           </div>
         ))}
 
-        {Object.keys(settings).length === 0 && (
+        {settings && Object.keys(settings).length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]">
             <p className="text-gray-400">No settings configured yet.</p>
           </div>

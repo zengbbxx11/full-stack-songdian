@@ -3,60 +3,63 @@
  * 职责：产品列表 CRUD + 拖拽排序。从后端 /api/v1/admin/products 获取数据，
  * 支持按关键词/分类筛选、拖拽调整排序、保存排序到后端、删除（需确认弹窗）。
  * 拖拽排序使用原生 HTML5 Drag & Drop（onDragStart/onDragOver/onDrop），
- * 本地维护排序状态后批量 POST 到 /api/v1/admin/products/reorder。
+ * 本地维护排序状态后逐个 PUT 到后端（无批量排序接口）。
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-
-interface Product { id: number; title: string; slug: string; sku: string | null; stock_status: string; status: string; sort_order: number; cover_image: string | null; category: { id: number; name: string } | null; }
-interface Cat { id: number; name: string; }
-
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null; }
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { apiFetch, swrFetcher, API_BASE } from "@/lib/api-client";
+import type { Product, ProductCategory, Paginated } from "@/types";
 
 export default function ProductsPage() {
   const toast = useToast();
+  const { mutate } = useSWRConfig();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{ id: number; title: string } | null>(null);
-  const [items, setItems] = useState<Product[]>([]);
-  const [original, setOriginal] = useState<Product[]>([]); // 保存原始顺序，用于取消还原
-  const [categories, setCategories] = useState<Cat[]>([]);
-  const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false); // 是否有未保存的排序变更
+  const [dirty, setDirty] = useState(false);
+  const [localItems, setLocalItems] = useState<Product[] | null>(null);
 
-  // 加载分类列表
-  useEffect(() => {
-    const token = getToken();
-    fetch("/api/v1/admin/categories?page_size=50", {
-      headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    }).then(r => r.json()).then(j => { if (j.code === "0") setCategories(j.data?.list || []); }).catch(() => {});
-  }, []);
-
-  // 加载产品
-  useEffect(() => {
-    setLoading(true);
-    const token = getToken();
+  // 构建产品列表 SWR key
+  const productsKey = useMemo(() => {
     const params = new URLSearchParams({ page_size: "100" });
     if (keyword) params.set("keyword", keyword);
     if (categoryId) params.set("category_id", categoryId);
-    fetch(`/api/v1/products?${params}`, {
-      headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    }).then(r => r.json()).then(j => {
-      const list = (j.data?.list || []) as Product[];
-      // 按 sort_order 排序
-      list.sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-      setItems(list);
-      setOriginal(list); // 保存原始顺序快照，供取消还原
-      setDirty(false);
-    }).catch(() => {}).finally(() => setLoading(false));
+    return `/products?${params}`;
   }, [keyword, categoryId]);
+
+  const { data: productsData, isLoading: productsLoading } = useSWR<Paginated<Product>>(
+    productsKey,
+    swrFetcher,
+  );
+
+  const { data: catsData } = useSWR<Paginated<ProductCategory>>(
+    "/admin/categories?page_size=50",
+    swrFetcher,
+  );
+
+  const categories = catsData?.list ?? [];
+
+  // 产品列表：优先使用本地拖拽后的 items，否则用 SWR 数据
+  const items = localItems ?? (productsData?.list ?? []).sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+  const [original, setOriginal] = useState<Product[] | null>(null);
+  const loading = productsLoading && !productsData;
+
+  // 当 SWR 数据变化时重置本地状态
+  React.useEffect(() => {
+    if (productsData?.list) {
+      const sorted = [...productsData.list].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+      setLocalItems(null);
+      setOriginal(sorted);
+      setDirty(false);
+    }
+  }, [productsData]);
 
   async function handleDelete(id: number, title: string) {
     setConfirmTarget({ id, title });
@@ -66,12 +69,16 @@ export default function ProductsPage() {
   async function confirmDelete() {
     if (!confirmTarget) return;
     const { id } = confirmTarget;
-    const token = getToken();
-    await fetch(`/api/v1/admin/products/${id}`, { method: "DELETE", headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
-    setItems(prev => prev.filter(p => p.id !== id));
-    toast.success("Product deleted");
-    setConfirmOpen(false);
-    setConfirmTarget(null);
+    try {
+      await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
+      setLocalItems(prev => (prev ?? items).filter(p => p.id !== id));
+      toast.success("Product deleted");
+      setConfirmOpen(false);
+      setConfirmTarget(null);
+      mutate(productsKey);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   }
 
   // 拖拽开始
@@ -87,91 +94,87 @@ export default function ProductsPage() {
     const reordered = [...items];
     const [moved] = reordered.splice(dragIdx, 1);
     reordered.splice(targetIdx, 0, moved);
-    setItems(reordered);
+    setLocalItems(reordered);
     setDragIdx(null);
-    setDirty(true); // 标记有未保存的变更
+    setDirty(true);
   }
 
   // 保存排序 —— 精准插入算法：只更新换位的产品，用邻居 sort_order 中点计算新值
   async function handleSaveOrder() {
     setSaving(true);
-    const token = getToken();
-    const headers = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    try {
+      // 1) 拉取全量产品（全局排序上下文 → 确定每个产品的邻居）
+      const allResp = await apiFetch<Paginated<Product>>("/products?page_size=200");
+      const allProducts: Product[] = (allResp.list ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-    // 1) 拉取全量产品（全局排序上下文 → 确定每个产品的邻居）
-    const allResp = await fetch(`/api/v1/products?page_size=200`, {
-      headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    }).then(r => r.json()).catch(() => ({ data: { list: [] as Product[] } }));
-    const allProducts: Product[] = (allResp.data?.list || []).sort((a: Product, b: Product) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      // 2) 构建可见产品 id 集合
+      const visibleIdSet = new Set(items.map(p => p.id));
 
-    // 2) 构建可见产品 id 集合和新顺序
-    const visibleIdSet = new Set(items.map(p => p.id));
-    // 原始可见顺序（即 allProducts 中出现顺序，等于拖拽前的 items）
-    // 用户拖拽后的新顺序在 items 中
-
-    // 3) 构建新全局顺序：可见产品按拖拽后新序替换，不可见保持原位
-    const newGlobalOrder: Product[] = [];
-    let vi = 0; // 可见产品迭代索引
-    for (const p of allProducts) {
-      if (visibleIdSet.has(p.id)) {
-        newGlobalOrder.push(items[vi]);
-        vi++;
-      } else {
-        newGlobalOrder.push(p);
+      // 3) 构建新全局顺序：可见产品按拖拽后新序替换，不可见保持原位
+      const newGlobalOrder: Product[] = [];
+      let vi = 0;
+      for (const p of allProducts) {
+        if (visibleIdSet.has(p.id)) {
+          newGlobalOrder.push(items[vi]);
+          vi++;
+        } else {
+          newGlobalOrder.push(p);
+        }
       }
+
+      // 4) 只更新可见产品，用邻居 sort_order 中点法计算新值
+      const computed = new Map<number, number>();
+      const updates: Promise<unknown>[] = [];
+
+      for (let i = 0; i < newGlobalOrder.length; i++) {
+        const p = newGlobalOrder[i];
+        if (!visibleIdSet.has(p.id)) continue;
+
+        const leftSo = i > 0 ? (computed.get(newGlobalOrder[i - 1].id) ?? (newGlobalOrder[i - 1].sort_order ?? 0)) : null;
+        const rightSo = i < newGlobalOrder.length - 1 ? (newGlobalOrder[i + 1].sort_order ?? 0) : null;
+
+        let newSo: number;
+        if (leftSo === null && rightSo === null) {
+          newSo = 0;
+        } else if (leftSo === null) {
+          newSo = rightSo! - 1;
+        } else if (rightSo === null) {
+          newSo = leftSo + 1;
+        } else {
+          newSo = (leftSo + rightSo) / 2;
+        }
+
+        computed.set(p.id, newSo);
+
+        const oldSo = allProducts.find(ap => ap.id === p.id)?.sort_order ?? 0;
+        if (Math.abs(oldSo - newSo) > 0.0001) {
+          updates.push(
+            apiFetch(`/admin/products/${p.id}`, {
+              method: "PUT",
+              body: { sort_order: newSo },
+            }).catch((err) => {
+              toast.error(`Failed to save order for product ${p.id}: ${err instanceof Error ? err.message : "Unknown error"}`);
+            })
+          );
+        }
+      }
+
+      await Promise.all(updates);
+      const refreshed = items.map(p => ({ ...p, sort_order: computed.get(p.id) ?? p.sort_order }));
+      setLocalItems(refreshed);
+      setOriginal(refreshed);
+      setDirty(false);
+      mutate(productsKey);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save order");
+    } finally {
+      setSaving(false);
     }
-
-    // 4) 只更新可见产品，用邻居 sort_order 中点法计算新值
-    const computed = new Map<number, number>(); // id → 新 sort_order（缓存已计算的，供后续邻居引用）
-    const updates: Promise<void>[] = [];
-
-    for (let i = 0; i < newGlobalOrder.length; i++) {
-      const p = newGlobalOrder[i];
-      if (!visibleIdSet.has(p.id)) continue; // 不可见产品不动
-
-      // 左邻居的 sort_order（优先用已计算的新值）
-      const leftSo = i > 0 ? (computed.get(newGlobalOrder[i - 1].id) ?? (newGlobalOrder[i - 1].sort_order ?? 0)) : null;
-      // 右邻居的 sort_order（用旧值——可能还没处理到）
-      const rightSo = i < newGlobalOrder.length - 1 ? (newGlobalOrder[i + 1].sort_order ?? 0) : null;
-
-      let newSo: number;
-      if (leftSo === null && rightSo === null) {
-        newSo = 0;
-      } else if (leftSo === null) {
-        newSo = rightSo! - 1;
-      } else if (rightSo === null) {
-        newSo = leftSo + 1;
-      } else {
-        newSo = (leftSo + rightSo) / 2;
-      }
-
-      computed.set(p.id, newSo);
-
-      // 只在 sort_order 确实变化时才发送 PUT
-      const oldSo = allProducts.find(ap => ap.id === p.id)?.sort_order ?? 0;
-      if (Math.abs(oldSo - newSo) > 0.0001) {
-        updates.push(
-          fetch(`/api/v1/admin/products/${p.id}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({ sort_order: newSo }),
-          }).then(() => {}).catch(() => {})
-        );
-      }
-    }
-
-    await Promise.all(updates);
-    // 用新的 sort_order 更新本地 items 和 original 快照（刷新 sort_order 字段）
-    const refreshed = items.map(p => ({ ...p, sort_order: computed.get(p.id) ?? p.sort_order }));
-    setItems(refreshed);
-    setOriginal(refreshed);
-    setDirty(false);
-    setSaving(false);
   }
 
   // 取消排序，恢复到原始顺序
   function handleCancelOrder() {
-    setItems([...original]);
+    setLocalItems(original ? [...original] : null);
     setDirty(false);
   }
 

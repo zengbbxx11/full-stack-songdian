@@ -1,47 +1,42 @@
 /*
  * 页面：媒体管理页（/media）
- * 职责：上传和管理图片/文件资源。支持拖拽上传（DropZone）、文件列表展示、
- * 复制图片 URL、删除文件。上传走后端 /api/v1/admin/uploads。
+ * 职责：上传和管理图片/文件资源。支持文件上传、列表展示、
+ * 复制图片 URL。上传走后端 /api/v1/admin/upload，
+ * 记录列表从后端 /api/v1/admin/upload/records 分页获取。
  */
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
+import { apiFetch, swrFetcher, API_BASE } from "@/lib/api-client";
+import type { Paginated } from "@/types";
 
-// 分类定义
-const CATEGORIES = [
-  { key: "products", label: "Product Images", color: "bg-blue-100 text-blue-700" },
-  { key: "news", label: "News Images", color: "bg-purple-100 text-purple-700" },
-  { key: "banners", label: "Banners", color: "bg-amber-100 text-amber-700" },
-  { key: "exhibitions", label: "Exhibitions", color: "bg-green-100 text-green-700" },
-  { key: "other", label: "Other", color: "bg-gray-100 text-gray-600" },
-] as const;
-
-interface ImageItem { url: string; name: string; createdAt: string; }
-
-type ImageStore = Record<string, ImageItem[]>;
-
-const STORAGE_KEY = "songdian_media_images";
-
-function loadStore(): ImageStore {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+/** 后端上传记录 VO */
+interface UploadRecord {
+  id: number;
+  url: string;
+  file_name: string;
+  size: number;
+  uploaded_by: string | null;
+  created_time: string | null;
 }
-function saveStore(store: ImageStore) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-}
-
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("admin_token") : null; }
 
 export default function MediaPage() {
-  const [activeCat, setActiveCat] = useState("products");
-  const [store, setStore] = useState<ImageStore>({});
   const [uploading, setUploading] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const toast = useToast();
+  const { mutate } = useSWRConfig();
 
-  useEffect(() => { setStore(loadStore()); }, []);
+  const recordsKey = `/admin/upload/records?page=${page}&page_size=${pageSize}`;
+  const { data, isLoading } = useSWR<Paginated<UploadRecord>>(recordsKey, swrFetcher);
 
-  const images = store[activeCat] || [];
+  const records = data?.list ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const loading = isLoading && !data;
 
-  // 单文件上传
+  // 上传文件
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -52,43 +47,18 @@ export default function MediaPage() {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const token = getToken();
-        const res = await fetch("/api/v1/admin/upload", {
+        await apiFetch<{ url: string }>("/admin/upload", {
           method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,
-        });
-        const json = await res.json();
-        if (json.code !== "0") throw new Error(json.msg);
-        const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const url = `${base}${json.data.url}`;
-        const item: ImageItem = { url, name: file.name, createdAt: new Date().toISOString().slice(0, 10) };
-        setStore((prev) => {
-          const updated = {
-            ...prev,
-            [activeCat]: [item, ...(prev[activeCat] || [])],
-          };
-          saveStore(updated);
-          return updated;
         });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Upload failed");
       }
     }
     setUploading(false);
-    // 重置 input
     e.target.value = "";
-  }
-
-  // 删除图片
-  function handleDelete(index: number) {
-    setStore((prev) => {
-      const updated = { ...prev };
-      updated[activeCat] = [...(prev[activeCat] || [])];
-      updated[activeCat].splice(index, 1);
-      saveStore(updated);
-      return updated;
-    });
+    // 刷新列表
+    mutate(recordsKey);
   }
 
   // 复制 URL
@@ -97,47 +67,24 @@ export default function MediaPage() {
     toast.success("URL copied!");
   }
 
-  // 移动图片到其他分类
-  function moveImage(fromCat: string, index: number, toCat: string) {
-    setStore((prev) => {
-      const updated = { ...prev };
-      updated[fromCat] = [...(prev[fromCat] || [])];
-      updated[toCat] = [...(prev[toCat] || [])];
-      const [moved] = updated[fromCat].splice(index, 1);
-      updated[toCat].unshift(moved);
-      saveStore(updated);
-      return updated;
-    });
+  // 格式化文件大小
+  function formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   return (
     <div>
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">Media Library</h2>
 
-      {/* 分类标签 */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => setActiveCat(cat.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeCat === cat.key
-                ? `${cat.color} ring-1 ring-offset-1`
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
-            }`}
-          >
-            {cat.label}
-            <span className="ml-2 opacity-60 text-xs">{(store[cat.key] || []).length}</span>
-          </button>
-        ))}
-      </div>
-
       {/* 上传区 */}
       <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
-            Upload to {CATEGORIES.find((c) => c.key === activeCat)?.label}
+            Upload Images
           </h3>
+          <span className="text-xs text-gray-400">{total} files total</span>
         </div>
         <label className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl cursor-pointer hover:border-brand-500 transition-colors">
           <div
@@ -169,70 +116,73 @@ export default function MediaPage() {
       </div>
 
       {/* 图片网格 */}
-      {images.length > 0 ? (
+      {loading ? (
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        </div>
+      ) : records.length > 0 ? (
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90 mb-4">
-            {images.length} images in {
-              CATEGORIES.find((c) => c.key === activeCat)?.label
-            }
+            {total} uploaded files
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {images.map((img, i) => (
-              <div key={i} className="group relative bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {records.map((rec) => (
+              <div key={rec.id} className="group relative bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {/* 缩略图 */}
                 <div className="aspect-square overflow-hidden">
                   <img
-                    src={img.url}
-                    alt={img.name}
+                    src={`${API_BASE}${rec.url}`}
+                    alt={rec.file_name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 {/* 信息 + 操作 */}
                 <div className="p-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1" title={img.name}>
-                    {img.name}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mb-1" title={rec.file_name}>
+                    {rec.file_name}
                   </p>
+                  <p className="text-[10px] text-gray-400 mb-2">{formatSize(rec.size)}</p>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => copyUrl(img.url)}
+                      onClick={() => copyUrl(`${API_BASE}${rec.url}`)}
                       className="flex-1 text-xs py-1 px-2 rounded bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-900/20 dark:text-brand-400"
                     >
-                      Copy
-                    </button>
-                    <button
-                      onClick={() => handleDelete(i)}
-                      className="text-xs py-1 px-2 rounded bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"
-                    >
-                      Del
+                      Copy URL
                     </button>
                   </div>
-                </div>
-                {/* 移动分类下拉 */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) moveImage(activeCat, i, e.target.value);
-                      e.target.value = "";
-                    }}
-                    className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5"
-                  >
-                    <option value="">Move to...</option>
-                    {CATEGORIES.filter((c) => c.key !== activeCat).map((c) => (
-                      <option key={c.key} value={c.key}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* 分页 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+              >
+                Prev
+              </button>
+              <span className="text-sm text-gray-500">
+                Page {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
           <p className="text-gray-400 dark:text-gray-600 text-sm">
-            No images in this category yet. Upload one above.
+            No uploaded images yet. Upload one above.
           </p>
         </div>
       )}

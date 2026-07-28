@@ -27,6 +27,8 @@ export interface ProductCategory {
   name: string;
   slug: string;
   sort_order: number;
+  /** 该分类下的产品数量（后台分类列表接口返回，公开接口无此字段） */
+  product_count?: number;
 }
 
 /** 新闻分类（对应后端 news-categories VO，字段与产品分类对齐）。 */
@@ -97,6 +99,13 @@ export interface AdminRole {
   id: number;
   name: string;
   description: string | null;
+}
+
+/** 设置项（对应后端 settings API 返回的 Record<string, SettingItem>）。 */
+export interface SettingItem {
+  value: string;
+  label: string;
+  description: string;
 }
 
 /** 媒体资源记录（对应后端 upload 返回的数据；目前后端仅返回上传结果，列表接口待补充）。 */

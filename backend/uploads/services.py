@@ -90,3 +90,14 @@ async def record_upload(url: str, file_name: str, size: int, uploaded_by: str | 
     return await UploadRecord.create(
         url=url, file_name=file_name, size=size, uploaded_by=uploaded_by
     )
+
+
+async def list_upload_records(page: int = 1, page_size: int = 50) -> list[UploadRecord]:
+    """分页查询上传记录（按创建时间倒序）。"""
+    offset = (page - 1) * page_size
+    return await UploadRecord.all().order_by("-created_time").offset(offset).limit(page_size)
+
+
+async def count_upload_records() -> int:
+    """统计上传记录总数。"""
+    return await UploadRecord.all().count()

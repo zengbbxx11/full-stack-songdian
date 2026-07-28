@@ -86,7 +86,7 @@ PGPASSWORD=你的密码 psql -h 127.0.0.1 -U songdian -d songdianB2B -c "SELECT 
 
 ### 5.1 安装 Python 和依赖
 
-服务器上安装 Python 3.13+ 和 uv 包管理器：
+服务器上安装 Python 3.14+ 和 uv 包管理器：
 
 ```bash
 # 安装 uv

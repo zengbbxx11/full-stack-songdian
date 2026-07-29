@@ -1,0 +1,4198 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict cLVg7Pnaj8x0bvN707iNNCfK6ObdSvBXGji2tTxq3iNHjLaGdS8x2Deh1nn9otY
+
+-- Dumped from database version 18.4
+-- Dumped by pg_dump version 18.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: aerich; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.aerich (
+    id integer NOT NULL,
+    version character varying(255) NOT NULL,
+    app character varying(100) NOT NULL,
+    content jsonb NOT NULL
+);
+
+
+--
+-- Name: aerich_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.aerich_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: aerich_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.aerich_id_seq OWNED BY public.aerich.id;
+
+
+--
+-- Name: t_admin_user; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_admin_user (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    id bigint NOT NULL,
+    username character varying(64) NOT NULL,
+    password_hash character varying(100) NOT NULL,
+    email character varying(200),
+    status character varying(30) NOT NULL,
+    last_login timestamp with time zone,
+    login_fail integer NOT NULL,
+    role_id bigint NOT NULL
+);
+
+
+--
+-- Name: t_admin_user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_admin_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_admin_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_admin_user_id_seq OWNED BY public.t_admin_user.id;
+
+
+--
+-- Name: t_album; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_album (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    slug character varying(120) NOT NULL,
+    sort_order double precision NOT NULL,
+    parent_id bigint
+);
+
+
+--
+-- Name: TABLE t_album; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.t_album IS '扁平相册（媒体库分组，无层级）。';
+
+
+--
+-- Name: COLUMN t_album.name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_album.name IS '相册名称';
+
+
+--
+-- Name: COLUMN t_album.slug; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_album.slug IS 'URL 友好标识（唯一）';
+
+
+--
+-- Name: COLUMN t_album.sort_order; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_album.sort_order IS '排序权重，越小越靠前';
+
+
+--
+-- Name: COLUMN t_album.parent_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_album.parent_id IS '父相册（可空=根；级联删除子孙）';
+
+
+--
+-- Name: t_album_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_album_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_album_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_album_id_seq OWNED BY public.t_album.id;
+
+
+--
+-- Name: t_audit_log; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_audit_log (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    username character varying(64) NOT NULL,
+    action character varying(100) NOT NULL,
+    resource character varying(200) NOT NULL,
+    result character varying(30) NOT NULL,
+    ip character varying(64),
+    created_time timestamp with time zone
+);
+
+
+--
+-- Name: t_audit_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_audit_log_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_audit_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_audit_log_id_seq OWNED BY public.t_audit_log.id;
+
+
+--
+-- Name: t_inquiry; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_inquiry (
+    id bigint NOT NULL,
+    name character varying(50) NOT NULL,
+    email character varying(200) NOT NULL,
+    phone character varying(20),
+    company character varying(100),
+    country character varying(100),
+    product_interest character varying(200),
+    message character varying(2000) NOT NULL,
+    source_page character varying(500),
+    biz_req_no character varying(100) NOT NULL,
+    status character varying(30) NOT NULL,
+    smtp_status character varying(30) NOT NULL,
+    smtp_retry integer NOT NULL,
+    reply_note character varying(1000),
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone
+);
+
+
+--
+-- Name: t_inquiry_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_inquiry_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_inquiry_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_inquiry_id_seq OWNED BY public.t_inquiry.id;
+
+
+--
+-- Name: t_news; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_news (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    deleted smallint NOT NULL,
+    created_by character varying(64),
+    updated_by character varying(64),
+    id bigint NOT NULL,
+    slug character varying(200) NOT NULL,
+    title character varying(200) NOT NULL,
+    summary character varying(500) NOT NULL,
+    content_html text NOT NULL,
+    author character varying(100),
+    published_at timestamp with time zone NOT NULL,
+    status character varying(30) DEFAULT 'DRAFT'::character varying NOT NULL,
+    search_vector tsvector,
+    category_id bigint CONSTRAINT t_news_category_id_not_null1 NOT NULL,
+    cover_image character varying(500),
+    sort_order double precision DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: COLUMN t_news.deleted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_news.deleted IS '0 存在 / 1 删除';
+
+
+--
+-- Name: t_news_category; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_news_category (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    deleted smallint NOT NULL,
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    slug character varying(100) NOT NULL,
+    sort_order double precision NOT NULL
+);
+
+
+--
+-- Name: COLUMN t_news_category.deleted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_news_category.deleted IS '0 存在 / 1 删除';
+
+
+--
+-- Name: t_news_category_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_news_category_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_news_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_news_category_id_seq OWNED BY public.t_news_category.id;
+
+
+--
+-- Name: t_news_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_news_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_news_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_news_id_seq OWNED BY public.t_news.id;
+
+
+--
+-- Name: t_product; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_product (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    deleted smallint NOT NULL,
+    created_by character varying(64),
+    updated_by character varying(64),
+    id bigint NOT NULL,
+    slug character varying(200) NOT NULL,
+    title character varying(200) NOT NULL,
+    summary character varying(500) NOT NULL,
+    content_html text NOT NULL,
+    sku character varying(100),
+    price numeric(12,2),
+    currency character varying(10) NOT NULL,
+    stock_status character varying(20) NOT NULL,
+    status character varying(30) NOT NULL,
+    search_vector tsvector,
+    category_id bigint CONSTRAINT t_product_category_id_not_null1 NOT NULL,
+    cover_image character varying(500),
+    tags jsonb,
+    sort_order double precision DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: COLUMN t_product.deleted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_product.deleted IS '0 存在 / 1 删除';
+
+
+--
+-- Name: t_product_attribute; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_product_attribute (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    slug character varying(100) NOT NULL,
+    value character varying(500) NOT NULL,
+    product_id bigint NOT NULL
+);
+
+
+--
+-- Name: t_product_attribute_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_product_attribute_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_product_attribute_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_product_attribute_id_seq OWNED BY public.t_product_attribute.id;
+
+
+--
+-- Name: t_product_category; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_product_category (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    deleted smallint NOT NULL,
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    slug character varying(100) NOT NULL,
+    sort_order double precision NOT NULL
+);
+
+
+--
+-- Name: COLUMN t_product_category.deleted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_product_category.deleted IS '0 存在 / 1 删除';
+
+
+--
+-- Name: t_product_category_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_product_category_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_product_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_product_category_id_seq OWNED BY public.t_product_category.id;
+
+
+--
+-- Name: t_product_gallery; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_product_gallery (
+    id bigint NOT NULL,
+    image_url character varying(500) NOT NULL,
+    alt character varying(200),
+    sort_order double precision NOT NULL,
+    product_id bigint NOT NULL
+);
+
+
+--
+-- Name: t_product_gallery_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_product_gallery_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_product_gallery_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_product_gallery_id_seq OWNED BY public.t_product_gallery.id;
+
+
+--
+-- Name: t_product_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_product_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_product_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_product_id_seq OWNED BY public.t_product.id;
+
+
+--
+-- Name: t_role; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_role (
+    id bigint NOT NULL,
+    name character varying(100) NOT NULL,
+    code character varying(100) NOT NULL,
+    remark character varying(200)
+);
+
+
+--
+-- Name: t_role_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_role_id_seq OWNED BY public.t_role.id;
+
+
+--
+-- Name: t_role_permission; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_role_permission (
+    id bigint NOT NULL,
+    permission_code character varying(100) NOT NULL,
+    role_id bigint NOT NULL
+);
+
+
+--
+-- Name: TABLE t_role_permission; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.t_role_permission IS 'RBAC 多对多：角色 → 权限码（页面+按钮级）。无独立权限实体表。';
+
+
+--
+-- Name: t_role_permission_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_role_permission_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_role_permission_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_role_permission_id_seq OWNED BY public.t_role_permission.id;
+
+
+--
+-- Name: t_setting; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_setting (
+    key character varying(100) NOT NULL,
+    value text DEFAULT ''::text,
+    label character varying(200) DEFAULT ''::character varying,
+    description character varying(500) DEFAULT ''::character varying
+);
+
+
+--
+-- Name: TABLE t_setting; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.t_setting IS '键值对配置表。';
+
+
+--
+-- Name: t_upload_record; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.t_upload_record (
+    created_time timestamp with time zone,
+    updated_time timestamp with time zone,
+    id bigint NOT NULL,
+    url character varying(500) NOT NULL,
+    file_name character varying(255) NOT NULL,
+    size integer NOT NULL,
+    uploaded_by character varying(64),
+    album_id bigint,
+    title character varying(255)
+);
+
+
+--
+-- Name: TABLE t_upload_record; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.t_upload_record IS '上传记录（图片/媒体溯源）。';
+
+
+--
+-- Name: COLUMN t_upload_record.url; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.url IS '相对/绝对访问 URL';
+
+
+--
+-- Name: COLUMN t_upload_record.file_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.file_name IS '原始文件名';
+
+
+--
+-- Name: COLUMN t_upload_record.size; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.size IS '字节数';
+
+
+--
+-- Name: COLUMN t_upload_record.uploaded_by; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.uploaded_by IS '上传人（管理员用户名）';
+
+
+--
+-- Name: COLUMN t_upload_record.album_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.album_id IS '所属相册（可空，未分类）';
+
+
+--
+-- Name: COLUMN t_upload_record.title; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_upload_record.title IS '展示标题（可选）';
+
+
+--
+-- Name: t_upload_record_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.t_upload_record_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: t_upload_record_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.t_upload_record_id_seq OWNED BY public.t_upload_record.id;
+
+
+--
+-- Name: aerich id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.aerich ALTER COLUMN id SET DEFAULT nextval('public.aerich_id_seq'::regclass);
+
+
+--
+-- Name: t_admin_user id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_admin_user ALTER COLUMN id SET DEFAULT nextval('public.t_admin_user_id_seq'::regclass);
+
+
+--
+-- Name: t_album id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_album ALTER COLUMN id SET DEFAULT nextval('public.t_album_id_seq'::regclass);
+
+
+--
+-- Name: t_audit_log id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_audit_log ALTER COLUMN id SET DEFAULT nextval('public.t_audit_log_id_seq'::regclass);
+
+
+--
+-- Name: t_inquiry id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_inquiry ALTER COLUMN id SET DEFAULT nextval('public.t_inquiry_id_seq'::regclass);
+
+
+--
+-- Name: t_news id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news ALTER COLUMN id SET DEFAULT nextval('public.t_news_id_seq'::regclass);
+
+
+--
+-- Name: t_news_category id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news_category ALTER COLUMN id SET DEFAULT nextval('public.t_news_category_id_seq'::regclass);
+
+
+--
+-- Name: t_product id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product ALTER COLUMN id SET DEFAULT nextval('public.t_product_id_seq'::regclass);
+
+
+--
+-- Name: t_product_attribute id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_attribute ALTER COLUMN id SET DEFAULT nextval('public.t_product_attribute_id_seq'::regclass);
+
+
+--
+-- Name: t_product_category id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_category ALTER COLUMN id SET DEFAULT nextval('public.t_product_category_id_seq'::regclass);
+
+
+--
+-- Name: t_product_gallery id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_gallery ALTER COLUMN id SET DEFAULT nextval('public.t_product_gallery_id_seq'::regclass);
+
+
+--
+-- Name: t_role id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role ALTER COLUMN id SET DEFAULT nextval('public.t_role_id_seq'::regclass);
+
+
+--
+-- Name: t_role_permission id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role_permission ALTER COLUMN id SET DEFAULT nextval('public.t_role_permission_id_seq'::regclass);
+
+
+--
+-- Name: t_upload_record id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_upload_record ALTER COLUMN id SET DEFAULT nextval('public.t_upload_record_id_seq'::regclass);
+
+
+--
+-- Data for Name: t_admin_user; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_admin_user VALUES ('2026-07-23 14:06:01.680351+08', '2026-07-29 10:13:15.10352+08', 4, 'admin', '$2b$12$rf0FK/CdRsUMGs1lTw9KfOIdSq3kRvFqE2iYNsAUUiUTyJEiTR9oC', NULL, 'ENABLED', '2026-07-29 10:13:15.103437+08', 0, 1);
+INSERT INTO public.t_admin_user VALUES ('2026-07-23 14:02:45.749186+08', '2026-07-23 14:03:12.768751+08', 2, 'test_admin', '$2b$12$uwnjPkeJvEoi1sxJCYVmfeJh8uVHfOcHNeVpAL9Qvu2NVWc02/MVi', NULL, 'ENABLED', '2026-07-23 14:03:10.733962+08', 0, 1);
+INSERT INTO public.t_admin_user VALUES ('2026-07-23 14:03:24.802219+08', '2026-07-23 14:03:54.061349+08', 3, 'songdian_master', '$2b$12$iywP1CtPQr7kmANldX7XWOyEoHcDbP6sAzKynX.S/AkJ5RBCduItC', NULL, 'ENABLED', '2026-07-23 14:03:52.025463+08', 0, 1);
+INSERT INTO public.t_admin_user VALUES ('2026-07-18 17:09:39.551565+08', '2026-07-23 14:05:40.644449+08', 1, 'test_a23bc6cf', '$2b$12$K9P2g/0xBWeploP4wvdpVOiaYPp9qzCbLsWQpUoUBrKI.5H3mriNm', NULL, 'ENABLED', '2026-07-23 14:05:38.596365+08', 0, 1);
+
+
+--
+-- Data for Name: t_album; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.424264+08', '2026-07-29 10:01:26.424277+08', 11, 'Products', 'products', 1, NULL);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.425398+08', '2026-07-29 10:01:26.425405+08', 12, 'News', 'news', 2, NULL);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.428653+08', '2026-07-29 10:01:26.428659+08', 13, '860a', 'products-860a', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.430193+08', '2026-07-29 10:01:26.430198+08', 14, 'dc312x', 'products-dc312x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.431841+08', '2026-07-29 10:01:26.43185+08', 15, 'dc305x', 'products-dc305x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.433301+08', '2026-07-29 10:01:26.433308+08', 16, 'dc422x', 'products-dc422x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.434861+08', '2026-07-29 10:01:26.434868+08', 17, 'dc218l', 'products-dc218l', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.436163+08', '2026-07-29 10:01:26.436169+08', 18, 'dc226', 'products-dc226', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.43728+08', '2026-07-29 10:01:26.437285+08', 19, 'dc503j', 'products-dc503j', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.438549+08', '2026-07-29 10:01:26.438555+08', 20, 'dc506', 'products-dc506', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.439744+08', '2026-07-29 10:01:26.43975+08', 21, 'dc311', 'products-dc311', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.441041+08', '2026-07-29 10:01:26.441048+08', 22, 'dc209x', 'products-dc209x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.443346+08', '2026-07-29 10:01:26.443352+08', 23, 'dc309x', 'products-dc309x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.444438+08', '2026-07-29 10:01:26.444443+08', 24, 'dc403', 'products-dc403', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.447294+08', '2026-07-29 10:01:26.447299+08', 25, 'wdc901', 'products-wdc901', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.448664+08', '2026-07-29 10:01:26.448669+08', 26, 'go9', 'products-go9', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.450574+08', '2026-07-29 10:01:26.450579+08', 27, 'dc501j', 'products-dc501j', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.452025+08', '2026-07-29 10:01:26.452032+08', 28, 'dc306l', 'products-dc306l', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.453388+08', '2026-07-29 10:01:26.453396+08', 29, 'soncdian-wins-guangdong-quality-trust-recognition', 'news-soncdian-wins-guangdong-quality-trust-recognition', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.455512+08', '2026-07-29 10:01:26.455518+08', 30, 'dc417x', 'products-dc417x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.456728+08', '2026-07-29 10:01:26.456734+08', 31, 'dc208n', 'products-dc208n', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.457909+08', '2026-07-29 10:01:26.457915+08', 32, 'w3', 'products-w3', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.459071+08', '2026-07-29 10:01:26.459077+08', 33, 've418', 'products-ve418', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.460237+08', '2026-07-29 10:01:26.460243+08', 34, 'dc408x', 'products-dc408x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.461779+08', '2026-07-29 10:01:26.461788+08', 35, 'dc310', 'products-dc310', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.463099+08', '2026-07-29 10:01:26.463106+08', 36, 'hdv255k', 'products-hdv255k', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.464418+08', '2026-07-29 10:01:26.464424+08', 37, 'dc103w', 'products-dc103w', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.46569+08', '2026-07-29 10:01:26.465695+08', 38, 'dc105', 'products-dc105', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.466916+08', '2026-07-29 10:01:26.466922+08', 39, 'dc308', 'products-dc308', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.46806+08', '2026-07-29 10:01:26.468066+08', 40, 'dc302', 'products-dc302', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.472053+08', '2026-07-29 10:01:26.472061+08', 41, 'dc402', 'products-dc402', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.474186+08', '2026-07-29 10:01:26.474193+08', 42, 'dc413l', 'products-dc413l', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.475428+08', '2026-07-29 10:01:26.475434+08', 43, 'songdian-named-2025-china-made-trusted-brand', 'news-songdian-named-2025-china-made-trusted-brand', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.47664+08', '2026-07-29 10:01:26.476646+08', 44, 'hdv284k', 'products-hdv284k', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.478685+08', '2026-07-29 10:01:26.478691+08', 45, 'dc320', 'products-dc320', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.483156+08', '2026-07-29 10:01:26.483164+08', 46, 'dc101l', 'products-dc101l', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.485214+08', '2026-07-29 10:01:26.48522+08', 47, 'dc325', 'products-dc325', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.487188+08', '2026-07-29 10:01:26.487194+08', 48, 'dc202', 'products-dc202', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.492007+08', '2026-07-29 10:01:26.492015+08', 49, 'dc203', 'products-dc203', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.496699+08', '2026-07-29 10:01:26.496706+08', 50, 'hdv544km', 'products-hdv544km', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.499495+08', '2026-07-29 10:01:26.499502+08', 51, 'dc205x', 'products-dc205x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.500744+08', '2026-07-29 10:01:26.500751+08', 52, 'dc106', 'products-dc106', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.502273+08', '2026-07-29 10:01:26.50228+08', 53, 'dc201s', 'products-dc201s', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.509116+08', '2026-07-29 10:01:26.509122+08', 54, 'dc206x', 'products-dc206x', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.510257+08', '2026-07-29 10:01:26.510262+08', 55, 'dc406', 'products-dc406', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.520921+08', '2026-07-29 10:01:26.520929+08', 56, 'dc317l', 'products-dc317l', 0, 11);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.528262+08', '2026-07-29 10:01:26.52827+08', 57, 'songdian-joins-m43-standard-group', 'news-songdian-joins-m43-standard-group', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:01:26.536615+08', '2026-07-29 10:01:26.536622+08', 58, 'songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners', 'news-songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:02:50.084234+08', '2026-07-29 10:02:50.084243+08', 59, 'songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and', 'news-songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-c', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:02:50.103353+08', '2026-07-29 10:02:50.103359+08', 60, 'soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness', 'news-soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:02:50.104603+08', '2026-07-29 10:02:50.104609+08', 61, 'songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner', 'news-songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:02:50.127125+08', '2026-07-29 10:02:50.127131+08', 62, 'songdian-manufacturing-oem-partner-for-kenko', 'news-songdian-manufacturing-oem-partner-for-kenko', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:02:50.128982+08', '2026-07-29 10:02:50.128987+08', 63, 'songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit', 'news-songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit', 0, 12);
+INSERT INTO public.t_album VALUES ('2026-07-29 10:09:24.534188+08', '2026-07-29 10:09:24.534197+08', 64, 'test123', 'product-test123', 0, 11);
+
+
+--
+-- Data for Name: t_audit_log; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_audit_log VALUES (1, 0, 'anonymous', 'migration.run', 'migration:batch', 'SUCCESS', '127.0.0.1', '2026-07-18 17:20:18.399556+08');
+INSERT INTO public.t_audit_log VALUES (2, 0, 'anonymous', 'migration.run', 'migration:batch', 'SUCCESS', '127.0.0.1', '2026-07-18 17:20:19.892077+08');
+INSERT INTO public.t_audit_log VALUES (3, 0, 'anonymous', 'auth.refresh', 'token:refresh', 'SUCCESS', '127.0.0.1', '2026-07-21 14:13:01.744642+08');
+INSERT INTO public.t_audit_log VALUES (4, 0, 'anonymous', 'auth.refresh', 'token:refresh', 'FAIL', '127.0.0.1', '2026-07-21 14:13:01.764407+08');
+INSERT INTO public.t_audit_log VALUES (5, 0, 'anonymous', 'auth.refresh', 'token:refresh', 'FAIL', '127.0.0.1', '2026-07-21 14:13:24.278107+08');
+INSERT INTO public.t_audit_log VALUES (6, 1, 'admin', 'role.perm.bind', 'role:1', 'SUCCESS', '127.0.0.1', '2026-07-21 14:14:27.577624+08');
+INSERT INTO public.t_audit_log VALUES (7, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:29:44.399869+08');
+INSERT INTO public.t_audit_log VALUES (8, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:29:44.437269+08');
+INSERT INTO public.t_audit_log VALUES (9, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:29:44.479826+08');
+INSERT INTO public.t_audit_log VALUES (10, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:30.502644+08');
+INSERT INTO public.t_audit_log VALUES (11, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:30.550388+08');
+INSERT INTO public.t_audit_log VALUES (12, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:30.691614+08');
+INSERT INTO public.t_audit_log VALUES (13, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:34.722903+08');
+INSERT INTO public.t_audit_log VALUES (14, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:34.723856+08');
+INSERT INTO public.t_audit_log VALUES (15, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:34.723686+08');
+INSERT INTO public.t_audit_log VALUES (16, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:37.175129+08');
+INSERT INTO public.t_audit_log VALUES (17, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:37.175877+08');
+INSERT INTO public.t_audit_log VALUES (18, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:41:37.176652+08');
+INSERT INTO public.t_audit_log VALUES (19, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:03.034739+08');
+INSERT INTO public.t_audit_log VALUES (20, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:03.083423+08');
+INSERT INTO public.t_audit_log VALUES (21, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:03.275393+08');
+INSERT INTO public.t_audit_log VALUES (22, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:04.649035+08');
+INSERT INTO public.t_audit_log VALUES (23, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:04.649702+08');
+INSERT INTO public.t_audit_log VALUES (24, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:48:04.650605+08');
+INSERT INTO public.t_audit_log VALUES (25, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:54.976317+08');
+INSERT INTO public.t_audit_log VALUES (26, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:54.998812+08');
+INSERT INTO public.t_audit_log VALUES (27, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:54.999137+08');
+INSERT INTO public.t_audit_log VALUES (28, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.000306+08');
+INSERT INTO public.t_audit_log VALUES (29, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.000517+08');
+INSERT INTO public.t_audit_log VALUES (30, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.002806+08');
+INSERT INTO public.t_audit_log VALUES (31, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.004163+08');
+INSERT INTO public.t_audit_log VALUES (32, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.016528+08');
+INSERT INTO public.t_audit_log VALUES (33, 1, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-22 09:49:55.017751+08');
+INSERT INTO public.t_audit_log VALUES (34, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.504087+08');
+INSERT INTO public.t_audit_log VALUES (35, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.517143+08');
+INSERT INTO public.t_audit_log VALUES (36, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.523003+08');
+INSERT INTO public.t_audit_log VALUES (37, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.532427+08');
+INSERT INTO public.t_audit_log VALUES (38, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.534771+08');
+INSERT INTO public.t_audit_log VALUES (39, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.534922+08');
+INSERT INTO public.t_audit_log VALUES (40, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.53917+08');
+INSERT INTO public.t_audit_log VALUES (41, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.545688+08');
+INSERT INTO public.t_audit_log VALUES (42, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.547643+08');
+INSERT INTO public.t_audit_log VALUES (43, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.556343+08');
+INSERT INTO public.t_audit_log VALUES (44, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.571769+08');
+INSERT INTO public.t_audit_log VALUES (45, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.573004+08');
+INSERT INTO public.t_audit_log VALUES (46, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.574206+08');
+INSERT INTO public.t_audit_log VALUES (47, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.577384+08');
+INSERT INTO public.t_audit_log VALUES (48, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.578724+08');
+INSERT INTO public.t_audit_log VALUES (49, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.581945+08');
+INSERT INTO public.t_audit_log VALUES (50, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.595393+08');
+INSERT INTO public.t_audit_log VALUES (51, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.607529+08');
+INSERT INTO public.t_audit_log VALUES (52, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.610204+08');
+INSERT INTO public.t_audit_log VALUES (53, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.616578+08');
+INSERT INTO public.t_audit_log VALUES (54, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.619155+08');
+INSERT INTO public.t_audit_log VALUES (55, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.619402+08');
+INSERT INTO public.t_audit_log VALUES (56, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.62297+08');
+INSERT INTO public.t_audit_log VALUES (57, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.63222+08');
+INSERT INTO public.t_audit_log VALUES (58, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.633017+08');
+INSERT INTO public.t_audit_log VALUES (59, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.64495+08');
+INSERT INTO public.t_audit_log VALUES (60, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.653651+08');
+INSERT INTO public.t_audit_log VALUES (61, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.658386+08');
+INSERT INTO public.t_audit_log VALUES (62, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.660364+08');
+INSERT INTO public.t_audit_log VALUES (63, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.661557+08');
+INSERT INTO public.t_audit_log VALUES (64, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.664437+08');
+INSERT INTO public.t_audit_log VALUES (65, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.672051+08');
+INSERT INTO public.t_audit_log VALUES (66, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.675188+08');
+INSERT INTO public.t_audit_log VALUES (67, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.682093+08');
+INSERT INTO public.t_audit_log VALUES (68, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.694671+08');
+INSERT INTO public.t_audit_log VALUES (69, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.696363+08');
+INSERT INTO public.t_audit_log VALUES (70, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.698147+08');
+INSERT INTO public.t_audit_log VALUES (71, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.700028+08');
+INSERT INTO public.t_audit_log VALUES (72, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.702223+08');
+INSERT INTO public.t_audit_log VALUES (73, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.705744+08');
+INSERT INTO public.t_audit_log VALUES (74, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.714604+08');
+INSERT INTO public.t_audit_log VALUES (75, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 09:51:00.715848+08');
+INSERT INTO public.t_audit_log VALUES (76, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.261352+08');
+INSERT INTO public.t_audit_log VALUES (77, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.262476+08');
+INSERT INTO public.t_audit_log VALUES (81, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.288927+08');
+INSERT INTO public.t_audit_log VALUES (82, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.300678+08');
+INSERT INTO public.t_audit_log VALUES (83, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.311695+08');
+INSERT INTO public.t_audit_log VALUES (85, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.313213+08');
+INSERT INTO public.t_audit_log VALUES (87, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.334393+08');
+INSERT INTO public.t_audit_log VALUES (90, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.340154+08');
+INSERT INTO public.t_audit_log VALUES (97, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.444232+08');
+INSERT INTO public.t_audit_log VALUES (103, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.47208+08');
+INSERT INTO public.t_audit_log VALUES (113, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.522118+08');
+INSERT INTO public.t_audit_log VALUES (118, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:39.617921+08');
+INSERT INTO public.t_audit_log VALUES (131, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:11:21.71126+08');
+INSERT INTO public.t_audit_log VALUES (133, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:11:42.352552+08');
+INSERT INTO public.t_audit_log VALUES (166, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.421188+08');
+INSERT INTO public.t_audit_log VALUES (167, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.422921+08');
+INSERT INTO public.t_audit_log VALUES (168, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.426637+08');
+INSERT INTO public.t_audit_log VALUES (169, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.428762+08');
+INSERT INTO public.t_audit_log VALUES (170, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.430729+08');
+INSERT INTO public.t_audit_log VALUES (171, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.436365+08');
+INSERT INTO public.t_audit_log VALUES (172, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.44233+08');
+INSERT INTO public.t_audit_log VALUES (173, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.450923+08');
+INSERT INTO public.t_audit_log VALUES (174, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.451736+08');
+INSERT INTO public.t_audit_log VALUES (175, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.451903+08');
+INSERT INTO public.t_audit_log VALUES (176, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.901235+08');
+INSERT INTO public.t_audit_log VALUES (177, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.922664+08');
+INSERT INTO public.t_audit_log VALUES (178, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.926583+08');
+INSERT INTO public.t_audit_log VALUES (179, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.927838+08');
+INSERT INTO public.t_audit_log VALUES (180, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.928006+08');
+INSERT INTO public.t_audit_log VALUES (181, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.933212+08');
+INSERT INTO public.t_audit_log VALUES (182, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.93504+08');
+INSERT INTO public.t_audit_log VALUES (183, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.944574+08');
+INSERT INTO public.t_audit_log VALUES (184, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.945922+08');
+INSERT INTO public.t_audit_log VALUES (185, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.960058+08');
+INSERT INTO public.t_audit_log VALUES (186, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.961749+08');
+INSERT INTO public.t_audit_log VALUES (187, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.970451+08');
+INSERT INTO public.t_audit_log VALUES (188, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.972498+08');
+INSERT INTO public.t_audit_log VALUES (189, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.979098+08');
+INSERT INTO public.t_audit_log VALUES (190, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.981859+08');
+INSERT INTO public.t_audit_log VALUES (191, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.996425+08');
+INSERT INTO public.t_audit_log VALUES (192, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:38.99776+08');
+INSERT INTO public.t_audit_log VALUES (193, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.001803+08');
+INSERT INTO public.t_audit_log VALUES (194, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.005478+08');
+INSERT INTO public.t_audit_log VALUES (195, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.007714+08');
+INSERT INTO public.t_audit_log VALUES (196, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.009565+08');
+INSERT INTO public.t_audit_log VALUES (197, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.018051+08');
+INSERT INTO public.t_audit_log VALUES (198, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.026245+08');
+INSERT INTO public.t_audit_log VALUES (199, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.038934+08');
+INSERT INTO public.t_audit_log VALUES (200, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.047595+08');
+INSERT INTO public.t_audit_log VALUES (201, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.048693+08');
+INSERT INTO public.t_audit_log VALUES (202, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.049124+08');
+INSERT INTO public.t_audit_log VALUES (203, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.051894+08');
+INSERT INTO public.t_audit_log VALUES (204, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.058042+08');
+INSERT INTO public.t_audit_log VALUES (205, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.062529+08');
+INSERT INTO public.t_audit_log VALUES (206, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.069683+08');
+INSERT INTO public.t_audit_log VALUES (207, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.087676+08');
+INSERT INTO public.t_audit_log VALUES (208, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.089308+08');
+INSERT INTO public.t_audit_log VALUES (209, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.091829+08');
+INSERT INTO public.t_audit_log VALUES (210, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.093933+08');
+INSERT INTO public.t_audit_log VALUES (211, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.096129+08');
+INSERT INTO public.t_audit_log VALUES (212, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.101666+08');
+INSERT INTO public.t_audit_log VALUES (213, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.107897+08');
+INSERT INTO public.t_audit_log VALUES (214, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.113764+08');
+INSERT INTO public.t_audit_log VALUES (215, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.120146+08');
+INSERT INTO public.t_audit_log VALUES (216, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.122759+08');
+INSERT INTO public.t_audit_log VALUES (217, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:39.123526+08');
+INSERT INTO public.t_audit_log VALUES (218, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:53.990667+08');
+INSERT INTO public.t_audit_log VALUES (219, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:53.991473+08');
+INSERT INTO public.t_audit_log VALUES (220, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:53.991633+08');
+INSERT INTO public.t_audit_log VALUES (221, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.709041+08');
+INSERT INTO public.t_audit_log VALUES (222, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.71938+08');
+INSERT INTO public.t_audit_log VALUES (223, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.721576+08');
+INSERT INTO public.t_audit_log VALUES (224, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.721725+08');
+INSERT INTO public.t_audit_log VALUES (225, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.723338+08');
+INSERT INTO public.t_audit_log VALUES (226, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.723484+08');
+INSERT INTO public.t_audit_log VALUES (227, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.730565+08');
+INSERT INTO public.t_audit_log VALUES (228, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.738653+08');
+INSERT INTO public.t_audit_log VALUES (229, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.762684+08');
+INSERT INTO public.t_audit_log VALUES (230, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.764889+08');
+INSERT INTO public.t_audit_log VALUES (231, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.766982+08');
+INSERT INTO public.t_audit_log VALUES (232, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.768749+08');
+INSERT INTO public.t_audit_log VALUES (233, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.774061+08');
+INSERT INTO public.t_audit_log VALUES (234, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.774953+08');
+INSERT INTO public.t_audit_log VALUES (235, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.79821+08');
+INSERT INTO public.t_audit_log VALUES (236, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.802975+08');
+INSERT INTO public.t_audit_log VALUES (237, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.803126+08');
+INSERT INTO public.t_audit_log VALUES (238, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.808852+08');
+INSERT INTO public.t_audit_log VALUES (239, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.809521+08');
+INSERT INTO public.t_audit_log VALUES (240, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.8107+08');
+INSERT INTO public.t_audit_log VALUES (78, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.263712+08');
+INSERT INTO public.t_audit_log VALUES (79, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.285425+08');
+INSERT INTO public.t_audit_log VALUES (80, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.287821+08');
+INSERT INTO public.t_audit_log VALUES (84, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.31149+08');
+INSERT INTO public.t_audit_log VALUES (86, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.319236+08');
+INSERT INTO public.t_audit_log VALUES (88, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.339121+08');
+INSERT INTO public.t_audit_log VALUES (89, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.33937+08');
+INSERT INTO public.t_audit_log VALUES (91, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.349443+08');
+INSERT INTO public.t_audit_log VALUES (92, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.424464+08');
+INSERT INTO public.t_audit_log VALUES (93, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.432852+08');
+INSERT INTO public.t_audit_log VALUES (94, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.434284+08');
+INSERT INTO public.t_audit_log VALUES (95, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.438612+08');
+INSERT INTO public.t_audit_log VALUES (96, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.440232+08');
+INSERT INTO public.t_audit_log VALUES (98, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.451699+08');
+INSERT INTO public.t_audit_log VALUES (99, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.461508+08');
+INSERT INTO public.t_audit_log VALUES (100, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.464+08');
+INSERT INTO public.t_audit_log VALUES (101, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.470394+08');
+INSERT INTO public.t_audit_log VALUES (102, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.471817+08');
+INSERT INTO public.t_audit_log VALUES (104, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.478027+08');
+INSERT INTO public.t_audit_log VALUES (105, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.487569+08');
+INSERT INTO public.t_audit_log VALUES (106, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.489752+08');
+INSERT INTO public.t_audit_log VALUES (107, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.496263+08');
+INSERT INTO public.t_audit_log VALUES (108, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.503616+08');
+INSERT INTO public.t_audit_log VALUES (109, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.50706+08');
+INSERT INTO public.t_audit_log VALUES (110, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.507424+08');
+INSERT INTO public.t_audit_log VALUES (111, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.514723+08');
+INSERT INTO public.t_audit_log VALUES (112, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.521175+08');
+INSERT INTO public.t_audit_log VALUES (114, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.529653+08');
+INSERT INTO public.t_audit_log VALUES (115, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.532579+08');
+INSERT INTO public.t_audit_log VALUES (116, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.533491+08');
+INSERT INTO public.t_audit_log VALUES (117, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:13.536051+08');
+INSERT INTO public.t_audit_log VALUES (119, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:39.618183+08');
+INSERT INTO public.t_audit_log VALUES (120, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 09:55:39.618681+08');
+INSERT INTO public.t_audit_log VALUES (121, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 10:00:07.441281+08');
+INSERT INTO public.t_audit_log VALUES (122, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 10:00:48.503169+08');
+INSERT INTO public.t_audit_log VALUES (123, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 10:00:57.664751+08');
+INSERT INTO public.t_audit_log VALUES (124, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 10:01:06.219277+08');
+INSERT INTO public.t_audit_log VALUES (125, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 10:01:22.63518+08');
+INSERT INTO public.t_audit_log VALUES (126, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 10:01:42.571968+08');
+INSERT INTO public.t_audit_log VALUES (127, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:01:59.145353+08');
+INSERT INTO public.t_audit_log VALUES (128, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 10:02:31.558362+08');
+INSERT INTO public.t_audit_log VALUES (129, 1, 'admin', 'product.delete', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:06:21.126882+08');
+INSERT INTO public.t_audit_log VALUES (130, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 10:06:55.682986+08');
+INSERT INTO public.t_audit_log VALUES (132, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:11:32.651722+08');
+INSERT INTO public.t_audit_log VALUES (134, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.173077+08');
+INSERT INTO public.t_audit_log VALUES (135, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.190168+08');
+INSERT INTO public.t_audit_log VALUES (136, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.191145+08');
+INSERT INTO public.t_audit_log VALUES (137, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.192727+08');
+INSERT INTO public.t_audit_log VALUES (138, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.19298+08');
+INSERT INTO public.t_audit_log VALUES (139, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.199525+08');
+INSERT INTO public.t_audit_log VALUES (140, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.214678+08');
+INSERT INTO public.t_audit_log VALUES (141, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.221024+08');
+INSERT INTO public.t_audit_log VALUES (142, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.233703+08');
+INSERT INTO public.t_audit_log VALUES (143, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.235281+08');
+INSERT INTO public.t_audit_log VALUES (144, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.235435+08');
+INSERT INTO public.t_audit_log VALUES (145, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.24147+08');
+INSERT INTO public.t_audit_log VALUES (146, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.244714+08');
+INSERT INTO public.t_audit_log VALUES (147, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.247716+08');
+INSERT INTO public.t_audit_log VALUES (148, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.256808+08');
+INSERT INTO public.t_audit_log VALUES (149, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.261577+08');
+INSERT INTO public.t_audit_log VALUES (150, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.261985+08');
+INSERT INTO public.t_audit_log VALUES (151, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.276245+08');
+INSERT INTO public.t_audit_log VALUES (152, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.279383+08');
+INSERT INTO public.t_audit_log VALUES (153, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.281835+08');
+INSERT INTO public.t_audit_log VALUES (154, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.284466+08');
+INSERT INTO public.t_audit_log VALUES (155, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.291687+08');
+INSERT INTO public.t_audit_log VALUES (156, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.292647+08');
+INSERT INTO public.t_audit_log VALUES (157, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.36572+08');
+INSERT INTO public.t_audit_log VALUES (158, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.373434+08');
+INSERT INTO public.t_audit_log VALUES (159, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.383375+08');
+INSERT INTO public.t_audit_log VALUES (160, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.384717+08');
+INSERT INTO public.t_audit_log VALUES (161, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.385075+08');
+INSERT INTO public.t_audit_log VALUES (162, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.386115+08');
+INSERT INTO public.t_audit_log VALUES (163, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.391942+08');
+INSERT INTO public.t_audit_log VALUES (164, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.395327+08');
+INSERT INTO public.t_audit_log VALUES (165, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 10:14:16.415193+08');
+INSERT INTO public.t_audit_log VALUES (241, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.819441+08');
+INSERT INTO public.t_audit_log VALUES (244, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.841749+08');
+INSERT INTO public.t_audit_log VALUES (242, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.826413+08');
+INSERT INTO public.t_audit_log VALUES (251, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.871776+08');
+INSERT INTO public.t_audit_log VALUES (254, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.885135+08');
+INSERT INTO public.t_audit_log VALUES (260, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.911685+08');
+INSERT INTO public.t_audit_log VALUES (263, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 10:30:53.763929+08');
+INSERT INTO public.t_audit_log VALUES (243, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.829151+08');
+INSERT INTO public.t_audit_log VALUES (246, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.844175+08');
+INSERT INTO public.t_audit_log VALUES (248, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.852839+08');
+INSERT INTO public.t_audit_log VALUES (255, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.886334+08');
+INSERT INTO public.t_audit_log VALUES (258, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.905262+08');
+INSERT INTO public.t_audit_log VALUES (261, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.912904+08');
+INSERT INTO public.t_audit_log VALUES (245, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.843463+08');
+INSERT INTO public.t_audit_log VALUES (250, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.867428+08');
+INSERT INTO public.t_audit_log VALUES (252, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.879584+08');
+INSERT INTO public.t_audit_log VALUES (257, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.895401+08');
+INSERT INTO public.t_audit_log VALUES (262, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.915429+08');
+INSERT INTO public.t_audit_log VALUES (247, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.847226+08');
+INSERT INTO public.t_audit_log VALUES (249, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.854004+08');
+INSERT INTO public.t_audit_log VALUES (253, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.880841+08');
+INSERT INTO public.t_audit_log VALUES (256, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.893195+08');
+INSERT INTO public.t_audit_log VALUES (259, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 10:29:51.910668+08');
+INSERT INTO public.t_audit_log VALUES (264, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.647531+08');
+INSERT INTO public.t_audit_log VALUES (265, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.648529+08');
+INSERT INTO public.t_audit_log VALUES (266, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.650527+08');
+INSERT INTO public.t_audit_log VALUES (267, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.650527+08');
+INSERT INTO public.t_audit_log VALUES (268, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.650527+08');
+INSERT INTO public.t_audit_log VALUES (269, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.652531+08');
+INSERT INTO public.t_audit_log VALUES (270, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.679532+08');
+INSERT INTO public.t_audit_log VALUES (271, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.680531+08');
+INSERT INTO public.t_audit_log VALUES (272, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.685528+08');
+INSERT INTO public.t_audit_log VALUES (273, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.685528+08');
+INSERT INTO public.t_audit_log VALUES (274, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.686529+08');
+INSERT INTO public.t_audit_log VALUES (275, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.689527+08');
+INSERT INTO public.t_audit_log VALUES (276, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.700527+08');
+INSERT INTO public.t_audit_log VALUES (277, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.702527+08');
+INSERT INTO public.t_audit_log VALUES (278, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.717541+08');
+INSERT INTO public.t_audit_log VALUES (279, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.720527+08');
+INSERT INTO public.t_audit_log VALUES (280, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.721528+08');
+INSERT INTO public.t_audit_log VALUES (281, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.722527+08');
+INSERT INTO public.t_audit_log VALUES (282, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.727529+08');
+INSERT INTO public.t_audit_log VALUES (283, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.728527+08');
+INSERT INTO public.t_audit_log VALUES (284, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.746527+08');
+INSERT INTO public.t_audit_log VALUES (285, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.747528+08');
+INSERT INTO public.t_audit_log VALUES (286, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.75353+08');
+INSERT INTO public.t_audit_log VALUES (287, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.758536+08');
+INSERT INTO public.t_audit_log VALUES (288, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.759529+08');
+INSERT INTO public.t_audit_log VALUES (289, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.761528+08');
+INSERT INTO public.t_audit_log VALUES (290, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.771536+08');
+INSERT INTO public.t_audit_log VALUES (291, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.776529+08');
+INSERT INTO public.t_audit_log VALUES (292, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.78153+08');
+INSERT INTO public.t_audit_log VALUES (293, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.790528+08');
+INSERT INTO public.t_audit_log VALUES (294, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.792527+08');
+INSERT INTO public.t_audit_log VALUES (295, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.792527+08');
+INSERT INTO public.t_audit_log VALUES (296, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.797528+08');
+INSERT INTO public.t_audit_log VALUES (297, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.802529+08');
+INSERT INTO public.t_audit_log VALUES (298, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.807537+08');
+INSERT INTO public.t_audit_log VALUES (299, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.818526+08');
+INSERT INTO public.t_audit_log VALUES (300, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.822527+08');
+INSERT INTO public.t_audit_log VALUES (301, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.823527+08');
+INSERT INTO public.t_audit_log VALUES (302, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.825527+08');
+INSERT INTO public.t_audit_log VALUES (303, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.831535+08');
+INSERT INTO public.t_audit_log VALUES (304, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.832527+08');
+INSERT INTO public.t_audit_log VALUES (305, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:54:35.835527+08');
+INSERT INTO public.t_audit_log VALUES (306, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.535891+08');
+INSERT INTO public.t_audit_log VALUES (307, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.536893+08');
+INSERT INTO public.t_audit_log VALUES (308, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.536893+08');
+INSERT INTO public.t_audit_log VALUES (309, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.55643+08');
+INSERT INTO public.t_audit_log VALUES (310, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.557447+08');
+INSERT INTO public.t_audit_log VALUES (311, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.558444+08');
+INSERT INTO public.t_audit_log VALUES (312, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.584437+08');
+INSERT INTO public.t_audit_log VALUES (313, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.627443+08');
+INSERT INTO public.t_audit_log VALUES (314, 1, 'admin', 'news.update', 'news:{news_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:56:54.669835+08');
+INSERT INTO public.t_audit_log VALUES (315, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:57:40.531135+08');
+INSERT INTO public.t_audit_log VALUES (316, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:57:40.532135+08');
+INSERT INTO public.t_audit_log VALUES (317, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 10:57:40.532135+08');
+INSERT INTO public.t_audit_log VALUES (318, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.287461+08');
+INSERT INTO public.t_audit_log VALUES (319, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.305467+08');
+INSERT INTO public.t_audit_log VALUES (320, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.309461+08');
+INSERT INTO public.t_audit_log VALUES (321, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.311461+08');
+INSERT INTO public.t_audit_log VALUES (322, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.312461+08');
+INSERT INTO public.t_audit_log VALUES (323, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.313472+08');
+INSERT INTO public.t_audit_log VALUES (324, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.316461+08');
+INSERT INTO public.t_audit_log VALUES (325, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.323461+08');
+INSERT INTO public.t_audit_log VALUES (326, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.335468+08');
+INSERT INTO public.t_audit_log VALUES (327, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.33946+08');
+INSERT INTO public.t_audit_log VALUES (328, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.346461+08');
+INSERT INTO public.t_audit_log VALUES (329, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.346461+08');
+INSERT INTO public.t_audit_log VALUES (330, 1, 'admin', 'product.update', 'product:{product_id}', 'SUCCESS', '127.0.0.1', '2026-07-22 11:17:33.347467+08');
+INSERT INTO public.t_audit_log VALUES (331, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:32:03.648341+08');
+INSERT INTO public.t_audit_log VALUES (332, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:32:03.64857+08');
+INSERT INTO public.t_audit_log VALUES (333, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:32:03.649194+08');
+INSERT INTO public.t_audit_log VALUES (334, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:36:31.168468+08');
+INSERT INTO public.t_audit_log VALUES (335, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:36:31.711737+08');
+INSERT INTO public.t_audit_log VALUES (336, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:39:18.17614+08');
+INSERT INTO public.t_audit_log VALUES (337, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:39:18.745439+08');
+INSERT INTO public.t_audit_log VALUES (338, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:40:19.559827+08');
+INSERT INTO public.t_audit_log VALUES (339, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:40:21.181211+08');
+INSERT INTO public.t_audit_log VALUES (340, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:40:21.452142+08');
+INSERT INTO public.t_audit_log VALUES (341, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:40:23.062966+08');
+INSERT INTO public.t_audit_log VALUES (342, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:43:28.395994+08');
+INSERT INTO public.t_audit_log VALUES (343, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:43:28.492057+08');
+INSERT INTO public.t_audit_log VALUES (344, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:43:28.563785+08');
+INSERT INTO public.t_audit_log VALUES (345, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:45:17.39944+08');
+INSERT INTO public.t_audit_log VALUES (346, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:45:17.399276+08');
+INSERT INTO public.t_audit_log VALUES (347, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:45:17.400521+08');
+INSERT INTO public.t_audit_log VALUES (348, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:45:35.986258+08');
+INSERT INTO public.t_audit_log VALUES (349, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.78353+08');
+INSERT INTO public.t_audit_log VALUES (350, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.790834+08');
+INSERT INTO public.t_audit_log VALUES (351, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.792966+08');
+INSERT INTO public.t_audit_log VALUES (352, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.794174+08');
+INSERT INTO public.t_audit_log VALUES (353, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.797285+08');
+INSERT INTO public.t_audit_log VALUES (354, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.798837+08');
+INSERT INTO public.t_audit_log VALUES (355, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.804714+08');
+INSERT INTO public.t_audit_log VALUES (356, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.813368+08');
+INSERT INTO public.t_audit_log VALUES (357, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.831132+08');
+INSERT INTO public.t_audit_log VALUES (358, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.833142+08');
+INSERT INTO public.t_audit_log VALUES (359, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.834934+08');
+INSERT INTO public.t_audit_log VALUES (360, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.83667+08');
+INSERT INTO public.t_audit_log VALUES (361, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.837549+08');
+INSERT INTO public.t_audit_log VALUES (362, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.839107+08');
+INSERT INTO public.t_audit_log VALUES (363, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.890981+08');
+INSERT INTO public.t_audit_log VALUES (364, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.907166+08');
+INSERT INTO public.t_audit_log VALUES (365, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.908964+08');
+INSERT INTO public.t_audit_log VALUES (366, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.90853+08');
+INSERT INTO public.t_audit_log VALUES (367, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.909735+08');
+INSERT INTO public.t_audit_log VALUES (368, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.910959+08');
+INSERT INTO public.t_audit_log VALUES (369, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.915799+08');
+INSERT INTO public.t_audit_log VALUES (370, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.93452+08');
+INSERT INTO public.t_audit_log VALUES (371, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.948001+08');
+INSERT INTO public.t_audit_log VALUES (372, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.949226+08');
+INSERT INTO public.t_audit_log VALUES (373, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.950883+08');
+INSERT INTO public.t_audit_log VALUES (374, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.951493+08');
+INSERT INTO public.t_audit_log VALUES (375, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.953089+08');
+INSERT INTO public.t_audit_log VALUES (376, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.959886+08');
+INSERT INTO public.t_audit_log VALUES (377, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.964501+08');
+INSERT INTO public.t_audit_log VALUES (378, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.98297+08');
+INSERT INTO public.t_audit_log VALUES (379, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.984266+08');
+INSERT INTO public.t_audit_log VALUES (380, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.985673+08');
+INSERT INTO public.t_audit_log VALUES (381, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.987877+08');
+INSERT INTO public.t_audit_log VALUES (382, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.990337+08');
+INSERT INTO public.t_audit_log VALUES (383, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.993342+08');
+INSERT INTO public.t_audit_log VALUES (384, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:51.999578+08');
+INSERT INTO public.t_audit_log VALUES (385, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.015696+08');
+INSERT INTO public.t_audit_log VALUES (386, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.020706+08');
+INSERT INTO public.t_audit_log VALUES (387, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.022675+08');
+INSERT INTO public.t_audit_log VALUES (388, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.024354+08');
+INSERT INTO public.t_audit_log VALUES (389, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.026212+08');
+INSERT INTO public.t_audit_log VALUES (390, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:49:52.027278+08');
+INSERT INTO public.t_audit_log VALUES (391, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.595785+08');
+INSERT INTO public.t_audit_log VALUES (392, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.597676+08');
+INSERT INTO public.t_audit_log VALUES (393, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.598855+08');
+INSERT INTO public.t_audit_log VALUES (394, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.599002+08');
+INSERT INTO public.t_audit_log VALUES (395, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.599338+08');
+INSERT INTO public.t_audit_log VALUES (396, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.599192+08');
+INSERT INTO public.t_audit_log VALUES (397, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.614252+08');
+INSERT INTO public.t_audit_log VALUES (398, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.618658+08');
+INSERT INTO public.t_audit_log VALUES (399, 1, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:19.619165+08');
+INSERT INTO public.t_audit_log VALUES (400, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.642817+08');
+INSERT INTO public.t_audit_log VALUES (401, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.643149+08');
+INSERT INTO public.t_audit_log VALUES (402, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.644186+08');
+INSERT INTO public.t_audit_log VALUES (403, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.644523+08');
+INSERT INTO public.t_audit_log VALUES (404, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.644917+08');
+INSERT INTO public.t_audit_log VALUES (405, 1, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.645276+08');
+INSERT INTO public.t_audit_log VALUES (406, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.666945+08');
+INSERT INTO public.t_audit_log VALUES (407, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.66895+08');
+INSERT INTO public.t_audit_log VALUES (408, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:50:37.669133+08');
+INSERT INTO public.t_audit_log VALUES (409, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:51:39.97925+08');
+INSERT INTO public.t_audit_log VALUES (410, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:51:39.979436+08');
+INSERT INTO public.t_audit_log VALUES (411, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:51:39.980005+08');
+INSERT INTO public.t_audit_log VALUES (412, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:06.897729+08');
+INSERT INTO public.t_audit_log VALUES (414, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:06.900195+08');
+INSERT INTO public.t_audit_log VALUES (413, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:06.900013+08');
+INSERT INTO public.t_audit_log VALUES (415, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:24.468126+08');
+INSERT INTO public.t_audit_log VALUES (416, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:24.469004+08');
+INSERT INTO public.t_audit_log VALUES (417, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:55:24.469196+08');
+INSERT INTO public.t_audit_log VALUES (418, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.0433+08');
+INSERT INTO public.t_audit_log VALUES (419, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.048276+08');
+INSERT INTO public.t_audit_log VALUES (420, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.066888+08');
+INSERT INTO public.t_audit_log VALUES (421, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.070657+08');
+INSERT INTO public.t_audit_log VALUES (422, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.073088+08');
+INSERT INTO public.t_audit_log VALUES (423, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.075599+08');
+INSERT INTO public.t_audit_log VALUES (424, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.077746+08');
+INSERT INTO public.t_audit_log VALUES (425, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.08067+08');
+INSERT INTO public.t_audit_log VALUES (426, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.090296+08');
+INSERT INTO public.t_audit_log VALUES (427, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.098396+08');
+INSERT INTO public.t_audit_log VALUES (428, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.10366+08');
+INSERT INTO public.t_audit_log VALUES (429, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.113292+08');
+INSERT INTO public.t_audit_log VALUES (430, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.115149+08');
+INSERT INTO public.t_audit_log VALUES (431, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.115239+08');
+INSERT INTO public.t_audit_log VALUES (432, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.117671+08');
+INSERT INTO public.t_audit_log VALUES (433, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.126706+08');
+INSERT INTO public.t_audit_log VALUES (434, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.127569+08');
+INSERT INTO public.t_audit_log VALUES (435, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.141388+08');
+INSERT INTO public.t_audit_log VALUES (436, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.147968+08');
+INSERT INTO public.t_audit_log VALUES (437, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.14977+08');
+INSERT INTO public.t_audit_log VALUES (438, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.151634+08');
+INSERT INTO public.t_audit_log VALUES (439, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.156433+08');
+INSERT INTO public.t_audit_log VALUES (440, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.158294+08');
+INSERT INTO public.t_audit_log VALUES (441, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.163645+08');
+INSERT INTO public.t_audit_log VALUES (442, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.175211+08');
+INSERT INTO public.t_audit_log VALUES (443, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.18262+08');
+INSERT INTO public.t_audit_log VALUES (444, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.185875+08');
+INSERT INTO public.t_audit_log VALUES (445, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.192092+08');
+INSERT INTO public.t_audit_log VALUES (446, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.195021+08');
+INSERT INTO public.t_audit_log VALUES (447, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.197274+08');
+INSERT INTO public.t_audit_log VALUES (448, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.20293+08');
+INSERT INTO public.t_audit_log VALUES (449, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.237758+08');
+INSERT INTO public.t_audit_log VALUES (450, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.23829+08');
+INSERT INTO public.t_audit_log VALUES (451, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.244311+08');
+INSERT INTO public.t_audit_log VALUES (452, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.253855+08');
+INSERT INTO public.t_audit_log VALUES (453, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.25514+08');
+INSERT INTO public.t_audit_log VALUES (454, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.256217+08');
+INSERT INTO public.t_audit_log VALUES (455, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.266411+08');
+INSERT INTO public.t_audit_log VALUES (456, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.268669+08');
+INSERT INTO public.t_audit_log VALUES (457, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.270287+08');
+INSERT INTO public.t_audit_log VALUES (458, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.277366+08');
+INSERT INTO public.t_audit_log VALUES (459, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:02.27852+08');
+INSERT INTO public.t_audit_log VALUES (460, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.126628+08');
+INSERT INTO public.t_audit_log VALUES (461, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.126872+08');
+INSERT INTO public.t_audit_log VALUES (462, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.127763+08');
+INSERT INTO public.t_audit_log VALUES (463, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.127985+08');
+INSERT INTO public.t_audit_log VALUES (464, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.128164+08');
+INSERT INTO public.t_audit_log VALUES (465, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.128982+08');
+INSERT INTO public.t_audit_log VALUES (466, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.149617+08');
+INSERT INTO public.t_audit_log VALUES (467, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.149773+08');
+INSERT INTO public.t_audit_log VALUES (468, 1, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:24.149936+08');
+INSERT INTO public.t_audit_log VALUES (469, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.670419+08');
+INSERT INTO public.t_audit_log VALUES (470, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.672082+08');
+INSERT INTO public.t_audit_log VALUES (471, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.68201+08');
+INSERT INTO public.t_audit_log VALUES (472, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.684323+08');
+INSERT INTO public.t_audit_log VALUES (473, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.685373+08');
+INSERT INTO public.t_audit_log VALUES (474, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.686371+08');
+INSERT INTO public.t_audit_log VALUES (475, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.695694+08');
+INSERT INTO public.t_audit_log VALUES (476, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.696508+08');
+INSERT INTO public.t_audit_log VALUES (477, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.709275+08');
+INSERT INTO public.t_audit_log VALUES (478, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.714151+08');
+INSERT INTO public.t_audit_log VALUES (479, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.719476+08');
+INSERT INTO public.t_audit_log VALUES (480, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.72109+08');
+INSERT INTO public.t_audit_log VALUES (481, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.723649+08');
+INSERT INTO public.t_audit_log VALUES (482, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.725693+08');
+INSERT INTO public.t_audit_log VALUES (483, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.733455+08');
+INSERT INTO public.t_audit_log VALUES (484, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.740419+08');
+INSERT INTO public.t_audit_log VALUES (489, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.766482+08');
+INSERT INTO public.t_audit_log VALUES (504, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.850179+08');
+INSERT INTO public.t_audit_log VALUES (485, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.7449+08');
+INSERT INTO public.t_audit_log VALUES (487, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.759371+08');
+INSERT INTO public.t_audit_log VALUES (490, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.772869+08');
+INSERT INTO public.t_audit_log VALUES (491, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.774564+08');
+INSERT INTO public.t_audit_log VALUES (495, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.810501+08');
+INSERT INTO public.t_audit_log VALUES (509, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.869497+08');
+INSERT INTO public.t_audit_log VALUES (510, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.870827+08');
+INSERT INTO public.t_audit_log VALUES (486, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.756581+08');
+INSERT INTO public.t_audit_log VALUES (494, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.797911+08');
+INSERT INTO public.t_audit_log VALUES (497, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.814199+08');
+INSERT INTO public.t_audit_log VALUES (499, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.818616+08');
+INSERT INTO public.t_audit_log VALUES (503, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.849054+08');
+INSERT INTO public.t_audit_log VALUES (508, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.866394+08');
+INSERT INTO public.t_audit_log VALUES (488, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.759544+08');
+INSERT INTO public.t_audit_log VALUES (493, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.792278+08');
+INSERT INTO public.t_audit_log VALUES (496, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.812302+08');
+INSERT INTO public.t_audit_log VALUES (500, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.823354+08');
+INSERT INTO public.t_audit_log VALUES (505, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.851925+08');
+INSERT INTO public.t_audit_log VALUES (506, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.854332+08');
+INSERT INTO public.t_audit_log VALUES (492, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.778194+08');
+INSERT INTO public.t_audit_log VALUES (498, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.816597+08');
+INSERT INTO public.t_audit_log VALUES (501, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.833644+08');
+INSERT INTO public.t_audit_log VALUES (502, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.844313+08');
+INSERT INTO public.t_audit_log VALUES (507, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:58:36.861136+08');
+INSERT INTO public.t_audit_log VALUES (511, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:35.198442+08');
+INSERT INTO public.t_audit_log VALUES (512, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:35.661314+08');
+INSERT INTO public.t_audit_log VALUES (513, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:36.101618+08');
+INSERT INTO public.t_audit_log VALUES (514, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:36.547067+08');
+INSERT INTO public.t_audit_log VALUES (515, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:36.979973+08');
+INSERT INTO public.t_audit_log VALUES (516, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:37.406836+08');
+INSERT INTO public.t_audit_log VALUES (517, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:37.847865+08');
+INSERT INTO public.t_audit_log VALUES (518, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:38.298603+08');
+INSERT INTO public.t_audit_log VALUES (519, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:38.757501+08');
+INSERT INTO public.t_audit_log VALUES (520, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:39.192394+08');
+INSERT INTO public.t_audit_log VALUES (521, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:39.644343+08');
+INSERT INTO public.t_audit_log VALUES (522, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:40.077806+08');
+INSERT INTO public.t_audit_log VALUES (523, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:40.5347+08');
+INSERT INTO public.t_audit_log VALUES (524, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:40.982871+08');
+INSERT INTO public.t_audit_log VALUES (525, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:41.407685+08');
+INSERT INTO public.t_audit_log VALUES (526, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:41.84239+08');
+INSERT INTO public.t_audit_log VALUES (527, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:42.297614+08');
+INSERT INTO public.t_audit_log VALUES (528, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:42.73643+08');
+INSERT INTO public.t_audit_log VALUES (529, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:43.173359+08');
+INSERT INTO public.t_audit_log VALUES (530, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:43.628111+08');
+INSERT INTO public.t_audit_log VALUES (531, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:44.078181+08');
+INSERT INTO public.t_audit_log VALUES (532, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:44.53749+08');
+INSERT INTO public.t_audit_log VALUES (533, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:44.980285+08');
+INSERT INTO public.t_audit_log VALUES (534, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:45.433607+08');
+INSERT INTO public.t_audit_log VALUES (535, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:45.872295+08');
+INSERT INTO public.t_audit_log VALUES (536, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:46.305078+08');
+INSERT INTO public.t_audit_log VALUES (537, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:46.753738+08');
+INSERT INTO public.t_audit_log VALUES (538, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:47.203977+08');
+INSERT INTO public.t_audit_log VALUES (539, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:47.659592+08');
+INSERT INTO public.t_audit_log VALUES (540, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:48.108378+08');
+INSERT INTO public.t_audit_log VALUES (541, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:48.583391+08');
+INSERT INTO public.t_audit_log VALUES (542, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:49.024123+08');
+INSERT INTO public.t_audit_log VALUES (543, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:49.450529+08');
+INSERT INTO public.t_audit_log VALUES (544, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:49.919109+08');
+INSERT INTO public.t_audit_log VALUES (545, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:50.372729+08');
+INSERT INTO public.t_audit_log VALUES (546, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:50.812046+08');
+INSERT INTO public.t_audit_log VALUES (547, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:51.271871+08');
+INSERT INTO public.t_audit_log VALUES (548, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:51.73271+08');
+INSERT INTO public.t_audit_log VALUES (549, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:52.161711+08');
+INSERT INTO public.t_audit_log VALUES (550, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:52.596855+08');
+INSERT INTO public.t_audit_log VALUES (551, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:53.047569+08');
+INSERT INTO public.t_audit_log VALUES (552, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 11:59:53.511847+08');
+INSERT INTO public.t_audit_log VALUES (553, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 12:00:09.391444+08');
+INSERT INTO public.t_audit_log VALUES (554, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 12:00:51.6346+08');
+INSERT INTO public.t_audit_log VALUES (555, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 12:00:52.217325+08');
+INSERT INTO public.t_audit_log VALUES (556, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.096741+08');
+INSERT INTO public.t_audit_log VALUES (557, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.097691+08');
+INSERT INTO public.t_audit_log VALUES (558, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.112965+08');
+INSERT INTO public.t_audit_log VALUES (559, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.115433+08');
+INSERT INTO public.t_audit_log VALUES (560, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.127603+08');
+INSERT INTO public.t_audit_log VALUES (561, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.131793+08');
+INSERT INTO public.t_audit_log VALUES (562, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.136385+08');
+INSERT INTO public.t_audit_log VALUES (563, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.145535+08');
+INSERT INTO public.t_audit_log VALUES (564, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.149693+08');
+INSERT INTO public.t_audit_log VALUES (565, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.154819+08');
+INSERT INTO public.t_audit_log VALUES (566, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.163008+08');
+INSERT INTO public.t_audit_log VALUES (567, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.167895+08');
+INSERT INTO public.t_audit_log VALUES (568, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.173773+08');
+INSERT INTO public.t_audit_log VALUES (569, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.179918+08');
+INSERT INTO public.t_audit_log VALUES (570, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.183441+08');
+INSERT INTO public.t_audit_log VALUES (571, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.190406+08');
+INSERT INTO public.t_audit_log VALUES (572, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.197715+08');
+INSERT INTO public.t_audit_log VALUES (573, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.199518+08');
+INSERT INTO public.t_audit_log VALUES (574, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.20582+08');
+INSERT INTO public.t_audit_log VALUES (575, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.216854+08');
+INSERT INTO public.t_audit_log VALUES (576, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.220105+08');
+INSERT INTO public.t_audit_log VALUES (577, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.224921+08');
+INSERT INTO public.t_audit_log VALUES (578, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.229611+08');
+INSERT INTO public.t_audit_log VALUES (579, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.237898+08');
+INSERT INTO public.t_audit_log VALUES (580, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.241834+08');
+INSERT INTO public.t_audit_log VALUES (581, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.244524+08');
+INSERT INTO public.t_audit_log VALUES (584, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.262093+08');
+INSERT INTO public.t_audit_log VALUES (582, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.24896+08');
+INSERT INTO public.t_audit_log VALUES (583, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.258699+08');
+INSERT INTO public.t_audit_log VALUES (588, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.283378+08');
+INSERT INTO public.t_audit_log VALUES (591, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.294221+08');
+INSERT INTO public.t_audit_log VALUES (592, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.297178+08');
+INSERT INTO public.t_audit_log VALUES (596, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.314064+08');
+INSERT INTO public.t_audit_log VALUES (597, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.315243+08');
+INSERT INTO public.t_audit_log VALUES (585, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.26328+08');
+INSERT INTO public.t_audit_log VALUES (586, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.265762+08');
+INSERT INTO public.t_audit_log VALUES (587, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.272323+08');
+INSERT INTO public.t_audit_log VALUES (589, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.288972+08');
+INSERT INTO public.t_audit_log VALUES (590, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.28922+08');
+INSERT INTO public.t_audit_log VALUES (593, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.301873+08');
+INSERT INTO public.t_audit_log VALUES (594, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.308341+08');
+INSERT INTO public.t_audit_log VALUES (595, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 12:40:37.313085+08');
+INSERT INTO public.t_audit_log VALUES (598, 1, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.324257+08');
+INSERT INTO public.t_audit_log VALUES (599, 1, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.324496+08');
+INSERT INTO public.t_audit_log VALUES (600, 1, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.325402+08');
+INSERT INTO public.t_audit_log VALUES (601, 1, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.325532+08');
+INSERT INTO public.t_audit_log VALUES (602, 1, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.325756+08');
+INSERT INTO public.t_audit_log VALUES (603, 1, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.348194+08');
+INSERT INTO public.t_audit_log VALUES (604, 1, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.348871+08');
+INSERT INTO public.t_audit_log VALUES (605, 1, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.349033+08');
+INSERT INTO public.t_audit_log VALUES (606, 1, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-22 12:44:15.371071+08');
+INSERT INTO public.t_audit_log VALUES (609, 1, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.637568+08');
+INSERT INTO public.t_audit_log VALUES (608, 1, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.636618+08');
+INSERT INTO public.t_audit_log VALUES (607, 1, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.634782+08');
+INSERT INTO public.t_audit_log VALUES (610, 1, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.638911+08');
+INSERT INTO public.t_audit_log VALUES (612, 1, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.639361+08');
+INSERT INTO public.t_audit_log VALUES (611, 1, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.639071+08');
+INSERT INTO public.t_audit_log VALUES (613, 1, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.67435+08');
+INSERT INTO public.t_audit_log VALUES (614, 1, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.676588+08');
+INSERT INTO public.t_audit_log VALUES (615, 1, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.677588+08');
+INSERT INTO public.t_audit_log VALUES (616, 1, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.679012+08');
+INSERT INTO public.t_audit_log VALUES (617, 1, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.67935+08');
+INSERT INTO public.t_audit_log VALUES (618, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.680575+08');
+INSERT INTO public.t_audit_log VALUES (619, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.690856+08');
+INSERT INTO public.t_audit_log VALUES (620, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.713277+08');
+INSERT INTO public.t_audit_log VALUES (621, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.716162+08');
+INSERT INTO public.t_audit_log VALUES (622, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.717936+08');
+INSERT INTO public.t_audit_log VALUES (623, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.718203+08');
+INSERT INTO public.t_audit_log VALUES (624, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.71986+08');
+INSERT INTO public.t_audit_log VALUES (625, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.72452+08');
+INSERT INTO public.t_audit_log VALUES (626, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.732497+08');
+INSERT INTO public.t_audit_log VALUES (627, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.747716+08');
+INSERT INTO public.t_audit_log VALUES (628, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.752263+08');
+INSERT INTO public.t_audit_log VALUES (629, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.754381+08');
+INSERT INTO public.t_audit_log VALUES (630, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.756366+08');
+INSERT INTO public.t_audit_log VALUES (631, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.758768+08');
+INSERT INTO public.t_audit_log VALUES (632, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.760861+08');
+INSERT INTO public.t_audit_log VALUES (633, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.770742+08');
+INSERT INTO public.t_audit_log VALUES (634, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.773952+08');
+INSERT INTO public.t_audit_log VALUES (635, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.780478+08');
+INSERT INTO public.t_audit_log VALUES (636, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.786198+08');
+INSERT INTO public.t_audit_log VALUES (637, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.796062+08');
+INSERT INTO public.t_audit_log VALUES (638, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.798061+08');
+INSERT INTO public.t_audit_log VALUES (639, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.801461+08');
+INSERT INTO public.t_audit_log VALUES (640, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.802753+08');
+INSERT INTO public.t_audit_log VALUES (641, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.81328+08');
+INSERT INTO public.t_audit_log VALUES (642, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.817122+08');
+INSERT INTO public.t_audit_log VALUES (643, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.830014+08');
+INSERT INTO public.t_audit_log VALUES (644, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.835071+08');
+INSERT INTO public.t_audit_log VALUES (645, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.83595+08');
+INSERT INTO public.t_audit_log VALUES (646, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.836359+08');
+INSERT INTO public.t_audit_log VALUES (647, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.841769+08');
+INSERT INTO public.t_audit_log VALUES (648, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 13:46:43.841974+08');
+INSERT INTO public.t_audit_log VALUES (649, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 14:06:41.56715+08');
+INSERT INTO public.t_audit_log VALUES (650, 1, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-22 14:06:41.567919+08');
+INSERT INTO public.t_audit_log VALUES (651, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 14:06:41.661404+08');
+INSERT INTO public.t_audit_log VALUES (652, 1, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.120819+08');
+INSERT INTO public.t_audit_log VALUES (653, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.124058+08');
+INSERT INTO public.t_audit_log VALUES (654, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.127185+08');
+INSERT INTO public.t_audit_log VALUES (655, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.12782+08');
+INSERT INTO public.t_audit_log VALUES (656, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.129553+08');
+INSERT INTO public.t_audit_log VALUES (657, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.133306+08');
+INSERT INTO public.t_audit_log VALUES (658, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.138808+08');
+INSERT INTO public.t_audit_log VALUES (659, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.158937+08');
+INSERT INTO public.t_audit_log VALUES (660, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.161507+08');
+INSERT INTO public.t_audit_log VALUES (661, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.164807+08');
+INSERT INTO public.t_audit_log VALUES (662, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.164369+08');
+INSERT INTO public.t_audit_log VALUES (663, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.166435+08');
+INSERT INTO public.t_audit_log VALUES (664, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.167815+08');
+INSERT INTO public.t_audit_log VALUES (665, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.176123+08');
+INSERT INTO public.t_audit_log VALUES (666, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.190249+08');
+INSERT INTO public.t_audit_log VALUES (669, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.197034+08');
+INSERT INTO public.t_audit_log VALUES (667, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.195412+08');
+INSERT INTO public.t_audit_log VALUES (668, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.196078+08');
+INSERT INTO public.t_audit_log VALUES (670, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 14:07:02.197653+08');
+INSERT INTO public.t_audit_log VALUES (671, 1, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.771099+08');
+INSERT INTO public.t_audit_log VALUES (672, 1, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.772218+08');
+INSERT INTO public.t_audit_log VALUES (673, 1, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.773001+08');
+INSERT INTO public.t_audit_log VALUES (674, 1, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.823791+08');
+INSERT INTO public.t_audit_log VALUES (675, 1, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.828718+08');
+INSERT INTO public.t_audit_log VALUES (676, 1, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.829772+08');
+INSERT INTO public.t_audit_log VALUES (677, 1, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.831349+08');
+INSERT INTO public.t_audit_log VALUES (678, 1, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.846705+08');
+INSERT INTO public.t_audit_log VALUES (679, 1, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.869539+08');
+INSERT INTO public.t_audit_log VALUES (680, 1, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.873714+08');
+INSERT INTO public.t_audit_log VALUES (681, 1, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.875036+08');
+INSERT INTO public.t_audit_log VALUES (682, 1, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.87687+08');
+INSERT INTO public.t_audit_log VALUES (683, 1, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.885766+08');
+INSERT INTO public.t_audit_log VALUES (684, 1, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.903202+08');
+INSERT INTO public.t_audit_log VALUES (685, 1, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.904812+08');
+INSERT INTO public.t_audit_log VALUES (686, 1, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.905874+08');
+INSERT INTO public.t_audit_log VALUES (687, 1, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.910497+08');
+INSERT INTO public.t_audit_log VALUES (688, 1, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.914344+08');
+INSERT INTO public.t_audit_log VALUES (689, 1, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.921397+08');
+INSERT INTO public.t_audit_log VALUES (690, 1, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.929155+08');
+INSERT INTO public.t_audit_log VALUES (691, 1, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.936581+08');
+INSERT INTO public.t_audit_log VALUES (692, 1, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.938318+08');
+INSERT INTO public.t_audit_log VALUES (693, 1, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.941421+08');
+INSERT INTO public.t_audit_log VALUES (694, 1, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.945999+08');
+INSERT INTO public.t_audit_log VALUES (695, 1, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.949528+08');
+INSERT INTO public.t_audit_log VALUES (696, 1, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.961528+08');
+INSERT INTO public.t_audit_log VALUES (697, 1, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.966952+08');
+INSERT INTO public.t_audit_log VALUES (698, 1, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.967665+08');
+INSERT INTO public.t_audit_log VALUES (699, 1, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-22 16:01:37.968422+08');
+INSERT INTO public.t_audit_log VALUES (700, 1, 'admin', 'profile.update', 'profile:1', 'FAIL', '127.0.0.1', '2026-07-23 14:02:28.025708+08');
+INSERT INTO public.t_audit_log VALUES (701, 2, 'admin', 'profile.update', 'profile', 'FAIL', '127.0.0.1', '2026-07-23 14:03:01.667246+08');
+INSERT INTO public.t_audit_log VALUES (702, 2, 'admin', 'profile.update', 'profile', 'FAIL', '127.0.0.1', '2026-07-23 14:03:12.773149+08');
+INSERT INTO public.t_audit_log VALUES (703, 4, 'admin', 'settings.batch_update', 'settings', 'SUCCESS', '127.0.0.1', '2026-07-23 15:41:54.732247+08');
+INSERT INTO public.t_audit_log VALUES (708, 4, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.014961+08');
+INSERT INTO public.t_audit_log VALUES (707, 4, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.014784+08');
+INSERT INTO public.t_audit_log VALUES (706, 4, 'admin', 'news.update', 'news:8', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.013998+08');
+INSERT INTO public.t_audit_log VALUES (704, 4, 'admin', 'news.update', 'news:9', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.013656+08');
+INSERT INTO public.t_audit_log VALUES (705, 4, 'admin', 'news.update', 'news:7', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.014125+08');
+INSERT INTO public.t_audit_log VALUES (709, 4, 'admin', 'news.update', 'news:6', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.015369+08');
+INSERT INTO public.t_audit_log VALUES (710, 4, 'admin', 'news.update', 'news:5', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.036609+08');
+INSERT INTO public.t_audit_log VALUES (711, 4, 'admin', 'news.update', 'news:3', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.03902+08');
+INSERT INTO public.t_audit_log VALUES (712, 4, 'admin', 'news.update', 'news:4', 'SUCCESS', '127.0.0.1', '2026-07-24 14:41:32.039844+08');
+INSERT INTO public.t_audit_log VALUES (713, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.632743+08');
+INSERT INTO public.t_audit_log VALUES (714, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.633773+08');
+INSERT INTO public.t_audit_log VALUES (715, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.635619+08');
+INSERT INTO public.t_audit_log VALUES (716, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.635768+08');
+INSERT INTO public.t_audit_log VALUES (717, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.636472+08');
+INSERT INTO public.t_audit_log VALUES (718, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.637467+08');
+INSERT INTO public.t_audit_log VALUES (719, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.665637+08');
+INSERT INTO public.t_audit_log VALUES (720, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.669032+08');
+INSERT INTO public.t_audit_log VALUES (721, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.670776+08');
+INSERT INTO public.t_audit_log VALUES (722, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.672223+08');
+INSERT INTO public.t_audit_log VALUES (723, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.673311+08');
+INSERT INTO public.t_audit_log VALUES (724, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.676648+08');
+INSERT INTO public.t_audit_log VALUES (725, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.6846+08');
+INSERT INTO public.t_audit_log VALUES (726, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.692395+08');
+INSERT INTO public.t_audit_log VALUES (727, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.705364+08');
+INSERT INTO public.t_audit_log VALUES (728, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.706511+08');
+INSERT INTO public.t_audit_log VALUES (729, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.706652+08');
+INSERT INTO public.t_audit_log VALUES (730, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.709872+08');
+INSERT INTO public.t_audit_log VALUES (731, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-24 14:52:14.710606+08');
+INSERT INTO public.t_audit_log VALUES (732, 4, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-24 15:20:38.925187+08');
+INSERT INTO public.t_audit_log VALUES (733, 4, 'admin', 'news.update', 'news:1', 'SUCCESS', '127.0.0.1', '2026-07-24 15:47:02.293866+08');
+INSERT INTO public.t_audit_log VALUES (734, 4, 'admin', 'news.update', 'news:2', 'SUCCESS', '127.0.0.1', '2026-07-24 15:48:24.849226+08');
+INSERT INTO public.t_audit_log VALUES (735, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.83429+08');
+INSERT INTO public.t_audit_log VALUES (736, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.836165+08');
+INSERT INTO public.t_audit_log VALUES (737, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.837739+08');
+INSERT INTO public.t_audit_log VALUES (738, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.83889+08');
+INSERT INTO public.t_audit_log VALUES (739, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.839755+08');
+INSERT INTO public.t_audit_log VALUES (740, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.841476+08');
+INSERT INTO public.t_audit_log VALUES (741, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.877398+08');
+INSERT INTO public.t_audit_log VALUES (742, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.882568+08');
+INSERT INTO public.t_audit_log VALUES (743, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.883616+08');
+INSERT INTO public.t_audit_log VALUES (744, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.88433+08');
+INSERT INTO public.t_audit_log VALUES (745, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.885471+08');
+INSERT INTO public.t_audit_log VALUES (746, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.891758+08');
+INSERT INTO public.t_audit_log VALUES (747, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.904365+08');
+INSERT INTO public.t_audit_log VALUES (749, 4, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.923351+08');
+INSERT INTO public.t_audit_log VALUES (773, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.056242+08');
+INSERT INTO public.t_audit_log VALUES (748, 4, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.920906+08');
+INSERT INTO public.t_audit_log VALUES (750, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.92572+08');
+INSERT INTO public.t_audit_log VALUES (752, 4, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.927388+08');
+INSERT INTO public.t_audit_log VALUES (768, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.032036+08');
+INSERT INTO public.t_audit_log VALUES (769, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.047361+08');
+INSERT INTO public.t_audit_log VALUES (751, 4, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.925963+08');
+INSERT INTO public.t_audit_log VALUES (757, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.970216+08');
+INSERT INTO public.t_audit_log VALUES (759, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.972065+08');
+INSERT INTO public.t_audit_log VALUES (761, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.988587+08');
+INSERT INTO public.t_audit_log VALUES (764, 4, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.016138+08');
+INSERT INTO public.t_audit_log VALUES (765, 4, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.018725+08');
+INSERT INTO public.t_audit_log VALUES (771, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.05421+08');
+INSERT INTO public.t_audit_log VALUES (774, 4, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.062142+08');
+INSERT INTO public.t_audit_log VALUES (753, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.934626+08');
+INSERT INTO public.t_audit_log VALUES (754, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.947996+08');
+INSERT INTO public.t_audit_log VALUES (758, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.970405+08');
+INSERT INTO public.t_audit_log VALUES (760, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.978573+08');
+INSERT INTO public.t_audit_log VALUES (763, 4, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.015119+08');
+INSERT INTO public.t_audit_log VALUES (772, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.056083+08');
+INSERT INTO public.t_audit_log VALUES (775, 4, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.068299+08');
+INSERT INTO public.t_audit_log VALUES (755, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.966211+08');
+INSERT INTO public.t_audit_log VALUES (756, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:10.968048+08');
+INSERT INTO public.t_audit_log VALUES (762, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.012637+08');
+INSERT INTO public.t_audit_log VALUES (766, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.019198+08');
+INSERT INTO public.t_audit_log VALUES (767, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.020684+08');
+INSERT INTO public.t_audit_log VALUES (770, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.052908+08');
+INSERT INTO public.t_audit_log VALUES (776, 4, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-27 15:09:11.071564+08');
+INSERT INTO public.t_audit_log VALUES (777, 4, 'admin', 'category.create', 'category:{slug}', 'FAIL', '127.0.0.1', '2026-07-28 09:31:50.226711+08');
+INSERT INTO public.t_audit_log VALUES (778, 4, 'admin', 'category.create', 'category:{slug}', 'FAIL', '127.0.0.1', '2026-07-28 09:33:29.670085+08');
+INSERT INTO public.t_audit_log VALUES (779, 4, 'admin', 'category.create', 'category:{slug}', 'FAIL', '127.0.0.1', '2026-07-28 09:34:49.695139+08');
+INSERT INTO public.t_audit_log VALUES (780, 4, 'admin', 'category.create', 'category:{slug}', 'SUCCESS', '127.0.0.1', '2026-07-28 09:36:41.434964+08');
+INSERT INTO public.t_audit_log VALUES (781, 4, 'admin', 'product.create', 'product:{slug}', 'SUCCESS', '127.0.0.1', '2026-07-28 09:36:41.583871+08');
+INSERT INTO public.t_audit_log VALUES (782, 4, 'admin', 'product.gallery.delete', 'product:43', 'FAIL', '127.0.0.1', '2026-07-28 09:36:41.590139+08');
+INSERT INTO public.t_audit_log VALUES (783, 4, 'admin', 'category.create', 'category:{slug}', 'SUCCESS', '127.0.0.1', '2026-07-28 09:37:11.010508+08');
+INSERT INTO public.t_audit_log VALUES (784, 4, 'admin', 'product.create', 'product:{slug}', 'SUCCESS', '127.0.0.1', '2026-07-28 09:37:11.020455+08');
+INSERT INTO public.t_audit_log VALUES (785, 4, 'admin', 'product.gallery.delete', 'product:44', 'FAIL', '127.0.0.1', '2026-07-28 09:37:11.025299+08');
+INSERT INTO public.t_audit_log VALUES (786, 4, 'admin', 'product.delete', 'product:44', 'SUCCESS', '127.0.0.1', '2026-07-28 09:37:11.03117+08');
+INSERT INTO public.t_audit_log VALUES (787, 4, 'admin', 'category.delete', 'category:14', 'SUCCESS', '127.0.0.1', '2026-07-28 09:37:11.036018+08');
+INSERT INTO public.t_audit_log VALUES (788, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.878131+08');
+INSERT INTO public.t_audit_log VALUES (791, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.878801+08');
+INSERT INTO public.t_audit_log VALUES (789, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.876749+08');
+INSERT INTO public.t_audit_log VALUES (790, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.878975+08');
+INSERT INTO public.t_audit_log VALUES (792, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.879416+08');
+INSERT INTO public.t_audit_log VALUES (793, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.880066+08');
+INSERT INTO public.t_audit_log VALUES (794, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.914393+08');
+INSERT INTO public.t_audit_log VALUES (795, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.918527+08');
+INSERT INTO public.t_audit_log VALUES (796, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.920162+08');
+INSERT INTO public.t_audit_log VALUES (797, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.92199+08');
+INSERT INTO public.t_audit_log VALUES (798, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.922816+08');
+INSERT INTO public.t_audit_log VALUES (799, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.923277+08');
+INSERT INTO public.t_audit_log VALUES (800, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.940424+08');
+INSERT INTO public.t_audit_log VALUES (801, 4, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.941003+08');
+INSERT INTO public.t_audit_log VALUES (802, 4, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.954024+08');
+INSERT INTO public.t_audit_log VALUES (803, 4, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.956108+08');
+INSERT INTO public.t_audit_log VALUES (804, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.958043+08');
+INSERT INTO public.t_audit_log VALUES (805, 4, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.960152+08');
+INSERT INTO public.t_audit_log VALUES (806, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.971072+08');
+INSERT INTO public.t_audit_log VALUES (807, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.973405+08');
+INSERT INTO public.t_audit_log VALUES (808, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.980549+08');
+INSERT INTO public.t_audit_log VALUES (809, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.990927+08');
+INSERT INTO public.t_audit_log VALUES (810, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.992624+08');
+INSERT INTO public.t_audit_log VALUES (811, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:44.993025+08');
+INSERT INTO public.t_audit_log VALUES (812, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.00065+08');
+INSERT INTO public.t_audit_log VALUES (813, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.00117+08');
+INSERT INTO public.t_audit_log VALUES (814, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.005707+08');
+INSERT INTO public.t_audit_log VALUES (815, 4, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.02324+08');
+INSERT INTO public.t_audit_log VALUES (816, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.023435+08');
+INSERT INTO public.t_audit_log VALUES (817, 4, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.024262+08');
+INSERT INTO public.t_audit_log VALUES (818, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.028343+08');
+INSERT INTO public.t_audit_log VALUES (819, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.031581+08');
+INSERT INTO public.t_audit_log VALUES (820, 4, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.031998+08');
+INSERT INTO public.t_audit_log VALUES (821, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.047002+08');
+INSERT INTO public.t_audit_log VALUES (822, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.055682+08');
+INSERT INTO public.t_audit_log VALUES (823, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.060966+08');
+INSERT INTO public.t_audit_log VALUES (824, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.069517+08');
+INSERT INTO public.t_audit_log VALUES (825, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.071853+08');
+INSERT INTO public.t_audit_log VALUES (826, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.073379+08');
+INSERT INTO public.t_audit_log VALUES (827, 4, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.079311+08');
+INSERT INTO public.t_audit_log VALUES (828, 4, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.082966+08');
+INSERT INTO public.t_audit_log VALUES (829, 4, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-28 17:03:45.084582+08');
+INSERT INTO public.t_audit_log VALUES (830, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.35518+08');
+INSERT INTO public.t_audit_log VALUES (831, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.355707+08');
+INSERT INTO public.t_audit_log VALUES (832, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.356498+08');
+INSERT INTO public.t_audit_log VALUES (833, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.378624+08');
+INSERT INTO public.t_audit_log VALUES (834, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.379145+08');
+INSERT INTO public.t_audit_log VALUES (835, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.381689+08');
+INSERT INTO public.t_audit_log VALUES (836, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.40688+08');
+INSERT INTO public.t_audit_log VALUES (837, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.409568+08');
+INSERT INTO public.t_audit_log VALUES (838, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.410197+08');
+INSERT INTO public.t_audit_log VALUES (839, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.415319+08');
+INSERT INTO public.t_audit_log VALUES (840, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.426694+08');
+INSERT INTO public.t_audit_log VALUES (841, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.431142+08');
+INSERT INTO public.t_audit_log VALUES (842, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.431948+08');
+INSERT INTO public.t_audit_log VALUES (843, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.437958+08');
+INSERT INTO public.t_audit_log VALUES (844, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.446669+08');
+INSERT INTO public.t_audit_log VALUES (845, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.451131+08');
+INSERT INTO public.t_audit_log VALUES (851, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.501984+08');
+INSERT INTO public.t_audit_log VALUES (862, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.55489+08');
+INSERT INTO public.t_audit_log VALUES (865, 4, 'admin', 'product.update', 'product:16', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.577296+08');
+INSERT INTO public.t_audit_log VALUES (869, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.587865+08');
+INSERT INTO public.t_audit_log VALUES (870, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.604876+08');
+INSERT INTO public.t_audit_log VALUES (873, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.612843+08');
+INSERT INTO public.t_audit_log VALUES (881, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.650933+08');
+INSERT INTO public.t_audit_log VALUES (883, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.666072+08');
+INSERT INTO public.t_audit_log VALUES (885, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.673315+08');
+INSERT INTO public.t_audit_log VALUES (846, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.452122+08');
+INSERT INTO public.t_audit_log VALUES (847, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.453018+08');
+INSERT INTO public.t_audit_log VALUES (848, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-28 17:13:17.492212+08');
+INSERT INTO public.t_audit_log VALUES (849, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.498079+08');
+INSERT INTO public.t_audit_log VALUES (850, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.499206+08');
+INSERT INTO public.t_audit_log VALUES (852, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.505064+08');
+INSERT INTO public.t_audit_log VALUES (854, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.509093+08');
+INSERT INTO public.t_audit_log VALUES (855, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.523863+08');
+INSERT INTO public.t_audit_log VALUES (856, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.529505+08');
+INSERT INTO public.t_audit_log VALUES (857, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.535317+08');
+INSERT INTO public.t_audit_log VALUES (858, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.540681+08');
+INSERT INTO public.t_audit_log VALUES (859, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.541328+08');
+INSERT INTO public.t_audit_log VALUES (860, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.542068+08');
+INSERT INTO public.t_audit_log VALUES (861, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.553237+08');
+INSERT INTO public.t_audit_log VALUES (863, 4, 'admin', 'product.update', 'product:19', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.561856+08');
+INSERT INTO public.t_audit_log VALUES (864, 4, 'admin', 'product.update', 'product:7', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.576193+08');
+INSERT INTO public.t_audit_log VALUES (866, 4, 'admin', 'product.update', 'product:18', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.577972+08');
+INSERT INTO public.t_audit_log VALUES (868, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.584266+08');
+INSERT INTO public.t_audit_log VALUES (871, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.608874+08');
+INSERT INTO public.t_audit_log VALUES (874, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.615465+08');
+INSERT INTO public.t_audit_log VALUES (875, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.617959+08');
+INSERT INTO public.t_audit_log VALUES (876, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.631948+08');
+INSERT INTO public.t_audit_log VALUES (878, 4, 'admin', 'product.update', 'product:29', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.640061+08');
+INSERT INTO public.t_audit_log VALUES (879, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.644827+08');
+INSERT INTO public.t_audit_log VALUES (880, 4, 'admin', 'product.update', 'product:15', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.649068+08');
+INSERT INTO public.t_audit_log VALUES (882, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.661458+08');
+INSERT INTO public.t_audit_log VALUES (884, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.667496+08');
+INSERT INTO public.t_audit_log VALUES (886, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.679473+08');
+INSERT INTO public.t_audit_log VALUES (887, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.680919+08');
+INSERT INTO public.t_audit_log VALUES (888, 4, 'admin', 'product.update', 'product:5', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.686909+08');
+INSERT INTO public.t_audit_log VALUES (889, 4, 'admin', 'product.update', 'product:4', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.687869+08');
+INSERT INTO public.t_audit_log VALUES (890, 4, 'admin', 'product.update', 'product:3', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.691429+08');
+INSERT INTO public.t_audit_log VALUES (853, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.507041+08');
+INSERT INTO public.t_audit_log VALUES (867, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.583786+08');
+INSERT INTO public.t_audit_log VALUES (872, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.61057+08');
+INSERT INTO public.t_audit_log VALUES (877, 4, 'admin', 'product.update', 'product:30', 'SUCCESS', '127.0.0.1', '2026-07-28 17:15:13.636265+08');
+INSERT INTO public.t_audit_log VALUES (891, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.321484+08');
+INSERT INTO public.t_audit_log VALUES (892, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.320701+08');
+INSERT INTO public.t_audit_log VALUES (893, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.322211+08');
+INSERT INTO public.t_audit_log VALUES (894, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.322389+08');
+INSERT INTO public.t_audit_log VALUES (895, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.322754+08');
+INSERT INTO public.t_audit_log VALUES (896, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.347597+08');
+INSERT INTO public.t_audit_log VALUES (897, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.361414+08');
+INSERT INTO public.t_audit_log VALUES (898, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.362666+08');
+INSERT INTO public.t_audit_log VALUES (899, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.36349+08');
+INSERT INTO public.t_audit_log VALUES (900, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.36793+08');
+INSERT INTO public.t_audit_log VALUES (901, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.374352+08');
+INSERT INTO public.t_audit_log VALUES (902, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.377397+08');
+INSERT INTO public.t_audit_log VALUES (903, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:17.380794+08');
+INSERT INTO public.t_audit_log VALUES (904, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.362099+08');
+INSERT INTO public.t_audit_log VALUES (905, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.364539+08');
+INSERT INTO public.t_audit_log VALUES (906, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.36372+08');
+INSERT INTO public.t_audit_log VALUES (907, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.364727+08');
+INSERT INTO public.t_audit_log VALUES (908, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.366136+08');
+INSERT INTO public.t_audit_log VALUES (909, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.36818+08');
+INSERT INTO public.t_audit_log VALUES (910, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.385637+08');
+INSERT INTO public.t_audit_log VALUES (911, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.394919+08');
+INSERT INTO public.t_audit_log VALUES (912, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.3985+08');
+INSERT INTO public.t_audit_log VALUES (913, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.399472+08');
+INSERT INTO public.t_audit_log VALUES (914, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.402537+08');
+INSERT INTO public.t_audit_log VALUES (915, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.403056+08');
+INSERT INTO public.t_audit_log VALUES (916, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:32.40655+08');
+INSERT INTO public.t_audit_log VALUES (917, 4, 'admin', 'product.update', 'product:22', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.22878+08');
+INSERT INTO public.t_audit_log VALUES (918, 4, 'admin', 'product.update', 'product:2', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.229897+08');
+INSERT INTO public.t_audit_log VALUES (919, 4, 'admin', 'product.update', 'product:25', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.230446+08');
+INSERT INTO public.t_audit_log VALUES (920, 4, 'admin', 'product.update', 'product:26', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.23104+08');
+INSERT INTO public.t_audit_log VALUES (921, 4, 'admin', 'product.update', 'product:1', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.231815+08');
+INSERT INTO public.t_audit_log VALUES (922, 4, 'admin', 'product.update', 'product:28', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.232847+08');
+INSERT INTO public.t_audit_log VALUES (923, 4, 'admin', 'product.update', 'product:27', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.254961+08');
+INSERT INTO public.t_audit_log VALUES (924, 4, 'admin', 'product.update', 'product:39', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.263941+08');
+INSERT INTO public.t_audit_log VALUES (925, 4, 'admin', 'product.update', 'product:24', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.266657+08');
+INSERT INTO public.t_audit_log VALUES (926, 4, 'admin', 'product.update', 'product:23', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.268059+08');
+INSERT INTO public.t_audit_log VALUES (927, 4, 'admin', 'product.update', 'product:21', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.268725+08');
+INSERT INTO public.t_audit_log VALUES (928, 4, 'admin', 'product.update', 'product:20', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.270842+08');
+INSERT INTO public.t_audit_log VALUES (929, 4, 'admin', 'product.update', 'product:6', 'SUCCESS', '127.0.0.1', '2026-07-29 09:03:48.276171+08');
+INSERT INTO public.t_audit_log VALUES (930, 4, 'admin', 'product.update', 'product:10', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.024932+08');
+INSERT INTO public.t_audit_log VALUES (931, 4, 'admin', 'product.update', 'product:41', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.04113+08');
+INSERT INTO public.t_audit_log VALUES (932, 4, 'admin', 'product.update', 'product:9', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.040927+08');
+INSERT INTO public.t_audit_log VALUES (933, 4, 'admin', 'product.update', 'product:13', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.042006+08');
+INSERT INTO public.t_audit_log VALUES (934, 4, 'admin', 'product.update', 'product:8', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.042259+08');
+INSERT INTO public.t_audit_log VALUES (935, 4, 'admin', 'product.update', 'product:12', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.043886+08');
+INSERT INTO public.t_audit_log VALUES (936, 4, 'admin', 'product.update', 'product:38', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.048639+08');
+INSERT INTO public.t_audit_log VALUES (937, 4, 'admin', 'product.update', 'product:42', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.065667+08');
+INSERT INTO public.t_audit_log VALUES (938, 4, 'admin', 'product.update', 'product:37', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.084339+08');
+INSERT INTO public.t_audit_log VALUES (939, 4, 'admin', 'product.update', 'product:36', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.08519+08');
+INSERT INTO public.t_audit_log VALUES (940, 4, 'admin', 'product.update', 'product:35', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.08666+08');
+INSERT INTO public.t_audit_log VALUES (941, 4, 'admin', 'product.update', 'product:34', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.08731+08');
+INSERT INTO public.t_audit_log VALUES (942, 4, 'admin', 'product.update', 'product:40', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.087726+08');
+INSERT INTO public.t_audit_log VALUES (943, 4, 'admin', 'product.update', 'product:33', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.092054+08');
+INSERT INTO public.t_audit_log VALUES (944, 4, 'admin', 'product.update', 'product:32', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.099782+08');
+INSERT INTO public.t_audit_log VALUES (945, 4, 'admin', 'product.update', 'product:31', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.127918+08');
+INSERT INTO public.t_audit_log VALUES (946, 4, 'admin', 'product.update', 'product:14', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.128778+08');
+INSERT INTO public.t_audit_log VALUES (947, 4, 'admin', 'product.update', 'product:17', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.129806+08');
+INSERT INTO public.t_audit_log VALUES (948, 4, 'admin', 'product.update', 'product:11', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:32.130145+08');
+INSERT INTO public.t_audit_log VALUES (949, 4, 'admin', 'media.upload', 'media:{file_name}', 'SUCCESS', '127.0.0.1', '2026-07-29 09:04:41.857927+08');
+INSERT INTO public.t_audit_log VALUES (950, 4, 'admin', 'media.upload', 'media:{file_name}', 'FAIL', '127.0.0.1', '2026-07-29 09:21:23.842677+08');
+INSERT INTO public.t_audit_log VALUES (951, 4, 'admin', 'media.upload', 'media:{file_name}', 'SUCCESS', '127.0.0.1', '2026-07-29 09:25:13.211127+08');
+INSERT INTO public.t_audit_log VALUES (952, 4, 'admin', 'media.delete', 'media:3', 'SUCCESS', '127.0.0.1', '2026-07-29 09:25:16.116956+08');
+INSERT INTO public.t_audit_log VALUES (953, 4, 'admin', 'media.upload', 'media:{file_name}', 'SUCCESS', '127.0.0.1', '2026-07-29 09:25:33.361978+08');
+INSERT INTO public.t_audit_log VALUES (954, 4, 'admin', 'media.delete', 'media:4', 'SUCCESS', '127.0.0.1', '2026-07-29 09:37:08.322629+08');
+INSERT INTO public.t_audit_log VALUES (955, 4, 'admin', 'media.delete', 'media:1', 'SUCCESS', '127.0.0.1', '2026-07-29 09:53:21.263837+08');
+INSERT INTO public.t_audit_log VALUES (956, 4, 'admin', 'inquiry.status.update', 'inquiry:3', 'SUCCESS', '127.0.0.1', '2026-07-29 10:08:59.147545+08');
+INSERT INTO public.t_audit_log VALUES (957, 4, 'admin', 'media.upload', 'media:{file_name}', 'SUCCESS', '127.0.0.1', '2026-07-29 10:09:24.536227+08');
+INSERT INTO public.t_audit_log VALUES (958, 4, 'admin', 'inquiry.delete', 'inquiry:99999', 'FAIL', '127.0.0.1', '2026-07-29 10:13:15.389422+08');
+INSERT INTO public.t_audit_log VALUES (959, 4, 'admin', 'inquiry.delete', 'inquiry:3', 'SUCCESS', '127.0.0.1', '2026-07-29 10:13:43.384878+08');
+INSERT INTO public.t_audit_log VALUES (960, 4, 'admin', 'inquiry.delete', 'inquiry:1', 'SUCCESS', '127.0.0.1', '2026-07-29 10:13:46.72184+08');
+INSERT INTO public.t_audit_log VALUES (961, 4, 'admin', 'inquiry.delete', 'inquiry:2', 'SUCCESS', '127.0.0.1', '2026-07-29 10:13:49.786687+08');
+
+
+--
+-- Data for Name: t_inquiry; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_inquiry VALUES (4, 'xb zeng', 'zengxb21@gmail.com', NULL, NULL, NULL, 'video-cameras-camcorders', '11111111111111111', NULL, 'INQ-1784793412004-fz2v1v', 'NEW', 'PENDING', 0, NULL, '2026-07-23 15:56:52.004+08', '2026-07-27 17:31:19.715086+08');
+INSERT INTO public.t_inquiry VALUES (5, 'xb zeng', 'zengxb21@gmail.com', NULL, NULL, NULL, 'video-cameras-camcorders', '1111111111111', NULL, 'INQ-1784795316742-td3eby', 'NEW', 'PENDING', 0, NULL, '2026-07-23 16:28:36.742+08', '2026-07-27 17:31:19.716679+08');
+
+
+--
+-- Data for Name: t_news; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.950407+08', '2026-07-24 14:41:31.995227+08', 0, NULL, 'admin', 9, 'songdian-joins-m43-standard-group', 'SONGDIAN Joins M43 Standard Group', 'SONGDIAN Joins Micro Four Thirds System Tokyo, Japan, February 12, 2026 – ODM Digital Solutions Corporation and Panasonic Entertainment
+', '
+<p class="wp-block-paragraph"><strong>Tokyo, Japan, February 12, 2026</strong> – OM Digital Solutions Corporation and Panasonic Entertainment &amp; Communication Co., Ltd., which jointly announced the Micro Four Thirds System standard in 2008 and have continuously promoted its development ever since, officially announced that Shenzhen Sonida Digital Technology Co., Ltd. has declared its full support for the Micro Four Thirds System standard, and will launch compliant imaging products to the global market under its own brand SONGDIAN.</p>
+
+
+
+<h2 class="wp-block-heading">Open Standard to Enrich Global Imaging Experience</h2>
+
+
+
+<p class="wp-block-paragraph">The Micro Four Thirds System, an open imaging standard, is currently backed by 63 companies worldwide, including enterprises focusing on B2B operations. With Sonida&#8217;s participation, the Micro Four Thirds product lineup is expected to be further expanded in the future, and the unique advantages of this open standard will further enrich the imaging and video creation experience for global users.</p>
+
+
+
+<p class="wp-block-paragraph">As the initiators of both the Four Thirds System and the Micro Four Thirds System standards, OM Digital Solutions and Panasonic stated that they will continue to develop and optimize their product lineups to meet the diverse needs of global customers.</p>
+
+
+
+<h2 class="wp-block-heading">SONGDIAN&#8217;s Manufacturing Heritage and Commitment</h2>
+
+
+
+<p class="wp-block-paragraph">Shenzhen Sonida Digital Technology Co., Ltd. is a professional digital imaging enterprise engaged in the R&amp;D and manufacturing of cameras and related accessories, with rich experience as an ODM manufacturer for international camera brands. The company markets its products globally under its own brand SONGDIAN, and is currently developing Micro Four Thirds-compliant products under the brand. By joining the Micro Four Thirds Alliance, the company aims to accelerate its product R&amp;D progress and contribute to the expansion of the Micro Four Thirds ecosystem.</p>
+
+
+
+<p class="wp-block-paragraph">Backed by a vertically integrated manufacturing base spanning over 40,000 square meters, SONGDIAN brings decades of precision optical and electronic assembly expertise to the Micro Four Thirds community. With in-house SMT lines, optical calibration labs, and rigorous quality testing protocols, the company is well-positioned to deliver reliable, high-performance lenses and camera bodies that meet the demanding standards of the open system.</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN, operated by Shenzhen Sonida Digital Technology Co., Ltd. (also known as SONGDIAN Technology Guangdong), is a professional digital camera manufacturer founded in 2010 and headquartered in Foshan, Guangdong. With a 40,000㎡ smart manufacturing campus, annual production capacity exceeding 10 million units, and a fully integrated supply chain — including in-house mold making, optical lens grinding, SMT, and optical calibration — the company delivers end-to-end quality control and rapid customization. Backed by over 500 national patents and ISO 9001-certified processes, SONGDIAN serves clients across more than 30 countries, striving to be the preferred manufacturing partner for quality-driven imaging brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">&nbsp;</p>
+', '', '2026-07-20 08:39:41.950422+08', 'PUBLISHED', '''000'':308 ''000㎡'':404 ''10'':412 ''12'':15,28 ''2008'':51 ''2010'':395 ''2026'':16,29 ''30'':465 ''40'':307,403 ''500'':451 ''63'':116 ''9001'':456 ''a'':218,300,388,402,416 ''about'':366 ''accelerate'':281 ''accessories'':234 ''across'':462 ''advantages'':147 ''aims'':279 ''alliance'':276 ''also'':381 ''an'':108,239 ''and'':22,35,52,81,144,157,173,183,192,209,228,232,257,287,317,336,354,396,415,432,445,454 ''announced'':43,61 ''annual'':408 ''as'':164,238,383 ''assembly'':319 ''b2b'':123 ''backed'':114,298,448 ''base'':304 ''be'':138,469 ''bodies'':356 ''both'':168 ''brand'':94,255,269 ''brands'':245,479 ''brings'':312 ''by'':115,270,299,374,449 ''calibration'':334,434 ''camera'':244,355,391 ''cameras'':231 ''campus'':407 ''capacity'':410 ''certified'':457 ''chain'':420 ''clients'':461 ''co'':39,67,215,370,379 ''commitment'':210 ''communication'':38 ''community'':326 ''companies'':117 ''company'':247,278,342,437 ''compliant'':84,265 ''continue'':189 ''continuously'':54 ''contribute'':288 ''control'':444 ''corporation'':21,34 ''countries'':466 ''creation'':159 ''currently'':113,259 ''customers'':204 ''customization'':447 ''d'':227,285 ''decades'':313 ''declared'':70 ''deliver'':348 ''delivers'':438 ''demanding'':360 ''develop'':191 ''developing'':260 ''development'':57 ''digital'':19,32,65,181,213,220,377,390 ''diverse'':200 ''driven'':477 ''ecosystem'':297 ''electronic'':318 ''end'':440,442 ''end-to-end'':439 ''engaged'':223 ''enrich'':99,154 ''enterprise'':222 ''enterprises'':120 ''entertainment'':24,37 ''ever'':58 ''exceeding'':411 ''expanded'':140 ''expansion'':291 ''expected'':136 ''experience'':102,160,237 ''expertise'':320 ''february'':14,27 ''focusing'':121 ''for'':74,161,242,474 ''foshan'':399 ''founded'':393 ''four'':9,46,77,105,131,170,176,262,274,295,324 ''full'':72 ''fully'':417 ''further'':139,153 ''future'':143 ''global'':89,100,162,203 ''globally'':251 ''grinding'':430 ''group'':5 ''guangdong'':369,386,400 ''has'':69 ''have'':53 ''headquartered'':397 ''heritage'':208 ''high'':351 ''high-performance'':350 ''house'':330,425 ''imaging'':85,101,110,156,221,478 ''in'':50,141,224,329,394,398,424 ''in-house'':328,423 ''including'':119,422 ''initiators'':166 ''integrated'':302,418 ''international'':243 ''is'':112,135,217,258,343,387 ''iso'':455 ''its'':56,71,92,249,253,282 ''japan'':13,26 ''joining'':271 ''joins'':2,7 ''jointly'':42 ''known'':382 ''labs'':335 ''launch'':83 ''lens'':429 ''lenses'':353 ''lines'':332 ''lineup'':134 ''lineups'':196 ''ltd'':40,68,216,371,380 ''m43'':3 ''making'':427 ''manufacturer'':241,392 ''manufacturing'':207,229,303,406,472 ''market'':90 ''markets'':248 ''meet'':198,358 ''meters'':310 ''micro'':8,45,76,104,130,175,261,273,294,323 ''million'':413 ''mold'':426 ''more'':463 ''national'':452 ''needs'':201 ''odm'':18,240 ''of'':148,167,202,230,292,314,362 ''officially'':60 ''om'':31,180 ''on'':122 ''open'':96,109,150,364 ''operated'':373 ''operations'':124 ''optical'':316,333,428,433 ''optimize'':193 ''over'':306,450 ''own'':93,254 ''panasonic'':23,36,184 ''participation'':128 ''partner'':473 ''patents'':453 ''performance'':352 ''positioned'':346 ''precision'':315 ''preferred'':471 ''processes'':458 ''product'':133,195,283 ''production'':409 ''products'':86,250,266 ''professional'':219,389 ''progress'':286 ''promoted'':55 ''protocols'':340 ''quality'':338,443,476 ''quality-driven'':475 ''r'':226,284 ''rapid'':446 ''related'':233 ''reliable'':349 ''rich'':236 ''rigorous'':337 ''s'':127,206 ''serves'':460 ''shenzhen'':63,211,375 ''since'':59 ''smart'':405 ''smt'':331,431 ''solutions'':20,33,182 ''songdian'':1,6,95,205,256,311,367,372,384,459 ''sonida'':64,126,212,376 ''spanning'':305 ''square'':309 ''standard'':4,49,80,97,111,151 ''standards'':179,361 ''stated'':185 ''striving'':467 ''supply'':419 ''support'':73 ''system'':11,48,79,107,172,178,365 ''technology'':66,214,368,378,385 ''testing'':339 ''than'':464 ''that'':62,186,357 ''the'':44,75,88,103,129,142,145,155,165,169,174,199,225,246,268,272,277,290,293,322,341,359,363,436,470 ''their'':194 ''they'':187 ''thirds'':10,47,78,106,132,171,177,264,275,296,325 ''thirds-compliant'':263 ''this'':149 ''to'':87,98,137,190,197,280,289,321,347,441,468 ''tokyo'':12,25 ''under'':91,252,267 ''unique'':146 ''units'':414 ''users'':163 ''vertically'':301 ''video'':158 ''well'':345 ''well-positioned'':344 ''which'':41 ''will'':82,152,188 ''with'':125,235,327,401 ''worldwide'':118,480 ''–'':17,30 ''—'':421,435', 1, '/uploads/news/songdian-joins-m43-standard-group/cover.webp', 3);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.946929+08', '2026-07-24 14:41:31.994944+08', 0, NULL, 'admin', 8, 'soncdian-wins-guangdong-quality-trust-recognition', 'SONGDIAN Wins Guangdong Quality Recognition', 'SONCDIAN Guangdong 3·15 Consumer Rights Protection Project GUANGZHOU, China – Feb. 1, 2026 – SONCDIAN, a prominent Chinese digital camera manufacturer
+', '
+<p class="wp-block-paragraph"><strong>GUANGZHOU, China</strong> – Feb. 1, 2026 – SONCDIAN, a prominent Chinese digital camera manufacturer, has been distinguished as the sole imaging brand selected for the 2026 Guangdong 3·15 Consumer Rights Protection and Anti-Counterfeiting Project. The selection highlights the brand&#8217;s commitment to product quality and reliable service.</p>
+
+
+
+<p class="wp-block-paragraph">The brand was formally admitted at a signing ceremony hosted by Guangdong Radio and Television Station. It was chosen from a pool of 5,586 enterprises and now stands alongside over 30 other recognized consumer brands in the province, including Gree and Skyworth.</p>
+
+
+
+<h2 class="wp-block-heading">Selected as the Sole Imaging Brand for the 3·15 Project</h2>
+
+
+
+<p class="wp-block-paragraph">Organized by authorities such as the Guangdong Provincial Market Supervision Administration, the project identifies and promotes industry leaders known for quality and integrity. SONCDIAN&#8217;s admission marks the first inclusion of a digital camera brand, signifying a milestone for the domestic imaging sector.</p>
+
+
+
+<h2 class="wp-block-heading">Commitment to Quality, Innovation, and Manufacturing Excellence</h2>
+
+
+
+<p class="wp-block-paragraph">SONCDIAN earned this recognition through its ongoing investment in core imaging technologies—such as AI algorithms and sensor development—and its implementation of a rigorous, full-process quality management system certified to ISO 9001 standards. The company&#8217;s vertically integrated manufacturing capabilities—from precision optical lens grinding and SMT assembly to final calibration and environmental testing—ensure that every product meets the highest standards of performance and durability, backed by a 40,000-square-meter smart production base.</p>
+
+
+
+<p class="wp-block-paragraph">&#8220;We see this as both an honor and a deepened responsibility,&#8221; said Zhao Kundian, founder of SONCDIAN. &#8220;Our principle has always been transparent specifications and reliable performance, ensuring consumers can purchase with confidence.&#8221;</p>
+
+
+
+<p class="wp-block-paragraph">The brand&#8217;s market presence is growing. It led domestic digital camera sales on <a href="http://JD.com" target="_blank">JD.com</a> during the 2025 Double 11 shopping festival. Moving forward, SONCDIAN plans to intensify its focus on innovation and consumer protection, aiming to strengthen its position as a trusted name in the global imaging market.</p>
+
+
+
+<h2 class="wp-block-heading">About SONCDIAN (SONGDIAN Technology)</h2>
+
+
+
+<p class="wp-block-paragraph">SONCDIAN, operated by SONGDIAN Technology (Guangdong) Co., Ltd. (Shenzhen Suoda Digital Technology Co., Ltd.), is a professional digital camera manufacturer founded in 2010 and headquartered in Foshan, Guangdong. With a 40,000㎡ smart manufacturing campus, annual production capacity exceeding 10 million units, and a fully integrated supply chain — including in-house mold making, optical lens grinding, SMT, and optical calibration — the company delivers end-to-end quality control and rapid customization. Backed by over 500 national patents and ISO 9001-certified processes, SONCDIAN serves clients across more than 30 countries, striving to be the preferred manufacturing partner for quality-driven imaging brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">&nbsp;</p>
+', '', '2026-07-20 08:39:41.946945+08', 'PUBLISHED', '''000'':248 ''000㎡'':372 ''1'':17,31 ''10'':380 ''11'':307 ''2010'':363 ''2025'':305 ''2026'':18,32,52 ''30'':107,433 ''3·15'':8,54,127 ''40'':247,371 ''5'':99 ''500'':419 ''586'':100 ''9001'':211,424 ''a'':21,35,82,96,160,165,200,246,263,329,356,370,384 ''about'':337 ''across'':430 ''administration'':139 ''admission'':154 ''admitted'':80 ''ai'':192 ''aiming'':323 ''algorithms'':193 ''alongside'':105 ''always'':275 ''an'':260 ''and'':58,73,89,102,117,143,150,176,194,224,230,242,262,279,320,364,383,400,413,422 ''annual'':376 ''anti'':60 ''anti-counterfeiting'':59 ''as'':44,120,133,191,258,328 ''assembly'':226 ''at'':81 ''authorities'':131 ''backed'':244,416 ''base'':254 ''be'':437 ''been'':42,276 ''both'':259 ''brand'':48,67,77,124,163,289 ''brands'':111,447 ''by'':86,130,245,343,417 ''calibration'':229,402 ''camera'':25,39,162,299,359 ''campus'':375 ''can'':284 ''capabilities—from'':219 ''capacity'':378 ''ceremony'':84 ''certified'':208,425 ''chain'':388 ''china'':14,28 ''chinese'':23,37 ''chosen'':94 ''clients'':429 ''co'':347,353 ''commitment'':69,172 ''company'':214,405 ''confidence'':287 ''consumer'':9,55,110,321 ''consumers'':283 ''control'':412 ''core'':188 ''counterfeiting'':61 ''countries'':434 ''customization'':415 ''deepened'':264 ''delivers'':406 ''development—and'':196 ''digital'':24,38,161,298,351,358 ''distinguished'':43 ''domestic'':169,297 ''double'':306 ''driven'':445 ''durability'':243 ''during'':303 ''earned'':180 ''end'':408,410 ''end-to-end'':407 ''ensuring'':282 ''enterprises'':101 ''environmental'':231 ''every'':234 ''exceeding'':379 ''excellence'':178 ''feb'':16,30 ''festival'':309 ''final'':228 ''first'':157 ''focus'':317 ''for'':50,125,148,167,442 ''formally'':79 ''forward'':311 ''foshan'':367 ''founded'':361 ''founder'':269 ''from'':95 ''full'':203 ''full-process'':202 ''fully'':385 ''global'':334 ''gree'':116 ''grinding'':223,398 ''growing'':294 ''guangdong'':3,7,53,87,135,346,368 ''guangzhou'':13,27 ''has'':41,274 ''headquartered'':365 ''highest'':238 ''highlights'':65 ''honor'':261 ''hosted'':85 ''house'':393 ''identifies'':142 ''imaging'':47,123,170,189,335,446 ''implementation'':198 ''in'':112,187,332,362,366,392 ''in-house'':391 ''including'':115,390 ''inclusion'':158 ''industry'':145 ''innovation'':175,319 ''integrated'':217,386 ''integrity'':151 ''intensify'':315 ''investment'':186 ''is'':293,355 ''iso'':210,423 ''it'':92,295 ''its'':184,197,316,326 ''jd.com'':302 ''known'':147 ''kundian'':268 ''leaders'':146 ''led'':296 ''lens'':222,397 ''ltd'':348,354 ''making'':395 ''management'':206 ''manufacturer'':26,40,360 ''manufacturing'':177,218,374,440 ''market'':137,291,336 ''marks'':155 ''meets'':236 ''meter'':251 ''milestone'':166 ''million'':381 ''mold'':394 ''more'':431 ''moving'':310 ''name'':331 ''national'':420 ''now'':103 ''of'':98,159,199,240,270 ''on'':301,318 ''ongoing'':185 ''operated'':342 ''optical'':221,396,401 ''organized'':129 ''other'':108 ''our'':272 ''over'':106,418 ''partner'':441 ''patents'':421 ''performance'':241,281 ''plans'':313 ''pool'':97 ''position'':327 ''precision'':220 ''preferred'':439 ''presence'':292 ''principle'':273 ''process'':204 ''processes'':426 ''product'':71,235 ''production'':253,377 ''professional'':357 ''project'':12,62,128,141 ''prominent'':22,36 ''promotes'':144 ''protection'':11,57,322 ''province'':114 ''provincial'':136 ''purchase'':285 ''quality'':4,72,149,174,205,411,444 ''quality-driven'':443 ''radio'':88 ''rapid'':414 ''recognition'':5,182 ''recognized'':109 ''reliable'':74,280 ''responsibility'':265 ''rights'':10,56 ''rigorous'':201 ''s'':68,153,215,290 ''said'':266 ''sales'':300 ''sector'':171 ''see'':256 ''selected'':49,119 ''selection'':64 ''sensor'':195 ''serves'':428 ''service'':75 ''shenzhen'':349 ''shopping'':308 ''signifying'':164 ''signing'':83 ''skyworth'':118 ''smart'':252,373 ''smt'':225,399 ''sole'':46,122 ''soncdian'':6,20,34,152,179,271,312,338,341,427 ''songdian'':1,339,344 ''specifications'':278 ''square'':250 ''square-meter'':249 ''standards'':212,239 ''stands'':104 ''station'':91 ''strengthen'':325 ''striving'':435 ''such'':132 ''suoda'':350 ''supervision'':138 ''supply'':387 ''system'':207 ''technologies—such'':190 ''technology'':340,345,352 ''television'':90 ''testing—ensure'':232 ''than'':432 ''that'':233 ''the'':45,51,63,66,76,113,121,126,134,140,156,168,213,237,288,304,333,404,438 ''this'':181,257 ''through'':183 ''to'':70,173,209,227,314,324,409,436 ''transparent'':277 ''trusted'':330 ''units'':382 ''vertically'':216 ''was'':78,93 ''we'':255 ''wins'':2 ''with'':286,369 ''worldwide'':448 ''zhao'':267 ''–'':15,19,29,33 ''—'':389,403', 1, '/uploads/news/soncdian-wins-guangdong-quality-trust-recognition/cover.webp', 2);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.933366+08', '2026-07-24 14:41:32.032335+08', 0, NULL, 'admin', 5, 'soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness', 'SONGDIAN Shines at 2026 China Brand Day, Awarded Top 500 Global Brand Competitiveness', 'SONGDIAN named a 2026 Bay Area Brand Leadership Program Partner at the Guangdong Brand Development Conference on May 10 in Guangzhou. Selected alongside Huawei, Tencent, BYD, and DJI, the company has 16 years of R&#038;D experience and exports to over 30 countries. SONGDIAN remains committed to building a globally trusted Chinese imaging brand.
+', '
+<p class="wp-block-paragraph"><strong>GUANGZHOU, China</strong> – SONGDIAN (Shenzhen Suoda Digital Technology Co., Ltd.), a leading Chinese digital camera manufacturer, has achieved a major milestone in brand development by being officially named a 2026 Bay Area Brand Leadership Program Partner at the 2026 Guangdong Brand Development Conference, held on May 10 in Guangzhou to celebrate China Brand Day.</p>
+
+
+
+<p class="wp-block-paragraph">Organized by the Guangdong Radio and Television Administration and the Guangdong Enterprise Brand Construction Promotion Association, this prestigious annual event brings together over 400 government leaders, industry experts, and top enterprise representatives to recognize excellence in brand building and global competitiveness.</p>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN was selected for the program alongside other industry giants including Huawei, Tencent, BYD, Midea, DJI, and Gree, having previously ranked among the 2025 Top 500 Guangdong Brands for Global Competitiveness.</p>
+
+
+
+<h2 class="wp-block-heading">A Milestone in SONGDIAN&#8217;s Brand Evolution</h2>
+
+
+
+<p class="wp-block-paragraph">This recognition marks a significant step forward for SONGDIAN as it evolves from a strong regional player into a globally competitive imaging brand. For 16 years, the company has remained committed to independent research and development, continuously breaking through technical barriers to make professional imaging technology more accessible to consumers worldwide.</p>
+
+
+
+<h2 class="wp-block-heading">Commitment to Innovation and Global Trust</h2>
+
+
+
+<p class="wp-block-paragraph">&#8220;Our mission has always been to create a globally trusted Chinese imaging brand,&#8221; said a company representative during the keynote speech at the conference. &#8220;This award is a testament to the hard work of our entire team and the trust our customers have placed in us. We will continue to innovate and deliver high-quality imaging products and services to customers around the world.&#8221;</p>
+
+
+
+<h2 class="wp-block-heading">Global Sales and Distribution Network</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN has built a comprehensive global sales and distribution network that now spans more than 30 countries and regions. The company operates through major international e-commerce platforms including Amazon, eBay, Walmart, TikTok Shop, and Temu, as well as a network of local distributors and brand agents, providing seamless online and offline customer experiences.</p>
+
+
+
+<h2 class="wp-block-heading">Future Outlook</h2>
+
+
+
+<p class="wp-block-paragraph">Looking ahead, SONGDIAN will leverage the strategic opportunities presented by the Bay Area Brand Leadership Program to accelerate technological innovation, strengthen brand building, and expand its global service capabilities. The company remains dedicated to promoting Chinese imaging brands on the world stage and shaping the future of global imaging.</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">Founded in 2010 and headquartered in China, SONGDIAN is a professional digital camera manufacturer dedicated to the research, development, production, and global distribution of consumer imaging electronics. With advanced assembly and testing facilities, the company has served clients across North America, Europe, Southeast Asia, and the Middle East. SONGDIAN continues to invest in next-generation imaging technologies, striving to be the preferred manufacturing partner for quality-driven camera brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph"><br>
+</p>
+', '', '2026-07-20 08:39:41.933381+08', 'PUBLISHED', '''10'':32,114 ''16'':45,225 ''2010'':442 ''2025'':186 ''2026'':4,17,97,106 ''30'':55,343 ''400'':145 ''500'':10,188 ''a'':16,62,78,86,96,194,204,214,219,265,272,285,331,368,449 ''about'':434 ''accelerate'':402 ''accessible'':248 ''achieved'':85 ''across'':478 ''administration'':129 ''advanced'':468 ''agents'':375 ''ahead'':386 ''alongside'':36,169 ''always'':261 ''amazon'':358 ''america'':480 ''among'':184 ''and'':40,51,127,130,150,160,179,235,255,295,309,316,325,335,345,363,373,379,408,427,443,460,470,484 ''annual'':140 ''area'':19,99,397 ''around'':320 ''as'':210,365,367 ''asia'':483 ''assembly'':469 ''association'':137 ''at'':3,24,104,279 ''award'':283 ''awarded'':8 ''barriers'':241 ''bay'':18,98,396 ''be'':500 ''been'':262 ''being'':93 ''brand'':6,12,20,27,67,90,100,108,120,134,158,199,223,270,374,398,406 ''brands'':190,422,510 ''breaking'':238 ''brings'':142 ''building'':61,159,407 ''built'':330 ''by'':92,123,394 ''byd'':39,176 ''camera'':82,452,509 ''capabilities'':413 ''celebrate'':118 ''china'':5,69,119,446 ''chinese'':65,80,268,420 ''clients'':477 ''co'':76,438 ''commerce'':355 ''commitment'':252 ''committed'':59,231 ''company'':43,228,273,348,415,474 ''competitive'':221 ''competitiveness'':13,162,193 ''comprehensive'':332 ''conference'':29,110,281 ''construction'':135 ''consumer'':464 ''consumers'':250 ''continue'':306 ''continues'':489 ''continuously'':237 ''countries'':56,344 ''create'':264 ''customer'':381 ''customers'':299,319 ''d'':49 ''day'':7,121 ''dedicated'':417,454 ''deliver'':310 ''development'':28,91,109,236,458 ''digital'':74,81,451 ''distribution'':326,336,462 ''distributors'':372 ''dji'':41,178 ''driven'':508 ''during'':275 ''e'':354 ''e-commerce'':353 ''east'':487 ''ebay'':359 ''electronics'':466 ''enterprise'':133,152 ''entire'':293 ''europe'':481 ''event'':141 ''evolution'':200 ''evolves'':212 ''excellence'':156 ''expand'':409 ''experience'':50 ''experiences'':382 ''experts'':149 ''exports'':52 ''facilities'':472 ''for'':166,191,208,224,505 ''forward'':207 ''founded'':440 ''from'':213 ''future'':383,430 ''generation'':495 ''giants'':172 ''global'':11,161,192,256,323,333,411,432,461 ''globally'':63,220,266 ''government'':146 ''gree'':180 ''guangdong'':26,107,125,132,189,437 ''guangzhou'':34,68,116 ''hard'':289 ''has'':44,84,229,260,329,475 ''have'':300 ''having'':181 ''headquartered'':444 ''held'':111 ''high'':312 ''high-quality'':311 ''huawei'':37,174 ''imaging'':66,222,245,269,314,421,433,465,496 ''in'':33,89,115,157,196,302,441,445,492 ''including'':173,357 ''independent'':233 ''industry'':148,171 ''innovate'':308 ''innovation'':254,404 ''international'':352 ''into'':218 ''invest'':491 ''is'':284,448 ''it'':211 ''its'':410 ''keynote'':277 ''leaders'':147 ''leadership'':21,101,399 ''leading'':79 ''leverage'':389 ''local'':371 ''looking'':385 ''ltd'':77,439 ''major'':87,351 ''make'':243 ''manufacturer'':83,453 ''manufacturing'':503 ''marks'':203 ''may'':31,113 ''middle'':486 ''midea'':177 ''milestone'':88,195 ''mission'':259 ''more'':247,341 ''named'':15,95 ''network'':327,337,369 ''next'':494 ''next-generation'':493 ''north'':479 ''now'':339 ''of'':47,291,370,431,463 ''officially'':94 ''offline'':380 ''on'':30,112,423 ''online'':378 ''operates'':349 ''opportunities'':392 ''organized'':122 ''other'':170 ''our'':258,292,298 ''outlook'':384 ''over'':54,144 ''partner'':23,103,504 ''placed'':301 ''platforms'':356 ''player'':217 ''preferred'':502 ''presented'':393 ''prestigious'':139 ''previously'':182 ''production'':459 ''products'':315 ''professional'':244,450 ''program'':22,102,168,400 ''promoting'':419 ''promotion'':136 ''providing'':376 ''quality'':313,507 ''quality-driven'':506 ''r'':48 ''radio'':126 ''ranked'':183 ''recognition'':202 ''recognize'':155 ''regional'':216 ''regions'':346 ''remained'':230 ''remains'':58,416 ''representative'':274 ''representatives'':153 ''research'':234,457 ''s'':198 ''said'':271 ''sales'':324,334 ''seamless'':377 ''selected'':35,165 ''served'':476 ''service'':412 ''services'':317 ''shaping'':428 ''shenzhen'':72 ''shines'':2 ''shop'':362 ''significant'':205 ''songdian'':1,14,57,71,163,197,209,328,387,435,447,488 ''southeast'':482 ''spans'':340 ''speech'':278 ''stage'':426 ''step'':206 ''strategic'':391 ''strengthen'':405 ''striving'':498 ''strong'':215 ''suoda'':73 ''team'':294 ''technical'':240 ''technological'':403 ''technologies'':497 ''technology'':75,246,436 ''television'':128 ''temu'':364 ''tencent'':38,175 ''testament'':286 ''testing'':471 ''than'':342 ''that'':338 ''the'':25,42,105,124,131,167,185,227,276,280,288,296,321,347,390,395,414,424,429,456,473,485,501 ''this'':138,201,282 ''through'':239,350 ''tiktok'':361 ''to'':53,60,117,154,232,242,249,253,263,287,307,318,401,418,455,490,499 ''together'':143 ''top'':9,151,187 ''trust'':257,297 ''trusted'':64,267 ''us'':303 ''walmart'':360 ''was'':164 ''we'':304 ''well'':366 ''will'':305,388 ''with'':467 ''work'':290 ''world'':322,425 ''worldwide'':251,511 ''years'':46,226 ''–'':70', 1, '/uploads/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness/cover.webp', 6);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.919597+08', '2026-07-24 14:41:32.032749+08', 0, NULL, 'admin', 3, 'songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners', 'SONGDIAN Manufacturing Unveils DC417X with 7X Optical Zoom for OEM/ODM Partners', 'SONGDIAN Technology (Guangdong) Co., Ltd., an ISO-certified OEM/ODM plant with a 40,000㎡ smart factory and 10M annual capacity, unveils the DC417X—a premium optical zoom camera powered by a Sony IMX858 50MP sensor and our self-developed 7X optical zoom lens. Fully manufactured in-house from molding to calibration, it offers turnkey or customized solutions with consistent quality, rapid turnaround, and flexible private-label support.
+', '
+<p class="wp-block-paragraph"><strong>FOSHAN, China</strong> – As a dedicated OEM/ODM manufacturer with over 18 years of experience in digital imaging, SONGDIAN Technology (Guangdong) Co., Ltd. (subsidiary of Shenzhen Suoda Digital Technology Co., Ltd., founded in 2006) today announces the addition of the DC417X to our production portfolio. This new model is not merely a product launch; it is a clear statement of our manufacturing capabilities – from optical lens design and precision molding to complete camera assembly and testing – all performed in our own 40,000-square-meter smart manufacturing base.</p>
+
+
+
+<p class="wp-block-paragraph">We extend an open invitation to global importers, distributors, and brand owners: the DC417X is a production-ready solution that can be rapidly adapted to your specifications, whether you need firmware tweaks, hardware adjustments, or full private-label branding.</p>
+
+
+
+<h2 class="wp-block-heading">Full-Chain Manufacturing: The 7X Optical Zoom Lens as Proof of Capability</h2>
+
+
+
+<p class="wp-block-paragraph">The DC417X incorporates a self-developed 7X external telescopic optical zoom lens (8 groups, 9 elements), a component that many assembly-only factories cannot produce in-house. By owning the entire lens manufacturing process – from grinding to coating to assembly – we eliminate third-party dependencies, reduce lead times, and maintain strict quality control. The lens offers an 84° field of view, aperture F3.1 (Wide) to F6.0 (Tele), and focuses from 5cm (Wide) to infinity (Tele), making it suitable for diverse imaging applications.</p>
+
+
+
+<p class="wp-block-paragraph">Paired with a Sony IMX858 50MP 1/2.5-inch CMOS sensor – renowned for its all-pixel phase-detection autofocus and HDR performance – this optical system delivers 8K video (7680×4320 @15fps) and interpolated stills up to 88MP. However, what matters to our B2B clients is that we have the engineering know-how to tune, calibrate, and customize this platform according to your market positioning.</p>
+
+
+
+<h2 class="wp-block-heading">Dual-Camera Configuration – Ready for Versatile Product Differentiation</h2>
+
+
+
+<p class="wp-block-paragraph">The DC417X features a front (IMX858) and rear selfie (IMX214 13MP) dual-camera setup. This hardware architecture can be adapted for various use cases – action cameras, vlogging devices, or multi-lens consumer electronics. Our R&amp;D team can modify firmware to adjust scene modes, filters, and metering algorithms, giving you a differentiated product without starting from scratch.</p>
+
+
+
+<h2 class="wp-block-heading">Technical Specifications – A Solid Foundation for Customization</h2>
+
+
+
+<p class="wp-block-paragraph">All key parameters are pre-validated and production-stable, enabling swift customization:</p>
+
+
+
+
+<table class="has-fixed-layout"><tbody><tr><th>Parameter</th><th>Specification</th></tr><tr><td>Display</td><td>2.8&#8243; IPS touchscreen, 640×480</td></tr><tr><td>Battery</td><td>NP-40 1050mAh Li-ion (≤80min video, ≤90min photo)</td></tr><tr><td>Storage</td><td>TF slot up to 256GB (SDXC C10 U1+)</td></tr><tr><td>Interface</td><td>Type-C USB (mass storage / webcam)</td></tr><tr><td>Shutter</td><td>1/2s – 1/3840s</td></tr><tr><td>ISO</td><td>Auto / 100 – 3200</td></tr><tr><td>Video modes</td><td>8K15, 6K30, 5K30, 4K30, 1080P120, 720P240, etc.</td></tr><tr><td>Photo ratios</td><td>4:3, 16:9, 1:1, 3:2, 5:4, 2.35:1, 4:5</td></tr><tr><td>Weight / Size</td><td>155g (with batt.) / 105×65×31.5 mm</td></tr></tbody></table>
+
+
+
+<p class="wp-block-paragraph">Additional features – electronic stabilization (5-axis gyro), 30fps burst, HDR, Wi-Fi with Viipulse app, 8 scene modes, 14 filters – are all firmware-controllable, giving you ample room for product tiering and regional adaptation.</p>
+
+
+
+<h2 class="wp-block-heading">What We Offer as Your Factory Partner</h2>
+
+
+
+<ul class="wp-block-list">
+<li><strong>Vertically integrated production:</strong> In-house mold making, lens grinding, SMT, assembly, and final calibration – no outsourcing, no hidden quality variance.</li>
+
+
+
+<li><strong>Scalable capacity:</strong> Annual output of 10 million units, backed by a 40,000㎡ facility, ensuring on-time delivery for bulk orders.</li>
+
+
+
+<li><strong>Flexible customization:</strong> From UI language packs (12+ languages supported) to hardware modifications (e.g., button layout, packaging), we tailor the product to your brand identity.</li>
+
+
+
+<li><strong>Quality assurance:</strong> ISO-certified processes, with each unit undergoing rigorous optical, electrical, and environmental testing before shipment.</li>
+
+
+
+<li><strong>Patented technology:</strong> Over 500 national patents in optical zoom, sensor algorithms, and AI imaging, providing you with a legally sound, innovation-backed product.</li>
+</ul>
+
+
+
+<h2 class="wp-block-heading">Partner with Us</h2>
+
+
+
+<p class="wp-block-paragraph">The DC417X is already in production tooling and available for OEM/ODM orders immediately. We welcome your inquiries for samples, custom specifications, and volume pricing. Our engineering team stands ready to co-develop solutions that match your target markets – whether it&#8217;s a budget-friendly variant or a premium feature-rich model.</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN Technology (Guangdong) Co., Ltd. is a professional OEM/ODM digital imaging manufacturer headquartered in Foshan, Guangdong, and a subsidiary of Shenzhen Suoda Digital Technology Co., Ltd. (est. 2006). We specialize in the full-cycle development and production of digital cameras, camcorders, and consumer electronics. With a 40,000㎡ smart factory, annual capacity of 10 million units, and over 500 national patents, we are a reliable manufacturing partner for brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">  <br>
+<br>
+</p>
+', '', '2026-07-20 08:39:41.919614+08', 'PUBLISHED', '''-40'':481 ''000'':165 ''000㎡'':26,627,815 ''1'':531,532,538 ''1/2.5-inch'':320 ''1/2s'':508 ''1/3840s'':510 ''10'':620,821 ''100'':513 ''1050mah'':482 ''105×65×31.5'':546 ''1080p120'':522 ''10m'':30 ''12'':643 ''13mp'':400 ''14'':568 ''155g'':543 ''15fps'':345 ''16'':529 ''18'':92 ''2'':534 ''2.35'':537 ''2.8'':475 ''2006'':114,794 ''256gb'':495 ''3'':528,533 ''30fps'':556 ''3200'':515 ''4'':527,536,539 ''40'':25,164,626,814 ''4k30'':521 ''5'':535,540,553 ''500'':682,826 ''50mp'':45,319 ''5cm'':302 ''5k30'':520 ''640×480'':478 ''6k30'':519 ''720p240'':523 ''7680×4320'':344 ''7x'':6,52,218,233 ''8'':239,565 ''84°'':289 ''88mp'':351 ''8k'':342 ''8k15'':518 ''9'':241,530 ''a'':24,42,86,132,137,187,229,243,316,393,443,453,625,696,749,755,773,784,813,831 ''about'':761 ''according'':375 ''action'':416 ''adaptation'':585 ''adapted'':196,410 ''addition'':118 ''additional'':548 ''adjust'':434 ''adjustments'':206 ''ai'':691 ''algorithms'':440,689 ''all'':159,328,458,572 ''all-pixel'':327 ''already'':709 ''ample'':578 ''an'':17,174,288 ''and'':29,47,76,149,156,181,280,299,334,346,371,396,438,465,583,605,674,690,713,727,783,803,809,824 ''announces'':116 ''annual'':31,617,818 ''aperture'':293 ''app'':564 ''applications'':313 ''architecture'':407 ''are'':461,571,830 ''as'':85,222,589 ''assembly'':155,248,269,604 ''assembly-only'':247 ''assurance'':662 ''auto'':512 ''autofocus'':333 ''available'':714 ''axis'':554 ''b2b'':357 ''backed'':623,701 ''base'':171 ''batt'':545 ''battery'':479 ''be'':194,409 ''before'':677 ''brand'':182,659 ''branding'':212 ''brands'':836 ''budget'':751 ''budget-friendly'':750 ''bulk'':635 ''burst'':557 ''button'':650 ''by'':41,256,624 ''c'':502 ''c10'':497 ''calibrate'':370 ''calibration'':64,607 ''camcorders'':808 ''camera'':39,154,382,403 ''cameras'':417,807 ''can'':193,408,430 ''cannot'':251 ''capabilities'':143 ''capability'':225 ''capacity'':32,616,819 ''cases'':414 ''certified'':20,665 ''chain'':215 ''china'':83 ''clear'':138 ''clients'':358 ''cmos'':321 ''co'':15,102,110,737,765,770,791 ''co-develop'':736 ''coating'':267 ''complete'':153 ''component'':244 ''configuration'':383 ''consistent'':72 ''consumer'':424,810 ''control'':284 ''controllable'':575 ''custom'':725 ''customization'':457,471,638 ''customize'':372 ''customized'':69 ''cycle'':801 ''d'':428 ''dc417x'':4,121,185,227,391,707 ''dc417x—a'':35 ''dedicated'':87 ''delivers'':341 ''delivery'':633 ''dependencies'':276 ''design'':148 ''detection'':332 ''develop'':738 ''developed'':51,232 ''development'':802 ''devices'':419 ''differentiated'':444 ''differentiation'':389 ''digital'':97,108,776,789,806 ''display'':474 ''distributors'':180 ''diverse'':311 ''dual'':381,402 ''dual-camera'':380,401 ''e.g'':649 ''each'':668 ''electrical'':673 ''electronic'':551 ''electronics'':425,811 ''elements'':242 ''eliminate'':272 ''enabling'':469 ''engineering'':364,731 ''ensuring'':629 ''entire'':259 ''environmental'':675 ''est'':793 ''etc'':524 ''experience'':95 ''extend'':173 ''external'':234 ''f3.1'':294 ''f6.0'':297 ''facility'':628 ''factories'':250 ''factory'':28,591,817 ''feature'':758 ''feature-rich'':757 ''features'':392,549 ''fi'':561 ''field'':290 ''filters'':437,569 ''final'':606 ''firmware'':203,432,574 ''firmware-controllable'':573 ''flexible'':77,637 ''focuses'':300 ''for'':9,310,325,386,411,456,580,634,715,723,835 ''foshan'':82,781 ''foundation'':455 ''founded'':112 ''friendly'':752 ''from'':61,145,264,301,448,639 ''front'':394 ''full'':208,214,800 ''full-chain'':213 ''full-cycle'':799 ''fully'':56 ''giving'':441,576 ''global'':178 ''grinding'':265,602 ''groups'':240 ''guangdong'':14,101,764,769,782 ''gyro'':555 ''hardware'':205,406,647 ''have'':362 ''hdr'':335,558 ''headquartered'':779 ''hidden'':612 ''house'':60,255,598 ''how'':367 ''however'':352 ''identity'':660 ''imaging'':98,312,692,777 ''immediately'':718 ''importers'':179 ''imx214'':399 ''imx858'':44,318,395 ''in'':59,96,113,161,254,597,685,710,780,797 ''in-house'':58,253,596 ''incorporates'':228 ''infinity'':305 ''innovation'':700 ''innovation-backed'':699 ''inquiries'':722 ''integrated'':594 ''interface'':499 ''interpolated'':347 ''invitation'':176 ''ion'':485 ''ips'':476 ''is'':129,136,186,359,708,772 ''iso'':19,511,664 ''iso-certified'':18,663 ''it'':65,135,308,747 ''its'':326 ''key'':459 ''know'':366 ''know-how'':365 ''label'':80,211 ''language'':641 ''languages'':644 ''launch'':134 ''layout'':651 ''lead'':278 ''legally'':697 ''lens'':55,147,221,238,260,286,423,601 ''li'':484 ''li-ion'':483 ''ltd'':16,103,111,766,771,792 ''maintain'':281 ''making'':307,600 ''manufactured'':57 ''manufacturer'':89,778 ''manufacturing'':2,142,170,216,261,833 ''many'':246 ''market'':378 ''markets'':744 ''mass'':504 ''match'':741 ''matters'':354 ''merely'':131 ''meter'':168 ''metering'':439 ''million'':621,822 ''mm'':547 ''model'':128,760 ''modes'':436,517,567 ''modifications'':648 ''modify'':431 ''mold'':599 ''molding'':62,151 ''multi'':422 ''multi-lens'':421 ''national'':683,827 ''need'':202 ''new'':127 ''no'':609,611 ''not'':130 ''np'':480 ''oem/odm'':10,21,88,716,775 ''of'':94,105,119,140,224,291,619,786,805,820 ''offer'':588 ''offers'':66,287 ''on'':631 ''on-time'':630 ''only'':249 ''open'':175 ''optical'':7,37,53,146,219,236,339,672,686 ''or'':68,207,420,754 ''orders'':636,717 ''our'':48,123,141,162,356,426,730 ''output'':618 ''outsourcing'':610 ''over'':91,681,825 ''own'':163 ''owners'':183 ''owning'':257 ''packaging'':652 ''packs'':642 ''paired'':314 ''parameter'':472 ''parameters'':460 ''partner'':592,703,834 ''partners'':11 ''party'':275 ''patented'':679 ''patents'':684,828 ''performance'':336 ''performed'':160 ''phase'':331 ''phase-detection'':330 ''photo'':489,525 ''pixel'':329 ''plant'':22 ''platform'':374 ''portfolio'':125 ''positioning'':379 ''powered'':40 ''pre'':463 ''pre-validated'':462 ''precision'':150 ''premium'':36,756 ''pricing'':729 ''private'':79,210 ''private-label'':78,209 ''process'':262 ''processes'':666 ''produce'':252 ''product'':133,388,445,581,656,702 ''production'':124,189,467,595,711,804 ''production-ready'':188 ''production-stable'':466 ''professional'':774 ''proof'':223 ''providing'':693 ''quality'':73,283,613,661 ''r'':427 ''rapid'':74 ''rapidly'':195 ''ratios'':526 ''ready'':190,385,734 ''rear'':397 ''reduce'':277 ''regional'':584 ''reliable'':832 ''renowned'':324 ''rich'':759 ''rigorous'':671 ''room'':579 ''s'':748 ''samples'':724 ''scalable'':615 ''scene'':435,566 ''scratch'':449 ''sdxc'':496 ''self'':50,231 ''self-developed'':49,230 ''selfie'':398 ''sensor'':46,322,688 ''setup'':404 ''shenzhen'':106,787 ''shipment'':678 ''shutter'':507 ''size'':542 ''slot'':492 ''smart'':27,169,816 ''smt'':603 ''solid'':454 ''solution'':191 ''solutions'':70,739 ''songdian'':1,12,99,762,767 ''sony'':43,317 ''sound'':698 ''specialize'':796 ''specification'':473 ''specifications'':199,451,726 ''square'':167 ''square-meter'':166 ''stabilization'':552 ''stable'':468 ''stands'':733 ''starting'':447 ''statement'':139 ''stills'':348 ''storage'':490,505 ''strict'':282 ''subsidiary'':104,785 ''suitable'':309 ''suoda'':107,788 ''support'':81 ''supported'':645 ''swift'':470 ''system'':340 ''tailor'':654 ''target'':743 ''team'':429,732 ''technical'':450 ''technology'':13,100,109,680,763,768,790 ''tele'':298,306 ''telescopic'':235 ''testing'':157,676 ''tf'':491 ''that'':192,245,360,740 ''the'':34,117,120,184,217,226,258,285,363,390,655,706,798 ''third'':274 ''third-party'':273 ''this'':126,338,373,405 ''tiering'':582 ''time'':632 ''times'':279 ''to'':63,122,152,177,197,266,268,296,304,350,355,368,376,433,494,646,657,735 ''today'':115 ''tooling'':712 ''touchscreen'':477 ''tune'':369 ''turnaround'':75 ''turnkey'':67 ''tweaks'':204 ''type'':501 ''type-c'':500 ''u1'':498 ''ui'':640 ''undergoing'':670 ''unit'':669 ''units'':622,823 ''unveils'':3,33 ''up'':349,493 ''us'':705 ''usb'':503 ''use'':413 ''validated'':464 ''variance'':614 ''variant'':753 ''various'':412 ''versatile'':387 ''vertically'':593 ''video'':343,487,516 ''view'':292 ''viipulse'':563 ''vlogging'':418 ''volume'':728 ''we'':172,271,361,587,653,719,795,829 ''webcam'':506 ''weight'':541 ''welcome'':720 ''what'':353,586 ''whether'':200,746 ''wi'':560 ''wi-fi'':559 ''wide'':295,303 ''with'':5,23,71,90,315,544,562,667,695,704,812 ''without'':446 ''worldwide'':837 ''years'':93 ''you'':201,442,577,694 ''your'':198,377,590,658,721,742 ''zoom'':8,38,54,220,237,687 ''–'':84,144,158,263,270,323,337,384,415,452,509,514,550,570,608,745 ''≤80min'':486 ''≤90min'':488', 1, '/uploads/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners/cover.jpg', 8);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.903957+08', '2026-07-24 15:47:02.280058+08', 0, NULL, 'admin', 1, 'songdian-manufacturing-oem-partner-for-kenko', 'Songdian Manufacturing: OEM Partner for Kenko', 'As an OEM/ODM partner for Kenko, Minolta, and other global optical brands, Songdian Technology operates a 40,000㎡ intelligent facility with 12 automated lines , delivering one-stop solutions from R&#038;D to production.
+', '
+<h2 class="wp-block-heading">Craftsmanship Inherited, Standards Internalized</h2>
+
+
+
+<p class="wp-block-paragraph">Songdian&#8217;s manufacturing system has been shaped by deep ODM partnerships with Minolta, Rollei, and Kenko. Through extensive joint development and mass production, our team has fully absorbed Japanese optical core processes—multi-layer coating precision, viewfinder calibration, environmental reliability testing, and zero-defect quality protocols.</p>
+
+
+
+<p class="wp-block-paragraph">With 500+ patents and ISO9001, CE, FDA, Sedex certifications, all lines run to international brand-specified Quality Control Plans. This fully internalized standard delivers &#8220;plug-and-play&#8221; high-quality OEM service with zero ramp-up friction.</p>
+
+
+
+<h2 class="wp-block-heading">Scale: 40,000㎡, 12 Lines, 4M+ Units/Year</h2>
+
+
+
+<p class="wp-block-paragraph">Our Foshan base spans 40,000㎡ with 12 intelligent assembly lines covering SMT, pre-processing, assembly, aging, testing, packaging, and shipping. Key automated systems include Type-C lines, USB auto-loaders, AI inserters, and battery auto-sorting lines.</p>
+
+
+
+<p class="wp-block-paragraph">With 1,000+ staff, we support flexible multi-product, multi-batch scheduling. A new Ronggui HQ is under development with significant investment, adding more factory space and advanced equipment to scale capacity from pilot runs (thousands) to mass production (millions).</p>
+
+
+
+<h2 class="wp-block-heading">End-to-End Quality: Japanese Standards, Every Step</h2>
+
+
+
+<p class="wp-block-paragraph">Zero-defect discipline is embedded daily—from IQC, IPQC, OQC to reliability lab testing (environmental, drop, lifespan). Every line has digital traceability linking each unit to batch, operator, and test data—complete quality archives for brand partners.</p>
+
+
+
+<p class="wp-block-paragraph">We pass annual international brand audits and hold Sedex certification. Customized quality agreements and third-party testing available upon request.</p>
+
+
+
+<h2 class="wp-block-heading">R&amp;D Power: From Concept to Mass Production</h2>
+
+
+
+<p class="wp-block-paragraph">Our 100+ R&amp;D professionals span optics, electronics, mechanics, and firmware. We rapidly define products per client specs and have achieved proprietary breakthroughs in optical zoom lenses, large-sensor algorithms, and AI imaging—with multiple in-house lenses already in mass production, breaking foreign monopoly in high-end optics.</p>
+
+
+
+<p class="wp-block-paragraph">We offer full-cycle services: ID/MD design, PCB layout, tooling, pilot validation, and mass production—with lead times compressed to industry-leading levels. Deep customization (appearance, UI, packaging) fully supported.</p>
+
+
+
+<h2 class="wp-block-heading">Cost Advantage: Supply Chain Scale Passed to You</h2>
+
+
+
+<p class="wp-block-paragraph">Our sourcing scale for core components (lenses, sensors, chips, LCDs) —built through partnerships with international brands—combined with smart lines and lean management, significantly undercuts industry average per-unit costs. We pass these savings to you—competitive pricing without quality compromise.</p>
+
+
+
+<p class="wp-block-paragraph">Our production covers compact cameras, retro mirrorless, optical zoom, children&#8217;s cameras, and print cameras—all adaptable to diverse market segments and channels.</p>
+
+
+
+<p class="wp-block-paragraph">We invite global imaging brands to visit our Foshan facility and explore your path from concept to production.</p>
+', '', '2026-07-24 15:47:02+08', 'PUBLISHED', '''000'':183 ''000㎡'':24,134,144 ''1'':182 ''100'':298 ''12'':28,135,146 ''40'':23,133,143 ''4m'':137 ''500'':93 ''a'':22,195 ''absorbed'':72 ''achieved'':317 ''adaptable'':442 ''adding'':205 ''advanced'':210 ''advantage'':380 ''aging'':156 ''agreements'':280 ''ai'':173,329 ''algorithms'':327 ''all'':101 ''already'':336 ''an'':8 ''and'':14,59,65,86,95,119,159,175,209,260,274,281,306,315,328,361,406,439,447,459 ''annual'':270 ''appearance'':374 ''archives'':264 ''as'':7 ''assembly'':148,155 ''audits'':273 ''auto'':171,178 ''auto-loaders'':170 ''auto-sorting'':177 ''automated'':29,162 ''available'':286 ''average'':412 ''base'':141 ''batch'':193,258 ''battery'':176 ''been'':50 ''brand'':107,266,272 ''brand-specified'':106 ''brands'':18,453 ''brands—combined'':402 ''breaking'':340 ''breakthroughs'':319 ''by'':52 ''c'':167 ''calibration'':82 ''cameras'':431,438 ''cameras—all'':441 ''capacity'':214 ''ce'':97 ''certification'':277 ''certifications'':100 ''chain'':382 ''channels'':448 ''children'':436 ''chips'':395 ''client'':313 ''coating'':79 ''compact'':430 ''components'':392 ''compressed'':366 ''compromise'':426 ''concept'':293,464 ''control'':110 ''core'':75,391 ''cost'':379 ''costs'':416 ''covering'':150 ''covers'':429 ''craftsmanship'':41 ''customization'':373 ''customized'':278 ''cycle'':352 ''d'':38,290,300 ''daily—from'':238 ''data—complete'':262 ''deep'':53,372 ''defect'':89,234 ''define'':310 ''delivering'':31 ''delivers'':116 ''design'':355 ''development'':64,201 ''digital'':252 ''discipline'':235 ''diverse'':444 ''drop'':247 ''each'':255 ''electronics'':304 ''embedded'':237 ''end'':224,226,346 ''end-to-end'':223 ''environmental'':83,246 ''equipment'':211 ''every'':230,249 ''explore'':460 ''extensive'':62 ''facility'':26,458 ''factory'':207 ''fda'':98 ''firmware'':307 ''flexible'':187 ''for'':5,11,265,390 ''foreign'':341 ''foshan'':140,457 ''friction'':131 ''from'':36,215,292,463 ''full'':351 ''full-cycle'':350 ''fully'':71,113,377 ''global'':16,451 ''has'':49,70,251 ''have'':316 ''high'':122,345 ''high-end'':344 ''high-quality'':121 ''hold'':275 ''house'':334 ''hq'':198 ''id/md'':354 ''imaging'':452 ''imaging—with'':330 ''in'':320,333,337,343 ''in-house'':332 ''include'':164 ''industry'':369,411 ''industry-leading'':368 ''inherited'':42 ''inserters'':174 ''intelligent'':25,147 ''internalized'':44,114 ''international'':105,271,401 ''investment'':204 ''invite'':450 ''ipqc'':240 ''iqc'':239 ''is'':199,236 ''iso9001'':96 ''japanese'':73,228 ''joint'':63 ''kenko'':6,12,60 ''key'':161 ''lab'':244 ''large'':325 ''large-sensor'':324 ''layer'':78 ''layout'':357 ''lcds'':396 ''lead'':364 ''leading'':370 ''lean'':407 ''lenses'':323,335,393 ''levels'':371 ''lifespan'':248 ''line'':250 ''lines'':30,102,136,149,168,180,405 ''linking'':254 ''loaders'':172 ''management'':408 ''manufacturing'':2,47 ''market'':445 ''mass'':66,220,295,338,362 ''mechanics'':305 ''millions'':222 ''minolta'':13,57 ''mirrorless'':433 ''monopoly'':342 ''more'':206 ''multi'':189,192 ''multi-batch'':191 ''multi-product'':188 ''multiple'':331 ''new'':196 ''odm'':54 ''oem'':3,124 ''oem/odm'':9 ''offer'':349 ''one'':33 ''one-stop'':32 ''operates'':21 ''operator'':259 ''optical'':17,74,321,434 ''optics'':303,347 ''oqc'':241 ''other'':15 ''our'':68,139,297,387,427,456 ''packaging'':158,376 ''partner'':4,10 ''partners'':267 ''partnerships'':55,399 ''party'':284 ''pass'':269,418 ''passed'':384 ''patents'':94 ''path'':462 ''pcb'':356 ''per'':312,414 ''per-unit'':413 ''pilot'':216,359 ''plans'':111 ''play'':120 ''plug'':118 ''plug-and-play'':117 ''power'':291 ''pre'':153 ''pre-processing'':152 ''precision'':80 ''pricing'':423 ''print'':440 ''processes—multi'':77 ''processes—multi-layer'':76 ''processing'':154 ''product'':190 ''production'':40,67,221,296,339,428,466 ''production—with'':363 ''products'':311 ''professionals'':301 ''proprietary'':318 ''protocols'':91 ''quality'':90,109,123,227,263,279,425 ''r'':37,289,299 ''ramp'':129 ''ramp-up'':128 ''rapidly'':309 ''reliability'':84,243 ''request'':288 ''retro'':432 ''rollei'':58 ''ronggui'':197 ''run'':103 ''runs'':217 ''s'':46,437 ''savings'':420 ''scale'':132,213,383,389 ''scheduling'':194 ''sedex'':99,276 ''segments'':446 ''sensor'':326 ''sensors'':394 ''service'':125 ''services'':353 ''shaped'':51 ''shipping'':160 ''significant'':203 ''significantly'':409 ''smart'':404 ''smt'':151 ''solutions'':35 ''songdian'':1,19,45 ''sorting'':179 ''sourcing'':388 ''space'':208 ''span'':302 ''spans'':142 ''specified'':108 ''specs'':314 ''staff'':184 ''standard'':115 ''standards'':43,229 ''step'':231 ''stop'':34 ''supply'':381 ''support'':186 ''supported'':378 ''system'':48 ''systems'':163 ''team'':69 ''technology'':20 ''test'':261 ''testing'':85,157,245,285 ''these'':419 ''third'':283 ''third-party'':282 ''this'':112 ''thousands'':218 ''through'':61,398 ''times'':365 ''to'':39,104,212,219,225,242,257,294,367,385,421,443,454,465 ''tooling'':358 ''traceability'':253 ''type'':166 ''type-c'':165 ''ui'':375 ''under'':200 ''undercuts'':410 ''unit'':256,415 ''units/year'':138 ''up'':130 ''upon'':287 ''usb'':169 ''validation'':360 ''viewfinder'':81 ''visit'':455 ''we'':185,268,308,348,417,449 ''with'':27,56,92,126,145,181,202,400,403 ''without'':424 ''you'':386 ''your'':461 ''you—competitive'':422 ''zero'':88,127,233 ''zero-defect'':87,232 ''zoom'':322,435 ''—built'':397', 1, '/uploads/news/songdian-manufacturing-oem-partner-for-kenko/cover.webp', 1);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.911687+08', '2026-07-24 15:48:24.84348+08', 0, NULL, 'admin', 2, 'songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner', 'Songdian Unveils DC106Y Flip-Top Camera – Your OEM/ODM Partner', 'Featuring a 2.8-inch flip-up screen, 13MP sensor, and 8K video, the DC106Y showcases Songdian&#8217;s manufacturing excellence. Designed for B2B clients, it offers complete private-label customization with robust production capabilities.', '
+<p class="wp-block-paragraph"><strong>SONGDIAN, China</strong> – Songdian Technology (Guangdong) Co., Ltd., a seasoned manufacturer in the digital imaging industry, today unveiled its latest innovation, the DC106Y flip-top digital camera. Engineered to meet the evolving demands of content creators and everyday users alike, the DC106Y represents a significant leap in design and functionality—and a clear statement of Songdian&#8217;s manufacturing prowess.</p>
+
+
+
+<p class="wp-block-paragraph">At the heart of the DC106Y is its distinctive flip-top design, a feature that sets it apart in the crowded digital camera market. This intuitive form factor, combined with a vibrant 2.8-inch IPS display, offers users unparalleled flexibility for selfie photography, vlogging, and creative angle shooting. The 480×640 resolution screen delivers crisp, clear image previews and playback, ensuring that every shot is perfectly framed.</p>
+
+
+
+<p class="wp-block-paragraph">Under the hood, the DC106Y is powered by a 13.0MP CMOS sensor (AR1335) capable of producing images up to an interpolated 96 megapixels. Video capabilities are equally impressive, supporting resolutions from 1080P all the way up to 8K, making it a versatile tool for both high-quality photography and professional-grade videography. The camera also features a 74.7° wide-angle lens with an F/2.2 aperture, 16x digital zoom (5x optical zoom equivalent), and a minimum focusing distance of just 15cm—ensuring sharp, detailed images in a variety of shooting scenarios.</p>
+
+
+
+<p class="wp-block-paragraph">Beyond its impressive hardware, the DC106Y is packed with features that enhance the user experience:</p>
+
+
+
+<ul class="wp-block-list">
+<li>Auto focus for effortless shooting</li>
+
+
+
+<li>Built-in LED fill light with adjustable modes (always on, auto, strong flash, or off)</li>
+
+
+
+<li>Wi-Fi wireless connectivity for instant image transfer</li>
+
+
+
+<li>Beauty selfie mode for flattering portraits</li>
+
+
+
+<li>Webcam functionality via Type-C USB interface, catering to remote work and live streaming</li>
+
+
+
+<li>Support for TF cards up to 256GB (SDHC Class 6)</li>
+
+
+
+<li>Rechargeable 700mAh NP-6L lithium battery for extended use and reliable performance</li>
+</ul>
+
+
+
+<h2 class="wp-block-heading">A Partner, Not Just a Supplier</h2>
+
+
+
+<p class="wp-block-paragraph">For global brands and distributors, the DC106Y is more than a product—it is a gateway to partnership. Songdian Technology positions itself as a full-service manufacturing partner, offering end-to-end OEM and ODM services that cover everything from design customization and private labeling to packaging and logistics. With deep expertise in the digital camera supply chain and a commitment to quality control, Songdian enables partners to bring their vision to market quickly and cost-effectively.</p>
+
+
+
+<p class="wp-block-paragraph">The DC106Y is backed by Songdian&#8217;s robust manufacturing infrastructure, including advanced production lines and rigorous testing protocols that ensure every unit meets the highest standards of quality and reliability. Whether you are looking to launch a new brand, expand an existing product line, or enter the rapidly growing vlog and content creation market, Songdian provides the technical expertise and manufacturing scale to make it happen.</p>
+
+
+
+<h2 class="wp-block-heading">Product Highlights at a Glance</h2>
+
+
+
+
+<table class="has-fixed-layout"><tbody><tr><th>Feature</th><th>Specification</th></tr><tr><td>Design</td><td>Flip-top form factor</td></tr><tr><td>Display</td><td>2.8-inch IPS HD (480×640)</td></tr><tr><td>Image Sensor</td><td>13.0MP CMOS (AR1335), up to 96MP interpolation</td></tr><tr><td>Video Resolution</td><td>1080P, 2K, 4K, 5K, 6K, 8K</td></tr><tr><td>Lens</td><td>F/2.2, f=3.37mm, 74.7° viewing angle</td></tr><tr><td>Focus</td><td>Auto focus, 15cm to infinity</td></tr><tr><td>Zoom</td><td>16x digital zoom (5x optical equivalent)</td></tr><tr><td>Wi-Fi</td><td>Supported</td></tr><tr><td>Webcam</td><td>Supported via Type-C USB</td></tr><tr><td>Fill Light</td><td>Built-in LED (always on/auto/strong flash/off)</td></tr><tr><td>Storage</td><td>TF card slot, max 256GB (SDHC Class 6)</td></tr><tr><td>Battery</td><td>700mAh / 3.7V rechargeable (NP-6L)</td></tr><tr><td>Languages</td><td>15 languages supported</td></tr><tr><td>Accessories</td><td>User manual, USB cable, lithium battery, lanyard, lens cleaning cloth, storage bag</td></tr></tbody></table>
+
+
+
+<h2 class="wp-block-heading">Availability</h2>
+
+
+
+<p class="wp-block-paragraph">The DC106Y is now available for OEM and ODM orders. For partnership inquiries, please contact Songdian Technology (Guangdong) Co., Ltd. via the company&#8217;s official channels.</p>
+
+
+
+<h2 class="wp-block-heading">About Songdian Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">Songdian Technology (Guangdong) Co., Ltd. is a leading manufacturer of digital imaging products, specializing in the design, development, and production of innovative digital cameras for global brands. With years of industry experience and a commitment to quality and innovation, Songdian serves as a trusted OEM/ODM partner for clients worldwide.</p>
+', '', '2026-07-24 08:39:00+08', 'PUBLISHED', '''1080p'':205,538 ''13.0'':182,528 ''13mp'':20 ''15'':604 ''15cm'':556 ''15cm—ensuring'':257 ''16x'':243,560 ''2.8'':14,139,521 ''256gb'':339,591 ''2k'':539 ''3.37'':547 ''3.7'':597 ''480×640'':156,525 ''4k'':540 ''5k'':541 ''5x'':246,563 ''6'':342,594 ''6k'':542 ''6l'':347,602 ''700mah'':344,596 ''74.7'':233,549 ''8k'':23,211,543 ''96'':195 ''96mp'':534 ''a'':13,55,91,98,119,137,181,214,232,251,262,356,360,372,375,384,422,477,510,659,686,695 ''about'':647 ''accessories'':607 ''adjustable'':294 ''advanced'':452 ''alike'':87 ''all'':206 ''also'':230 ''always'':296,583 ''an'':193,240,481 ''and'':22,84,96,151,164,223,250,330,353,365,396,405,410,421,437,455,469,491,500,628,671,685,690 ''angle'':153,237,552 ''apart'':124 ''aperture'':242 ''ar1335'':186,531 ''are'':199,473 ''as'':383,694 ''at'':106,509 ''auto'':282,298,554 ''availability'':620 ''available'':625 ''b2b'':34 ''backed'':444 ''bag'':619 ''battery'':349,595,613 ''beauty'':312 ''beyond'':267 ''both'':218 ''brand'':479 ''brands'':364,679 ''bring'':431 ''built'':288,580 ''built-in'':287,579 ''by'':180,445 ''c'':323,575 ''cable'':611 ''camera'':7,74,129,229,418 ''cameras'':676 ''capabilities'':46,198 ''capable'':187 ''card'':588 ''cards'':336 ''catering'':326 ''chain'':420 ''channels'':646 ''china'':48 ''class'':341,593 ''cleaning'':616 ''clear'':99,161 ''clients'':35,700 ''cloth'':617 ''cmos'':184,530 ''co'':53,639,651,656 ''combined'':135 ''commitment'':423,687 ''company'':643 ''complete'':38 ''connectivity'':307 ''contact'':635 ''content'':82,492 ''control'':426 ''cost'':439 ''cost-effectively'':438 ''cover'':400 ''creation'':493 ''creative'':152 ''creators'':83 ''crisp'':160 ''crowded'':127 ''customization'':42,404 ''dc106y'':3,26,69,89,111,177,272,368,442,622 ''deep'':413 ''delivers'':159 ''demands'':80 ''design'':95,118,403,514,669 ''designed'':32 ''detailed'':259 ''development'':670 ''digital'':60,73,128,244,417,561,663,675 ''display'':142,520 ''distance'':254 ''distinctive'':114 ''distributors'':366 ''effectively'':440 ''effortless'':285 ''enables'':428 ''end'':392,394 ''end-to-end'':391 ''engineered'':75 ''enhance'':278 ''ensure'':460 ''ensuring'':166 ''enter'':486 ''equally'':200 ''equivalent'':249,565 ''every'':168,461 ''everyday'':85 ''everything'':401 ''evolving'':79 ''excellence'':31 ''existing'':482 ''expand'':480 ''experience'':281,684 ''expertise'':414,499 ''extended'':351 ''f'':546 ''f/2.2'':241,545 ''factor'':134,519 ''feature'':120,512 ''features'':231,276 ''featuring'':12 ''fi'':305,568 ''fill'':291,577 ''flash'':300 ''flash/off'':585 ''flattering'':316 ''flexibility'':146 ''flip'':5,17,71,116,516 ''flip-top'':4,70,115,515 ''flip-up'':16 ''focus'':283,553,555 ''focusing'':253 ''for'':33,147,217,284,308,315,334,350,362,626,631,677,699 ''form'':133,518 ''framed'':172 ''from'':204,402 ''full'':386 ''full-service'':385 ''functionality'':319 ''functionality—and'':97 ''gateway'':376 ''glance'':511 ''global'':363,678 ''grade'':226 ''growing'':489 ''guangdong'':52,638,650,655 ''happen'':506 ''hardware'':270 ''hd'':524 ''heart'':108 ''high'':220 ''high-quality'':219 ''highest'':465 ''highlights'':508 ''hood'':175 ''image'':162,310,526 ''images'':190,260 ''imaging'':61,664 ''impressive'':201,269 ''in'':58,94,125,261,289,415,581,667 ''inch'':15,140,522 ''including'':451 ''industry'':62,683 ''infinity'':558 ''infrastructure'':450 ''innovation'':67,691 ''innovative'':674 ''inquiries'':633 ''instant'':309 ''interface'':325 ''interpolated'':194 ''interpolation'':535 ''intuitive'':132 ''ips'':141,523 ''is'':112,170,178,273,369,374,443,623,658 ''it'':36,123,213,505 ''its'':65,113,268 ''itself'':382 ''just'':256,359 ''label'':41 ''labeling'':407 ''languages'':603,605 ''lanyard'':614 ''latest'':66 ''launch'':476 ''leading'':660 ''leap'':93 ''led'':290,582 ''lens'':238,544,615 ''light'':292,578 ''line'':484 ''lines'':454 ''lithium'':348,612 ''live'':331 ''logistics'':411 ''looking'':474 ''ltd'':54,640,652,657 ''make'':504 ''making'':212 ''manual'':609 ''manufacturer'':57,661 ''manufacturing'':30,104,388,449,501 ''market'':130,435,494 ''max'':590 ''meet'':77 ''meets'':463 ''megapixels'':196 ''minimum'':252 ''mm'':548 ''mode'':314 ''modes'':295 ''more'':370 ''mp'':183,529 ''new'':478 ''not'':358 ''now'':624 ''np'':346,601 ''np-6l'':345,600 ''odm'':397,629 ''oem'':395,627 ''oem/odm'':10,697 ''of'':81,101,109,188,255,264,467,662,673,682 ''off'':302 ''offering'':390 ''offers'':37,143 ''official'':645 ''on'':297 ''on/auto/strong'':584 ''optical'':247,564 ''or'':301,485 ''orders'':630 ''packaging'':409 ''packed'':274 ''partner'':11,357,389,698 ''partners'':429 ''partnership'':378,632 ''perfectly'':171 ''performance'':355 ''photography'':149,222 ''playback'':165 ''please'':634 ''portraits'':317 ''positions'':381 ''powered'':179 ''previews'':163 ''private'':40,406 ''private-label'':39 ''producing'':189 ''product'':483,507 ''production'':45,453,672 ''products'':665 ''product—it'':373 ''professional'':225 ''professional-grade'':224 ''protocols'':458 ''provides'':496 ''prowess'':105 ''quality'':221,425,468,689 ''quickly'':436 ''rapidly'':488 ''rechargeable'':343,599 ''reliability'':470 ''reliable'':354 ''remote'':328 ''represents'':90 ''resolution'':157,537 ''resolutions'':203 ''rigorous'':456 ''robust'':44,448 ''s'':29,103,447,644 ''scale'':502 ''scenarios'':266 ''screen'':19,158 ''sdhc'':340,592 ''seasoned'':56 ''selfie'':148,313 ''sensor'':21,185,527 ''serves'':693 ''service'':387 ''services'':398 ''sets'':122 ''sharp'':258 ''shooting'':154,265,286 ''shot'':169 ''showcases'':27 ''significant'':92 ''slot'':589 ''songdian'':1,28,47,50,102,379,427,446,495,636,648,653,692 ''specializing'':666 ''specification'':513 ''standards'':466 ''statement'':100 ''storage'':586,618 ''streaming'':332 ''strong'':299 ''supplier'':361 ''supply'':419 ''support'':333 ''supported'':569,571,606 ''supporting'':202 ''technical'':498 ''technology'':51,380,637,649,654 ''testing'':457 ''tf'':335,587 ''than'':371 ''that'':121,167,277,399,459 ''the'':25,59,68,78,88,107,110,126,155,174,176,207,228,271,279,367,416,441,464,487,497,621,642,668 ''their'':432 ''this'':131 ''to'':76,192,210,327,338,377,393,408,424,430,434,475,503,533,557,688 ''today'':63 ''tool'':216 ''top'':6,72,117,517 ''transfer'':311 ''trusted'':696 ''type'':322,574 ''type-c'':321,573 ''under'':173 ''unit'':462 ''unparalleled'':145 ''unveiled'':64 ''unveils'':2 ''up'':18,191,209,337,532 ''usb'':324,576,610 ''use'':352 ''user'':280,608 ''users'':86,144 ''v'':598 ''variety'':263 ''versatile'':215 ''via'':320,572,641 ''vibrant'':138 ''video'':24,197,536 ''videography'':227 ''viewing'':551 ''vision'':433 ''vlog'':490 ''vlogging'':150 ''way'':208 ''webcam'':318,570 ''whether'':471 ''wi'':304,567 ''wi-fi'':303,566 ''wide'':236 ''wide-angle'':235 ''wireless'':306 ''with'':43,136,239,275,293,412,680 ''work'':329 ''worldwide'':701 ''years'':681 ''you'':472 ''your'':9 ''zoom'':245,248,559,562 ''°'':234,550 ''–'':8,49', 1, '/uploads/news/songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner/cover.webp', 0);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.943198+08', '2026-07-24 14:41:31.995328+08', 0, NULL, 'admin', 7, 'songdian-named-2025-china-made-trusted-brand', 'SONGDIAN Named 2025 China Made Trusted Brand', 'SONGDIAN Trusted Brand of China Manufacturing 2025 CHINA – Songdian, a leading domestic camera brand under Shenzhen Sodak Digital Technology Co., Ltd.
+', '
+<p class="wp-block-paragraph"><strong>CHINA</strong> – Songdian, a leading domestic camera brand under Shenzhen Sodak Digital Technology Co., Ltd., has been awarded the prestigious “Trusted Brand of China Manufacturing 2025” title. The accolade comes from a national selection activity aimed at identifying top-quality brands that have truly stood the test of the market and earned consumer confidence.</p>
+
+
+
+<h2 class="wp-block-heading">A Prestigious Endorsement: Trusted Brand of China Manufacturing</h2>
+
+
+
+<p class="wp-block-paragraph">The “Trusted Brand of China Manufacturing” initiative is organized by the China Industry News and co-organized by the Brand Strengthening Working Committee of the China Association of Private Science &amp; Technology Enterprises. Its evaluation system prioritizes “consumer satisfaction,” integrating big data analysis and expert review. Earning this honor serves as a powerful endorsement of Songdian&#8217;s product quality, technological innovation, and the trust it has cultivated among users.</p>
+
+
+
+<p class="wp-block-paragraph">Concurrently, Mr. Zhao Kundian, founder of the Songdian brand and General Manager of Shenzhen Sodak Digital Technology, was appointed as a Council Member of the Brand Strengthening Working Committee of the same association.</p>
+
+
+
+<h2 class="wp-block-heading">Built on a Foundation of Manufacturing Excellence</h2>
+
+
+
+<p class="wp-block-paragraph">The award is built upon a foundation of robust manufacturing capability. Songdian operates a fully integrated industrial chain encompassing R&amp;D, manufacturing, sales, and brand operations. Its intelligent production base spans 40,000 square meters with an annual production capacity exceeding 4 million units. To master core technologies such as optical zoom, the brand has assembled expert R&amp;D teams from Japan and Taiwan, China, driving continuous improvements in key areas like lens performance, image quality, and stabilization.</p>
+
+
+
+<p class="wp-block-paragraph">This vertical integration — from precision mold-making and optical lens grinding to SMT assembly, calibration, and final testing — ensures that every camera leaving the factory meets stringent quality standards. By controlling the entire production process in-house, Songdian delivers consistent performance, rapid prototyping, and flexible customization for global partners, reinforcing its reputation as a reliable manufacturing powerhouse.</p>
+
+
+
+<h2 class="wp-block-heading">Market Leadership and Consumer Trust</h2>
+
+
+
+<p class="wp-block-paragraph">Market performance provides the most tangible proof of consumer trust. During the recent Double 11 shopping festival, several Songdian camera models were top sellers, celebrated for their stylish design, high cost-performance ratio, and user-friendly operation. On major e-commerce platforms, Songdian consistently ranks at the top among domestic camera brands in sales, having secured titles like “No.1 in Domestic Digital Camera Brand &amp; Store Sales Rankings.”</p>
+
+
+
+<p class="wp-block-paragraph">This latest recognition as a “Trusted Brand” further solidifies Songdian&#8217;s commitment to its users. The brand stated that it remains dedicated to driving quality upgrades through technological innovation, with the mission of delivering reliable, high-performance, and accessible cameras made in China for consumers worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">From being a synonym for domestic cameras to becoming a certified trusted brand, Songdian&#8217;s journey reflects the evolving strength and credibility of China&#8217;s manufacturing sector on the global stage.</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN (Shenzhen Suoda Digital Technology Co., Ltd.) is a professional digital camera manufacturer founded in 2010 and headquartered in Foshan, Guangdong. With a 40,000㎡ smart manufacturing base, annual capacity of over 10 million units, and a fully integrated supply chain — including in-house lens grinding, mold making, SMT, and optical calibration — the company serves clients across more than 30 countries. Backed by over 500 national patents and ISO-certified quality systems, SONGDIAN continues to invest in R&amp;D and vertical integration, striving to be the preferred manufacturing partner for quality-driven imaging brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">&nbsp;</p>
+', '', '2026-07-20 08:39:41.943213+08', 'PUBLISHED', '''000'':235 ''000㎡'':527 ''1'':409 ''10'':535 ''11'':361 ''2010'':518 ''2025'':3,14 ''2025”'':55 ''30'':565 ''4'':244 ''40'':234,526 ''500'':570 ''a'':18,33,61,85,145,183,198,208,216,338,423,468,475,511,525,539 ''about'':497 ''accessible'':458 ''accolade'':58 ''across'':562 ''activity'':64 ''aimed'':65 ''among'':161,398 ''an'':239 ''analysis'':136 ''and'':81,107,137,155,172,226,265,279,290,298,328,344,381,457,486,519,538,554,573,586 ''annual'':240,531 ''appointed'':181 ''areas'':273 ''as'':144,182,252,337,422 ''assembled'':258 ''assembly'':296 ''association'':120,195 ''at'':66,395 ''award'':204 ''awarded'':47 ''backed'':567 ''base'':232,530 ''be'':591 ''becoming'':474 ''been'':46 ''being'':467 ''big'':134 ''brand'':7,10,22,37,51,89,95,113,171,188,227,256,414,435,478 ''brands'':71,401,601 ''brand”'':425 ''built'':196,206 ''by'':102,111,313,568 ''calibration'':297,556 ''camera'':21,36,305,366,400,413,514 ''cameras'':459,472 ''capability'':213 ''capacity'':242,532 ''celebrated'':371 ''certified'':476,576 ''chain'':220,543 ''china'':4,12,15,30,53,91,97,104,119,267,462,489 ''clients'':561 ''co'':28,43,109,501,508 ''co-organized'':108 ''comes'':59 ''commerce'':390 ''commitment'':430 ''committee'':116,191 ''company'':559 ''concurrently'':163 ''confidence'':84 ''consistent'':324 ''consistently'':393 ''consumer'':83,345,355 ''consumers'':464 ''continues'':580 ''continuous'':269 ''controlling'':314 ''core'':249 ''cost'':378 ''cost-performance'':377 ''council'':184 ''countries'':566 ''credibility'':487 ''cultivated'':160 ''customization'':330 ''d'':223,261,585 ''data'':135 ''dedicated'':440 ''delivering'':452 ''delivers'':323 ''design'':375 ''digital'':26,41,178,412,506,513 ''domestic'':20,35,399,411,471 ''double'':360 ''driven'':599 ''driving'':268,442 ''during'':357 ''e'':389 ''e-commerce'':388 ''earned'':82 ''earning'':140 ''encompassing'':221 ''endorsement'':87,147 ''ensures'':302 ''enterprises'':125 ''entire'':316 ''evaluation'':127 ''every'':304 ''evolving'':484 ''exceeding'':243 ''excellence'':202 ''expert'':138,259 ''factory'':308 ''festival'':363 ''final'':299 ''flexible'':329 ''for'':331,372,463,470,596 ''foshan'':522 ''foundation'':199,209 ''founded'':516 ''founder'':167 ''friendly'':384 ''from'':60,263,285,466 ''fully'':217,540 ''further'':426 ''general'':173 ''global'':332,495 ''grinding'':293,550 ''guangdong'':500,523 ''has'':45,159,257 ''have'':73 ''having'':404 ''headquartered'':520 ''high'':376,455 ''high-performance'':454 ''honor'':142 ''house'':321,548 ''identifying'':67 ''image'':277 ''imaging'':600 ''improvements'':270 ''in'':271,320,402,410,461,517,521,547,583 ''in-house'':319,546 ''including'':545 ''industrial'':219 ''industry'':105 ''initiative'':99 ''innovation'':154,447 ''integrated'':218,541 ''integrating'':133 ''integration'':283,588 ''intelligent'':230 ''invest'':582 ''is'':100,205,510 ''iso'':575 ''iso-certified'':574 ''it'':158,438 ''its'':126,229,335,432 ''japan'':264 ''journey'':481 ''key'':272 ''kundian'':166 ''latest'':420 ''leadership'':343 ''leading'':19,34 ''leaving'':306 ''lens'':275,292,549 ''like'':274,407 ''ltd'':29,44,502,509 ''made'':5,460 ''major'':387 ''making'':289,552 ''manager'':174 ''manufacturer'':515 ''manufacturing'':13,54,92,201,212,224,340,491,529,594 ''manufacturing”'':98 ''market'':80,342,347 ''master'':248 ''meets'':309 ''member'':185 ''meters'':237 ''million'':245,536 ''mission'':450 ''models'':367 ''mold'':288,551 ''mold-making'':287 ''more'':563 ''most'':351 ''mr'':164 ''named'':2 ''national'':62,571 ''news'':106 ''of'':11,52,78,90,96,117,121,148,168,175,186,192,200,210,354,451,488,533 ''on'':197,386,493 ''operates'':215 ''operation'':385 ''operations'':228 ''optical'':253,291,555 ''organized'':101,110 ''over'':534,569 ''partner'':595 ''partners'':333 ''patents'':572 ''performance'':276,325,348,379,456 ''platforms'':391 ''powerful'':146 ''powerhouse'':341 ''precision'':286 ''preferred'':593 ''prestigious'':49,86 ''prioritizes'':129 ''private'':122 ''process'':318 ''product'':151 ''production'':231,241,317 ''professional'':512 ''proof'':353 ''prototyping'':327 ''provides'':349 ''quality'':70,152,278,311,443,577,598 ''quality-driven'':597 ''r'':222,260,584 ''rankings'':417 ''ranks'':394 ''rapid'':326 ''ratio'':380 ''recent'':359 ''recognition'':421 ''reflects'':482 ''reinforcing'':334 ''reliable'':339,453 ''remains'':439 ''reputation'':336 ''review'':139 ''robust'':211 ''s'':150,429,480,490 ''sales'':225,403,416 ''same'':194 ''satisfaction'':131 ''science'':123 ''sector'':492 ''secured'':405 ''selection'':63 ''sellers'':370 ''serves'':143,560 ''several'':364 ''shenzhen'':24,39,176,504 ''shopping'':362 ''smart'':528 ''smt'':295,553 ''sodak'':25,40,177 ''solidifies'':427 ''songdian'':1,8,17,32,149,170,214,322,365,392,428,479,498,503,579 ''spans'':233 ''square'':236 ''stabilization'':280 ''stage'':496 ''standards'':312 ''stated'':436 ''stood'':75 ''store'':415 ''strength'':485 ''strengthening'':114,189 ''stringent'':310 ''striving'':589 ''stylish'':374 ''such'':251 ''suoda'':505 ''supply'':542 ''synonym'':469 ''system'':128 ''systems'':578 ''taiwan'':266 ''tangible'':352 ''teams'':262 ''technological'':153,446 ''technologies'':250 ''technology'':27,42,124,179,499,507 ''test'':77 ''testing'':300 ''than'':564 ''that'':72,303,437 ''the'':48,57,76,79,93,103,112,118,156,169,187,193,203,255,307,315,350,358,396,434,449,483,494,558,592 ''their'':373 ''this'':141,281,419 ''through'':445 ''title'':56 ''titles'':406 ''to'':247,294,431,441,473,581,590 ''top'':69,369,397 ''top-quality'':68 ''truly'':74 ''trust'':157,346,356 ''trusted'':6,9,88,477 ''under'':23,38 ''units'':246,537 ''upgrades'':444 ''upon'':207 ''user'':383 ''user-friendly'':382 ''users'':162,433 ''vertical'':282,587 ''was'':180 ''were'':368 ''with'':238,448,524 ''working'':115,190 ''worldwide'':465,602 ''zhao'':165 ''zoom'':254 ''–'':16,31 ''—'':284,301,544,557 ''“consumer'':130 ''“no'':408 ''“trusted'':50,94,424 ''”'':132,418', 1, '/uploads/news/songdian-named-2025-china-made-trusted-brand/cover.webp', 4);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.938531+08', '2026-07-24 14:41:31.99549+08', 0, NULL, 'admin', 6, 'songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit', 'SONGDIAN Awarded Brand Value Certificate at 2026 Boao Global Competitiveness Summit', 'Songdian Camera has been appointed as the official &#8220;Designated Brand&#8221; and awarded a Brand Value Evaluation Certificate at the 2026 Boao Global Competitiveness Enterprise Summit (April 24–26, Hainan). The recognition highlights the brand’s strength and rising global competitiveness as a leading Chinese imaging player.
+', '
+<p class="wp-block-paragraph"><strong>BOAO, China</strong> – From April 24 to 26, 2026, the Boao Global Competitiveness Enterprise Summit, themed &#8220;Exploring New Channels for Globalization&#8221;, was held at the Boao State Guesthouse in Hainan. SONGDIAN Camera was invited to attend and was officially named the &#8220;Designated Brand&#8221; of the event. At the summit, SONGDIAN received the Brand Value Evaluation Certificate, once again demonstrating the strength and global potential of Chinese imaging brands to the world.</p>
+
+
+
+<p class="wp-block-paragraph">Behind this brand recognition lies a solid manufacturing foundation. SONGDIAN operates a 40,000-square-meter smart manufacturing base equipped with fully automated SMT assembly lines, precision optical lens grinding and coating facilities, and a Class 100,000 dust-free workshop. With an annual production capacity exceeding 10 million units, the company has full vertical integration — from mold making and injection molding to PCB assembly, optical calibration, and final quality testing — all performed in-house. This end-to-end control ensures consistent product quality, rapid prototyping, and flexible customization for global OEM/ODM partners.</p>
+
+
+
+<h2 class="wp-block-heading">Authoritative Ranking: Among the Top 500 in Global Competitiveness</h2>
+
+
+
+<p class="wp-block-paragraph">As a benchmark for Chinese brands going global, SONGDIAN&#8217;s brand value has long been recognized by authoritative institutions. In January this year, SONGDIAN was listed alongside industry leaders such as Huawei, Tencent, BYD, Midea, DJI, and Gree in the &#8220;2025 Guangdong Brands Global Competitiveness Top 500&#8221; released by the Guangdong Provincial Enterprise Brand Construction Promotion Association.</p>
+
+
+
+<p class="wp-block-paragraph">The evaluation system, jointly developed by multiple authoritative institutions and renowned universities, covers five core dimensions: technological innovation, brand value, global presence, market performance, and sustainable development. SONGDIAN&#8217;s inclusion marks that its comprehensive competitiveness has entered the first echelon of Guangdong brands.</p>
+
+
+
+<p class="wp-block-paragraph">At this Boao Summit, SONGDIAN was once again awarded the Brand Value Evaluation Certificate. The Brand Evaluation Diagnosis Report issued alongside the certificate objectively presents the enterprise&#8217;s value achievements and accurately identifies weak links in brand building through problem-oriented analysis, providing strategic guidance for SONGDIAN&#8217;s high-quality, sustainable development.</p>
+
+
+
+<h2 class="wp-block-heading">Global Layout: Building Core Competitiveness through Brand Internationalization</h2>
+
+
+
+<p class="wp-block-paragraph">Rooted in the domestic market while looking at the world, SONGDIAN has accelerated the construction of a development pattern of &#8220;comprehensive domestic coverage and global expansion&#8221; in recent years.</p>
+
+
+
+<ul class="wp-block-list">
+<li><strong>Domestic Market:</strong> Deeply cultivating mainstream e-commerce platforms (Tmall, Taobao, <a href="http://JD.com" target="_blank">JD.com</a>, Pinduoduo, Douyin) and offline physical channels (JD Home stores and authorized agent networks), forming an integrated online-offline full-domain sales network.</li>
+
+
+
+<li><strong>Overseas Market:</strong> Relying on cross-border e-commerce giants and localized distribution channels, the brand&#8217;s agent network covers more than 30 countries and regions worldwide, with a presence on platforms including Amazon, eBay, Walmart, Mercado Libre, TikTok Shop, and Temu.</li>
+</ul>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN continues to lower the threshold for professional imaging, promote the popularization of imaging technology and consumer upgrading, actively support Chinese imaging brands in going global, and strive to become a core competitor in the global imaging ecosystem.</p>
+
+
+
+<p class="wp-block-paragraph">At the summit venue, SONGDIAN specially planned the &#8220;Speak for Domestic Brands, Cheer for SONGDIAN&#8221; interactive session, inviting 50 industry guests to participate in video shooting. This highly engaging form of communication deeply connected with guests, conveying the warmth and strength of domestic brands.</p>
+
+
+
+<p class="wp-block-paragraph">With its robust manufacturing capabilities, extensive global distribution network, and continuous investment in R&amp;D, SONGDIAN is well-positioned to meet the growing demand for high-quality, affordable imaging solutions worldwide. The company&#8217;s factory-first philosophy ensures that every product shipped reflects the highest standards of engineering excellence and reliability — a promise that has earned the trust of partners across more than 30 countries.</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">Founded in 2010 and headquartered in Foshan, Guangdong, SONGDIAN is a professional digital camera manufacturer dedicated to the research, development, production, and global distribution of consumer imaging electronics. With a 40,000㎡ smart factory, annual capacity of 10 million units, over 500 national patents, and ISO-certified quality management systems, the company serves clients across North America, Europe, Southeast Asia, and the Middle East. SONGDIAN continues to invest in next-generation imaging technologies and vertical integration, striving to be the preferred manufacturing partner for quality-driven camera brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph">&nbsp;</p>
+', '', '2026-07-20 08:39:41.938545+08', 'PUBLISHED', '''000'':140,165 ''000㎡'':693 ''10'':176,699 ''100'':164 ''2010'':664 ''2025'':275 ''2026'':7,31,64 ''24'':61 ''24–26'':38 ''26'':63 ''30'':485,654 ''40'':139,692 ''50'':561 ''500'':231,281,703 ''a'':24,51,132,138,162,236,413,491,535,642,672,691 ''about'':656 ''accelerated'':409 ''accurately'':366 ''achievements'':364 ''across'':651,717 ''actively'':523 ''affordable'':616 ''again'':113,342 ''agent'':449,480 ''all'':202 ''alongside'':261,355 ''amazon'':496 ''america'':719 ''among'':228 ''an'':171,452 ''analysis'':377 ''and'':22,46,92,117,158,161,189,197,219,271,301,316,365,420,440,447,473,487,503,520,531,582,596,639,665,683,706,723,737 ''annual'':172,696 ''appointed'':16 ''april'':37,60 ''as'':17,50,235,265 ''asia'':722 ''assembly'':152,194 ''association'':291 ''at'':6,29,79,102,335,404,543 ''attend'':91 ''authoritative'':226,252,299 ''authorized'':448 ''automated'':150 ''awarded'':2,23,343 ''base'':146 ''be'':742 ''become'':534 ''been'':15,249 ''behind'':127 ''benchmark'':237 ''boao'':8,32,56,66,81,337 ''border'':468 ''brand'':3,21,25,98,108,129,245,288,310,345,350,371,395,478 ''brands'':123,240,277,334,527,554,586,752 ''brand’s'':44 ''building'':372,391 ''by'':251,283,297 ''byd'':268 ''calibration'':196 ''camera'':13,87,675,751 ''capabilities'':591 ''capacity'':174,697 ''certificate'':5,28,111,348,357 ''certified'':709 ''channels'':74,443,476 ''cheer'':555 ''china'':57 ''chinese'':53,121,239,525 ''class'':163 ''clients'':716 ''co'':660 ''coating'':159 ''commerce'':433,471 ''communication'':574 ''company'':180,621,714 ''competitiveness'':10,34,49,68,234,279,326,393 ''competitor'':537 ''comprehensive'':325,417 ''connected'':576 ''consistent'':214 ''construction'':289,411 ''consumer'':521,687 ''continues'':506,728 ''continuous'':597 ''control'':212 ''conveying'':579 ''core'':306,392,536 ''countries'':486,655 ''coverage'':419 ''covers'':304,482 ''cross'':467 ''cross-border'':466 ''cultivating'':429 ''customization'':221 ''d'':601 ''dedicated'':677 ''deeply'':428,575 ''demand'':611 ''demonstrating'':114 ''designated'':20,97 ''developed'':296 ''development'':318,388,414,681 ''diagnosis'':352 ''digital'':674 ''dimensions'':307 ''distribution'':475,594,685 ''dji'':270 ''domain'':459 ''domestic'':400,418,426,553,585 ''douyin'':439 ''driven'':750 ''dust'':167 ''dust-free'':166 ''e'':432,470 ''e-commerce'':431,469 ''earned'':646 ''east'':726 ''ebay'':497 ''echelon'':331 ''ecosystem'':542 ''electronics'':689 ''end'':209,211 ''end-to-end'':208 ''engaging'':571 ''engineering'':637 ''ensures'':213,627 ''entered'':328 ''enterprise'':35,69,287,361 ''equipped'':147 ''europe'':720 ''evaluation'':27,110,293,347,351 ''event'':101 ''every'':629 ''exceeding'':175 ''excellence'':638 ''expansion'':422 ''exploring'':72 ''extensive'':592 ''facilities'':160 ''factory'':624,695 ''factory-first'':623 ''final'':198 ''first'':330,625 ''five'':305 ''flexible'':220 ''for'':75,222,238,381,511,552,556,612,747 ''form'':572 ''forming'':451 ''foshan'':668 ''foundation'':135 ''founded'':662 ''free'':168 ''from'':59,186 ''full'':182,458 ''full-domain'':457 ''fully'':149 ''generation'':734 ''giants'':472 ''global'':9,33,48,67,118,223,233,242,278,312,389,421,530,540,593,684 ''globalization'':76 ''going'':241,529 ''gree'':272 ''grinding'':157 ''growing'':610 ''guangdong'':276,285,333,659,669 ''guesthouse'':83 ''guests'':563,578 ''guidance'':380 ''hainan'':39,85 ''has'':14,181,247,327,408,645 ''headquartered'':666 ''held'':78 ''high'':385,614 ''high-quality'':384,613 ''highest'':634 ''highlights'':42 ''highly'':570 ''home'':445 ''house'':206 ''huawei'':266 ''identifies'':367 ''imaging'':54,122,513,518,526,541,617,688,735 ''in'':84,205,232,254,273,370,398,423,528,538,566,599,663,667,731 ''in-house'':204 ''including'':495 ''inclusion'':321 ''industry'':262,562 ''injection'':190 ''innovation'':309 ''institutions'':253,300 ''integrated'':453 ''integration'':184,739 ''interactive'':558 ''internationalization'':396 ''invest'':730 ''investment'':598 ''invited'':89 ''inviting'':560 ''is'':603,671 ''iso'':708 ''iso-certified'':707 ''issued'':354 ''its'':324,588 ''january'':255 ''jd'':444 ''jd.com'':437 ''jointly'':295 ''layout'':390 ''leaders'':263 ''leading'':52 ''lens'':156 ''libre'':500 ''lies'':131 ''lines'':153 ''links'':369 ''listed'':260 ''localized'':474 ''long'':248 ''looking'':403 ''lower'':508 ''ltd'':661 ''mainstream'':430 ''making'':188 ''management'':711 ''manufacturer'':676 ''manufacturing'':134,145,590,745 ''market'':314,401,427,463 ''marks'':322 ''meet'':608 ''mercado'':499 ''meter'':143 ''middle'':725 ''midea'':269 ''million'':177,700 ''mold'':187 ''molding'':191 ''more'':483,652 ''multiple'':298 ''named'':95 ''national'':704 ''network'':461,481,595 ''networks'':450 ''new'':73 ''next'':733 ''next-generation'':732 ''north'':718 ''objectively'':358 ''oem/odm'':224 ''of'':99,120,332,412,416,517,573,584,636,649,686,698 ''official'':19 ''officially'':94 ''offline'':441,456 ''on'':465,493 ''once'':112,341 ''online'':455 ''online-offline'':454 ''operates'':137 ''optical'':155,195 ''oriented'':376 ''over'':702 ''overseas'':462 ''participate'':565 ''partner'':746 ''partners'':225,650 ''patents'':705 ''pattern'':415 ''pcb'':193 ''performance'':315 ''performed'':203 ''philosophy'':626 ''physical'':442 ''pinduoduo'':438 ''planned'':549 ''platforms'':434,494 ''player'':55 ''popularization'':516 ''positioned'':606 ''potential'':119 ''precision'':154 ''preferred'':744 ''presence'':313,492 ''presents'':359 ''problem'':375 ''problem-oriented'':374 ''product'':215,630 ''production'':173,682 ''professional'':512,673 ''promise'':643 ''promote'':514 ''promotion'':290 ''prototyping'':218 ''providing'':378 ''provincial'':286 ''quality'':199,216,386,615,710,749 ''quality-driven'':748 ''r'':600 ''ranking'':227 ''rapid'':217 ''received'':106 ''recent'':424 ''recognition'':41,130 ''recognized'':250 ''reflects'':632 ''regions'':488 ''released'':282 ''reliability'':640 ''relying'':464 ''renowned'':302 ''report'':353 ''research'':680 ''rising'':47 ''robust'':589 ''rooted'':397 ''s'':244,320,362,383,479,622 ''sales'':460 ''serves'':715 ''session'':559 ''shipped'':631 ''shooting'':568 ''shop'':502 ''smart'':144,694 ''smt'':151 ''solid'':133 ''solutions'':618 ''songdian'':1,12,86,105,136,243,258,319,339,382,407,505,547,557,602,657,670,727 ''southeast'':721 ''speak'':551 ''specially'':548 ''square'':142 ''square-meter'':141 ''standards'':635 ''state'':82 ''stores'':446 ''strategic'':379 ''strength'':45,116,583 ''strive'':532 ''striving'':740 ''such'':264 ''summit'':11,36,70,104,338,545 ''support'':524 ''sustainable'':317,387 ''system'':294 ''systems'':712 ''taobao'':436 ''technological'':308 ''technologies'':736 ''technology'':519,658 ''temu'':504 ''tencent'':267 ''testing'':200 ''than'':484,653 ''that'':323,628,644 ''the'':18,30,40,43,65,80,96,100,103,107,115,125,179,229,274,284,292,329,344,349,356,360,399,405,410,477,509,515,539,544,550,580,609,620,633,647,679,713,724,743 ''themed'':71 ''this'':128,207,256,336,569 ''threshold'':510 ''through'':373,394 ''tiktok'':501 ''tmall'':435 ''to'':62,90,124,192,210,507,533,564,607,678,729,741 ''top'':230,280 ''trust'':648 ''units'':178,701 ''universities'':303 ''upgrading'':522 ''value'':4,26,109,246,311,346,363 ''venue'':546 ''vertical'':183,738 ''video'':567 ''walmart'':498 ''warmth'':581 ''was'':77,88,93,259,340 ''weak'':368 ''well'':605 ''well-positioned'':604 ''while'':402 ''with'':148,170,490,577,587,690 ''workshop'':169 ''world'':126,406 ''worldwide'':489,619,753 ''year'':257 ''years'':425 ''–'':58 ''—'':185,201,641', 1, '/uploads/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit/cover.png', 5);
+INSERT INTO public.t_news VALUES ('2026-07-20 08:39:41.928632+08', '2026-07-24 14:41:32.033242+08', 0, NULL, 'admin', 4, 'songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence', 'SONGDIAN Manufacturing Unveils the DC325W: An 8K Imaging Powerhouse Built on Advanced Engineering and Local Supply Chain Excellence', 'SONGDIAN Technology (Guangdong) Co., Ltd. announces mass production of its DC325W camera, featuring a dual-core RISC-V CPU, 21MP CMOS sensor, 8K video, and 96MP photo interpolation. With vertical integration, strict QC, flexible customization, and a local supply chain, it offers a turnkey solution for global brands, distributors, and volume buyers.
+', '
+<p class="wp-block-paragraph"><strong>CHINA</strong> – SONGDIAN Technology (Guangdong) Co., Ltd., a premier Chinese manufacturer of digital imaging devices established in 2010, today announced the official launch of its new-generation digital camera model, the DC325W. This product represents the culmination of the company&#8217;s deep manufacturing expertise, vertical integration capabilities, and unwavering commitment to providing global B2B clients with reliable, feature-rich, and cost-effective imaging hardware.</p>
+
+
+
+<h2 class="wp-block-heading">In-House R&amp;D and Core Chipset Architecture</h2>
+
+
+
+<p class="wp-block-paragraph">At the heart of the DC325W lies a dual-core RISC-V CPU system, independently optimized by SONGDIAN&#8217;s R&amp;D team. This architecture achieves an ultra-fast color processing speed of up to 480 million pixels per second, ensuring minimal shutter lag and stable system performance even under demanding 8K data throughput. By adopting the open RISC-V ecosystem, we have gained greater control over firmware optimization and supply chain stability — a critical advantage for our OEM clients requiring long-term product lifecycle support.</p>
+
+
+
+<p class="wp-block-paragraph">The camera employs a 21-megapixel front CMOS sensor (1/2.4-inch) paired with a precision-engineered lens assembly (actual: Ff=1.79±0.5%, f=4.694mm). This optical module undergoes strict factory calibration to guarantee consistent image quality across all production batches, with a focusing range from 18cm to infinity.</p>
+
+
+
+<h2 class="wp-block-heading">Precision Manufacturing and Quality Assurance</h2>
+
+
+
+<p class="wp-block-paragraph">Our advanced SMT (Surface-Mount Technology) assembly lines and fully enclosed dust-free workshops ensure the highest standards of PCB board integration and optical alignment. Each DC325W unit is subjected to a multi-stage aging test and functional validation process, covering:</p>
+
+
+
+<ul class="wp-block-list">
+<li>Shutter accuracy validation (1/10s – 1/2650s range)</li>
+
+
+
+<li>ISO sensitivity linearity testing (ISO 100–6400)</li>
+
+
+
+<li>White balance calibration under multiple color temperature scenarios</li>
+
+
+
+<li>LED flash output consistency testing</li>
+
+
+
+<li>Wi-Fi module (2.4GHz, 802.11 b/g/n) signal stability verification</li>
+</ul>
+
+
+
+<p class="wp-block-paragraph">This comprehensive QC protocol guarantees a low field failure rate and consistent performance, which is essential for our partners operating in diverse retail and distribution markets worldwide.</p>
+
+
+
+<h2 class="wp-block-heading">Flexible Configuration and Customization for Global Partners</h2>
+
+
+
+<p class="wp-block-paragraph">Understanding that different markets and brands demand distinct product positioning, SONGDIAN offers extensive customization options for the DC325W, including:</p>
+
+
+
+<ul class="wp-block-list">
+<li><strong>Firmware-level customization:</strong> Pre-set default shooting modes, language packs (supporting 10 languages including English, Spanish, French, Japanese, etc.), and UI interface adjustments.</li>
+
+
+
+<li><strong>Packaging and accessory tailoring:</strong> Custom box designs, bundling options, and user manual branding.</li>
+
+
+
+<li><strong>Software integration:</strong> Support for PC webcam functionality and Wi-Fi connectivity protocols, allowing partners to develop companion apps.</li>
+</ul>
+
+
+
+<p class="wp-block-paragraph">The DC325W comes equipped with a 512MB DDR2 cache and supports TF card expansion up to 1TB (SDHC Class 6), ensuring ample buffer and storage for high-bitrate 8K/15FPS and 5K/30FPS video recording. The dual-screen solution (1.54-inch front TFT + 2.8-inch rear IPS) is designed with the vlogging and selfie market segment in mind, offering ready-to-market differentiation for our clients&#8217; product lines.</p>
+
+
+
+<h2 class="wp-block-heading">Supply Chain Reliability and Cost Efficiency</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN adopts a fully localized supply chain strategy. All core components — including CMOS image sensors, precision optical lens assemblies, DDR2 memory chips, and high-capacity lithium batteries — are sourced from certified domestic Tier-1 suppliers. This localization approach delivers three critical advantages to our global partners:</p>
+
+
+
+<ul class="wp-block-list">
+<li><strong>Supply chain resilience</strong> – Complete independence from cross-border shipping volatility, tariff uncertainties, and overseas component shortages. Our production lines are never held hostage by international logistics disruptions.</li>
+
+
+
+<li><strong>Ultra-short lead times</strong> – With domestic suppliers, we can replenish inventory and ramp up production swiftly. Standard bulk orders can typically be fulfilled within 15–20 days from order confirmation.</li>
+
+
+
+<li><strong>On-site quality traceability</strong> – Our factory quality engineers conduct regular on-site audits at supplier facilities, ensuring that every incoming component batch meets SONGDIAN&#8217;s strict AQL (Acceptable Quality Level) standards before it enters our SMT assembly lines. This upstream quality control drastically reduces incoming inspection rejection rates and ensures consistent final product output.</li>
+</ul>
+
+
+
+<p class="wp-block-paragraph">Furthermore, this localization enables rapid engineering iteration. If a client requests firmware or hardware adjustments, our R&amp;D team can coordinate closely with domestic suppliers to accelerate the customization cycle, significantly faster than competitors relying on imported parts. All of these benefits translate directly to cost advantages, shorter time-to-market, and greater supply peace of mind for our B2B clients.</p>
+
+
+
+<h2 class="wp-block-heading">Specifications Tailored for the Global Volume Market</h2>
+
+
+
+<p class="wp-block-paragraph">The DC325W supports 8 distinct shooting modes (Auto, Portrait, Landscape, Night Scene, Filter, Scene, Slow Motion, Video), 60 built-in color filters, and 7 selectable aspect ratios (4:3, 3:2, 16:9, 2.35:1, 1:1, 5:4, 4:5). With 8x digital zoom and HDR imaging support, this model covers the most sought-after consumer features while maintaining manufacturability and component commonality — a key consideration for large-scale production.</p>
+
+
+
+<p class="wp-block-paragraph">Other key specifications include:</p>
+
+
+
+
+<table class="has-fixed-layout"><tbody><tr><th>Parameter</th><th>Specification</th></tr><tr><td>Image resolutions</td><td>96M (13056×7344) down to 12M (4096×3072)</td></tr><tr><td>Video resolutions</td><td>8K/15FPS, 5K/30FPS, 4K/30FPS, 2.7K/60FPS, FHD/60FPS, HD/60FPS, etc.</td></tr><tr><td>ISO range</td><td>100 – 6400</td></tr><tr><td>Shutter speed</td><td>1/10s – 1/2650s</td></tr><tr><td>Exposure compensation</td><td>±3.0EV</td></tr><tr><td>Self-timer</td><td>Off / 3s / 5s / 10s</td></tr><tr><td>Burst mode</td><td>Off / 3 / 5 / 10 continuous shots</td></tr><tr><td>File formats</td><td>JPG (photo), MP4/H.264 (video)</td></tr><tr><td>Output</td><td>USB Type-C</td></tr><tr><td>Battery</td><td>1050mAh, 3.7V lithium rechargeable</td></tr><tr><td>Battery life</td><td>4K video ≤85 min, photo ≤100 min (under testing)</td></tr><tr><td>Dimensions</td><td>102×63×24mm</td></tr><tr><td>Net weight</td><td>123g (including battery)</td></tr></tbody></table>
+
+
+
+<h2 class="wp-block-heading">Partnership and OEM/ODM Services</h2>
+
+
+
+<p class="wp-block-paragraph">SONGDIAN welcomes inquiries from international distributors, retail brands, and e-commerce sellers. We offer comprehensive OEM/ODM services ranging from product co-development and mold customization to private-label packaging and after-sales technical support. Our engineering team is available for on-site and remote collaboration to tailor the DC325W to your specific market requirements.</p>
+
+
+
+<p class="wp-block-paragraph">For wholesale pricing, sample requests, and customization consultations, please contact our global sales department directly.</p>
+
+
+
+<p class="wp-block-paragraph"><strong>Standard Package Includes:</strong><br>
+  User manual ×1, USB Type-C cable ×1, Rechargeable lithium battery ×1, Wrist strap ×1, Storage bag ×1, Lens cleaning cloth ×1</p>
+
+
+
+<p class="wp-block-paragraph"><strong>Carton Specifications:</strong><br>
+  465×265×455mm, 50 units per carton, approx. 18kg per carton</p>
+
+
+
+<h2 class="wp-block-heading">About SONGDIAN Technology (Guangdong) Co., Ltd.</h2>
+
+
+
+<p class="wp-block-paragraph">Founded in 2010 and headquartered in China, SONGDIAN is a professional digital camera manufacturer dedicated to the research, development, production, and global distribution of consumer imaging electronics. With advanced assembly and testing facilities, the company has served clients across North America, Europe, Southeast Asia, and the Middle East. SONGDIAN continues to invest in next-generation imaging technologies, striving to be the preferred manufacturing partner for quality-driven camera brands worldwide.</p>
+
+
+
+<p class="wp-block-paragraph"><br>
+</p>
+', '', '2026-07-20 08:39:41.928649+08', 'PUBLISHED', '''-1'':596 ''1'':830,831,832 ''1.54'':524 ''1.79'':260 ''1/10s'':341,901 ''1/2.4-inch'':249 ''1/2650s'':343,903 ''10'':441,919 ''100'':896 ''100–6400'':350 ''102×63×24mm'':951 ''1050mah'':934 ''10s'':913 ''123g'':954 ''12m'':882 ''13056×7344'':879 ''15–20'':664 ''16'':827 ''18cm'':286 ''18kg'':1069 ''1tb'':501 ''2'':826 ''2.35'':829 ''2.4'':368 ''2.7'':889 ''2.8'':528 ''2010'':90,1080 ''21'':244 ''21mp'':40 ''3'':824,825,917 ''3.7'':935 ''3s'':911 ''4'':823,834,835 ''4.694'':263 ''4096×3072'':883 ''465×265×455mm'':1063 ''480'':186 ''4k'':941 ''4k/30fps'':888 ''5'':833,836,918 ''50'':1064 ''512mb'':491 ''5k/30fps'':516,887 ''5s'':912 ''6'':504 ''60'':812 ''6400'':898 ''7'':819 ''8'':798 ''802.11'':370 ''8k'':7,43,202 ''8k/15fps'':514,886 ''8x'':838 ''9'':828 ''96m'':878 ''96mp'':46 ''a'':32,57,63,80,156,226,243,252,282,327,380,490,562,734,862,1087 ''about'':1072 ''accelerate'':752 ''acceptable'':699 ''accessory'':455 ''accuracy'':339 ''achieves'':175 ''across'':277,1116 ''actual'':258 ''adjustments'':452,740 ''adopting'':206 ''adopts'':561 ''advanced'':12,295,1106 ''advantage'':228 ''advantages'':604,772 ''after'':852,995 ''after-sales'':994 ''aging'':331 ''alignment'':320 ''all'':278,568,764 ''allowing'':479 ''america'':1118 ''ample'':506 ''an'':6,176 ''and'':14,45,56,70,121,134,145,195,221,291,303,318,333,385,398,404,413,449,454,462,473,494,508,515,537,557,583,623,651,720,778,818,841,858,958,969,985,993,1008,1025,1081,1098,1108,1122 ''announced'':92 ''announces'':24 ''approach'':600 ''approx'':1068 ''apps'':484 ''aql'':698 ''architecture'':148,174 ''are'':590,630 ''asia'':1121 ''aspect'':821 ''assemblies'':579 ''assembly'':257,301,708,1107 ''assurance'':293 ''at'':149,685 ''audits'':684 ''auto'':802 ''available'':1003 ''b/g/n'':371 ''b2b'':127,786 ''bag'':1055 ''balance'':352 ''batch'':693 ''batches'':280 ''batteries'':588 ''battery'':933,939,956,1049 ''be'':661,1138 ''before'':703 ''benefits'':767 ''bitrate'':513 ''board'':316 ''border'':618 ''box'':458 ''branding'':465 ''brands'':68,414,968,1148 ''buffer'':507 ''built'':10,814 ''built-in'':813 ''bulk'':657 ''bundling'':460 ''burst'':914 ''buyers'':72 ''by'':167,205,634 ''c'':932,1044 ''cable'':1045 ''cache'':493 ''calibration'':271,353 ''camera'':30,102,241,1090,1147 ''can'':648,659,745 ''capabilities'':120 ''capacity'':586 ''card'':497 ''carton'':1061,1067,1071 ''certified'':593 ''chain'':17,60,223,555,566,610 ''china'':73,1084 ''chinese'':82 ''chips'':582 ''chipset'':147 ''class'':503 ''cleaning'':1058 ''client'':735 ''clients'':128,232,551,787,1115 ''closely'':747 ''cloth'':1059 ''cmos'':41,247,573 ''co'':22,78,983,1076 ''co-development'':982 ''collaboration'':1010 ''color'':180,356,816 ''comes'':487 ''commerce'':972 ''commitment'':123 ''commonality'':860 ''companion'':483 ''company'':113,1112 ''compensation'':905 ''competitors'':759 ''complete'':613 ''component'':625,692,859 ''components'':570 ''comprehensive'':376,976 ''conduct'':679 ''configuration'':403 ''confirmation'':668 ''connectivity'':477 ''consideration'':864 ''consistency'':362 ''consistent'':274,386,722 ''consultations'':1027 ''consumer'':853,1102 ''contact'':1029 ''continues'':1127 ''continuous'':920 ''control'':217,713 ''coordinate'':746 ''core'':35,146,159,569 ''cost'':136,558,771 ''cost-effective'':135 ''covering'':337 ''covers'':847 ''cpu'':39,163 ''critical'':227,603 ''cross'':617 ''cross-border'':616 ''culmination'':110 ''custom'':457 ''customization'':55,405,422,431,754,987,1026 ''cycle'':755 ''d'':144,171,743 ''data'':203 ''days'':665 ''dc325w'':5,29,105,154,322,426,486,796,1014 ''ddr2'':492,580 ''dedicated'':1092 ''deep'':115 ''default'':435 ''delivers'':601 ''demand'':415 ''demanding'':201 ''department'':1033 ''designed'':533 ''designs'':459 ''develop'':482 ''development'':984,1096 ''devices'':87 ''different'':411 ''differentiation'':548 ''digital'':85,101,839,1089 ''dimensions'':950 ''directly'':769,1034 ''disruptions'':637 ''distinct'':416,799 ''distribution'':399,1100 ''distributors'':69,966 ''diverse'':396 ''domestic'':594,645,749 ''down'':880 ''drastically'':714 ''driven'':1146 ''dual'':34,158,521 ''dual-core'':33,157 ''dual-screen'':520 ''dust'':307 ''dust-free'':306 ''e'':971 ''e-commerce'':970 ''each'':321 ''east'':1125 ''ecosystem'':212 ''effective'':137 ''efficiency'':559 ''electronics'':1104 ''employs'':242 ''enables'':729 ''enclosed'':305 ''engineered'':255 ''engineering'':13,731,1000 ''engineers'':678 ''english'':444 ''ensure'':310 ''ensures'':721 ''ensuring'':191,505,688 ''enters'':705 ''equipped'':488 ''essential'':390 ''established'':88 ''etc'':448,893 ''europe'':1119 ''even'':199 ''every'':690 ''excellence'':18 ''expansion'':498 ''expertise'':117 ''exposure'':904 ''extensive'':421 ''f'':262 ''facilities'':687,1110 ''factory'':270,676 ''failure'':383 ''fast'':179 ''faster'':757 ''feature'':132 ''feature-rich'':131 ''features'':854 ''featuring'':31 ''ff'':259 ''fhd/60fps'':891 ''fi'':366,476 ''field'':382 ''file'':922 ''filter'':807 ''filters'':817 ''final'':723 ''firmware'':219,429,737 ''firmware-level'':428 ''flash'':360 ''flexible'':54,402 ''focusing'':283 ''for'':66,229,391,406,424,469,510,549,784,790,865,1004,1020,1143 ''formats'':923 ''founded'':1078 ''free'':308 ''french'':446 ''from'':285,592,615,666,964,980 ''front'':246,526 ''fulfilled'':662 ''fully'':304,563 ''functional'':334 ''functionality'':472 ''furthermore'':726 ''gained'':215 ''generation'':100,1133 ''ghz'':369 ''global'':67,126,407,607,792,1031,1099 ''greater'':216,779 ''guangdong'':21,77,1075 ''guarantee'':273 ''guarantees'':379 ''hardware'':139,739 ''has'':1113 ''have'':214 ''hd/60fps'':892 ''hdr'':842 ''headquartered'':1082 ''heart'':151 ''held'':632 ''high'':512,585 ''high-bitrate'':511 ''high-capacity'':584 ''highest'':312 ''hostage'':633 ''house'':142 ''if'':733 ''image'':275,574,876 ''imaging'':8,86,138,843,1103,1134 ''imported'':762 ''in'':89,141,395,541,815,1079,1083,1130 ''in-house'':140 ''inch'':525,529 ''include'':873 ''includes'':1037 ''including'':427,443,572,955 ''incoming'':691,716 ''independence'':614 ''independently'':165 ''infinity'':288 ''inquiries'':963 ''inspection'':717 ''integration'':51,119,317,467 ''interface'':451 ''international'':635,965 ''interpolation'':48 ''inventory'':650 ''invest'':1129 ''ips'':531 ''is'':324,389,532,1002,1086 ''iso'':345,349,894 ''it'':61,704 ''iteration'':732 ''its'':28,97 ''japanese'':447 ''jpg'':924 ''k/60fps'':890 ''key'':863,871 ''label'':991 ''lag'':194 ''landscape'':804 ''language'':438 ''languages'':442 ''large'':867 ''large-scale'':866 ''launch'':95 ''lead'':641 ''led'':359 ''lens'':256,578,1057 ''level'':430,701 ''lies'':155 ''life'':940 ''lifecycle'':238 ''linearity'':347 ''lines'':302,553,629,709 ''lithium'':587,937,1048 ''local'':15,58 ''localization'':599,728 ''localized'':564 ''logistics'':636 ''long'':235 ''long-term'':234 ''low'':381 ''ltd'':23,79,1077 ''maintaining'':856 ''manual'':464,1039 ''manufacturability'':857 ''manufacturer'':83,1091 ''manufacturing'':2,116,290,1141 ''market'':539,547,777,794,1018 ''markets'':400,412 ''mass'':25 ''meets'':694 ''megapixel'':245 ''memory'':581 ''middle'':1124 ''million'':187 ''min'':944,947 ''mind'':542,783 ''minimal'':192 ''mm'':264 ''mode'':915 ''model'':103,846 ''modes'':437,801 ''module'':267,367 ''mold'':986 ''most'':849 ''motion'':810 ''mount'':299 ''mp4/h.264'':926 ''multi'':329 ''multi-stage'':328 ''multiple'':355 ''net'':952 ''never'':631 ''new'':99 ''new-generation'':98 ''next'':1132 ''next-generation'':1131 ''night'':805 ''north'':1117 ''oem'':231 ''oem/odm'':959,977 ''of'':27,84,96,111,152,183,314,765,782,1101 ''off'':910,916 ''offer'':975 ''offering'':543 ''offers'':62,420 ''official'':94 ''on'':11,670,682,761,1006 ''on-site'':669,681,1005 ''open'':208 ''operating'':394 ''optical'':266,319,577 ''optimization'':220 ''optimized'':166 ''options'':423,461 ''or'':738 ''order'':667 ''orders'':658 ''other'':870 ''our'':230,294,392,550,606,627,675,706,741,785,999,1030 ''output'':361,725,928 ''over'':218 ''overseas'':624 ''package'':1036 ''packaging'':453,992 ''packs'':439 ''paired'':250 ''parameter'':874 ''partner'':1142 ''partners'':393,408,480,608 ''partnership'':957 ''parts'':763 ''pc'':470 ''pcb'':315 ''peace'':781 ''per'':189,1066,1070 ''performance'':198,387 ''photo'':47,925,945 ''pixels'':188 ''please'':1028 ''portrait'':803 ''positioning'':418 ''powerhouse'':9 ''pre'':433 ''pre-set'':432 ''precision'':254,289,576 ''precision-engineered'':253 ''preferred'':1140 ''premier'':81 ''pricing'':1022 ''private'':990 ''private-label'':989 ''process'':336 ''processing'':181 ''product'':107,237,417,552,724,981 ''production'':26,279,628,654,869,1097 ''professional'':1088 ''protocol'':378 ''protocols'':478 ''providing'':125 ''qc'':53,377 ''quality'':276,292,672,677,700,712,1145 ''quality-driven'':1144 ''r'':143,170,742 ''ramp'':652 ''range'':284,344,895 ''ranging'':979 ''rapid'':730 ''rate'':384 ''rates'':719 ''ratios'':822 ''ready'':545 ''ready-to-market'':544 ''rear'':530 ''rechargeable'':938,1047 ''recording'':518 ''reduces'':715 ''regular'':680 ''rejection'':718 ''reliability'':556 ''reliable'':130 ''relying'':760 ''remote'':1009 ''replenish'':649 ''represents'':108 ''requests'':736,1024 ''requirements'':1019 ''requiring'':233 ''research'':1095 ''resilience'':611 ''resolutions'':877,885 ''retail'':397,967 ''rich'':133 ''risc'':37,161,210 ''risc-v'':36,160,209 ''s'':114,169,696 ''sales'':996,1032 ''sample'':1023 ''scale'':868 ''scenarios'':358 ''scene'':806,808 ''screen'':522 ''sdhc'':502 ''second'':190 ''segment'':540 ''selectable'':820 ''self'':908 ''self-timer'':907 ''selfie'':538 ''sellers'':973 ''sensitivity'':346 ''sensor'':42,248 ''sensors'':575 ''served'':1114 ''services'':960,978 ''set'':434 ''shipping'':619 ''shooting'':436,800 ''short'':640 ''shortages'':626 ''shorter'':773 ''shots'':921 ''shutter'':193,338,899 ''signal'':372 ''significantly'':756 ''site'':671,683,1007 ''slow'':809 ''smt'':296,707 ''software'':466 ''solution'':65,523 ''songdian'':1,19,75,168,419,560,695,961,1073,1085,1126 ''sought'':851 ''sought-after'':850 ''sourced'':591 ''southeast'':1120 ''spanish'':445 ''specific'':1017 ''specification'':875 ''specifications'':788,872,1062 ''speed'':182,900 ''stability'':224,373 ''stable'':196 ''stage'':330 ''standard'':656,1035 ''standards'':313,702 ''storage'':509,1054 ''strap'':1052 ''strategy'':567 ''strict'':52,269,697 ''striving'':1136 ''subjected'':325 ''supplier'':686 ''suppliers'':597,646,750 ''supply'':16,59,222,554,565,609,780 ''support'':239,468,844,998 ''supporting'':440 ''supports'':495,797 ''surface'':298 ''surface-mount'':297 ''swiftly'':655 ''system'':164,197 ''tailor'':1012 ''tailored'':789 ''tailoring'':456 ''tariff'':621 ''team'':172,744,1001 ''technical'':997 ''technologies'':1135 ''technology'':20,76,300,1074 ''temperature'':357 ''term'':236 ''test'':332 ''testing'':348,363,949,1109 ''tf'':496 ''tft'':527 ''than'':758 ''that'':410,689 ''the'':4,93,104,109,112,150,153,207,240,311,425,485,519,535,753,791,795,848,1013,1094,1111,1123,1139 ''these'':766 ''this'':106,173,265,375,598,710,727,845 ''three'':602 ''throughput'':204 ''tier'':595 ''time'':775 ''time-to-market'':774 ''timer'':909 ''times'':642 ''to'':124,185,272,287,326,481,500,546,605,751,770,776,881,988,1011,1015,1093,1128,1137 ''today'':91 ''traceability'':673 ''translate'':768 ''turnkey'':64 ''type'':931,1043 ''type-c'':930,1042 ''typically'':660 ''ui'':450 ''ultra'':178,639 ''ultra-fast'':177 ''ultra-short'':638 ''uncertainties'':622 ''under'':200,354,948 ''undergoes'':268 ''understanding'':409 ''unit'':323 ''units'':1065 ''unveils'':3 ''unwavering'':122 ''up'':184,499,653 ''upstream'':711 ''usb'':929,1041 ''user'':463,1038 ''v'':38,162,211,936 ''validation'':335,340 ''verification'':374 ''vertical'':50,118 ''video'':44,517,811,884,927,942 ''vlogging'':536 ''volatility'':620 ''volume'':71,793 ''we'':213,647,974 ''webcam'':471 ''weight'':953 ''welcomes'':962 ''which'':388 ''while'':855 ''white'':351 ''wholesale'':1021 ''wi'':365,475 ''wi-fi'':364,474 ''with'':49,129,251,281,489,534,644,748,837,1105 ''within'':663 ''workshops'':309 ''worldwide'':401,1149 ''wrist'':1051 ''your'':1016 ''zoom'':840 ''±0.5'':261 ''±3.0ev'':906 ''×1'':1040,1046,1050,1053,1056,1060 ''–'':74,342,612,643,674,897,902 ''—'':225,571,589,861 ''≤100'':946 ''≤85'':943', 1, '/uploads/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence/cover.webp', 7);
+
+
+--
+-- Data for Name: t_news_category; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_news_category VALUES ('2026-07-20 08:39:41.118605+08', '2026-07-20 08:39:41.118615+08', 0, 1, 'News', 'news', 0);
+INSERT INTO public.t_news_category VALUES ('2026-07-20 08:57:42.157946+08', '2026-07-20 08:57:42.157953+08', 0, 2, '企业动态', 'company', 0);
+INSERT INTO public.t_news_category VALUES ('2026-07-20 08:57:42.159361+08', '2026-07-20 08:57:42.159378+08', 0, 3, '行业资讯', 'industry', 0);
+
+
+--
+-- Data for Name: t_product; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.538553+08', '2026-07-29 09:04:32.031602+08', 0, NULL, 'admin', 13, 've418', 'VE418', '<h6>Front and rear dual camera<br />
+The front camera has a SONY IMX689 48 million image sensor, Supports autofocus<br />
+The rear selfie camera uses a 13M Sony image sensor IMX214<br />
+UP to 8K 7680*4320(15FPS)Video resolution<br />
+Up to 88MP interpolation<br />
+Built-in high-power LED flash​<br />
+2.8inch 640*480 IPS HD touchscreen display​<br />
+Supports electronic anti shaking, with built-in 5-axis gyroscope<br />
+Supports 30 fps high-speed burst shooting<br />
+Supports Night Mode for enha', '<p>The VE418 digital camera delivers exceptional imaging performance with its premium dual Sony sensor system. It features a front-facing SONY IMX689 48MP sensor with autofocus and a rear 13MP SONY IMX214 sensor for selfies. Capable of recording stunning 8K 7680×4320@15FPS videos and capturing up to 88MP interpolated photos, it preserves every intricate detail. Equipped with 5-axis gyro electronic image stabilization, 30FPS high-speed burst shooting, advanced Night Mode and HDR technology, it excels in all shooting conditions. The 2.8-inch IPS HD touchscreen provides intuitive control, while built-in Wi-Fi enables instant image sharing. Perfect for photography enthusiasts, content creators and everyday users seeking professional-grade results.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13m'':26 ''13mp'':113 ''15fps'':36,125 ''2.8'':51,166 ''30'':71 ''30fps'':147 ''4320'':35 ''48'':14 ''480'':54 ''48mp'':106 ''5'':67,141 ''640'':53 ''7680'':34 ''7680×4320'':124 ''88mp'':41,131 ''8k'':33,123 ''a'':11,25,100,111 ''advanced'':153 ''all'':162 ''and'':3,110,127,156,191 ''anti'':61 ''autofocus'':19,109 ''axis'':68,142 ''built'':44,65,176 ''built-in'':43,64,175 ''burst'':76,151 ''camera'':6,9,23,86 ''capable'':119 ''capturing'':128 ''conditions'':164 ''content'':189 ''control'':173 ''creators'':190 ''delivers'':87 ''detail'':138 ''digital'':85 ''display​'':58 ''dual'':5,94 ''electronic'':60,144 ''enables'':181 ''enha'':82 ''enthusiasts'':188 ''equipped'':139 ''every'':136 ''everyday'':192 ''excels'':160 ''exceptional'':88 ''facing'':103 ''features'':99 ''fi'':180 ''flash​'':50 ''for'':81,117,186 ''fps'':72 ''front'':2,8,102 ''front-facing'':101 ''grade'':197 ''gyro'':143 ''gyroscope'':69 ''has'':10 ''hd'':56,169 ''hdr'':157 ''high'':47,74,149 ''high-power'':46 ''high-speed'':73,148 ''image'':16,28,145,183 ''imaging'':89 ''imx214'':30,115 ''imx689'':13,105 ''in'':45,66,161,177 ''inch'':52,167 ''instant'':182 ''interpolated'':132 ''interpolation'':42 ''intricate'':137 ''intuitive'':172 ''ips'':55,168 ''it'':98,134,159 ''its'':92 ''led'':49 ''million'':15 ''mode'':80,155 ''night'':79,154 ''of'':120 ''perfect'':185 ''performance'':90 ''photography'':187 ''photos'':133 ''power'':48 ''premium'':93 ''preserves'':135 ''professional'':196 ''professional-grade'':195 ''provides'':171 ''rear'':4,21,112 ''recording'':121 ''resolution'':38 ''results'':198 ''seeking'':194 ''selfie'':22 ''selfies'':118 ''sensor'':17,29,96,107,116 ''shaking'':62 ''sharing'':184 ''shooting'':77,152,163 ''sony'':12,27,95,104,114 ''speed'':75,150 ''stabilization'':146 ''stunning'':122 ''supports'':18,59,70,78 ''system'':97 ''technology'':158 ''the'':7,20,83,165 ''to'':32,40,130 ''touchscreen'':57,170 ''up'':31,39,129 ''users'':193 ''uses'':24 ''ve418'':1,84 ''video'':37 ''videos'':126 ''while'':174 ''wi'':179 ''wi-fi'':178 ''with'':63,91,108,140', 2, '/uploads/products/ve418/cover.webp', '[]', 30.84279380831193);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.55833+08', '2026-07-28 17:15:13.565861+08', 0, NULL, 'admin', 16, 'w3', 'W3', '<h6><span style="font-size: 16px;">Be easy to carry</span></h6>
+<h6>Focusing mode: Fixed focus<br />
+Angle expansion multiple: 1.35 X<br />
+Number of lens groups: 2 pieces 2 groups<br />
+Coating: Multilayer antireflection coating<br />
+Connection method: 52mm thread<br />
+Front thread interface size: 62mm<br />
+Having the fuction of macro lens<br />
+Big view, and support ultra wide field of vision</h6>
+<div id="kiss-translator-box" class="notranslate"></div>
+<h6 id="kiss-translator-box" class="n', '<p>Portable 52mm wide-angle macro conversion lens with fixed focus<strong>.</strong> Expands your angle of view by 1.35x for an ultra-wide, big-view field of vision. Features a detachable macro function for detailed close-ups. Optical construction: 2 elements in 2 groups with multilayer anti-reflection coating to reduce flare and ghosting. Mounts via 52mm screw thread; front thread size is 62mm for attaching filters or lens caps. Compact and easy to carry — perfect for on-the-go wide-angle and macro photography.</p>
+<div class="notranslate"></div>
+<div class="notranslate"></div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1.35'':13,76 ''2'':19,21,101,104 ''52mm'':29,60,119 ''62mm'':35,126 ''a'':90 ''an'':79 ''and'':44,115,134,148 ''angle'':10,63,72,147 ''anti'':109 ''anti-reflection'':108 ''antireflection'':25 ''attaching'':128 ''be'':2 ''big'':42,84 ''big-view'':83 ''box'':56 ''by'':75 ''caps'':132 ''carry'':5,137 ''class'':57 ''close'':97 ''close-ups'':96 ''coating'':23,26,111 ''compact'':133 ''connection'':27 ''construction'':100 ''conversion'':65 ''detachable'':91 ''detailed'':95 ''easy'':3,135 ''elements'':102 ''expansion'':11 ''features'':89 ''field'':48,86 ''filters'':129 ''fixed'':8,68 ''flare'':114 ''focus'':9,69 ''focusing'':6 ''for'':78,94,127,140 ''front'':31,122 ''fuction'':38 ''function'':93 ''ghosting'':116 ''go'':144 ''groups'':18,22,105 ''h6'':51 ''having'':36 ''id'':52 ''in'':103 ''interface'':33 ''is'':125 ''kiss'':54 ''kiss-translator-box'':53 ''lens'':17,41,66,131 ''macro'':40,64,92,149 ''method'':28 ''mode'':7 ''mounts'':117 ''multilayer'':24,107 ''multiple'':12 ''n'':58 ''number'':15 ''of'':16,39,49,73,87 ''on'':142 ''on-the-go'':141 ''optical'':99 ''or'':130 ''perfect'':139 ''photography'':150 ''pieces'':20 ''portable'':59 ''reduce'':113 ''reflection'':110 ''screw'':120 ''size'':34,124 ''support'':45 ''the'':37,143 ''thread'':30,32,121,123 ''to'':4,112,136 ''translator'':55 ''ultra'':46,81 ''ultra-wide'':80 ''ups'':98 ''via'':118 ''view'':43,74,85 ''vision'':50,88 ''w3'':1 ''wide'':47,62,82,146 ''wide-angle'':61,145 ''with'':67,106 ''x'':14,77 ''your'':71 '' expands'':70 ''—'':138', 4, '/uploads/products/w3/cover.jpg', '[]', 17.019033339882547);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.633241+08', '2026-07-29 09:03:48.222014+08', 0, NULL, 'admin', 28, 'dc103w', 'DC103W', '<h6>Digital video (4K)<br />
+Digital camera (64 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X powerful zoom<br />
+Auto focus<br />
+Web camera<br />
+Built in high-power LED flash<br />
+High-efficiency Wi-Fi image transmission, convenient and easy to use</h6>
+', '<p>The DC103W versatile digital camera features 4K ultra-clear video recording and 64MP high-resolution photography. It comes with 16x powerful digital zoom, fast autofocus, and a built-in high-power LED flash for excellent low-light performance. Boasting high-efficiency WiFi image transmission for instant sharing, removable mass storage for unlimited content, and a built-in web camera function for video calls and live streaming. It is the perfect companion for daily shooting, travel recording, and online content creation.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':14,62 ''4k'':4,47 ''64'':7 ''64mp'':54 ''a'':69,101 ''and'':37,53,68,100,111,124 ''auto'':17 ''autofocus'':67 ''boasting'':84 ''built'':21,71,103 ''built-in'':70,102 ''calls'':110 ''camera'':6,20,45,106 ''clear'':50 ''comes'':60 ''companion'':118 ''content'':99,126 ''convenient'':36 ''creation'':127 ''daily'':120 ''dc103w'':1,42 ''digital'':2,5,44,64 ''disk'':13 ''easy'':38 ''efficiency'':30,87 ''excellent'':79 ''fast'':66 ''features'':46 ''fi'':33 ''flash'':27,77 ''focus'':18 ''for'':78,91,97,108,119 ''function'':107 ''high'':24,29,56,74,86 ''high-efficiency'':28,85 ''high-power'':23,73 ''high-resolution'':55 ''image'':34,89 ''in'':22,72,104 ''instant'':92 ''is'':115 ''it'':59,114 ''led'':26,76 ''light'':82 ''live'':112 ''low'':81 ''low-light'':80 ''mass'':10,95 ''mega'':8 ''online'':125 ''perfect'':117 ''performance'':83 ''photography'':58 ''pixels'':9 ''power'':25,75 ''powerful'':15,63 ''recording'':52,123 ''removable'':12,94 ''resolution'':57 ''sharing'':93 ''shooting'':121 ''storage'':11,96 ''streaming'':113 ''the'':41,116 ''to'':39 ''transmission'':35,90 ''travel'':122 ''ultra'':49 ''ultra-clear'':48 ''unlimited'':98 ''use'':40 ''versatile'':43 ''video'':3,51,109 ''web'':19,105 ''wi'':32 ''wi-fi'':31 ''wifi'':88 ''with'':61 ''zoom'':16,65', 5, '/uploads/products/dc103w/cover.webp', '[]', 4.5429455481747425);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.621428+08', '2026-07-29 09:03:48.222241+08', 0, NULL, 'admin', 26, 'dc203', 'DC203', '<h6>Front and rear dual cameras: front camera 12M+rear camera 12M<br />
+Front camera supports autofocus<br />
+Video Resolution Up to 5K 5120*2880(30FPS)<br />
+Image Resolution Up to 48MP(Interpolation)<br />
+Built-in High Power LED Flash Light<br />
+WiFi image transmission<br />
+IPS display screen<br />
+Support External Microphone<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope<br />
+Support for optical viewfinder<br />
+External hot shoe holder (can be connected to Flash L', '<p>The DC203 is a versatile compact digital camera, featuring a 12MP front + 12MP rear dual camera system with front autofocus. It supports up to 5K 5120×2880@30FPS video recording and max 48MP interpolated still imaging. It is equipped with an IPS display, WiFi image transmission, external microphone support, 6-axis gyroscope electronic image stabilization, an optical viewfinder, a built-in high-power LED flash, a flash-compatible external hot shoe, and a low-light focus assist light.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''12m'':9,12 ''12mp'':83,85 ''2880'':23 ''30fps'':24,99 ''48mp'':29,104 ''5120'':22 ''5120×2880'':98 ''5k'':21,97 ''6'':56,121 ''a'':76,82,130,139,147 ''an'':112,127 ''and'':3,102,146 ''anti'':50 ''assist'':152 ''autofocus'':16,92 ''axis'':57,122 ''be'':68 ''built'':32,54,132 ''built-in'':31,53,131 ''camera'':8,11,14,80,88 ''cameras'':6 ''can'':67 ''compact'':78 ''compatible'':142 ''connected'':69 ''dc203'':1,74 ''digital'':79 ''display'':43,114 ''dual'':5,87 ''electronic'':49,124 ''equipped'':110 ''external'':46,63,118,143 ''featuring'':81 ''flash'':37,71,138,141 ''flash-compatible'':140 ''focus'':151 ''for'':60 ''front'':2,7,13,84,91 ''gyroscope'':58,123 ''high'':34,135 ''high-power'':134 ''holder'':66 ''hot'':64,144 ''image'':25,40,116,125 ''imaging'':107 ''in'':33,55,133 ''interpolated'':105 ''interpolation'':30 ''ips'':42,113 ''is'':75,109 ''it'':93,108 ''l'':72 ''led'':36,137 ''light'':38,150,153 ''low'':149 ''low-light'':148 ''max'':103 ''microphone'':47,119 ''optical'':61,128 ''power'':35,136 ''rear'':4,10,86 ''recording'':101 ''resolution'':18,26 ''screen'':44 ''shaking'':51 ''shoe'':65,145 ''stabilization'':126 ''still'':106 ''support'':45,59,120 ''supports'':15,48,94 ''system'':89 ''the'':73 ''to'':20,28,70,96 ''transmission'':41,117 ''up'':19,27,95 ''versatile'':77 ''video'':17,100 ''viewfinder'':62,129 ''wifi'':39,115 ''with'':52,90,111', 5, '/uploads/products/dc203/cover.webp', '[]', 4.8497479306131055);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.627537+08', '2026-07-29 09:03:48.244738+08', 0, NULL, 'admin', 27, 'dc201s', 'DC201S', '<h6>Auto Focus<br />
+Video Resolution Up to 5K 5120*2880(30FPS)<br />
+Image Resolution Up to 48MP(Interpolation)<br />
+High Brightness White Fill Light<br />
+Wifi Control<br />
+IPS Display Screen<br />
+Support External Microphone<br />
+Support Digital Anti-Shaking, Built-in 6-Axis Gyroscope</h6>
+', '<p>The DC201S all-in-one digital camera delivers stunning 5K 5120×2880@30FPS video recording and crisp 48MP interpolated photography. Equipped with advanced autofocus and built-in 6-axis gyroscope digital anti-shaking, it ensures sharp, stable shots every time. Features include a high-brightness white fill light for low-light performance, WiFi remote control, a vibrant IPS display, and external microphone support. Perfect for travel vlogging, daily documentation, and casual photography.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''2880'':10 ''30fps'':11,54 ''48mp'':16,59 ''5120'':9 ''5120×2880'':53 ''5k'':8,52 ''6'':39,70 ''a'':86,101 ''advanced'':64 ''all'':45 ''all-in-one'':44 ''and'':57,66,105,115 ''anti'':34,75 ''anti-shaking'':33,74 ''auto'':2 ''autofocus'':65 ''axis'':40,71 ''brightness'':19,89 ''built'':37,68 ''built-in'':36,67 ''camera'':49 ''casual'':116 ''control'':24,100 ''crisp'':58 ''daily'':113 ''dc201s'':1,43 ''delivers'':50 ''digital'':32,48,73 ''display'':26,104 ''documentation'':114 ''ensures'':78 ''equipped'':62 ''every'':82 ''external'':29,106 ''features'':84 ''fill'':21,91 ''focus'':3 ''for'':93,110 ''gyroscope'':41,72 ''high'':18,88 ''high-brightness'':87 ''image'':12 ''in'':38,46,69 ''include'':85 ''interpolated'':60 ''interpolation'':17 ''ips'':25,103 ''it'':77 ''light'':22,92,96 ''low'':95 ''low-light'':94 ''microphone'':30,107 ''one'':47 ''perfect'':109 ''performance'':97 ''photography'':61,117 ''recording'':56 ''remote'':99 ''resolution'':5,13 ''screen'':27 ''shaking'':35,76 ''sharp'':79 ''shots'':81 ''stable'':80 ''stunning'':51 ''support'':28,31,108 ''the'':42 ''time'':83 ''to'':7,15 ''travel'':111 ''up'':6,14 ''vibrant'':102 ''video'':4,55 ''vlogging'':112 ''white'':20,90 ''wifi'':23,98 ''with'':63', 5, '/uploads/products/dc201s/cover.webp', '[]', 5.292516435291205);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.583148+08', '2026-07-29 09:03:48.257815+08', 0, NULL, 'admin', 20, 'dc209x', 'DC209X', '<h6>8X optical zoom lens<br />
+Video recording resolution (5K/25FPS)<br />
+Digital camera (64MP)<br />
+720*1280 IPS HD capacitive touch screen, support two-finger zoom<br />
+EIS electronic stabilization<br />
+Lens ring ring manual zoom, focusing<br />
+Customized area focus<br />
+Full color night vision<br />
+Front and rear dual lens<br />
+Autofocus<br />
+WiFi wireless connection</h6>
+', '<p>This compact digital camera features an 8X optical zoom lens, 64MP high-resolution sensor and 5K/25FPS video recording. It comes with EIS electronic stabilization, full-color night vision, front and rear dual lenses, fast autofocus and customizable area focus. The tactile lens ring allows manual zoom and focusing, while the 720×1280 IPS HD touch screen supports two-finger zoom. Built-in WiFi enables instant file transfer and remote control.</p>
+<div class="notranslate"></div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1280'':14 ''5k/25fps'':9,66 ''64mp'':12,60 ''720'':13 ''720×1280'':102 ''8x'':2,56 ''allows'':95 ''an'':55 ''and'':42,65,81,87,98,120 ''area'':35,89 ''autofocus'':46,86 ''built'':113 ''built-in'':112 ''camera'':11,53 ''capacitive'':17 ''color'':38,77 ''comes'':70 ''compact'':51 ''connection'':49 ''control'':122 ''customizable'':88 ''customized'':34 ''dc209x'':1 ''digital'':10,52 ''dual'':44,83 ''eis'':25,72 ''electronic'':26,73 ''enables'':116 ''fast'':85 ''features'':54 ''file'':118 ''finger'':23,110 ''focus'':36,90 ''focusing'':33,99 ''front'':41,80 ''full'':37,76 ''full-color'':75 ''hd'':16,104 ''high'':62 ''high-resolution'':61 ''in'':114 ''instant'':117 ''ips'':15,103 ''it'':69 ''lens'':5,28,45,59,93 ''lenses'':84 ''manual'':31,96 ''night'':39,78 ''optical'':3,57 ''rear'':43,82 ''recording'':7,68 ''remote'':121 ''resolution'':8,63 ''ring'':29,30,94 ''screen'':19,106 ''sensor'':64 ''stabilization'':27,74 ''support'':20 ''supports'':107 ''tactile'':92 ''the'':91,101 ''this'':50 ''touch'':18,105 ''transfer'':119 ''two'':22,109 ''two-finger'':21,108 ''video'':6,67 ''vision'':40,79 ''while'':100 ''wifi'':47,115 ''wireless'':48 ''with'':71 ''zoom'':4,24,32,58,97,111', 5, '/uploads/products/dc209x/cover.webp', '[]', 10.073527658093422);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.476827+08', '2026-07-29 09:03:48.271994+08', 0, NULL, 'admin', 6, 'dc218l', 'DC218L', '<h6>Digital Camera (4K)<br />
+Digital Camera (64 megapixels resolution)<br />
+20 creative filter effects<br />
+16X digital zoom<br />
+Auto focus<br />
+Webcam function<br />
+Front and rear dual 13 megapixels CMOS sensor</h6>
+', '<p>DC218L digital camera comes with 4K video recording and 64MP high-resolution image performance, built-in front and rear dual 13MP CMOS sensors for richer imaging details. It supports 16X digital zoom and precise auto focus to capture distant scenery and fleeting moments effortlessly. Equipped with 20 creative filter effects to enrich your photographic style, it also works perfectly as a webcam for online meetings, live streaming and video calls. Compact and practical, ideal for daily shooting, travel recording and social media content creation.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13'':25 ''13mp'':51 ''16x'':14,60 ''20'':10,77 ''4k'':4,34 ''64'':7 ''64mp'':38 ''a'':91 ''also'':87 ''and'':22,37,48,63,71,98,102,110 ''as'':90 ''auto'':17,65 ''built'':45 ''built-in'':44 ''calls'':100 ''camera'':3,6,31 ''capture'':68 ''cmos'':27,52 ''comes'':32 ''compact'':101 ''content'':113 ''creation'':114 ''creative'':11,78 ''daily'':106 ''dc218l'':1,29 ''details'':57 ''digital'':2,5,15,30,61 ''distant'':69 ''dual'':24,50 ''effects'':13,80 ''effortlessly'':74 ''enrich'':82 ''equipped'':75 ''filter'':12,79 ''fleeting'':72 ''focus'':18,66 ''for'':54,93,105 ''front'':21,47 ''function'':20 ''high'':40 ''high-resolution'':39 ''ideal'':104 ''image'':42 ''imaging'':56 ''in'':46 ''it'':58,86 ''live'':96 ''media'':112 ''meetings'':95 ''megapixels'':8,26 ''moments'':73 ''online'':94 ''perfectly'':89 ''performance'':43 ''photographic'':84 ''practical'':103 ''precise'':64 ''rear'':23,49 ''recording'':36,109 ''resolution'':9,41 ''richer'':55 ''scenery'':70 ''sensor'':28 ''sensors'':53 ''shooting'':107 ''social'':111 ''streaming'':97 ''style'':85 ''supports'':59 ''to'':67,81 ''travel'':108 ''video'':35,99 ''webcam'':19,92 ''with'':33,76 ''works'':88 ''your'':83 ''zoom'':16,62', 5, '/uploads/products/dc218l/cover.webp', '[]', 11.188381670566303);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.531908+08', '2026-07-29 09:04:32.031824+08', 0, NULL, 'admin', 12, 'dc422x', 'DC422X', '<h6>Front and rear dual camera<br />
+The front camera has a 8M Sony image sensor IMX214, 6X Optical Zoom<br />
+The rear selfie camera uses a 13M Sony image sensor IMX214<br />
+UP to 5K 5120*2880(20FPS) Video resolution<br />
+Up to 96MP interpolation）<br />
+Highlight LED flash<br />
+2.8inch IPS HD display<br />
+Auto Focus<br />
+Webcam Functionality​</h6>
+', '<p>DC422X features front and rear dual Sony IMX214 cameras, with an 8MP front lens supporting 6X optical zoom and a 13MP rear selfie lens. It delivers up to 5K 5120×2880 video at 20FPS and 96MP interpolated photos. Equipped with a highlight LED flash, 2.8-inch IPS HD display, auto focus and webcam functionality for versatile daily shooting.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13m'':26 ''13mp'':75 ''2.8'':46,98 ''20fps'':36,87 ''2880'':35 ''5120'':34 ''5120×2880'':84 ''5k'':33,83 ''6x'':17,70 ''8m'':12 ''8mp'':66 ''96mp'':41,89 ''a'':11,25,74,94 ''an'':65 ''and'':3,58,73,88,105 ''at'':86 ''auto'':51,103 ''camera'':6,9,23 ''cameras'':63 ''daily'':110 ''dc422x'':1,55 ''delivers'':80 ''display'':50,102 ''dual'':5,60 ''equipped'':92 ''features'':56 ''flash'':45,97 ''focus'':52,104 ''for'':108 ''front'':2,8,57,67 ''functionality'':107 ''functionality​'':54 ''has'':10 ''hd'':49,101 ''highlight'':43,95 ''image'':14,28 ''imx214'':16,30,62 ''inch'':47,99 ''interpolated'':90 ''interpolation）'':42 ''ips'':48,100 ''it'':79 ''led'':44,96 ''lens'':68,78 ''optical'':18,71 ''photos'':91 ''rear'':4,21,59,76 ''resolution'':38 ''selfie'':22,77 ''sensor'':15,29 ''shooting'':111 ''sony'':13,27,61 ''supporting'':69 ''the'':7,20 ''to'':32,40,82 ''up'':31,39,81 ''uses'':24 ''versatile'':109 ''video'':37,85 ''webcam'':53,106 ''with'':64,93 ''zoom'':19,72', 2, '/uploads/products/dc422x/cover.jpg', '[]', 34.17613658713101);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.639573+08', '2026-07-28 17:15:13.62982+08', 0, NULL, 'admin', 29, 'dc506', 'DC506', '<h6>Web camera<br />
+Children&#8217;s camera<br />
+Digital camera (48 Mega pixels)<br />
+LED fill light<br />
+Dual front and rear cameras<br />
+Fixed Focus<br />
+Instant photo printing</h6>
+', '<div>
+<div class="ace-line ace-line old-record-id-Aj3mfB0PrduFSjcLehacJy1FnLd">The DC506 is a child-friendly digital camera for young photographers, featuring 48-megapixel imaging, front and rear dual cameras, and an LED fill light for clear shots in dim environments. With a user-friendly fixed focus design, it also functions as a web camera and supports instant photo printing, letting kids enjoy capturing and printing their favorite moments easily.</div>
+</div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''48'':9,38 ''a'':28,58,69 ''also'':66 ''an'':47 ''and'':17,42,46,72,81 ''as'':68 ''camera'':3,6,8,33,71 ''cameras'':19,45 ''capturing'':80 ''child'':30 ''child-friendly'':29 ''children'':4 ''clear'':52 ''dc506'':1,26 ''design'':64 ''digital'':7,32 ''dim'':55 ''dual'':15,44 ''easily'':86 ''enjoy'':79 ''environments'':56 ''favorite'':84 ''featuring'':37 ''fill'':13,49 ''fixed'':20,62 ''focus'':21,63 ''for'':34,51 ''friendly'':31,61 ''front'':16,41 ''functions'':67 ''imaging'':40 ''in'':54 ''instant'':22,74 ''is'':27 ''it'':65 ''kids'':78 ''led'':12,48 ''letting'':77 ''light'':14,50 ''mega'':10 ''megapixel'':39 ''moments'':85 ''photo'':23,75 ''photographers'':36 ''pixels'':11 ''printing'':24,76,82 ''rear'':18,43 ''s'':5 ''shots'':53 ''supports'':73 ''the'':25 ''their'':83 ''user'':60 ''user-friendly'':59 ''web'':2,70 ''with'':57 ''young'':35', 3, '/uploads/products/dc506/cover.webp', '[]', 28.58087426899699);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.484485+08', '2026-07-28 17:15:13.56385+08', 0, NULL, 'admin', 7, 'go9', 'GO9', '<h6>＊ Portable Pocket Camera: Thumb-sized Body, Compact and Portable.​<br />
+＊ Lightweight Craftsmanship: Weighing only 43g, easily carried in a pocket for on-the-go shooting.<br />
+＊ Waterproof &amp; Anti-Fog: 10-meter waterproof without additional casing, ensuring worry-free filming in rain or harsh conditions.<br />
+＊ Ultra-Low Power Consumption: Consumes only 280mA, leading in energy efficiency.<br />
+＊ Long-Lasting Battery: 350 minutes of continuous operation for uninterrupted recording.<br', '<div>
+<div class="ace-line ace-line old-record-id-FTmxfcVLYdg0dJcqPfocAyU1nmh">GO9 mini thumb action camera features thumb-sized compact body and only 43g lightweight design, easy to slip into your pocket. Support 10-meter waterproof &amp; anti-fog without extra casing, perfect for rainy and outdoor scenarios. With ultra-low power consumption, 350 minutes continuous recording, instant start &amp; shoot, 3D AI noise reduction, dustproof and anti-shake performance. Equipped with expansion dock and magnetic accessories for multi-angle shooting, ideal for travel, sports and daily moment recording.</div>
+</div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''10'':36,102 ''280ma'':60 ''350'':70,123 ''3d'':130 ''43g'':19,92 ''a'':23 ''accessories'':146 ''action'':82 ''additional'':40 ''ai'':131 ''and'':11,90,114,135,144,156 ''angle'':150 ''anti'':34,106,137 ''anti-fog'':33,105 ''anti-shake'':136 ''battery'':69 ''body'':9,89 ''br'':78 ''camera'':5,83 ''carried'':21 ''casing'':41,110 ''compact'':10,88 ''conditions'':51 ''consumes'':58 ''consumption'':57,122 ''continuous'':73,125 ''craftsmanship'':16 ''daily'':157 ''design'':94 ''dock'':143 ''dustproof'':134 ''easily'':20 ''easy'':95 ''efficiency'':64 ''energy'':63 ''ensuring'':42 ''equipped'':140 ''expansion'':142 ''extra'':109 ''features'':84 ''filming'':46 ''fog'':35,107 ''for'':25,75,112,147,153 ''free'':45 ''go'':29 ''go9'':1,79 ''harsh'':50 ''ideal'':152 ''in'':22,47,62 ''instant'':127 ''into'':98 ''lasting'':68 ''leading'':61 ''lightweight'':15,93 ''long'':67 ''long-lasting'':66 ''low'':55,120 ''magnetic'':145 ''meter'':37,103 ''mini'':80 ''minutes'':71,124 ''moment'':158 ''multi'':149 ''multi-angle'':148 ''noise'':132 ''of'':72 ''on'':27 ''on-the-go'':26 ''only'':18,59,91 ''operation'':74 ''or'':49 ''outdoor'':115 ''perfect'':111 ''performance'':139 ''pocket'':4,24,100 ''portable'':3,12 ''power'':56,121 ''rain'':48 ''rainy'':113 ''recording'':77,126,159 ''reduction'':133 ''scenarios'':116 ''shake'':138 ''shoot'':129 ''shooting'':30,151 ''sized'':8,87 ''slip'':97 ''sports'':155 ''start'':128 ''support'':101 ''the'':28 ''thumb'':7,81,86 ''thumb-sized'':6,85 ''to'':96 ''travel'':154 ''ultra'':54,119 ''ultra-low'':53,118 ''uninterrupted'':76 ''waterproof'':32,38,104 ''weighing'':17 ''with'':117,141 ''without'':39,108 ''worry'':44 ''worry-free'':43 ''your'':99 ''​'':13 ''＊'':2,14,31,52,65', 1, '/uploads/products/go9/cover.webp', '[]', 13.415201978482482);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.455583+08', '2026-07-28 17:15:13.68505+08', 0, NULL, 'admin', 3, 'dc501j', 'DC501J', '<h6>Digital Camera (1080P)<br />
+Small and portable, cute in shape<br />
+Round shape, no angular settings, equipped with a cute and environmentally friendly silicone PC camera case<br />
+Food grade ABS material, safe and non-toxic<br />
+Built-in a variety of cartoon heads Posts can be switched at any time, making taking pictures fun and fun.<br />
+There are wise games inside, so babies are no longer addicted to mobile phones and computers.<br />
+Simple buttons, easy for babies to learn.<br />
+Ba', '<p>The DC501J is a specially designed digital camera for children, combining fun, safety and education in one adorable package. With its compact round shape and cute silicone PC protective case, it is easy for little hands to hold and carry. Made from food-grade ABS material, it is 100% safe and non-toxic for kids. This camera not only takes 1080P photos and videos but also features built-in cartoon stickers, educational games, and story/music playback functions. Simple button design makes it super easy for kids to operate, helping them develop creativity while keeping them away from smartphones and computers. Perfect gift for birthdays, holidays and special occasions for children aged 3 and up.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''100'':130 ''1080p'':4,143 ''3'':195 ''a'':18,39,84 ''abs'':29,126 ''addicted'':67 ''adorable'':98 ''aged'':194 ''also'':148 ''and'':6,20,32,55,71,94,105,119,132,145,157,182,189,196 ''angular'':14 ''any'':49 ''are'':58,64 ''at'':48 ''away'':179 ''ba'':80 ''babies'':63,77 ''be'':46 ''birthdays'':187 ''built'':37,151 ''built-in'':36,150 ''but'':147 ''button'':162 ''buttons'':74 ''camera'':3,25,88,139 ''can'':45 ''carry'':120 ''cartoon'':42,153 ''case'':26,110 ''children'':90,193 ''combining'':91 ''compact'':102 ''computers'':72,183 ''creativity'':175 ''cute'':8,19,106 ''dc501j'':1,82 ''design'':163 ''designed'':86 ''develop'':174 ''digital'':2,87 ''easy'':75,113,167 ''education'':95 ''educational'':155 ''environmentally'':21 ''equipped'':16 ''features'':149 ''food'':27,124 ''food-grade'':123 ''for'':76,89,114,136,168,186,192 ''friendly'':22 ''from'':122,180 ''fun'':54,56,92 ''functions'':160 ''games'':60,156 ''gift'':185 ''grade'':28,125 ''hands'':116 ''heads'':43 ''helping'':172 ''hold'':118 ''holidays'':188 ''in'':9,38,96,152 ''inside'':61 ''is'':83,112,129 ''it'':111,128,165 ''its'':101 ''keeping'':177 ''kids'':137,169 ''learn'':79 ''little'':115 ''longer'':66 ''made'':121 ''makes'':164 ''making'':51 ''material'':30,127 ''mobile'':69 ''no'':13,65 ''non'':34,134 ''non-toxic'':33,133 ''not'':140 ''occasions'':191 ''of'':41 ''one'':97 ''only'':141 ''operate'':171 ''package'':99 ''pc'':24,108 ''perfect'':184 ''phones'':70 ''photos'':144 ''pictures'':53 ''playback'':159 ''portable'':7 ''posts'':44 ''protective'':109 ''round'':11,103 ''safe'':31,131 ''safety'':93 ''settings'':15 ''shape'':10,12,104 ''silicone'':23,107 ''simple'':73,161 ''small'':5 ''smartphones'':181 ''so'':62 ''special'':190 ''specially'':85 ''stickers'':154 ''story/music'':158 ''super'':166 ''switched'':47 ''takes'':142 ''taking'':52 ''the'':81 ''them'':173,178 ''there'':57 ''this'':138 ''time'':50 ''to'':68,78,117,170 ''toxic'':35,135 ''up'':197 ''variety'':40 ''videos'':146 ''while'':176 ''wise'':59 ''with'':17,100', 3, '/uploads/products/dc501j/cover.webp', '[]', 40.7116354205961);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.514001+08', '2026-07-29 09:04:32.017676+08', 0, NULL, 'admin', 10, 'dc417x', 'DC417X', '<h6>Front and rear dual camera<br />
+Front camera features a SONY IMX858 50MP 1/2.5-inch image sensor, 7X optical zoom, with autofocus support.<br />
+The rear selfie camera uses a 13M Sony image sensor IMX214<br />
+UP to 8K 7680*4320 (15FPS) Video resolution<br />
+Up to 88MP interpolation<br />
+Built-in high-power LED flash​<br />
+2.8inch 640*480 IPS HD touchscreen display​<br />
+Supports electronic anti shaking, with built-in 5-axis gyroscope<br />
+Supports 30 fps high-speed burst shooting<br /', '<p>DC417X compact digital camera comes with front and rear dual Sony sensors: a 50MP IMX858 main camera with 7X optical zoom and autofocus, plus a 13MP IMX214 selfie camera. It supports 8K video recording, 5-axis electronic image stabilization, 30fps burst shooting, HDR and Wi-Fi image transfer.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1/2.5-inch'':14 ''13m'':29 ''13mp'':107 ''15fps'':39 ''2.8'':54 ''30'':74 ''30fps'':121 ''4320'':38 ''480'':57 ''5'':70,116 ''50mp'':13,95 ''640'':56 ''7680'':37 ''7x'':17,100 ''88mp'':44 ''8k'':36,113 ''a'':10,28,94,106 ''and'':3,89,103,125 ''anti'':64 ''autofocus'':21,104 ''axis'':71,117 ''br'':81 ''built'':47,68 ''built-in'':46,67 ''burst'':79,122 ''camera'':6,8,26,85,98,110 ''comes'':86 ''compact'':83 ''dc417x'':1,82 ''digital'':84 ''display​'':61 ''dual'':5,91 ''electronic'':63,118 ''features'':9 ''fi'':128 ''flash​'':53 ''fps'':75 ''front'':2,7,88 ''gyroscope'':72 ''hd'':59 ''hdr'':124 ''high'':50,77 ''high-power'':49 ''high-speed'':76 ''image'':15,31,119,129 ''imx214'':33,108 ''imx858'':12,96 ''in'':48,69 ''inch'':55 ''interpolation'':45 ''ips'':58 ''it'':111 ''led'':52 ''main'':97 ''optical'':18,101 ''plus'':105 ''power'':51 ''rear'':4,24,90 ''recording'':115 ''resolution'':41 ''selfie'':25,109 ''sensor'':16,32 ''sensors'':93 ''shaking'':65 ''shooting'':80,123 ''sony'':11,30,92 ''speed'':78 ''stabilization'':120 ''support'':22 ''supports'':62,73,112 ''the'':23 ''to'':35,43 ''touchscreen'':60 ''transfer'':130 ''up'':34,42 ''uses'':27 ''video'':40,114 ''wi'':127 ''wi-fi'':126 ''with'':20,66,87,99 ''zoom'':19,102', 2, '/uploads/products/dc417x/cover.jpg', '[]', 4.243603330551997);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.707235+08', '2026-07-29 09:04:32.075462+08', 0, NULL, 'admin', 40, 'dc402', 'DC402', '<h6>Digital video (2.7K)<br />
+Digital camera (44 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X powerful zoom</h6>
+', '<p>DC402 Digital Camera The DC402 is a compact and easy-to-use digital camera that supports 2.7K video recording and 44MP high-resolution photography. It features 16X powerful zoom and mass storage via removable disk, making it ideal for daily shooting.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':15,47 ''2.7'':4,35 ''44'':8 ''44mp'':40 ''a'':24 ''and'':26,39,50 ''camera'':7,20,32 ''compact'':25 ''daily'':60 ''dc402'':1,18,22 ''digital'':2,6,19,31 ''disk'':14,55 ''easy'':28 ''easy-to-use'':27 ''features'':46 ''for'':59 ''high'':42 ''high-resolution'':41 ''ideal'':58 ''is'':23 ''it'':45,57 ''k'':5,36 ''making'':56 ''mass'':11,51 ''mega'':9 ''photography'':44 ''pixels'':10 ''powerful'':16,48 ''recording'':38 ''removable'':13,54 ''resolution'':43 ''shooting'':61 ''storage'':12,52 ''supports'':34 ''that'':33 ''the'':21 ''to'':29 ''use'':30 ''via'':53 ''video'':3,37 ''zoom'':17,49', 2, '/uploads/products/dc402/cover.webp', '[]', 22.737061552049358);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.499871+08', '2026-07-29 09:04:32.032204+08', 0, NULL, 'admin', 8, 'dc312x', 'DC312X', '<h6>Front and rear dual camera<br />
+Front camera features a SONY IMX858 50MP 1/2.5-inch image sensor, 6X optical zoom, with autofocus support.<br />
+The rear selfie camera uses a 13M Sony image sensor IMX214<br />
+UP to 8K 7680*4320 (15FPS) Video resolution<br />
+Up to 88MP interpolation<br />
+Built-in high-power LED flash​<br />
+2.8inch 640*480 IPS HD touchscreen display​<br />
+Supports electronic anti shaking, with built-in 5-axis gyroscope<br />
+Supports 30 fps high-speed burst shooting<br /', '<p>DC312X is equipped with front and rear dual cameras. The front adopts Sony IMX858 50MP 1/2.5-inch sensor with 6X optical zoom and autofocus, while the rear selfie camera uses 13MP Sony IMX214. It supports 8K 7680×4320 video at 15FPS and 88MP interpolated photography. Featuring a built-in high-power LED flash, 2.8-inch 640*480 IPS HD touchscreen, 5-axis gyro electronic anti-shake, 30fps high-speed burst shooting, HDR and Wi-Fi image transmission.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1/2.5-inch'':14,97 ''13m'':29 ''13mp'':111 ''15fps'':39,120 ''2.8'':54,135 ''30'':74 ''30fps'':149 ''4320'':38 ''480'':57,138 ''5'':70,142 ''50mp'':13,96 ''640'':56,137 ''6x'':17,100 ''7680'':37 ''7680×4320'':117 ''88mp'':44,122 ''8k'':36,116 ''a'':10,28,126 ''adopts'':93 ''and'':3,87,103,121,156 ''anti'':64,147 ''anti-shake'':146 ''at'':119 ''autofocus'':21,104 ''axis'':71,143 ''br'':81 ''built'':47,68,128 ''built-in'':46,67,127 ''burst'':79,153 ''camera'':6,8,26,109 ''cameras'':90 ''dc312x'':1,82 ''display​'':61 ''dual'':5,89 ''electronic'':63,145 ''equipped'':84 ''features'':9 ''featuring'':125 ''fi'':159 ''flash'':134 ''flash​'':53 ''fps'':75 ''front'':2,7,86,92 ''gyro'':144 ''gyroscope'':72 ''hd'':59,140 ''hdr'':155 ''high'':50,77,131,151 ''high-power'':49,130 ''high-speed'':76,150 ''image'':15,31,160 ''imx214'':33,113 ''imx858'':12,95 ''in'':48,69,129 ''inch'':55,136 ''interpolated'':123 ''interpolation'':45 ''ips'':58,139 ''is'':83 ''it'':114 ''led'':52,133 ''optical'':18,101 ''photography'':124 ''power'':51,132 ''rear'':4,24,88,107 ''resolution'':41 ''selfie'':25,108 ''sensor'':16,32,98 ''shake'':148 ''shaking'':65 ''shooting'':80,154 ''sony'':11,30,94,112 ''speed'':78,152 ''support'':22 ''supports'':62,73,115 ''the'':23,91,106 ''to'':35,43 ''touchscreen'':60,141 ''transmission'':161 ''up'':34,42 ''uses'':27,110 ''video'':40,118 ''while'':105 ''wi'':158 ''wi-fi'':157 ''with'':20,66,85,99 ''zoom'':19,102', 2, '/uploads/products/dc312x/cover.jpg', '[]', 27.119919090737614);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.695099+08', '2026-07-29 09:04:32.043015+08', 0, NULL, 'admin', 38, 'dc302', 'DC302', '<p>Digital video (4K)<br />
+Digital camera (64 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X powerful zoom<br />
+Auto focus<br />
+Web camera</p>
+', '<p>DC308 Digital Camera The DC308 is a powerful and versatile compact digital camera, ideal for daily shooting and content creation. It supports stunning 4K ultra-high-definition video recording and captures crisp 64-megapixel still images. Boasting 16X powerful zoom, it brings distant subjects closer with clarity. Equipped with auto focus, it ensures sharp and precise framing in every shot. Additionally, it offers convenient mass storage via a removable disk and practical web camera functionality, seamlessly adapting to both photography and streaming needs.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':14,59 ''4k'':4,44 ''64'':7,54 ''a'':27,89 ''adapting'':98 ''additionally'':82 ''and'':29,38,51,76,92,102 ''auto'':17,71 ''boasting'':58 ''both'':100 ''brings'':63 ''camera'':6,20,23,33,95 ''captures'':52 ''clarity'':68 ''closer'':66 ''compact'':31 ''content'':39 ''convenient'':85 ''creation'':40 ''crisp'':53 ''daily'':36 ''dc302'':1 ''dc308'':21,25 ''definition'':48 ''digital'':2,5,22,32 ''disk'':13,91 ''distant'':64 ''ensures'':74 ''equipped'':69 ''every'':80 ''focus'':18,72 ''for'':35 ''framing'':78 ''functionality'':96 ''high'':47 ''ideal'':34 ''images'':57 ''in'':79 ''is'':26 ''it'':41,62,73,83 ''mass'':10,86 ''mega'':8 ''megapixel'':55 ''needs'':104 ''offers'':84 ''photography'':101 ''pixels'':9 ''powerful'':15,28,60 ''practical'':93 ''precise'':77 ''recording'':50 ''removable'':12,90 ''seamlessly'':97 ''sharp'':75 ''shooting'':37 ''shot'':81 ''still'':56 ''storage'':11,87 ''streaming'':103 ''stunning'':43 ''subjects'':65 ''supports'':42 ''the'':24 ''to'':99 ''ultra'':46 ''ultra-high-definition'':45 ''versatile'':30 ''via'':88 ''video'':3,49 ''web'':19,94 ''with'':67,70 ''zoom'':16,61', 2, '/uploads/products/dc302/cover.webp', '[]', 23.883189032672604);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.64605+08', '2026-07-28 17:15:13.624623+08', 0, NULL, 'admin', 30, 'dc503j', 'DC503J', '<h6>12 million pixels</h6>
+<h6>1920*1080 video resolution</h6>
+<h6>A variety of photo sticker styles are available</h6>
+<h6>Instant print, one-key printing is simple and fast</h6>
+<h6>3 levels of print density can be adjusted to make the print quality clearer</h6>
+<h6>Long battery life, built-in 1000mAh large battery</h6>
+', '<div>
+<div class="ace-line ace-line old-record-id-SovJfNcKcd0XoFcLsyrcJFcQnlg">The DC503J is a user-friendly children&#8217;s camera designed to inspire kids&#8217; interest in photography. It has 12-megapixel imaging and 1920×1080 HD video resolution to capture clear moments. With various cute photo stickers for fun, it supports simple one-key instant printing and 3 adjustable print density levels for clearer results. Its built-in 1000mAh battery ensures long battery life for extended photography fun.</div>
+</div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1000mah'':47,109 ''1080'':6 ''12'':2,69 ''1920'':5 ''1920×1080'':73 ''3'':27,97 ''a'':9,53 ''adjustable'':98 ''adjusted'':34 ''and'':25,72,96 ''are'':15 ''available'':16 ''battery'':42,49,110,113 ''be'':33 ''built'':45,107 ''built-in'':44,106 ''camera'':59 ''can'':32 ''capture'':78 ''children'':57 ''clear'':79 ''clearer'':40,103 ''cute'':83 ''dc503j'':1,51 ''density'':31,100 ''designed'':60 ''ensures'':111 ''extended'':116 ''fast'':26 ''for'':86,102,115 ''friendly'':56 ''fun'':87,118 ''has'':68 ''hd'':74 ''imaging'':71 ''in'':46,65,108 ''inspire'':62 ''instant'':17,94 ''interest'':64 ''is'':23,52 ''it'':67,88 ''its'':105 ''key'':21,93 ''kids'':63 ''large'':48 ''levels'':28,101 ''life'':43,114 ''long'':41,112 ''make'':36 ''megapixel'':70 ''million'':3 ''moments'':80 ''of'':11,29 ''one'':20,92 ''one-key'':19,91 ''photo'':12,84 ''photography'':66,117 ''pixels'':4 ''print'':18,30,38,99 ''printing'':22,95 ''quality'':39 ''resolution'':8,76 ''results'':104 ''s'':58 ''simple'':24,90 ''sticker'':13 ''stickers'':85 ''styles'':14 ''supports'':89 ''the'':37,50 ''to'':35,61,77 ''user'':55 ''user-friendly'':54 ''variety'':10 ''various'':82 ''video'':7,75 ''with'':81', 3, '/uploads/products/dc503j/cover.webp', '[]', 27.597050285747898);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.507163+08', '2026-07-29 09:04:32.031286+08', 0, NULL, 'admin', 9, 'dc325', 'DC325', '<h6>Ultra-High Video Resolution, supports 8K-15FPS.​<br />
+Ultra-High Photo Resolution, supports 96MP.​<br />
+Dual-core RISC-V CPU system, delivers ultra-fast response time with color processingspeeds up to 480M pixels/second.​<br />
+8 shooting modes (Auto, Portrait, Landscape, Night Scene, Filter, Scene, Slow Motion,Video) to meet shooting needs in all scenarios<br />
+60 built-in filters and 5-level beauty modes; supports body slimming and face thinning for<br />
+maximum creative freedom<br />
+', '<p>DC325 digital camera delivers 8K-15FPS ultra-high video and 96MP photo resolution. Powered by a dual-core RISC-V CPU with 480M pixels/second processing speed, it features dual front/rear screens, 8X zoom, 8 shooting modes, 60 filters, 5-level beauty, HDR, high-speed burst and Wi-Fi connectivity.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''15fps'':10,88 ''480m'':39,108 ''5'':68,124 ''60'':62,122 ''8'':42,119 ''8k'':9,87 ''8k-15fps'':8,86 ''8x'':117 ''96mp'':18,94 ''a'':99 ''all'':60 ''and'':67,75,93,132 ''auto'':45 ''beauty'':70,126 ''body'':73 ''built'':64 ''built-in'':63 ''burst'':131 ''by'':98 ''camera'':84 ''color'':35 ''connectivity'':136 ''core'':22,102 ''cpu'':26,106 ''creative'':80 ''dc325'':1,82 ''delivers'':28,85 ''digital'':83 ''dual'':21,101,114 ''dual-core'':20,100 ''face'':76 ''fast'':31 ''features'':113 ''fi'':135 ''filter'':50 ''filters'':66,123 ''for'':78 ''freedom'':81 ''front/rear'':115 ''hdr'':127 ''high'':4,14,91,129 ''high-speed'':128 ''in'':59,65 ''it'':112 ''landscape'':47 ''level'':69,125 ''maximum'':79 ''meet'':56 ''modes'':44,71,121 ''motion'':53 ''needs'':58 ''night'':48 ''photo'':15,95 ''pixels/second'':40,109 ''portrait'':46 ''powered'':97 ''processing'':110 ''processingspeeds'':36 ''resolution'':6,16,96 ''response'':32 ''risc'':24,104 ''risc-v'':23,103 ''scenarios'':61 ''scene'':49,51 ''screens'':116 ''shooting'':43,57,120 ''slimming'':74 ''slow'':52 ''speed'':111,130 ''supports'':7,17,72 ''system'':27 ''thinning'':77 ''time'':33 ''to'':38,55 ''ultra'':3,13,30,90 ''ultra-fast'':29 ''ultra-high'':2,12,89 ''up'':37 ''v'':25,105 ''video'':5,54,92 ''wi'':134 ''wi-fi'':133 ''with'':34,107 ''zoom'':118 ''​'':11,19,41', 2, '/uploads/products/dc325/cover.webp', '[]', 19.05626353104296);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.588853+08', '2026-07-29 09:03:48.25702+08', 0, NULL, 'admin', 21, 'dc208n', 'DC208N', '<h6>Digital video (5K)<br />
+Digital camera (64 Mega pixels)<br />
+720*1280, IPS, 3.6-inch high-definition display screen<br />
+3.6-inch capacitive touch screen<br />
+Automatic lens door<br />
+Hidden LED fill light<br />
+Dual front and rear cameras<br />
+Auto focus<br />
+Web camera</h6>
+', '<p>The DC208N is a versatile compact digital camera, supporting 5K digital video recording and 64-megapixel still shooting. It features a 3.6-inch 1280×720 IPS HD capacitive touch screen, an automatic lens door, and a hidden LED fill light. Equipped with front and rear dual cameras and auto focus capability, it also supports web camera mode to meet diverse shooting and daily usage needs.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1280'':11 ''1280×720'':64 ''3.6'':13,20,62 ''5k'':4,50 ''64'':7,55 ''720'':10 ''a'':44,61,75 ''also'':92 ''an'':70 ''and'':34,54,74,83,87,101 ''auto'':37,88 ''automatic'':25,71 ''camera'':6,40,48,95 ''cameras'':36,86 ''capability'':90 ''capacitive'':22,67 ''compact'':46 ''daily'':102 ''dc208n'':1,42 ''definition'':17 ''digital'':2,5,47,51 ''display'':18 ''diverse'':99 ''door'':27,73 ''dual'':32,85 ''equipped'':80 ''features'':60 ''fill'':30,78 ''focus'':38,89 ''front'':33,82 ''hd'':66 ''hidden'':28,76 ''high'':16 ''high-definition'':15 ''inch'':14,21,63 ''ips'':12,65 ''is'':43 ''it'':59,91 ''led'':29,77 ''lens'':26,72 ''light'':31,79 ''meet'':98 ''mega'':8 ''megapixel'':56 ''mode'':96 ''needs'':104 ''pixels'':9 ''rear'':35,84 ''recording'':53 ''screen'':19,24,69 ''shooting'':58,100 ''still'':57 ''supporting'':49 ''supports'':93 ''the'':41 ''to'':97 ''touch'':23,68 ''usage'':103 ''versatile'':45 ''video'':3,52 ''web'':39,94 ''with'':81', 5, '/uploads/products/dc208n/cover.webp', '[]', 8.976920443624163);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.681816+08', '2026-07-29 09:04:32.075718+08', 0, NULL, 'admin', 36, 'dc306l', 'DC306L', '<h6>Digital video (4K)<br />
+Digital camera (48 Mega pixels)<br />
+LED fill light<br />
+Dual front and rear cameras<br />
+Auto focus<br />
+Web camera</h6>
+', '<p>The DC306L is a compact digital camera featuring 4K video recording, 48MP high-resolution imaging, front and rear dual cameras, auto focus, LED fill light, and web camera function.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''48'':7 ''48mp'':33 ''4k'':4,30 ''a'':25 ''and'':15,39,48 ''auto'':18,43 ''camera'':6,21,28,50 ''cameras'':17,42 ''compact'':26 ''dc306l'':1,23 ''digital'':2,5,27 ''dual'':13,41 ''featuring'':29 ''fill'':11,46 ''focus'':19,44 ''front'':14,38 ''function'':51 ''high'':35 ''high-resolution'':34 ''imaging'':37 ''is'':24 ''led'':10,45 ''light'':12,47 ''mega'':8 ''pixels'':9 ''rear'':16,40 ''recording'':32 ''resolution'':36 ''the'':22 ''video'':3,31 ''web'':20,49', 2, '/uploads/products/dc306l/cover.webp', '[]', 25.167055918898626);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.545107+08', '2026-07-29 09:04:32.121969+08', 0, NULL, 'admin', 14, 'dc317l', 'DC317L', '<h6>Digital video (4K)<br />
+Digital camera (64 Mega pixels)<br />
+LED fill light<br />
+Dual front and rear cameras<br />
+Auto focus<br />
+Web camera</h6>
+', '<p>The DC417L is a compact digital camera with dual front and rear cameras. It features a high-resolution front sensor for detailed 4K video recording and a dedicated rear selfie camera. It supports 4K 3840×2160@30FPS video and 64MP interpolated photos. Equipped with a 2.8-inch IPS HD display, a built-in LED fill light for low-light shooting, fast auto focus, and web camera functionality for easy live streaming or video calls.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''2.8'':67 ''30fps'':58 ''3840×2160'':57 ''4k'':4,45,56 ''64'':7 ''64mp'':61 ''a'':25,37,49,66,72 ''and'':15,32,48,60,87 ''auto'':18,85 ''built'':74 ''built-in'':73 ''calls'':97 ''camera'':6,21,28,53,89 ''cameras'':17,34 ''compact'':26 ''dc317l'':1 ''dc417l'':23 ''dedicated'':50 ''detailed'':44 ''digital'':2,5,27 ''display'':71 ''dual'':13,30 ''easy'':92 ''equipped'':64 ''fast'':84 ''features'':36 ''fill'':11,77 ''focus'':19,86 ''for'':43,79,91 ''front'':14,31,41 ''functionality'':90 ''hd'':70 ''high'':39 ''high-resolution'':38 ''in'':75 ''inch'':68 ''interpolated'':62 ''ips'':69 ''is'':24 ''it'':35,54 ''led'':10,76 ''light'':12,78,82 ''live'':93 ''low'':81 ''low-light'':80 ''mega'':8 ''or'':95 ''photos'':63 ''pixels'':9 ''rear'':16,33,51 ''recording'':47 ''resolution'':40 ''selfie'':52 ''sensor'':42 ''shooting'':83 ''streaming'':94 ''supports'':55 ''the'':22 ''video'':3,46,59,96 ''web'':20,88 ''with'':29,65', 2, '/uploads/products/dc317l/cover.jpg', '[]', 34.1359761287257);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.608592+08', '2026-07-29 09:03:48.255511+08', 0, NULL, 'admin', 24, 'dc205x', 'DC205X', '<h6>Front and rear dual camera<br />
+The front camera has a SONY IMX415 8 million image sensor, 6X Optical Zoom<br />
+The rear selfie camera uses a 12M Sony image sensor IMX386<br />
+UP to 5K(5120×2880) 30FPS Video resolution<br />
+Up to 64MP interpolation）<br />
+Highlight LED flash</h6>
+<h6>WiFi image transmission<br />
+2.8inch IPS HD display<br />
+Support for external microphones<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope<br />
+External hot shoe holder (can be conne', '<div>The DC205x is a compact, versatile digital camera for daily shooting and content creation, featuring a front-rear dual camera system. Its front camera uses a SONY IMX415 8MP image sensor with 6X optical zoom, and the rear selfie camera is equipped with a 12MP SONY IMX386 <a href="http://sensor.It" target="_blank">sensor.It</a> supports up to 5K 5120×2880@30FPS video recording and max 64MP interpolated imaging. The camera comes with a 2.8-inch IPS HD display, WiFi image transmission, and external microphone support. It also has electronic image stabilization with a built-in 6-axis gyroscope, a flash-compatible external hot shoe, a high-brightness LED flash, and a low-light focus assist light.</div>
+<div></div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''12m'':27 ''12mp'':121 ''2.8'':49,143 ''30fps'':36,130 ''5120×2880'':35,129 ''5k'':34,128 ''6'':66,166 ''64mp'':41,135 ''6x'':18,109 ''8'':14 ''8mp'':105 ''a'':11,26,79,91,102,120,142,162,169,176,183 ''also'':156 ''and'':3,87,112,133,151,182 ''anti'':60 ''assist'':188 ''axis'':67,167 ''be'':74 ''brightness'':179 ''built'':64,164 ''built-in'':63,163 ''camera'':6,9,24,83,96,100,116,139 ''can'':73 ''comes'':140 ''compact'':80 ''compatible'':172 ''conne'':75 ''content'':88 ''creation'':89 ''daily'':85 ''dc205x'':1,77 ''digital'':82 ''display'':53,147 ''dual'':5,95 ''electronic'':59,158 ''equipped'':118 ''external'':56,69,152,173 ''featuring'':90 ''flash'':45,171,181 ''flash-compatible'':170 ''focus'':187 ''for'':55,84 ''front'':2,8,93,99 ''front-rear'':92 ''gyroscope'':68,168 ''has'':10,157 ''hd'':52,146 ''high'':178 ''high-brightness'':177 ''highlight'':43 ''holder'':72 ''hot'':70,174 ''image'':16,29,47,106,149,159 ''imaging'':137 ''imx386'':31,123 ''imx415'':13,104 ''in'':65,165 ''inch'':50,144 ''interpolated'':136 ''interpolation）'':42 ''ips'':51,145 ''is'':78,117 ''it'':155 ''its'':98 ''led'':44,180 ''light'':186,189 ''low'':185 ''low-light'':184 ''max'':134 ''microphone'':153 ''microphones'':57 ''million'':15 ''optical'':19,110 ''rear'':4,22,94,114 ''recording'':132 ''resolution'':38 ''selfie'':23,115 ''sensor'':17,30,107 ''sensor.it'':124 ''shaking'':61 ''shoe'':71,175 ''shooting'':86 ''sony'':12,28,103,122 ''stabilization'':160 ''support'':54,154 ''supports'':58,125 ''system'':97 ''the'':7,21,76,113,138 ''to'':33,40,127 ''transmission'':48,150 ''up'':32,39,126 ''uses'':25,101 ''versatile'':81 ''video'':37,131 ''wifi'':46,148 ''with'':62,108,119,141,161 ''zoom'':20,111', 5, '/uploads/products/dc205x/cover.webp', '[]', 6.023689553853773);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.601406+08', '2026-07-29 09:03:48.256562+08', 0, NULL, 'admin', 23, 'dc206x', 'DC206X', '<h6>Front and rear dual camera<br />
+The front camera has a SONY IMX206 16 million image sensor, 5X Optical Zoom, Support optical zoom<br />
+The rear selfie camera uses a 12M Sony image sensor IMX386<br />
+UP to 5K 5120*2880(30FPS) Video resolution<br />
+Up to 64MP interpolation）<br />
+Highlight LED flash<br />
+3.2inch 1024*768 IPS HD display<br />
+Supports HDMI output<br />
+Support for external microphones<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope<br />
+External hot', '<p>The DC206X is a high-performance compact digital camera with a front-rear dual camera system. Its front camera uses a SONY IMX206 16MP image sensor with 5X optical zoom, and the rear selfie camera is equipped with a 12MP SONY IMX386 sensor. It supports up to 5K 5120×2880@30FPS video recording and max 64MP interpolated imaging. The camera comes with a 3.2-inch 1024×768 IPS HD display, HDMI output, and external microphone support. It also features electronic image stabilization with a built-in 6-axis gyroscope, a flash-compatible external hot shoe, a high-brightness LED flash, and a low-light focus assist light for sharp focusing in dim environments.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1024'':52 ''1024×768'':143 ''12m'':30 ''12mp'':118 ''16'':14 ''16mp'':102 ''2880'':39 ''3.2'':50,141 ''30fps'':40,128 ''5120'':38 ''5120×2880'':127 ''5k'':37,126 ''5x'':18,106 ''6'':72,164 ''64mp'':45,133 ''768'':53 ''a'':11,29,80,88,99,117,140,160,167,174,181 ''also'':154 ''and'':3,109,131,149,180 ''anti'':66 ''assist'':186 ''axis'':73,165 ''brightness'':177 ''built'':70,162 ''built-in'':69,161 ''camera'':6,9,27,86,93,97,113,137 ''comes'':138 ''compact'':84 ''compatible'':170 ''dc206x'':1,78 ''digital'':85 ''dim'':192 ''display'':56,146 ''dual'':5,92 ''electronic'':65,156 ''environments'':193 ''equipped'':115 ''external'':62,75,150,171 ''features'':155 ''flash'':49,169,179 ''flash-compatible'':168 ''focus'':185 ''focusing'':190 ''for'':61,188 ''front'':2,8,90,96 ''front-rear'':89 ''gyroscope'':74,166 ''has'':10 ''hd'':55,145 ''hdmi'':58,147 ''high'':82,176 ''high-brightness'':175 ''high-performance'':81 ''highlight'':47 ''hot'':76,172 ''image'':16,32,103,157 ''imaging'':135 ''imx206'':13,101 ''imx386'':34,120 ''in'':71,163,191 ''inch'':51,142 ''interpolated'':134 ''interpolation）'':46 ''ips'':54,144 ''is'':79,114 ''it'':122,153 ''its'':95 ''led'':48,178 ''light'':184,187 ''low'':183 ''low-light'':182 ''max'':132 ''microphone'':151 ''microphones'':63 ''million'':15 ''optical'':19,22,107 ''output'':59,148 ''performance'':83 ''rear'':4,25,91,111 ''recording'':130 ''resolution'':42 ''selfie'':26,112 ''sensor'':17,33,104,121 ''shaking'':67 ''sharp'':189 ''shoe'':173 ''sony'':12,31,100,119 ''stabilization'':158 ''support'':21,60,152 ''supports'':57,64,123 ''system'':94 ''the'':7,24,77,110,136 ''to'':36,44,125 ''up'':35,43,124 ''uses'':28,98 ''video'':41,129 ''with'':68,87,105,116,139,159 ''zoom'':20,23,108', 5, '/uploads/products/dc206x/cover.webp', '[]', 7.9168068251621495);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.718813+08', '2026-07-29 09:04:32.062453+08', 0, NULL, 'admin', 42, 'dc408x', 'DC408X', '<h6>Front and rear dual camera<br />
+The front camera has a SONY IMX206 16 million image sensor, 5X Optical Zoom, Support optical zoom<br />
+The rear selfie camera uses a 12M IMX386<br />
+UP to 5K 5120*2880(30FPS) Video resolution<br />
+Up to 64MP interpolation）<br />
+Highlight LED flash<br />
+2.8inch 640*480 IPS HD display<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope<br />
+In low light environments, the focus assist light can make the focus clearer</h6>
+', '<p>The DC408X is a compact digital camera with front and rear dual cameras. It features a 16MP SONY IMX206 front sensor with 5X optical zoom and a 12MP IMX386 rear selfie camera. It supports up to 5K 5120×2880@30FPS video and 64MP interpolated photos. It is equipped with a 2.8-inch 640×480 IPS HD display, highlight LED flash, 6-axis gyroscope electronic image stabilization, and a low-light focus assist light for clearer focusing.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''12m'':30 ''12mp'':105 ''16'':14 ''16mp'':94 ''2.8'':47,127 ''2880'':36 ''30fps'':37,116 ''480'':50 ''5120'':35 ''5120×2880'':115 ''5k'':34,114 ''5x'':18,100 ''6'':62,136 ''640'':49 ''640×480'':129 ''64mp'':42,119 ''a'':11,29,81,93,104,126,143 ''and'':3,87,103,118,142 ''anti'':56 ''assist'':71,148 ''axis'':63,137 ''built'':60 ''built-in'':59 ''camera'':6,9,27,84,109 ''cameras'':90 ''can'':73 ''clearer'':77,151 ''compact'':82 ''dc408x'':1,79 ''digital'':83 ''display'':53,132 ''dual'':5,89 ''electronic'':55,139 ''environments'':68 ''equipped'':124 ''features'':92 ''flash'':46,135 ''focus'':70,76,147 ''focusing'':152 ''for'':150 ''front'':2,8,86,97 ''gyroscope'':64,138 ''has'':10 ''hd'':52,131 ''highlight'':44,133 ''image'':16,140 ''imx206'':13,96 ''imx386'':31,106 ''in'':61,65 ''inch'':48,128 ''interpolated'':120 ''interpolation）'':43 ''ips'':51,130 ''is'':80,123 ''it'':91,110,122 ''led'':45,134 ''light'':67,72,146,149 ''low'':66,145 ''low-light'':144 ''make'':74 ''million'':15 ''optical'':19,22,101 ''photos'':121 ''rear'':4,25,88,107 ''resolution'':39 ''selfie'':26,108 ''sensor'':17,98 ''shaking'':57 ''sony'':12,95 ''stabilization'':141 ''support'':21 ''supports'':54,111 ''the'':7,24,69,75,78 ''to'':33,41,113 ''up'':32,40,112 ''uses'':28 ''video'':38,117 ''with'':58,85,99,125 ''zoom'':20,23,102', 2, '/uploads/products/dc408x/cover.webp', '[]', 22.86254085651497);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.44787+08', '2026-07-29 09:03:48.221514+08', 0, NULL, 'admin', 2, 'dc105', 'DC105', '<h6>True 4K-30FPS video recording, maximum interpolated 5K-30FPS<br />
+1/2.4-inch 21MP sensor, maximum interpolated photo resolution up to 96MP<br />
+Top flip screen adjustable to any angle within 180°<br />
+60 filters, 11 scene modes, 5-level beauty mode for highly flexible shooting<br />
+Supports HDR (High Dynamic Range) imaging<br />
+Supports ISO 100–6400, suitable for low-light shooting at various levels<br />
+8x high-efficiency zoom, ultra-fast focusing<br />
+High-speed continuous shooting ', '<p>The DC105 delivers outstanding all-round imaging performance. It supports true 4K@30FPS video recording and up to 5K@30FPS interpolated video, paired with a 1/2.4-inch 21MP sensor for shots up to 96MP interpolated resolution. The 180° top flip screen can be adjusted freely for flexible framing. Packed with 60 filters, 11 scene modes and 5-level beauty mode, plus HDR and wide ISO 100–6400 range, it performs well in diverse light conditions. Equipped with 8x zoom, ultra-fast focus, 10fps high-speed burst shooting and a built-in high-power LED flash. Wi-Fi 802.11 b/g/n enables efficient wireless transmission, ideal for daily shooting, vlogging and creative photography.</p>
+', '', NULL, 'CNY', 'instock', 'PUBLISHED', '''1/2.4-inch'':13,103 ''100–6400'':53,142 ''10fps'':159 ''11'':34,129 ''180°'':31,114 ''21mp'':14,104 ''30fps'':5,12,90,97 ''4k'':4,89 ''4k-30fps'':3 ''5'':37,133 ''5k'':11,96 ''5k-30fps'':10 ''60'':32,127 ''802.11'':178 ''8x'':63,153 ''96mp'':22,110 ''a'':102,166 ''adjustable'':26 ''adjusted'':120 ''all'':82 ''all-round'':81 ''and'':93,132,139,165,189 ''angle'':29 ''any'':28 ''at'':60 ''b/g/n'':179 ''be'':119 ''beauty'':39,135 ''built'':168 ''built-in'':167 ''burst'':163 ''can'':118 ''conditions'':150 ''continuous'':75 ''creative'':190 ''daily'':186 ''dc105'':1,78 ''delivers'':79 ''diverse'':148 ''dynamic'':48 ''efficiency'':66 ''efficient'':181 ''enables'':180 ''equipped'':151 ''fast'':70,157 ''fi'':177 ''filters'':33,128 ''flash'':174 ''flexible'':43,123 ''flip'':24,116 ''focus'':158 ''focusing'':71 ''for'':41,55,106,122,185 ''framing'':124 ''freely'':121 ''hdr'':46,138 ''high'':47,65,73,161,171 ''high-efficiency'':64 ''high-power'':170 ''high-speed'':72,160 ''highly'':42 ''ideal'':184 ''imaging'':50,84 ''in'':147,169 ''interpolated'':9,17,98,111 ''iso'':52,141 ''it'':86,144 ''led'':173 ''level'':38,134 ''levels'':62 ''light'':58,149 ''low'':57 ''low-light'':56 ''maximum'':8,16 ''mode'':40,136 ''modes'':36,131 ''outstanding'':80 ''packed'':125 ''paired'':100 ''performance'':85 ''performs'':145 ''photo'':18 ''photography'':191 ''plus'':137 ''power'':172 ''range'':49,143 ''recording'':7,92 ''resolution'':19,112 ''round'':83 ''scene'':35,130 ''screen'':25,117 ''sensor'':15,105 ''shooting'':44,59,76,164,187 ''shots'':107 ''speed'':74,162 ''suitable'':54 ''supports'':45,51,87 ''the'':77,113 ''to'':21,27,95,109 ''top'':23,115 ''transmission'':183 ''true'':2,88 ''ultra'':69,156 ''ultra-fast'':68,155 ''up'':20,94,108 ''various'':61 ''video'':6,91,99 ''vlogging'':188 ''well'':146 ''wi'':176 ''wi-fi'':175 ''wide'':140 ''wireless'':182 ''with'':101,126,152 ''within'':30 ''zoom'':67,154', 5, '/uploads/products/dc105/cover.webp', '[]', 3.888979643401422);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.71275+08', '2026-07-29 09:04:32.031446+08', 0, NULL, 'admin', 41, 'dc403', 'DC403', '<h6>High video resolution (1920x1080P)<br />
+High pixel image (44 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X digital zoom<br />
+Web camera</h6>
+', '<p>The DC403 is a portable entry-level compact digital camera, supporting 1920×1080P full HD video recording and 44-megapixel high-resolution still photography. It is equipped with 16X digital zoom, mass storage via a removable disk, and also features web camera functionality to meet daily shooting and online usage needs.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':16,50 ''1920x1080p'':5 ''1920×1080p'':33 ''44'':9,39 ''a'':24,56 ''also'':60 ''and'':38,59,69 ''camera'':20,31,63 ''compact'':29 ''daily'':67 ''dc403'':1,22 ''digital'':17,30,51 ''disk'':15,58 ''entry'':27 ''entry-level'':26 ''equipped'':48 ''features'':61 ''full'':34 ''functionality'':64 ''hd'':35 ''high'':2,6,42 ''high-resolution'':41 ''image'':8 ''is'':23,47 ''it'':46 ''level'':28 ''mass'':12,53 ''meet'':66 ''mega'':10 ''megapixel'':40 ''needs'':72 ''online'':70 ''photography'':45 ''pixel'':7 ''pixels'':11 ''portable'':25 ''recording'':37 ''removable'':14,57 ''resolution'':4,43 ''shooting'':68 ''still'':44 ''storage'':13,54 ''supporting'':32 ''the'':21 ''to'':65 ''usage'':71 ''via'':55 ''video'':3,36 ''web'':19,62 ''with'':49 ''zoom'':18,52', 2, '/uploads/products/dc403/cover.webp', '[]', 26.530963791378884);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.570569+08', '2026-07-28 17:15:13.565694+08', 0, NULL, 'admin', 18, 'wdc901', 'WDC901', '<h6>Up to 48.0 Megapixels Resolution with Auto-Focusing Function, Large Depth of Field.</h6>
+<h6>Up to 4K Video Resolution<br />
+Dual Screens (Front 1.7-Inch IPS Display, Rear 2.8-Inchs IPS Display)<br />
+IP68 international waterproof standard, grade 8 waterproof, grade 6 dustproof,, long-time working underwater<br />
+Custom High Standard Microphone and Loudspeaker<br />
+Could be used everywhere with pocket-size</h6>
+', '<div>
+<div class="ace-line ace-line old-record-id-Cz0AfRdGHd81G2c7iY3cV4svnEd">The WDC901 is a high-performance sports camera for outdoor and dynamic shooting. It boasts up to 48.0MP resolution with auto-focus and large depth of field, plus 4K video recording for sharp, high-definition moments. Dual screens (1.7-inch front, 2.8-inch rear IPS) enable intuitive operation. IP68 waterproof (grade 8) and dustproof (grade 6) design supports long underwater use, while a custom high-standard mic and speaker ensure clear audio. Its pocket-size build makes it portable for use anywhere, ideal for outdoor sports and daily shooting.</div>
+</div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1.7'':24,104 ''2.8'':29,107 ''48.0'':4,80 ''4k'':18,93 ''6'':41,121 ''8'':38,117 ''a'':65,128 ''and'':52,73,87,118,134,154 ''anywhere'':149 ''audio'':138 ''auto'':9,85 ''auto-focus'':84 ''auto-focusing'':8 ''be'':55 ''boasts'':77 ''build'':143 ''camera'':70 ''clear'':137 ''could'':54 ''custom'':48,129 ''daily'':155 ''definition'':100 ''depth'':13,89 ''design'':122 ''display'':27,32 ''dual'':21,102 ''dustproof'':42,119 ''dynamic'':74 ''enable'':111 ''ensure'':136 ''everywhere'':57 ''field'':15,91 ''focus'':86 ''focusing'':10 ''for'':71,96,147,151 ''front'':23,106 ''function'':11 ''grade'':37,40,116,120 ''high'':49,67,99,131 ''high-definition'':98 ''high-performance'':66 ''high-standard'':130 ''ideal'':150 ''inch'':25,105,108 ''inchs'':30 ''international'':34 ''intuitive'':112 ''ip68'':33,114 ''ips'':26,31,110 ''is'':64 ''it'':76,145 ''its'':139 ''large'':12,88 ''long'':44,124 ''long-time'':43 ''loudspeaker'':53 ''makes'':144 ''megapixels'':5 ''mic'':133 ''microphone'':51 ''moments'':101 ''mp'':81 ''of'':14,90 ''operation'':113 ''outdoor'':72,152 ''performance'':68 ''plus'':92 ''pocket'':60,141 ''pocket-size'':59,140 ''portable'':146 ''rear'':28,109 ''recording'':95 ''resolution'':6,20,82 ''screens'':22,103 ''sharp'':97 ''shooting'':75,156 ''size'':61,142 ''speaker'':135 ''sports'':69,153 ''standard'':36,50,132 ''supports'':123 ''the'':62 ''time'':45 ''to'':3,17,79 ''underwater'':47,125 ''up'':2,16,78 ''use'':126,148 ''used'':56 ''video'':19,94 ''waterproof'':35,39,115 ''wdc901'':1,63 ''while'':127 ''with'':7,58,83 ''working'':46', 1, '/uploads/products/wdc901/cover.webp', '[]', 15.62815089125847);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.670576+08', '2026-07-29 09:04:32.076277+08', 0, NULL, 'admin', 34, 'dc309x', 'DC309X', '<h6>Front and rear dual camera<br />
+The front camera has a GC8613 GC8613  8 million image sensor, 6X Optical Zoom, Support optical zoom<br />
+The rear selfie camera uses a 13M Sony image sensor IMX214<br />
+UP to 5K 5120*2880(30FPS) Video resolution<br />
+Up to 64MP interpolation）<br />
+Highlight LED flash<br />
+2.8inch 640*480 IPS HD display<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope</h6>
+', '<p>This device adopts front and rear dual cameras: the front camera is equipped with GC8613 8MP image sensor and supports 6X optical zoom, while the rear selfie camera uses Sony IMX214 13MP image sensor. It delivers up to 5K 5120*2880@30FPS video resolution and up to 64MP interpolated photography, fitted with a highlight LED flash and a 2.8-inch 640*480 IPS HD display. Built with a 6-axis gyroscope, it also supports electronic anti-shaking for stable and smooth shooting.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13m'':30 ''13mp'':99 ''2.8'':50,126 ''2880'':39,108 ''30fps'':40,109 ''480'':53,129 ''5120'':38,107 ''5k'':37,106 ''6'':65,136 ''640'':52,128 ''64mp'':45,115 ''6x'':18,88 ''8'':14 ''8mp'':83 ''a'':11,29,120,125,135 ''adopts'':70 ''also'':140 ''and'':3,72,86,112,124,148 ''anti'':59,144 ''anti-shaking'':143 ''axis'':66,137 ''built'':63,133 ''built-in'':62 ''camera'':6,9,27,78,95 ''cameras'':75 ''dc309x'':1 ''delivers'':103 ''device'':69 ''display'':56,132 ''dual'':5,74 ''electronic'':58,142 ''equipped'':80 ''fitted'':118 ''flash'':49,123 ''for'':146 ''front'':2,8,71,77 ''gc8613'':12,82 ''gc8613 '':13 ''gyroscope'':67,138 ''has'':10 ''hd'':55,131 ''highlight'':47,121 ''image'':16,32,84,100 ''imx214'':34,98 ''in'':64 ''inch'':51,127 ''interpolated'':116 ''interpolation）'':46 ''ips'':54,130 ''is'':79 ''it'':102,139 ''led'':48,122 ''million'':15 ''optical'':19,22,89 ''photography'':117 ''rear'':4,25,73,93 ''resolution'':42,111 ''selfie'':26,94 ''sensor'':17,33,85,101 ''shaking'':60,145 ''shooting'':150 ''smooth'':149 ''sony'':31,97 ''stable'':147 ''support'':21 ''supports'':57,87,141 ''the'':7,24,76,92 ''this'':68 ''to'':36,44,105,114 ''up'':35,43,104,113 ''uses'':28,96 ''video'':41,110 ''while'':91 ''with'':61,81,119,134 ''zoom'':20,23,90', 2, '/uploads/products/dc309x/cover.jpg', '[]', 28.339822313523968);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.576667+08', '2026-07-28 17:15:13.550456+08', 0, NULL, 'admin', 19, '860a', '860A', '<h6>Waterproof: The device is completely waterproof at a depth of up to 20 meters.<br />
+Pre-recording: Capture memorable moments effortlessly.<br />
+Vertical shooting mode: Ideal for uploading and sharing videos on various platforms.<br />
+Dual screens:<br />
+– Front screen: Provides a more intuitive view when shooting videos directly.<br />
+– Rear touchscreen: Simplifies operations.</h6>
+', '<div>
+<div class="ace-line ace-line old-record-id-FTmxfcVLYdg0dJcqPfocAyU1nmh">The 860A is a practical sports camera designed for dynamic shooting scenarios. It is completely waterproof up to 20 meters, perfect for capturing underwater moments. Its pre-recording function lets you effortlessly seize memorable shots, while the vertical shooting mode is ideal for sharing videos on various platforms. Equipped with dual screens, the front screen offers an intuitive view for direct video shooting, and the rear touchscreen simplifies operations for easy use during sports.</div>
+</div>
+', '860A', NULL, 'CNY', 'instock', 'PUBLISHED', '''20'':14,72 ''860a'':1,55 ''a'':9,41,57 ''an'':111 ''and'':29,118 ''at'':8 ''camera'':60 ''capture'':19 ''capturing'':76 ''completely'':6,68 ''depth'':10 ''designed'':61 ''device'':4 ''direct'':115 ''directly'':48 ''dual'':35,105 ''during'':127 ''dynamic'':63 ''easy'':125 ''effortlessly'':22,86 ''equipped'':103 ''for'':27,62,75,97,114,124 ''front'':38,108 ''function'':83 ''ideal'':26,96 ''intuitive'':43,112 ''is'':5,56,67,95 ''it'':66 ''its'':79 ''lets'':84 ''memorable'':20,88 ''meters'':15,73 ''mode'':25,94 ''moments'':21,78 ''more'':42 ''of'':11 ''offers'':110 ''on'':32,100 ''operations'':53,123 ''perfect'':74 ''platforms'':34,102 ''practical'':58 ''pre'':17,81 ''pre-recording'':16,80 ''provides'':40 ''rear'':50,120 ''recording'':18,82 ''scenarios'':65 ''screen'':39,109 ''screens'':36,106 ''seize'':87 ''sharing'':30,98 ''shooting'':24,46,64,93,117 ''shots'':89 ''simplifies'':52,122 ''sports'':59,128 ''the'':3,54,91,107,119 ''to'':13,71 ''touchscreen'':51,121 ''underwater'':77 ''up'':12,70 ''uploading'':28 ''use'':126 ''various'':33,101 ''vertical'':23,92 ''video'':116 ''videos'':31,47,99 ''view'':44,113 ''waterproof'':2,7,69 ''when'':45 ''while'':90 ''with'':104 ''you'':85 ''–'':37,49', 1, '/uploads/products/860a/cover.webp', '[]', 12.303235683039183);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.462591+08', '2026-07-28 17:15:13.682775+08', 0, NULL, 'admin', 4, 'hdv544km', 'HDV544KM', '<h6>Video Resolution up to 4K 60FPS<br />
+up to 48MP Interpolation<br />
+With IR fill light<br />
+3.0 inch capacitive touch screen<br />
+WIFI wireless transmission **Support for HDMI<br />
+Six-axis anti-shaking<br />
+Remote operation</h6>
+', '<p>The HDV544KM high-performance digital camcorder delivers exceptional video and photo quality with its 4K 60FPS ultra-smooth recording capability and up to 48MP interpolated photography. Equipped with a dedicated IR fill light, it captures clear footage even in complete darkness. The 3.0-inch capacitive touchscreen provides intuitive operation, while the advanced 6-axis anti-shaking system ensures stable, jitter-free shots. Featuring WiFi wireless transmission, HDMI output support and convenient remote operation, it is the perfect choice for family event recording, travel vlogging, content creation and professional shooting scenarios.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''3.0'':16,79 ''48mp'':10,60 ''4k'':6,50 ''6'':89 ''60fps'':7,51 ''a'':65 ''advanced'':88 ''and'':45,57,108,125 ''anti'':31,92 ''anti-shaking'':30,91 ''axis'':29,90 ''camcorder'':41 ''capability'':56 ''capacitive'':18,81 ''captures'':71 ''choice'':116 ''clear'':72 ''complete'':76 ''content'':123 ''convenient'':109 ''creation'':124 ''darkness'':77 ''dedicated'':66 ''delivers'':42 ''digital'':40 ''ensures'':95 ''equipped'':63 ''even'':74 ''event'':119 ''exceptional'':43 ''family'':118 ''featuring'':101 ''fill'':14,68 ''footage'':73 ''for'':25,117 ''free'':99 ''hdmi'':26,105 ''hdv544km'':1,36 ''high'':38 ''high-performance'':37 ''in'':75 ''inch'':17,80 ''interpolated'':61 ''interpolation'':11 ''intuitive'':84 ''ir'':13,67 ''is'':113 ''it'':70,112 ''its'':49 ''jitter'':98 ''jitter-free'':97 ''light'':15,69 ''operation'':34,85,111 ''output'':106 ''perfect'':115 ''performance'':39 ''photo'':46 ''photography'':62 ''professional'':126 ''provides'':83 ''quality'':47 ''recording'':55,120 ''remote'':33,110 ''resolution'':3 ''scenarios'':128 ''screen'':20 ''shaking'':32,93 ''shooting'':127 ''shots'':100 ''six'':28 ''six-axis'':27 ''smooth'':54 ''stable'':96 ''support'':24,107 ''system'':94 ''the'':35,78,87,114 ''to'':5,9,59 ''touch'':19 ''touchscreen'':82 ''transmission'':23,104 ''travel'':121 ''ultra'':53 ''ultra-smooth'':52 ''up'':4,8,58 ''video'':2,44 ''vlogging'':122 ''while'':86 ''wifi'':21,102 ''wireless'':22,103 ''with'':12,48,64', 6, '/uploads/products/hdv544km/cover.webp', '[]', 39.7116354205961);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.67639+08', '2026-07-29 09:04:32.075991+08', 0, NULL, 'admin', 35, 'dc308', 'DC308', '<h6>Digital video (4K)<br />
+Digital camera (48 Mega pixels)<br />
+LED fill light<br />
+Dual front and rear cameras<br />
+Auto focus<br />
+Web camera</h6>
+', '<p>The DC308 is a versatile compact digital camera designed for daily shooting and content creation. It features a front-rear dual camera system with auto focus, supporting 4K high-resolution video recording and 48-megapixel still photography. Equipped with an LED fill light, it ensures clear imaging in various lighting conditions. Additionally, it supports web camera functionality, making it easy to stream and share content live.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''48'':7,57 ''4k'':4,50 ''a'':25,39 ''additionally'':75 ''an'':63 ''and'':15,34,56,86 ''auto'':18,47 ''camera'':6,21,29,44,79 ''cameras'':17 ''clear'':69 ''compact'':27 ''conditions'':74 ''content'':35,88 ''creation'':36 ''daily'':32 ''dc308'':1,23 ''designed'':30 ''digital'':2,5,28 ''dual'':13,43 ''easy'':83 ''ensures'':68 ''equipped'':61 ''features'':38 ''fill'':11,65 ''focus'':19,48 ''for'':31 ''front'':14,41 ''front-rear'':40 ''functionality'':80 ''high'':52 ''high-resolution'':51 ''imaging'':70 ''in'':71 ''is'':24 ''it'':37,67,76,82 ''led'':10,64 ''light'':12,66 ''lighting'':73 ''live'':89 ''making'':81 ''mega'':8 ''megapixel'':58 ''photography'':60 ''pixels'':9 ''rear'':16,42 ''recording'':55 ''resolution'':53 ''share'':87 ''shooting'':33 ''still'':59 ''stream'':85 ''supporting'':49 ''supports'':77 ''system'':45 ''the'':22 ''to'':84 ''various'':72 ''versatile'':26 ''video'':3,54 ''web'':20,78 ''with'':46,62', 2, '/uploads/products/dc308/cover.webp', '[]', 29.42603358435484);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.664201+08', '2026-07-29 09:04:32.084059+08', 0, NULL, 'admin', 33, 'dc310', 'DC310', '<p>Dual front and rear cameras.​​<br />
+Front camera: Equipped with a SONY IMX135 13MP image sensor, supports auto-focus.<br />
+Rear selfie camera: Uses a SONY IMX219 8MP image sensor.<br />
+Built-in high-power LED flash​.​<br />
+3.6-inch 800×480 IPS HD touch display.​​<br />
+Supports Wi-Fi.​</p>
+', '<p>The DC310 is a compact digital camera with front and rear dual cameras. The front camera uses a 13MP SONY IMX135 sensor with autofocus, while the rear selfie camera features an 8MP SONY IMX219 sensor. It has a built-in high-power LED flash, a 3.6-inch 800×480 IPS HD touch display, and supports Wi-Fi.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13mp'':15,72 ''3.6'':41,101 ''800×480'':43,103 ''8mp'':29,85 ''a'':12,26,57,71,91,100 ''an'':84 ''and'':4,63,108 ''auto'':20 ''auto-focus'':19 ''autofocus'':77 ''built'':33,93 ''built-in'':32,92 ''camera'':9,24,60,69,82 ''cameras'':6,66 ''compact'':58 ''dc310'':1,55 ''digital'':59 ''display'':47,107 ''dual'':2,65 ''equipped'':10 ''features'':83 ''fi'':52,112 ''flash'':99 ''flash​'':39 ''focus'':21 ''front'':3,8,62,68 ''has'':90 ''hd'':45,105 ''high'':36,96 ''high-power'':35,95 ''image'':16,30 ''imx135'':14,74 ''imx219'':28,87 ''in'':34,94 ''inch'':42,102 ''ips'':44,104 ''is'':56 ''it'':89 ''led'':38,98 ''power'':37,97 ''rear'':5,22,64,80 ''selfie'':23,81 ''sensor'':17,31,75,88 ''sony'':13,27,73,86 ''supports'':18,49,109 ''the'':54,67,79 ''touch'':46,106 ''uses'':25,70 ''while'':78 ''wi'':51,111 ''wi-fi'':50,110 ''with'':11,61,76 ''​'':40,53 ''​​'':7,48', 2, '/uploads/products/dc310/cover.webp', '[]', 28.901066639094132);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.564178+08', '2026-07-29 09:04:32.121783+08', 0, NULL, 'admin', 17, 'dc320', 'DC320', '<h6>Dual front and rear cameras.​​<br />
+Front camera: Equipped with a SONY IMX135 13MP image sensor, supports auto-focus.<br />
+Rear selfie camera: Uses a SONY IMX219 8MP image sensor.<br />
+Built-in high-power LED flash​.​<br />
+4.0-inch 800×480 IPS HD touch display.​​<br />
+Supports Wi-Fi.​</h6>
+', '<p>DC320 comes with dual front and rear cameras. The front camera is fitted with a 13MP Sony IMX135 sensor with autofocus, and the rear selfie camera adopts an 8MP Sony IMX219 sensor. It is equipped with a built-in high-power LED flash and a 4.0-inch 800×480 IPS HD touch display, while supporting Wi-Fi connection for convenient image transmission.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''13mp'':15,69 ''4.0'':41,101 ''800×480'':43,103 ''8mp'':29,82 ''a'':12,26,68,90,100 ''adopts'':80 ''an'':81 ''and'':4,59,75,99 ''auto'':20 ''auto-focus'':19 ''autofocus'':74 ''built'':33,92 ''built-in'':32,91 ''camera'':9,24,64,79 ''cameras'':6,61 ''comes'':55 ''connection'':113 ''convenient'':115 ''dc320'':1,54 ''display'':47,107 ''dual'':2,57 ''equipped'':10,88 ''fi'':52,112 ''fitted'':66 ''flash'':98 ''flash​'':39 ''focus'':21 ''for'':114 ''front'':3,8,58,63 ''hd'':45,105 ''high'':36,95 ''high-power'':35,94 ''image'':16,30,116 ''imx135'':14,71 ''imx219'':28,84 ''in'':34,93 ''inch'':42,102 ''ips'':44,104 ''is'':65,87 ''it'':86 ''led'':38,97 ''power'':37,96 ''rear'':5,22,60,77 ''selfie'':23,78 ''sensor'':17,31,72,85 ''sony'':13,27,70,83 ''supporting'':109 ''supports'':18,49 ''the'':62,76 ''touch'':46,106 ''transmission'':117 ''uses'':25 ''while'':108 ''wi'':51,111 ''wi-fi'':50,110 ''with'':11,56,67,73,89 ''​'':40,53 ''​​'':7,48', 2, '/uploads/products/dc320/cover.webp', '[]', 31.94559426121834);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.438192+08', '2026-07-29 09:03:48.221692+08', 0, NULL, 'admin', 1, 'dc106', 'DC106Y | Flip-top camera', '<h6>Flip-top camera</h6>
+<h6>digital camera (8K)<br />
+13.0MP digital camera<br />
+IPS 2.8-inch display<br />
+Beauty selfie<br />
+Wi-Fi wireless connection<br />
+Built-in LED fill light<br />
+Auto focus<br />
+Webcam function</h6>
+', '<p>DC106Y features a practical flip-top body paired with powerful 8K video recording and 13MP photo shooting capability. Equipped with a 2.8-inch IPS display, auto focus and built-in LED fill light, it delivers bright, sharp selfies with dedicated beauty retouch mode. Built-in Wi-Fi enables quick wireless file transfer to mobile devices. It also doubles as a high-quality webcam for live streaming, video calls and online meetings. Compact and versatile, this flip digital camera is ideal for daily vlogging, travel snaps and social media content creation.</p>
+', '', NULL, 'CNY', 'instock', 'PUBLISHED', '''13.0'':13 ''13mp'':53 ''2.8'':18,60 ''8k'':12,49 ''a'':40,59,101 ''also'':98 ''and'':52,66,111,115,128 ''as'':100 ''auto'':34,64 ''beauty'':21,80 ''body'':45 ''bright'':75 ''built'':29,68,84 ''built-in'':28,67,83 ''calls'':110 ''camera'':5,9,11,16,120 ''capability'':56 ''compact'':114 ''connection'':27 ''content'':131 ''creation'':132 ''daily'':124 ''dc106y'':1,38 ''dedicated'':79 ''delivers'':74 ''devices'':96 ''digital'':10,15,119 ''display'':20,63 ''doubles'':99 ''enables'':89 ''equipped'':57 ''features'':39 ''fi'':25,88 ''file'':92 ''fill'':32,71 ''flip'':3,7,43,118 ''flip-top'':2,6,42 ''focus'':35,65 ''for'':106,123 ''function'':37 ''high'':103 ''high-quality'':102 ''ideal'':122 ''in'':30,69,85 ''inch'':19,61 ''ips'':17,62 ''is'':121 ''it'':73,97 ''led'':31,70 ''light'':33,72 ''live'':107 ''media'':130 ''meetings'':113 ''mobile'':95 ''mode'':82 ''mp'':14 ''online'':112 ''paired'':46 ''photo'':54 ''powerful'':48 ''practical'':41 ''quality'':104 ''quick'':90 ''recording'':51 ''retouch'':81 ''selfie'':22 ''selfies'':77 ''sharp'':76 ''shooting'':55 ''snaps'':127 ''social'':129 ''streaming'':108 ''this'':117 ''to'':94 ''top'':4,8,44 ''transfer'':93 ''travel'':126 ''versatile'':116 ''video'':50,109 ''vlogging'':125 ''webcam'':36,105 ''wi'':24,87 ''wi-fi'':23,86 ''wireless'':26,91 ''with'':47,58,78', 5, '/uploads/products/dc106/cover.webp', '[]', 4.115944076573226);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.658038+08', '2026-07-29 09:04:32.097235+08', 0, NULL, 'admin', 32, 'dc311', 'DC311', '<div data-page-id="XCMPfCtk4dhTHxc7Sgmckhv6ncg" data-lark-html-role="root" data-docx-has-block-data="false">
+<h6 class="ace-line ace-line old-record-id-BEqMfcvHYdrFxicCfUecDKJ0nYd">High video resolution (1920×1080P)</h6>
+<h6 class="ace-line ace-line old-record-id-Dyxof4yEMdXVqPcsJ5McannVnJc">High pixel image (48 million pixels)</h6>
+<h6 class="ace-line ace-line old-record-id-FMLzfIPHAdw813cb1eCc4vXTnX6">Mass storage (Removable disk)</h6>
+<h6 class="ace-line ace-line old-record-id-MMtWfqFkvdnPimc', '<p>The DC311 is a user-friendly compact digital camera, boasting high video resolution of 1920×1080P and 48 million-pixel high-definition still photography. It features 16X digital zoom, mass storage via a removable disk, and convenient web camera functionality for diverse daily shooting and online needs.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':57 ''1920×1080p'':5,44 ''48'':9,46 ''a'':32,63 ''ace'':19,22 ''ace-line'':18,21 ''and'':45,66,75 ''boasting'':39 ''camera'':38,69 ''class'':17 ''compact'':36 ''convenient'':67 ''daily'':73 ''dc311'':1,30 ''definition'':52 ''digital'':37,58 ''disk'':15,65 ''diverse'':72 ''features'':56 ''for'':71 ''friendly'':35 ''functionality'':70 ''h6'':16 ''high'':2,6,40,51 ''high-definition'':50 ''id'':27 ''image'':8 ''is'':31 ''it'':55 ''line'':20,23 ''mass'':12,60 ''million'':10,48 ''million-pixel'':47 ''mmtwfqfkvdnpimc'':28 ''needs'':77 ''of'':43 ''old'':25 ''old-record-id-mmtwfqfkvdnpimc'':24 ''online'':76 ''photography'':54 ''pixel'':7,49 ''pixels'':11 ''record'':26 ''removable'':14,64 ''resolution'':4,42 ''shooting'':74 ''still'':53 ''storage'':13,61 ''the'':29 ''user'':34 ''user-friendly'':33 ''via'':62 ''video'':3,41 ''web'':68 ''zoom'':59', 2, '/uploads/products/dc311/cover.webp', '[]', 29.98757753067268);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.595057+08', '2026-07-29 09:03:48.220899+08', 0, NULL, 'admin', 22, 'dc226', 'DC226', '<h6>Front and rear dual camera<br />
+The front camera has a SONY IMX586 48 million image sensor, Support optical zoom<br />
+The rear selfie camera uses a SONY IMX386 12 million image sensor<br />
+UP to 8K 7680*4320(15FPS) Video resolution<br />
+Up to 88MP interpolation）<br />
+Highlight LED flash<br />
+3.2inch 1024*768 IPS HD display<br />
+Supports HDMI output<br />
+Support for external microphones<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope<br />
+External hot shoe hold', '<div>The DC226 is a full-featured digital camera with a front-rear dual camera system: the front camera uses a SONY IMX586 48MP image sensor with optical zoom, and the rear selfie camera adopts a SONY IMX386 12MP <a href="http://sensor.It" target="_blank">sensor.It</a> supports up to 8K 7680×4320@15FPS video recording and 88MP interpolated imaging. Equipped with a 3.2-inch 1024×768 IPS HD display, it supports HDMI output, external microphone connectivity and WiFi image transmission. It also features electronic image stabilization with a built-in 6-axis gyroscope, a flash-compatible external hot shoe, a high-brightness LED flash, and a low-light focus assist light.</div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1024'':50 ''1024×768'':135 ''12'':29 ''12mp'':116 ''15fps'':38,123 ''3.2'':48,133 ''4320'':37 ''48'':14 ''48mp'':101 ''6'':70,161 ''768'':51 ''7680'':36 ''7680×4320'':122 ''88mp'':43,127 ''8k'':35,121 ''a'':11,26,80,87,98,113,132,157,164,171,178 ''adopts'':112 ''also'':151 ''and'':3,107,126,146,177 ''anti'':64 ''assist'':183 ''axis'':71,162 ''brightness'':174 ''built'':68,159 ''built-in'':67,158 ''camera'':6,9,24,85,92,96,111 ''compatible'':167 ''connectivity'':145 ''dc226'':1,78 ''digital'':84 ''display'':54,138 ''dual'':5,91 ''electronic'':63,153 ''equipped'':130 ''external'':60,73,143,168 ''featured'':83 ''features'':152 ''flash'':47,166,176 ''flash-compatible'':165 ''focus'':182 ''for'':59 ''front'':2,8,89,95 ''front-rear'':88 ''full'':82 ''full-featured'':81 ''gyroscope'':72,163 ''has'':10 ''hd'':53,137 ''hdmi'':56,141 ''high'':173 ''high-brightness'':172 ''highlight'':45 ''hold'':76 ''hot'':74,169 ''image'':16,31,102,148,154 ''imaging'':129 ''imx386'':28,115 ''imx586'':13,100 ''in'':69,160 ''inch'':49,134 ''interpolated'':128 ''interpolation）'':44 ''ips'':52,136 ''is'':79 ''it'':139,150 ''led'':46,175 ''light'':181,184 ''low'':180 ''low-light'':179 ''microphone'':144 ''microphones'':61 ''million'':15,30 ''optical'':19,105 ''output'':57,142 ''rear'':4,22,90,109 ''recording'':125 ''resolution'':40 ''selfie'':23,110 ''sensor'':17,32,103 ''sensor.it'':117 ''shaking'':65 ''shoe'':75,170 ''sony'':12,27,99,114 ''stabilization'':155 ''support'':18,58 ''supports'':55,62,118,140 ''system'':93 ''the'':7,21,77,94,108 ''to'':34,42,120 ''transmission'':149 ''up'':33,41,119 ''uses'':25,97 ''video'':39,124 ''wifi'':147 ''with'':66,86,104,131,156 ''zoom'':20,106', 5, '/uploads/products/dc226/cover.webp', '[]', 3.1218707554561966);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.551986+08', '2026-07-28 17:15:13.636426+08', 0, NULL, 'admin', 15, 'hdv255k', 'HDV255K', '<h6>Video Resolution up to 8K 15FPS<br />
+up to 88MP Interpolation<br />
+With IR fill light<br />
+3.0 inch capacitive touch screen<br />
+WIFI wireless transmission **Support for HDMI<br />
+Six-axis anti-shaking<br />
+Remote operation</h6>
+<div id="kiss-translator-box" class="notranslate"></div>
+', '<p>This video camera supports video resolution up to 8K 15FPS and up to 88MP interpolation photography. It features an IR fill light for enhanced low-light performance, a 3.0-inch capacitive touch screen, and six-axis anti-shaking technology for stable shots. Equipped with WIFI wireless transmission and HDMI support, it also enables convenient remote operation, making it ideal for versatile shooting needs.</p>
+<div class="notranslate"></div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''15fps'':7,44 ''3.0'':16,64 ''88mp'':10,48 ''8k'':6,43 ''a'':63 ''also'':89 ''an'':53 ''and'':45,69,85 ''anti'':31,74 ''anti-shaking'':30,73 ''axis'':29,72 ''camera'':37 ''capacitive'':18,66 ''convenient'':91 ''enables'':90 ''enhanced'':58 ''equipped'':80 ''features'':52 ''fill'':14,55 ''for'':25,57,77,97 ''hdmi'':26,86 ''hdv255k'':1 ''ideal'':96 ''inch'':17,65 ''interpolation'':11,49 ''ir'':13,54 ''it'':51,88,95 ''light'':15,56,61 ''low'':60 ''low-light'':59 ''making'':94 ''needs'':100 ''operation'':34,93 ''performance'':62 ''photography'':50 ''remote'':33,92 ''resolution'':3,40 ''screen'':20,68 ''shaking'':32,75 ''shooting'':99 ''shots'':79 ''six'':28,71 ''six-axis'':27,70 ''stable'':78 ''support'':24,87 ''supports'':38 ''technology'':76 ''this'':35 ''to'':5,9,42,47 ''touch'':19,67 ''transmission'':23,84 ''up'':4,8,41,46 ''versatile'':98 ''video'':2,36,39 ''wifi'':21,82 ''wireless'':22,83 ''with'':12,81', 6, '/uploads/products/hdv255k/cover.webp', '[]', 30.271192899712695);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.652122+08', '2026-07-29 09:04:32.121581+08', 0, NULL, 'admin', 31, 'dc406', 'DC406', '<h6>High video resolution (1080P)<br />
+High pixel image (64Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X digital zoom</h6>
+', '<p>DC406 Digital Camera The DC406 is a compact digital camera that supports 1080P video recording and 64MP high-resolution photography. It features 16X digital zoom and mass removable disk storage, making it perfect for daily use.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1080p'':5,30 ''16x'':15,41 ''64mega'':9 ''64mp'':34 ''a'':24 ''and'':33,44 ''camera'':20,27 ''compact'':25 ''daily'':53 ''dc406'':1,18,22 ''digital'':16,19,26,42 ''disk'':14,47 ''features'':40 ''for'':52 ''high'':2,6,36 ''high-resolution'':35 ''image'':8 ''is'':23 ''it'':39,50 ''making'':49 ''mass'':11,45 ''perfect'':51 ''photography'':38 ''pixel'':7 ''pixels'':10 ''recording'':32 ''removable'':13,46 ''resolution'':4,37 ''storage'':12,48 ''supports'':29 ''that'':28 ''the'':21 ''use'':54 ''video'':3,31 ''zoom'':17,43', 2, '/uploads/products/dc406/cover.webp', '[]', 30.9672669538456);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.701005+08', '2026-07-29 09:03:48.256002+08', 0, NULL, 'admin', 39, 'dc101l', 'DC101L', '<h6>Digital video (4K)<br />
+Digital camera (64 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X powerful zoom<br />
+External hot shoe (can be connected to microphone)<br />
+Support HD output<br />
+Auto focus<br />
+Web camera<br />
+Built in high-power LED flash</h6>
+', '<p>The DC101L is a versatile, practical compact digital camera, supporting 4K digital video recording and 64-megapixel high-resolution photography. It features 16X powerful zoom, auto focus, and a built-in high-power LED flash. It also comes with mass removable disk storage, HD output, an external hot shoe for microphone connection, and web camera functionality to meet diverse shooting and daily usage needs.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':14,62 ''4k'':4,49 ''64'':7,54 ''a'':42,68 ''also'':78 ''an'':87 ''and'':53,67,94,102 ''auto'':28,65 ''be'':21 ''built'':32,70 ''built-in'':69 ''camera'':6,31,47,96 ''can'':20 ''comes'':79 ''compact'':45 ''connected'':22 ''connection'':93 ''daily'':103 ''dc101l'':1,40 ''digital'':2,5,46,50 ''disk'':13,83 ''diverse'':100 ''external'':17,88 ''features'':61 ''flash'':38,76 ''focus'':29,66 ''for'':91 ''functionality'':97 ''hd'':26,85 ''high'':35,57,73 ''high-power'':34,72 ''high-resolution'':56 ''hot'':18,89 ''in'':33,71 ''is'':41 ''it'':60,77 ''led'':37,75 ''mass'':10,81 ''meet'':99 ''mega'':8 ''megapixel'':55 ''microphone'':24,92 ''needs'':105 ''output'':27,86 ''photography'':59 ''pixels'':9 ''power'':36,74 ''powerful'':15,63 ''practical'':44 ''recording'':52 ''removable'':12,82 ''resolution'':58 ''shoe'':19,90 ''shooting'':101 ''storage'':11,84 ''support'':25 ''supporting'':48 ''the'':39 ''to'':23,98 ''usage'':104 ''versatile'':43 ''video'':3,51 ''web'':30,95 ''with'':80 ''zoom'':16,64', 5, '/uploads/products/dc101l/cover.jpg', '[]', 6.918873931640907);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.688113+08', '2026-07-29 09:04:32.075195+08', 0, NULL, 'admin', 37, 'dc305x', 'DC305X', '<h6>10X Optical Zoom, Support optical zoom<br />
+16 megapixel + 12 megapixel dual front and rear cameras<br />
+Front SONY IMX206 16 megapixels photosensitive chip, Up to 56MP interpolation）<br />
+UP to 5K 5120*2880(30FPS) Video resolution<br />
+2.8inch 640*480 IPS HD display ** Highlight LED flash<br />
+Supports electronic anti shaking, with built-in 6-axis gyroscope</h6>
+', '<p>DC305X Digital Camera The DC305X is a compact digital camera equipped with 10X optical zoom and front/rear dual cameras: a 16MP SONY IMX206 front sensor (up to 56MP interpolation) and a 12MP rear camera. It supports 5K 5120×2880@30FPS video recording, and features a 2.8-inch 640×480 IPS HD display, highlight LED flash, and electronic image stabilization with a built-in 6-axis gyroscope.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''10x'':2,69 ''12'':10 ''12mp'':88 ''16'':8,20 ''16mp'':77 ''2.8'':36,101 ''2880'':32 ''30fps'':33,95 ''480'':39 ''5120'':31 ''5120×2880'':94 ''56mp'':26,84 ''5k'':30,93 ''6'':54,119 ''640'':38 ''640×480'':103 ''a'':63,76,87,100,115 ''and'':14,72,86,98,110 ''anti'':48 ''axis'':55,120 ''built'':52,117 ''built-in'':51,116 ''camera'':59,66,90 ''cameras'':16,75 ''chip'':23 ''compact'':64 ''dc305x'':1,57,61 ''digital'':58,65 ''display'':42,106 ''dual'':12,74 ''electronic'':47,111 ''equipped'':67 ''features'':99 ''flash'':45,109 ''front'':13,17,80 ''front/rear'':73 ''gyroscope'':56,121 ''hd'':41,105 ''highlight'':43,107 ''image'':112 ''imx206'':19,79 ''in'':53,118 ''inch'':37,102 ''interpolation'':85 ''interpolation）'':27 ''ips'':40,104 ''is'':62 ''it'':91 ''led'':44,108 ''megapixel'':9,11 ''megapixels'':21 ''optical'':3,6,70 ''photosensitive'':22 ''rear'':15,89 ''recording'':97 ''resolution'':35 ''sensor'':81 ''shaking'':49 ''sony'':18,78 ''stabilization'':113 ''support'':5 ''supports'':46,92 ''the'':60 ''to'':25,29,83 ''up'':24,28,82 ''video'':34,96 ''with'':50,68,114 ''zoom'':4,7,71', 2, '/uploads/products/dc305x/cover.webp', '[]', 22.542689351636824);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.524766+08', '2026-07-29 09:04:32.122129+08', 0, NULL, 'admin', 11, 'dc413l', 'DC413L', '<h6>High video resolution (4K)<br />
+High pixel image (64 Mega pixels)<br />
+Mass storage (Removable disk)<br />
+16X digital zoom<br />
+Auto focus<br />
+Web camera</h6>
+<div id="kiss-translator-box" class="notranslate"></div>
+', '<p>DC413L – Compact and versatile, this camera shoots ultra-sharp 4K video and stunning 64-megapixel photos. It features a 16X digital zoom, fast auto focus, and supports removable mass storage so you’ll never run out of space. Use it as a high-quality web camera for streaming or video calls. The perfect all-in-one tool for creators on the go.</p>
+<div class="notranslate"></div>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':16 ''4k'':5 ''64'':9 ''a'':58 ''all'':70 ''all-in-one'':69 ''and'':25,45 ''as'':57 ''auto'':19 ''a 16x'':40 ''calls'':66 ''camera'':22,28 ''camera for'':62 ''compact'':24 ''creators'':75 ''dc413l'':1 ''dc413l –'':23 ''digital'':17,41 ''disk'':15 ''fast auto'':43 ''features'':39 ''focus'':20,44 ''for'':74 ''go'':78 ''high'':2,6,60 ''high-quality web'':59 ''image'':8 ''in'':71 ''it'':38,56 ''mass'':12,47 ''mega'':10 ''megapixel'':36 ''never'':50 ''of'':53 ''on'':76 ''one'':72 ''or'':64 ''out'':52 ''perfect'':68 ''photos'':37 ''pixel'':7 ''pixels'':11 ''quality web'':61 ''removable'':14 ''resolution'':4 ''run'':51 ''sharp 4k'':32 ''shoots'':29 ''space'':54 ''storage'':13 ''storage so'':48 ''streaming'':63 ''stunning 64'':35 ''stunning 64-megapixel'':34 ''supports removable'':46 ''the'':67,77 ''this'':27 ''tool'':73 ''ultra'':31 ''ultra-sharp 4k'':30 ''use'':55 ''versatile'':26 ''video'':3,65 ''video and'':33 ''web'':21 ''you’ll'':49 ''zoom'':18,42', 2, '/uploads/products/dc413l/cover.webp', '[]', 36.390113098886566);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.469653+08', '2026-07-28 17:15:13.679615+08', 0, NULL, 'admin', 5, 'hdv284k', 'HDV284K', '<h6>8X optical zoom lens<br />
+Video recording resolution (5K/25FPS)<br />
+Digital camera (64MP)<br />
+720*1280 IPS HD capacitive touch screen, support two-finger zoom<br />
+EIS electronic stabilization (6-axis: 3-axis Gyroscope + 3-axis Accelerometer)​<br />
+All-in-One Camcorder &amp; Live Streaming Device​​<br />
+Customizable Zone Autofocus with TOF Laser Assist​​<br />
+Full-Color Night Vision​​<br />
+Face Recognition​​<br />
+Auto Focus​​<br />
+WiFi wireless connection</h6>
+', '<p>The HDV284K is a professional all-in-one camcorder and live streaming device that delivers outstanding imaging performance. It features an 8X optical zoom lens for lossless close-up shots, stunning 5K 7680×4320@25FPS video recording, and crisp 64MP high-resolution photography. Equipped with advanced 6-axis EIS (3-axis Gyroscope + 3-axis Accelerometer) for ultra-smooth footage, customizable zone autofocus with TOF laser assist for fast and accurate focusing, and full-color night vision for clear low-light imaging. The 720×1280 IPS HD capacitive touchscreen supports two-finger zoom for intuitive operation, while face recognition, auto focus and WiFi wireless connection further enhance your shooting experience. Perfect for professional videography, live streaming, event recording and content creation.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''1280'':14 ''25fps'':99 ''3'':30,33,115,118 ''5k'':97 ''5k/25fps'':9 ''6'':28,112 ''64mp'':12,104 ''720'':13 ''720×1280'':151 ''7680×4320'':98 ''8x'':2,86 ''a'':67 ''accelerometer'':35,120 ''accurate'':136 ''advanced'':111 ''all'':38,70 ''all-in-one'':37,69 ''an'':85 ''and'':74,102,135,138,169,186 ''assist'':132 ''assist​​'':51 ''auto'':59,167 ''autofocus'':47,128 ''axis'':29,31,34,113,116,119 ''camcorder'':41,73 ''camera'':11 ''capacitive'':17,154 ''clear'':145 ''close'':93 ''close-up'':92 ''color'':54,141 ''connection'':63,172 ''content'':187 ''creation'':188 ''crisp'':103 ''customizable'':45,126 ''delivers'':79 ''device'':77 ''device​​'':44 ''digital'':10 ''eis'':25,114 ''electronic'':26 ''enhance'':174 ''equipped'':109 ''event'':184 ''experience'':177 ''face'':57,165 ''fast'':134 ''features'':84 ''finger'':23,159 ''focus'':168 ''focusing'':137 ''focus​​'':60 ''footage'':125 ''for'':90,121,133,144,161,179 ''full'':53,140 ''full-color'':52,139 ''further'':173 ''gyroscope'':32,117 ''hd'':16,153 ''hdv284k'':1,65 ''high'':106 ''high-resolution'':105 ''imaging'':81,149 ''in'':39,71 ''intuitive'':162 ''ips'':15,152 ''is'':66 ''it'':83 ''laser'':50,131 ''lens'':5,89 ''light'':148 ''live'':42,75,182 ''lossless'':91 ''low'':147 ''low-light'':146 ''night'':55,142 ''one'':40,72 ''operation'':163 ''optical'':3,87 ''outstanding'':80 ''perfect'':178 ''performance'':82 ''photography'':108 ''professional'':68,180 ''recognition'':166 ''recognition​​'':58 ''recording'':7,101,185 ''resolution'':8,107 ''screen'':19 ''shooting'':176 ''shots'':95 ''smooth'':124 ''stabilization'':27 ''streaming'':43,76,183 ''stunning'':96 ''support'':20 ''supports'':156 ''that'':78 ''the'':64,150 ''tof'':49,130 ''touch'':18 ''touchscreen'':155 ''two'':22,158 ''two-finger'':21,157 ''ultra'':123 ''ultra-smooth'':122 ''up'':94 ''video'':6,100 ''videography'':181 ''vision'':143 ''vision​​'':56 ''while'':164 ''wifi'':61,170 ''wireless'':62,171 ''with'':48,110,129 ''your'':175 ''zone'':46,127 ''zoom'':4,24,88,160 ''​'':36', 6, '/uploads/products/hdv284k/cover.webp', '[]', 38.64425006904743);
+INSERT INTO public.t_product VALUES ('2026-07-20 08:39:41.615315+08', '2026-07-29 09:03:48.221902+08', 0, NULL, 'admin', 25, 'dc202', 'DC202', '<h6>Video Resolution Up to 4K</h6>
+<h6>Image Resolution Up to 64MP(Interpolation)</h6>
+<h6>High Capacity Storage</h6>
+<h6>16x Digital Zoom<br />
+Hot Shoe (External Flahs Light/Microphone)</h6>
+<h6>Auto Focus<br />
+Built-in High Power LED Flash Light<br />
+Support External Microphone</h6>
+', '<p>The DC202 all-in-one digital camera features 4K ultra-high-definition video recording and 64MP interpolated high-resolution photography. Its 16x digital zoom effortlessly captures distant scenery. Equipped with a professional hot shoe interface that supports external flash lights and microphones, plus a built-in high-power LED fill light, it delivers clear images even in low-light conditions. The autofocus system makes shooting effortless, and the high-capacity storage meets the needs of long-duration creation. It is the ideal choice for travel documentation, daily shooting, and vlogging.</p>
+', NULL, NULL, 'CNY', 'instock', 'PUBLISHED', '''16x'':16,61 ''4k'':6,46 ''64mp'':11,54 ''a'':70,83 ''all'':40 ''all-in-one'':39 ''and'':53,80,109,133 ''auto'':24 ''autofocus'':104 ''built'':27,85 ''built-in'':26,84 ''camera'':44 ''capacity'':14,113 ''captures'':65 ''choice'':127 ''clear'':95 ''conditions'':102 ''creation'':122 ''daily'':131 ''dc202'':1,38 ''definition'':50 ''delivers'':94 ''digital'':17,43,62 ''distant'':66 ''documentation'':130 ''duration'':121 ''effortless'':108 ''effortlessly'':64 ''equipped'':68 ''even'':97 ''external'':21,35,77 ''features'':45 ''fill'':91 ''flahs'':22 ''flash'':32,78 ''focus'':25 ''for'':128 ''high'':13,29,49,57,88,112 ''high-capacity'':111 ''high-power'':87 ''high-resolution'':56 ''hot'':19,72 ''ideal'':126 ''image'':7 ''images'':96 ''in'':28,41,86,98 ''interface'':74 ''interpolated'':55 ''interpolation'':12 ''is'':124 ''it'':93,123 ''its'':60 ''led'':31,90 ''light'':33,92,101 ''light/microphone'':23 ''lights'':79 ''long'':120 ''long-duration'':119 ''low'':100 ''low-light'':99 ''makes'':106 ''meets'':115 ''microphone'':36 ''microphones'':81 ''needs'':117 ''of'':118 ''one'':42 ''photography'':59 ''plus'':82 ''power'':30,89 ''professional'':71 ''recording'':52 ''resolution'':3,8,58 ''scenery'':67 ''shoe'':20,73 ''shooting'':107,132 ''storage'':15,114 ''support'':34 ''supports'':76 ''system'':105 ''that'':75 ''the'':37,103,110,116,125 ''to'':5,10 ''travel'':129 ''ultra'':48 ''ultra-high-definition'':47 ''up'':4,9 ''video'':2,51 ''vlogging'':134 ''with'':69 ''zoom'':18,63', 5, '/uploads/products/dc202/cover.webp', '[]', 4.371262584530768);
+
+
+--
+-- Data for Name: t_product_attribute; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_product_attribute VALUES (1, 'image-resolution', 'image-resolution', '2M; 10M; 16M; 24M; 48M; 64M; 96M', 1);
+INSERT INTO public.t_product_attribute VALUES (2, 'video-resolution', 'video-resolution', '1080P, 2K, 4K, 5K, 6K, 8K', 1);
+INSERT INTO public.t_product_attribute VALUES (3, 'image-sensor', 'image-sensor', 'Pixel ：13.0MP CMOS sensor (up to 96MP interpolation)
+sensor size：1/3.2 inch', 1);
+INSERT INTO public.t_product_attribute VALUES (4, 'display-screen', 'display-screen', '2.8-inch 480*640 IPS display', 1);
+INSERT INTO public.t_product_attribute VALUES (5, 'usb', 'usb', 'Type-C USB', 1);
+INSERT INTO public.t_product_attribute VALUES (6, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 1);
+INSERT INTO public.t_product_attribute VALUES (7, 'battery-capacity', 'battery-capacity', '700mA/h，3.7V Rechargeable lithium battery', 1);
+INSERT INTO public.t_product_attribute VALUES (8, 'language', 'language', 'Simplified Chinese, Traditional Chinese, English, Japanese, Spanish, Portuguese, Italian, German, French, Dutch, Russian, Greek, Polish, Hebrew, Turkish', 1);
+INSERT INTO public.t_product_attribute VALUES (9, 'accessories-for-camcorder', 'accessories-for-camcorder', 'user manual*1, USB cable*1, lithium battery*1, lanyard*1, lens cleaning cloth*1, storage bag*1', 1);
+INSERT INTO public.t_product_attribute VALUES (10, 'image-resolution', 'image-resolution', '96M(13056×7344); 64M(10752×6048); 48M(9344×5248);
+36M(8064×4536); 21M(6144×3456); 12M(4096×3072)', 2);
+INSERT INTO public.t_product_attribute VALUES (11, 'video-resolution', 'video-resolution', '8K 15FPS（interpolation）; 5K 30FPS（interpolation） ; 4K 30FPS ；2.7K 60FPS; 2.7K 30FPS ; FHD 60FPS ; FHD 30FPS;
+HD60FPS ; HD30FPS', 2);
+INSERT INTO public.t_product_attribute VALUES (12, 'image-sensor', 'image-sensor', 'Pixel ：21 megapixel CMOS sensor (up to 96MP interpolation)
+sensor size：1/2.4 inch', 2);
+INSERT INTO public.t_product_attribute VALUES (13, 'display-screen', 'display-screen', '3.5-inch IPS display', 2);
+INSERT INTO public.t_product_attribute VALUES (14, 'usb', 'usb', 'Type-C USB', 2);
+INSERT INTO public.t_product_attribute VALUES (15, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 1TB )', 2);
+INSERT INTO public.t_product_attribute VALUES (16, 'battery-capacity', 'battery-capacity', '1050mA/h，3.7V Rechargeable lithium battery', 2);
+INSERT INTO public.t_product_attribute VALUES (17, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, German, French, Italian, Spanish, Russian, Portuguese, Japanese', 2);
+INSERT INTO public.t_product_attribute VALUES (18, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User Manual *1, USB Cable *1, Lithium Battery (NP40) *1, Wrist Strap *1, Cloth Bag *1, Lens Cleaning Cloth *1', 2);
+INSERT INTO public.t_product_attribute VALUES (19, 'image-resolution', 'image-resolution', '48M: 7680*5760; 24M: 5760*4320; 12M: 4032*2880 ;
+8M: 3800*2160; 5M: 3200*1800; 3M: 2560*1440', 3);
+INSERT INTO public.t_product_attribute VALUES (20, 'video-resolution', 'video-resolution', 'FHD(1920*1080)/HD(1280*720 )/VGA 640*480', 3);
+INSERT INTO public.t_product_attribute VALUES (21, 'game', 'game', 'Pinball/Pushing Boxes/Tetris/Snake Snakes', 3);
+INSERT INTO public.t_product_attribute VALUES (22, 'usb', 'usb', 'Micro USB', 3);
+INSERT INTO public.t_product_attribute VALUES (23, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 32GB),Support SDHC class 6', 3);
+INSERT INTO public.t_product_attribute VALUES (24, 'battery-capacity', 'battery-capacity', 'Built-in rechargeable lithium battery 600MA', 3);
+INSERT INTO public.t_product_attribute VALUES (25, 'language', 'language', 'English/Simplified Chinese/Traditional Chinese/Japanese/Korean/Russian/French/German/Portuguese/Polish/Dutch', 3);
+INSERT INTO public.t_product_attribute VALUES (26, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable, One Camera lanyard', 3);
+INSERT INTO public.t_product_attribute VALUES (27, 'image-resolution', 'image-resolution', '48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);20M (5120 × 3840); 16M (4640 × 3480);
+12M (4032 × 3024); 8M (3264 × 2448);5M (2592 × 1944)', 4);
+INSERT INTO public.t_product_attribute VALUES (28, 'video-resolution', 'video-resolution', '4K 60FPS; 4K 30FPS;2.7K 30FPS;1080P 120FPS;1080P 60FPS;1080P 30FPS;720P 240FPS;720P 120FPS; 720P 60FPS ; 720P 30FPS', 4);
+INSERT INTO public.t_product_attribute VALUES (29, 'image-sensor', 'image-sensor', '12 megapixels CMOS sensor(up to 48MP Interpolation)', 4);
+INSERT INTO public.t_product_attribute VALUES (30, 'dispaly-screen', 'dispaly-screen', '3.0 inch IPS display, capacitive touch, 270 degrees rotation', 4);
+INSERT INTO public.t_product_attribute VALUES (31, 'memory-card', 'memory-card', 'External Memory: SD Card slot (up to 256GB),Support SDXC class 10 U1', 4);
+INSERT INTO public.t_product_attribute VALUES (32, 'usb', 'usb', 'Type C USB', 4);
+INSERT INTO public.t_product_attribute VALUES (33, 'power', 'power', '1700mAh（actual capacity）, 3.7V , 2000mAh (Label )', 4);
+INSERT INTO public.t_product_attribute VALUES (34, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese', 4);
+INSERT INTO public.t_product_attribute VALUES (35, 'accessories', 'accessories', 'Manual*1, USB cable*1, HD cable*1, Charger*1, Lithium battery*1, Remote control*1, Lens cover*1, Lens wiping cloth*1, DV bag*1', 4);
+INSERT INTO public.t_product_attribute VALUES (36, 'image-resolution', 'image-resolution', '64M（10720×6030）; 48M（9280×5220）; 36M（7952×4472）;
+24M（6544×3680）; 20M（5888×3312）; 16M（5376×3024）;
+12M（4608×2592）; 8M（3840×2160）', 5);
+INSERT INTO public.t_product_attribute VALUES (37, 'video-resolution', 'video-resolution', '5K25fps; 4K/30fps; 2.7K/30fps; 1080P/60fps; 1080P/30fps; 720P/60fps', 5);
+INSERT INTO public.t_product_attribute VALUES (38, 'image-sensor', 'image-sensor', 'Pixel：8 megapixel CMOS sensor (up to 64MP interpolation)
+sensor size：1/2.8 inch', 5);
+INSERT INTO public.t_product_attribute VALUES (39, 'zoom', 'zoom', '8X optical zoom', 5);
+INSERT INTO public.t_product_attribute VALUES (40, 'dispaly-screen', 'dispaly-screen', '3.6 inch 720*1280 IPS HD', 5);
+INSERT INTO public.t_product_attribute VALUES (41, 'memory-card', 'memory-card', 'External Memory: Single card slot, This camera supports SD memory cards with capacities ranging from 4GB to 256GB.class 10/U3', 5);
+INSERT INTO public.t_product_attribute VALUES (42, 'usb', 'usb', 'Type C USB', 5);
+INSERT INTO public.t_product_attribute VALUES (43, 'power', 'power', '1400mAh/7.6V, Rechargeable Lithium Battery', 5);
+INSERT INTO public.t_product_attribute VALUES (44, 'language', 'language', 'English/ Simplified Chinese/ Traditional Chinese Japanese/ Korean/ French/ German/ Italian/ Spanish/ Portuguese/ Russian/ Polish/ Vietnamese', 5);
+INSERT INTO public.t_product_attribute VALUES (45, 'image-resolution', 'image-resolution', '64M(9200*6900);48M(8000×6000); 36M(7936×4480 HD);24M(5600×4200);
+16M(4608×3456); 12M(4000×3000);7M-Wide(3648×2048HD);5M(2592×1944)', 6);
+INSERT INTO public.t_product_attribute VALUES (46, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS; 2.7K-30FPS; FULL HD-30FPS;HD-30FPS', 6);
+INSERT INTO public.t_product_attribute VALUES (47, 'front-image-sensor', 'front-image-sensor', 'Pixel：13 megapixel CMOS sensor (up to 64MP interpolation)
+Dimension：1/3.06 inch', 6);
+INSERT INTO public.t_product_attribute VALUES (48, 'rear-image-sensor', 'rear-image-sensor', 'Pixel：13 megapixel CMOS sensor (up to 64MP interpolation)
+Dimension：1/3.06 inch', 6);
+INSERT INTO public.t_product_attribute VALUES (49, 'zoom', 'zoom', 'Max 16x Digital Zoom', 6);
+INSERT INTO public.t_product_attribute VALUES (50, 'display-screen', 'display-screen', '2.8 inches 640 * 480 IPS HD', 6);
+INSERT INTO public.t_product_attribute VALUES (51, 'usb', 'usb', 'Type-C USB', 6);
+INSERT INTO public.t_product_attribute VALUES (52, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 6);
+INSERT INTO public.t_product_attribute VALUES (53, 'battery-capacity', 'battery-capacity', '1050MA/H 3.7V rechargeable lithium battery', 6);
+INSERT INTO public.t_product_attribute VALUES (54, 'language', 'language', 'English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Turkish, Dutch, Polish', 6);
+INSERT INTO public.t_product_attribute VALUES (55, 'accessories-for-camcorder', 'accessories-for-camcorder', 'A user manual, a USB cable, a charger, a lithium battery, a lanyard,
+A mirror cloth', 6);
+INSERT INTO public.t_product_attribute VALUES (56, 'video-resolution', 'video-resolution', '4K30', 7);
+INSERT INTO public.t_product_attribute VALUES (270, 'usb', 'usb', 'Type-C USB', 28);
+INSERT INTO public.t_product_attribute VALUES (57, 'control-system', 'control-system', 'Industry''s Low-power True 4K Video Encoding/Decoding SOC', 7);
+INSERT INTO public.t_product_attribute VALUES (58, 'lens-module', 'lens-module', '20MP SENSOR + Wide-angle Lens', 7);
+INSERT INTO public.t_product_attribute VALUES (59, 'gyroscope', 'gyroscope', 'Built-in 6-axis Stabilization Gyroscope', 7);
+INSERT INTO public.t_product_attribute VALUES (60, 'usb', 'usb', 'Type-C USB', 7);
+INSERT INTO public.t_product_attribute VALUES (61, 'battery-capacity', 'battery-capacity', 'Main Unit：Built-in Rechargeable Lithium Battery 500mA
+Expansion Cabin：Rechargeable Lithium Battery 1300mAh', 7);
+INSERT INTO public.t_product_attribute VALUES (62, 'optional-accessories', 'optional-accessories', 'Magnetic Expansion Battery Cabin, Magnetic Quick-release Bracket, 360-degree Adjustable Magnetic Bracket, Magnetic Neck Strap, Compatible with Market Standard Action Camera Accessories', 7);
+INSERT INTO public.t_product_attribute VALUES (63, 'waterproof-rating-waterproof-rating', 'waterproof-rating-waterproof-rating', 'Main Unit：10-meter Body Waterproofing
+Expansion Cabin：Not Waterproof', 7);
+INSERT INTO public.t_product_attribute VALUES (64, 'language', 'language', 'Supports Multi-language System Operation', 7);
+INSERT INTO public.t_product_attribute VALUES (65, 'image-resolution', 'image-resolution', '4:3
+88M；80M；72M；64M；56M；48M；36M；24M；20M；16M；12M；8M；5M
+
+16:9
+66M；60M；53M；48M；43M；37M；27M；18M；15M；12M；9M；6M；4M
+
+1:1
+66M；60M；54M；48M；42M；36M；27M；18M；15M；12M；9M；6M；4M
+
+3:2
+78M；71M；64M；57M；50M；43M；31M；21M；17M；14M；11M；7M；4M
+
+5:4
+83M；75M；68M；60M；52M；45M；33M；22M；18M；15M；11M；7M；5M
+
+2.35:1
+41M；38M；35M；32M；27M；24M；17M；12M；10M；9M；6M；4M；3M
+
+4:5
+53M；48M；43M；38M；34M；29M；21M；14M；12M；10M；7M；5M；3M.', 8);
+INSERT INTO public.t_product_attribute VALUES (66, 'video-resolution', 'video-resolution', '8K15; 6K30; 5K30; 4K30; 2.7K30; 1080P120; 1080P60; 1080P30; 720P240; 720P120; 720P60; 720P30;', 8);
+INSERT INTO public.t_product_attribute VALUES (67, 'zoom', 'zoom', '6X Optical Zoom', 8);
+INSERT INTO public.t_product_attribute VALUES (68, 'front-image-sensor', 'front-image-sensor', '50 megapixel CMOS sensor IMX858', 8);
+INSERT INTO public.t_product_attribute VALUES (69, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13M image sensor IMX214', 8);
+INSERT INTO public.t_product_attribute VALUES (70, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD touch screen display', 8);
+INSERT INTO public.t_product_attribute VALUES (71, 'usb', 'usb', 'Type-C USB', 8);
+INSERT INTO public.t_product_attribute VALUES (72, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 8);
+INSERT INTO public.t_product_attribute VALUES (73, 'battery-capacity', 'battery-capacity', '1050mAh 3.7V Rechargeable lithium battery', 8);
+INSERT INTO public.t_product_attribute VALUES (74, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 8);
+INSERT INTO public.t_product_attribute VALUES (75, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1', 8);
+INSERT INTO public.t_product_attribute VALUES (76, 'image-resolution', 'image-resolution', '96M(13056*7344);64M(10752×6048); 48M(9344×5248); 36M(8064*×4536); 24M(6528×3672); 21M(6144×3456); 14M(5120×2880);12M(4096×3072).', 9);
+INSERT INTO public.t_product_attribute VALUES (77, 'video-resolution', 'video-resolution', '8K 15FPS; 5K 30FPS ; 4K 30FPS ；2.7K 60FPS ；2.7K 30FPS ; FHD 60FPS ; FHD 30FPS ; HD60FPS ; HD30FPS .', 9);
+INSERT INTO public.t_product_attribute VALUES (78, 'front-image-sensor', 'front-image-sensor', '21 Mega pixels CMOS sensor（Up to 96MP interpolation）', 9);
+INSERT INTO public.t_product_attribute VALUES (79, 'front-lcd-screen', 'front-lcd-screen', '1.54-inch TFT screen, 1:1 aspect ratio (240 * 240)', 9);
+INSERT INTO public.t_product_attribute VALUES (80, 'rear-lcd-screen', 'rear-lcd-screen', '2.8-inch IPS screen, 4:3 aspect ratio (640 * 480)', 9);
+INSERT INTO public.t_product_attribute VALUES (81, 'usb', 'usb', 'Type-C USB', 9);
+INSERT INTO public.t_product_attribute VALUES (82, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 1TB )', 9);
+INSERT INTO public.t_product_attribute VALUES (83, 'battery-capacity', 'battery-capacity', '1050mAh/3.7V Rechargeable Lithium Battery', 9);
+INSERT INTO public.t_product_attribute VALUES (84, 'language', 'language', 'English, French, Spanish, Italian, Russian, Portuguese, Dutch, Simplified Chinese, Traditional Chinese, Japanese', 9);
+INSERT INTO public.t_product_attribute VALUES (85, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User manual ×1, USB cable ×1, charger ×1, lithium battery ×1, lens cap ×1, wrist strap ×1, storage bag ×1, lens cleaning cloth ×1', 9);
+INSERT INTO public.t_product_attribute VALUES (86, 'image-resolution', 'image-resolution', '4:3
+88M；80M；72M；64M；56M；48M；36M；24M；20M；16M；12M；8M；5M
+
+16:9
+66M；60M；53M；48M；43M；37M；27M；18M；15M；12M；9M；6M；4M
+
+1:1
+66M；60M；54M；48M；42M；36M；27M；18M；15M；12M；9M；6M；4M
+
+3:2
+78M；71M；64M；57M；50M；43M；31M；21M；17M；14M；11M；7M；4M
+
+5:4
+83M；75M；68M；60M；52M；45M；33M；22M；18M；15M；11M；7M；5M
+
+2.35:1
+41M；38M；35M；32M；27M；24M；17M；12M；10M；9M；6M；4M；3M
+
+4:5
+53M；48M；43M；38M；34M；29M；21M；14M；12M；10M；7M；5M；3M', 10);
+INSERT INTO public.t_product_attribute VALUES (87, 'video-resolution', 'video-resolution', '8K15; 6K30; 5K30; 4K30; 2.7K30;
+1080P120; 1080P60; 1080P30;
+720P240; 720P120; 720P60; 720P30.', 10);
+INSERT INTO public.t_product_attribute VALUES (88, 'front-image-sensor', 'front-image-sensor', '50 megapixel CMOS sensor IMX858', 10);
+INSERT INTO public.t_product_attribute VALUES (89, 'zoom', 'zoom', '7X Optical Zoom', 10);
+INSERT INTO public.t_product_attribute VALUES (90, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13M image sensor IMX214', 10);
+INSERT INTO public.t_product_attribute VALUES (91, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD touch screen display', 10);
+INSERT INTO public.t_product_attribute VALUES (92, 'usb', 'usb', 'Type-C USB', 10);
+INSERT INTO public.t_product_attribute VALUES (93, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 10);
+INSERT INTO public.t_product_attribute VALUES (94, 'battery-capacity', 'battery-capacity', '1050mAh/3.7V Rechargeable Lithium Battery', 10);
+INSERT INTO public.t_product_attribute VALUES (95, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,
+Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 10);
+INSERT INTO public.t_product_attribute VALUES (96, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1', 10);
+INSERT INTO public.t_product_attribute VALUES (97, 'image-resolution', 'image-resolution', '64M(9200×6900);(48M(8000×6000);44M( 7600×5800 );36M(7936×4480 HD); 24M(5600×4200);20M(5200×3900);16M(4608×3456);12M(4000×3000); 10M(3648×2736);7M-Wide(3648×2048 HD);5M(2592×1944);
+3M(2048× 1536);2M-Wide(1920×1080 HD)', 11);
+INSERT INTO public.t_product_attribute VALUES (98, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；HD-30FPS ； VGA-30FPS', 11);
+INSERT INTO public.t_product_attribute VALUES (99, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 11);
+INSERT INTO public.t_product_attribute VALUES (100, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 11);
+INSERT INTO public.t_product_attribute VALUES (101, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD screen display', 11);
+INSERT INTO public.t_product_attribute VALUES (102, 'usb', 'usb', 'Type-C USB', 11);
+INSERT INTO public.t_product_attribute VALUES (103, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 11);
+INSERT INTO public.t_product_attribute VALUES (104, 'battery-capacity', 'battery-capacity', '1050mAh/3.7V Rechargeable Lithium Battery', 11);
+INSERT INTO public.t_product_attribute VALUES (105, 'language', 'language', 'English,Traditional Chinese,Simplified Chinese,French,German,Italian,Portuguese,Spanish,Russian,Japanese,Hebrew,Turkish,Dutch,Polish', 11);
+INSERT INTO public.t_product_attribute VALUES (162, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 32GB )', 17);
+INSERT INTO public.t_product_attribute VALUES (106, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One Lithium battery, One Carrying Strap, One Cleaning Cloth', 11);
+INSERT INTO public.t_product_attribute VALUES (107, 'image-resolution', 'image-resolution', '3M(2000*1500); 10M(3648*2736); 16M(4608*3456); 24M(5600*4200); 48M(8000*6000); 64M(9216*6912); 96M(11264*8448)', 12);
+INSERT INTO public.t_product_attribute VALUES (108, 'video-resolution', 'video-resolution', '1080P/30fps(1920*1080); 2K/30fps(2560*1440); 4K/30fps(3840*2160); 5K/20fps(5120*2880);', 12);
+INSERT INTO public.t_product_attribute VALUES (109, 'zoom', 'zoom', '6X Optical Zoom', 12);
+INSERT INTO public.t_product_attribute VALUES (110, 'front-image-sensor', 'front-image-sensor', '8 megapixel CMOS sensor GC8613', 12);
+INSERT INTO public.t_product_attribute VALUES (111, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13M image sensor IMX214', 12);
+INSERT INTO public.t_product_attribute VALUES (112, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD screen display', 12);
+INSERT INTO public.t_product_attribute VALUES (113, 'usb', 'usb', 'Type-C USB', 12);
+INSERT INTO public.t_product_attribute VALUES (114, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 12);
+INSERT INTO public.t_product_attribute VALUES (115, 'battery-capacity', 'battery-capacity', '1050mAh 3.7V Rechargeable lithium battery', 12);
+INSERT INTO public.t_product_attribute VALUES (116, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, Japanese', 12);
+INSERT INTO public.t_product_attribute VALUES (117, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, Charger *1, Camera Bag*1, , Glasses Cloth*1, Lanyard*1', 12);
+INSERT INTO public.t_product_attribute VALUES (118, 'image-resolution', 'image-resolution', '4:3
+88M(10848 X 8136); 80M(10336 X 7752);
+72M(9824 X 7368); 64M(9248 X 6936);
+56M(8640 X 6480); 48M(8000 X 6000);
+36M(6880 X 5160);  24M(5600 X 4200);
+20M(5120 X 3840);  16M(4640 X 3480);
+12M(4032 X 3024); 8M(3264 X 2448);
+5M(2592 X 1944)
+16:9
+66M(10880 X 6120); 60M(10368 X 5832);
+53M(9728 X 5472); 48M(9216 X 5184);
+43M(8704 X 4896); 37M(8064 X 4536);
+27M(6912 X 3888);  18M(5632 X 3168);
+15M(5120 X 2880);  12M(4608 X 2592);
+9M(4096 X 2304); 6M(3328 X 1872);
+4M(2560 X 1440)
+1:1
+66M(8182 X 8182); ', 13);
+INSERT INTO public.t_product_attribute VALUES (119, 'video-resolution', 'video-resolution', '8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS;
+5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS;
+2.7K(2688X1512) 30FPS; 1080P(1920X1080) 120FPS;
+1080P(1920X1080) 60FPS; 1080P(1920X1080) 30FPS;
+720P(1280X720) 240FPS; 720P(1280X720) 120FPS；
+720P(1280X720) 60FPS; 720P(1280X720) 30FPS', 13);
+INSERT INTO public.t_product_attribute VALUES (120, 'front-image-sensor', 'front-image-sensor', 'Pixel ：48 megapixel CMOS sensor IMX689
+sensor size：1/1.4inch', 13);
+INSERT INTO public.t_product_attribute VALUES (121, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', 'Pixel：13M image sensor IMX214
+sensor size：1/3.06 inch', 13);
+INSERT INTO public.t_product_attribute VALUES (122, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD touch screen display', 13);
+INSERT INTO public.t_product_attribute VALUES (123, 'usb', 'usb', 'Type-C USB', 13);
+INSERT INTO public.t_product_attribute VALUES (124, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 13);
+INSERT INTO public.t_product_attribute VALUES (125, 'battery-capacity', 'battery-capacity', 'NP-40, 1050mAh, 3.7V Rechargeable Lithium Battery', 13);
+INSERT INTO public.t_product_attribute VALUES (126, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 13);
+INSERT INTO public.t_product_attribute VALUES (127, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, Lithium battery*1, Glasses Cloth*1, Lanyard*1,Camera Bag*1', 13);
+INSERT INTO public.t_product_attribute VALUES (128, 'image-resolution', 'image-resolution', '64M; 48M; 44M; 36M; 24M; 20M; 16M;
+12M; 10M; 7M-Wide;
+5M; 3M; 2M-Wide', 14);
+INSERT INTO public.t_product_attribute VALUES (129, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；
+HD-30FPS ； VGA-30FPS', 14);
+INSERT INTO public.t_product_attribute VALUES (130, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 14);
+INSERT INTO public.t_product_attribute VALUES (131, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 14);
+INSERT INTO public.t_product_attribute VALUES (132, 'display-screen', 'display-screen', '2.8 inches 640 * 480 IPS high-definition', 14);
+INSERT INTO public.t_product_attribute VALUES (133, 'usb', 'usb', 'Type-C USB', 14);
+INSERT INTO public.t_product_attribute VALUES (134, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 14);
+INSERT INTO public.t_product_attribute VALUES (135, 'battery-capacity', 'battery-capacity', '600MA/H 3.7V Rechargeable Lithium Battery', 14);
+INSERT INTO public.t_product_attribute VALUES (136, 'language', 'language', 'English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish', 14);
+INSERT INTO public.t_product_attribute VALUES (137, 'accessories-for-camcorder', 'accessories-for-camcorder', '"User''s Manual*1, USB Cable*1, Charger*1, Lithium Battery*1,
+Lanyard*1, Glasses Cloth*1, Camera Bag*1"', 14);
+INSERT INTO public.t_product_attribute VALUES (138, 'image-resolution', 'image-resolution', '88M；80M；72M; 64M；56M；48M； 36M；24M；20M；16M；12M；8M；5M；', 15);
+INSERT INTO public.t_product_attribute VALUES (139, 'video-resolution', 'video-resolution', '8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS;5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS;2.7K(2688X1512) 30FPS;1080P(1920X1080) 60FPS;1080P(1920X1080) 30FPS;720P(1280X720) 60FPS; 720P(1280X720) 30FPS', 15);
+INSERT INTO public.t_product_attribute VALUES (140, 'image-sensor', 'image-sensor', '8 megapixels IMX415 CMOS sensor(up to 88MP Interpolation)', 15);
+INSERT INTO public.t_product_attribute VALUES (141, 'dispaly-screen', 'dispaly-screen', '3.0 inch IPS display, capacitive touch, 270 degrees rotation', 15);
+INSERT INTO public.t_product_attribute VALUES (142, 'memory-card', 'memory-card', 'SD Card slot (up to 256GB),Support SDXC class 10 U1', 15);
+INSERT INTO public.t_product_attribute VALUES (143, 'usb', 'usb', 'Type C USB2.0', 15);
+INSERT INTO public.t_product_attribute VALUES (144, 'power', 'power', 'High-capacity rechargeable lithium battery', 15);
+INSERT INTO public.t_product_attribute VALUES (145, 'language', 'language', 'English/ Simplified Chinese/ Traditional Chinese Japanese/ Korean/ French/ German/ Italian/ Spanish/ Portuguese/ Russian/ Polish/ Vietnamese', 15);
+INSERT INTO public.t_product_attribute VALUES (146, 'accessories', 'accessories', 'Manual*1, USB cable*1, Charger*1, Lithium battery*1, Remote control*1, Lens cover*1, Glasses Cloth*1 , DV bag*1', 15);
+INSERT INTO public.t_product_attribute VALUES (147, 'angle-expansion-multiple', 'angle-expansion-multiple', '1.35X', 16);
+INSERT INTO public.t_product_attribute VALUES (148, 'number-of-lens-groups', 'number-of-lens-groups', '2 pieces 2 groups', 16);
+INSERT INTO public.t_product_attribute VALUES (149, 'connection-method', 'connection-method', '52mm thread', 16);
+INSERT INTO public.t_product_attribute VALUES (150, 'focusing-mode', 'focusing-mode', 'Fixed focus', 16);
+INSERT INTO public.t_product_attribute VALUES (151, 'big-view-angle', 'big-view-angle', '94-118 degree', 16);
+INSERT INTO public.t_product_attribute VALUES (152, 'front-thread-interface-size', 'front-thread-interface-size', '62mm', 16);
+INSERT INTO public.t_product_attribute VALUES (153, 'distancefrom-macro-lens-to-object', 'distancefrom-macro-lens-to-object', '80-100mm', 16);
+INSERT INTO public.t_product_attribute VALUES (154, 'accessories', 'accessories', 'User manual; Piece of cloth；One cloth bag', 16);
+INSERT INTO public.t_product_attribute VALUES (155, 'prodcut-sizeweight', 'prodcut-sizeweight', 'Ф64x40mm ; 150g(without removable eye mask)', 16);
+INSERT INTO public.t_product_attribute VALUES (156, 'image-resolution', 'image-resolution', 'The main camera: 13 million pixels,
+The selfie camera: 8 million pixels.', 17);
+INSERT INTO public.t_product_attribute VALUES (157, 'video-resolution', 'video-resolution', '1920×1080', 17);
+INSERT INTO public.t_product_attribute VALUES (158, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor IMX135', 17);
+INSERT INTO public.t_product_attribute VALUES (159, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '8 megapixel CMOS sensor IMX219', 17);
+INSERT INTO public.t_product_attribute VALUES (160, 'display-screen', 'display-screen', '4.0-inch 800×480 IPS HD touch display', 17);
+INSERT INTO public.t_product_attribute VALUES (161, 'usb', 'usb', 'Type-C USB', 17);
+INSERT INTO public.t_product_attribute VALUES (163, 'battery-capacity', 'battery-capacity', '2000mAh 3.7V Rechargeable lithium battery', 17);
+INSERT INTO public.t_product_attribute VALUES (164, 'language', 'language', 'Multiple national languages', 17);
+INSERT INTO public.t_product_attribute VALUES (165, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One charger, One Camera bag, One Cleaning Cloth, One Carrying Strap', 17);
+INSERT INTO public.t_product_attribute VALUES (166, 'image-resolution', 'image-resolution', '2M: 1600*1200 3M:2048*1536 5M: 2592*1944 7M: 3072*2304 10M:3648*2736 12M:4000*3000 16M:4608*3456 20M:5200*3900 24M:5600*4200 36M:6912*5184 44M:7600*5800 48M:8000*6000 64M:9248*6936', 18);
+INSERT INTO public.t_product_attribute VALUES (167, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS ；2.7K-30FPS ； FULL HD-30FPS ；HD-30FPS ； VGA-30FPS', 18);
+INSERT INTO public.t_product_attribute VALUES (168, 'display-screen', 'display-screen', 'Rear Display Screen：2.8-inch, 640*480 IPS Display ；Front Display Screen：1.7-inch, 240*280 IPS Display', 18);
+INSERT INTO public.t_product_attribute VALUES (169, 'usb', 'usb', 'MicroUSB', 18);
+INSERT INTO public.t_product_attribute VALUES (170, 'expanded-memory-card', 'expanded-memory-card', 'TF Card Slot (MAX 256GB), Support SDHC 6', 18);
+INSERT INTO public.t_product_attribute VALUES (171, 'battery-capacity', 'battery-capacity', 'Built-in Chargable Lithium Battery 700mAh', 18);
+INSERT INTO public.t_product_attribute VALUES (172, 'zoom', 'zoom', '16X Digital Zoom', 18);
+INSERT INTO public.t_product_attribute VALUES (173, 'language', 'language', 'English/Simplified Chinese/Traditional/Chinese/Japanese/Korean/Russian/French/German/Czech/Portuguese/Polish/Dutch/Turkish/Thai', 18);
+INSERT INTO public.t_product_attribute VALUES (174, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, Wiping Cloth*1, Camera lanyard*1, Micro USB cable*1, NP-6L Battery*1, S531 Charger*1', 18);
+INSERT INTO public.t_product_attribute VALUES (175, 'image-resolution', 'image-resolution', 'Memory options: 64M/48M/36M/20M/16M', 19);
+INSERT INTO public.t_product_attribute VALUES (176, 'video-resolution', 'video-resolution', '4K 60、4K30、1080P120、1080P60、1080P30', 19);
+INSERT INTO public.t_product_attribute VALUES (177, 'control-system', 'control-system', 'Image sensor used: Sigmastar MSC357', 19);
+INSERT INTO public.t_product_attribute VALUES (178, 'lens-module', 'lens-module', 'Sony IMX376 20-megapixel 150° wide-angle lens.', 19);
+INSERT INTO public.t_product_attribute VALUES (179, 'display-screen', 'display-screen', 'Front color screen ：1.5-inch IPS HD display ； Rear main screen ：2.0-inch IPS touchscreen', 19);
+INSERT INTO public.t_product_attribute VALUES (180, 'usb', 'usb', 'Type-C USB', 19);
+INSERT INTO public.t_product_attribute VALUES (181, 'expanded-memory-card', 'expanded-memory-card', 'Maximum supported Micro SD card speed: 128G U3 and above', 19);
+INSERT INTO public.t_product_attribute VALUES (182, 'battery-capacity', 'battery-capacity', 'Available in two capacities: 1050mAh and 1350mAh Removable and rechargeable lithium battery;', 19);
+INSERT INTO public.t_product_attribute VALUES (183, 'zoom', 'zoom', '8x digital zoom is supported.', 19);
+INSERT INTO public.t_product_attribute VALUES (184, 'language', 'language', 'Supports operation in multiple languages.', 19);
+INSERT INTO public.t_product_attribute VALUES (185, 'image-resolution', 'image-resolution', '64M; 48M; 36M; 24M; 20M; 16M; 12M; 8M', 20);
+INSERT INTO public.t_product_attribute VALUES (186, 'video-resolution', 'video-resolution', '5K25fps；4K30fps；2.7K30fps；1080P60fps；1080P30fps；720P60fps', 20);
+INSERT INTO public.t_product_attribute VALUES (187, 'front-image-sensor', 'front-image-sensor', '8 megapixel CMOS sensor (up to 64MP interpolation)；1/2.8 inch', 20);
+INSERT INTO public.t_product_attribute VALUES (188, 'rear-image-sensor', 'rear-image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)；1/3.06 inch', 20);
+INSERT INTO public.t_product_attribute VALUES (189, 'display-screen', 'display-screen', '3.6 inch 720*1280 IPS HD', 20);
+INSERT INTO public.t_product_attribute VALUES (190, 'usb', 'usb', 'Type-C USB', 20);
+INSERT INTO public.t_product_attribute VALUES (191, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 20);
+INSERT INTO public.t_product_attribute VALUES (192, 'battery-capacity', 'battery-capacity', '1350mAh/3.8V, Rechargeable Lithium Battery', 20);
+INSERT INTO public.t_product_attribute VALUES (193, 'accessories-for-camcorder', 'accessories-for-camcorder', '"Battery*1, Data Cable*1, HD Cable*1, Stand Charger*1,
+Charging Head*1, Lens cloth *1, Wrist strap *1, Cloth bag *1, Shoulder strap *1, Lens cap *1, Manual *1"', 20);
+INSERT INTO public.t_product_attribute VALUES (194, 'image-resolution', 'image-resolution', '"64M(10666*6000); 48M(8800*5500); 36M(7952*4472); 24M(6544*3680); 20M(5888*3312); 16M(5376*3024); 12M(4608*2592); "', 21);
+INSERT INTO public.t_product_attribute VALUES (195, 'video-resolution', 'video-resolution', '"5K 25fps(5120*2160); 4K 60fps(3840*2160); 4K 30fps(3840*2160); 2.7K 60fps(2704*1520); 2.7K 30fps(2704*1520); FHD P60(1920*1080);
+FHD P30(1920*1080); HD P60 720*1280"', 21);
+INSERT INTO public.t_product_attribute VALUES (196, 'front-image-sensor', 'front-image-sensor', '48 megapixel CMOS sensor', 21);
+INSERT INTO public.t_product_attribute VALUES (197, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor', 21);
+INSERT INTO public.t_product_attribute VALUES (198, 'display-screen', 'display-screen', '3.6 inches 720*1280 IPS high-definition', 21);
+INSERT INTO public.t_product_attribute VALUES (199, 'usb', 'usb', 'Type-C USB', 21);
+INSERT INTO public.t_product_attribute VALUES (200, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 21);
+INSERT INTO public.t_product_attribute VALUES (201, 'battery-capacity', 'battery-capacity', '1350mAh 3.8V Rechargeable Lithium Battery', 21);
+INSERT INTO public.t_product_attribute VALUES (202, 'language', 'language', '"English, French, Spanish,Portuguese, German, Italian, Simplified Chinese,Traditional Chinese, Russian, Japanese"', 21);
+INSERT INTO public.t_product_attribute VALUES (203, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s Manual*1, HD Cable*1,USB Cable*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1', 21);
+INSERT INTO public.t_product_attribute VALUES (204, 'image-resolution', 'image-resolution', '"88M(10848 X 8136); 80M(10336 X 7752);72M(9824 X 7368); 64M(9248 X 6936); 56M(8640 X 6480); 48M(8000 X 6000); 36M(6880 X 5160); 24M(5600 X 4200); 20M(5120 X 3840); 16M(4640 X 3480); 12M(4032 X 3024); 8M(3264 X 2448); 5M(2592 X 1944)"', 22);
+INSERT INTO public.t_product_attribute VALUES (205, 'video-resolution', 'video-resolution', '"8K(7680X4320) 15FPS; 6K(5760X3240) 30FPS; 5K(5120X2880) 30FPS; 4K(3840X2160) 30FPS; 2.7K(2688X1512) 30FPS; 1080P(1920X1080) 60FPS; 1080P(1920X1080) 30FPS; 720P(1280X720) 60FPS; 720P(1280X720) 30FPS"', 22);
+INSERT INTO public.t_product_attribute VALUES (206, 'front-image-sensor', 'front-image-sensor', '48 megapixel CMOS sensor IMX586', 22);
+INSERT INTO public.t_product_attribute VALUES (207, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '12M image sensor IMX386', 22);
+INSERT INTO public.t_product_attribute VALUES (208, 'display-screen', 'display-screen', '3.2 inch 1024*768 IPS HD touch screen display', 22);
+INSERT INTO public.t_product_attribute VALUES (209, 'usb', 'usb', 'Type-C USB', 22);
+INSERT INTO public.t_product_attribute VALUES (210, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 22);
+INSERT INTO public.t_product_attribute VALUES (211, 'battery-capacity', 'battery-capacity', '1220mAh 3.7V Rechargeable lithium battery', 22);
+INSERT INTO public.t_product_attribute VALUES (212, 'zoom', 'zoom', 'Max 16x Digital Zoom', 22);
+INSERT INTO public.t_product_attribute VALUES (213, 'language', 'language', '"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese"', 22);
+INSERT INTO public.t_product_attribute VALUES (214, 'accessories-for-camcorder', 'accessories-for-camcorder', '"User''s manual*1, USB cable*1, HDMI cable*1, Charger *1, Camera Bag*1, NP-80 Lithium battery*1, Lens Cleaning Cloth *1​，Camera Strap *1​，"', 22);
+INSERT INTO public.t_product_attribute VALUES (215, 'image-resolution', 'image-resolution', '64M(9248×6936)；56M(8640×6480)；48M(8000×6000)；36M(6880×5160)；24M(5600×4200)；20M(5120×3840) ；16M(4640×3480)；12M(4032×3024)； 8M(3264×2448)； 5M(2592×1944)', 23);
+INSERT INTO public.t_product_attribute VALUES (216, 'video-resolution', 'video-resolution', '5K(5120×2880)30FPS; 4K(3840×2160)30FPS; 2.7K(2688×1512)30FPS; 1080P(1920×1080)120FPS; 1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS; 720P(1280×720)120FPS; 720P(1280×720)60FPS; 720P(1280×720)30FPS', 23);
+INSERT INTO public.t_product_attribute VALUES (217, 'front-image-sensor', 'front-image-sensor', '16 megapixel CMOS sensor IMX206', 23);
+INSERT INTO public.t_product_attribute VALUES (218, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '12M image sensor IMX386', 23);
+INSERT INTO public.t_product_attribute VALUES (219, 'display-screen', 'display-screen', '3.2 inch 1024*768 IPS HD touch screen display', 23);
+INSERT INTO public.t_product_attribute VALUES (220, 'usb', 'usb', 'Type-C USB', 23);
+INSERT INTO public.t_product_attribute VALUES (221, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 23);
+INSERT INTO public.t_product_attribute VALUES (222, 'battery-capacity', 'battery-capacity', '1220mAh 3.7V Rechargeable lithium battery', 23);
+INSERT INTO public.t_product_attribute VALUES (223, 'zoom', 'zoom', 'Maximum 10x zoom', 23);
+INSERT INTO public.t_product_attribute VALUES (224, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 23);
+INSERT INTO public.t_product_attribute VALUES (225, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, HDMI cable*1, NP-80 Lithium battery*1, Charger *1, Lens Cap*1, Lanyard*1,Glasses Cloth*1, Camera Bag*1', 23);
+INSERT INTO public.t_product_attribute VALUES (226, 'image-resolution', 'image-resolution', '"64M(9248×6936); 56M(8640×6480); 48M(8000×6000); 36M(6880×5160); 24M(5600×4200); 20M(5120×3840); 16M(4640×3480); 12M(4032×3024); 8M(3264×2448); 5M(2592×1944)"', 24);
+INSERT INTO public.t_product_attribute VALUES (227, 'video-resolution', 'video-resolution', '"5K(5120×2880) 30FPS; 4K(3840×2160) 30FPS; 2.7K(2688×1512) 30FPS; 1080P(1920×1080) 60FPS; 1080P(1920×1080) 30FPS; 720P(1280×720) 60FPS; 720P(1280×720) 30FPS"', 24);
+INSERT INTO public.t_product_attribute VALUES (228, 'front-image-sensor', 'front-image-sensor', '8 megapixel CMOS sensor IMX415', 24);
+INSERT INTO public.t_product_attribute VALUES (229, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '12M image sensor IMX386', 24);
+INSERT INTO public.t_product_attribute VALUES (230, 'display-screen', 'display-screen', '2.8 inch 640×480 IPS HD screen display', 24);
+INSERT INTO public.t_product_attribute VALUES (231, 'usb', 'usb', 'Type-C USB', 24);
+INSERT INTO public.t_product_attribute VALUES (232, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 24);
+INSERT INTO public.t_product_attribute VALUES (233, 'battery-capacity', 'battery-capacity', '1050mAh, 3.7V, Rechargeable Lithium Battery', 24);
+INSERT INTO public.t_product_attribute VALUES (234, 'zoom', 'zoom', '6X Optical Zoom', 24);
+INSERT INTO public.t_product_attribute VALUES (235, 'language', 'language', '"English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese"', 24);
+INSERT INTO public.t_product_attribute VALUES (236, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, HDMI cable*1, NP-60 Lithium battery*1, Charger *1, Lens Cap*1, Lanyard*1,Glasses Cloth*1, Camera Bag*1', 24);
+INSERT INTO public.t_product_attribute VALUES (237, 'image-resolution', 'image-resolution', '2M:1920×1080 HD 3M:2048×1536 5M: 2592×1944 7M: 3648×2048 HD
+10M:3648×2736 12M:4000×3000 16M:4608×3456 20M:5200×3900
+24M:5600×4200 36M:7936×4480 HD 44M:7600×5800 48M:8000×6000
+64M(9200×6900)', 25);
+INSERT INTO public.t_product_attribute VALUES (238, 'video-resolution', 'video-resolution', 'VGA(640×480)30FPS/ HD(1280×720)30FPS / FHD(1920×1080)30FPS/
+2.7K(2688×1520)30FPS/ 4K(3840×2160)10FPS', 25);
+INSERT INTO public.t_product_attribute VALUES (239, 'zoom', 'zoom', '16x Digital Zoom', 25);
+INSERT INTO public.t_product_attribute VALUES (240, 'image-sensor', 'image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 25);
+INSERT INTO public.t_product_attribute VALUES (241, 'display-screen', 'display-screen', '2.8-inch 640*480 IPS', 25);
+INSERT INTO public.t_product_attribute VALUES (242, 'usb', 'usb', 'Type-C USB', 25);
+INSERT INTO public.t_product_attribute VALUES (243, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 25);
+INSERT INTO public.t_product_attribute VALUES (244, 'battery-capacity', 'battery-capacity', '1050mA/h Rechargeable Lithium Battery', 25);
+INSERT INTO public.t_product_attribute VALUES (245, 'language', 'language', 'English/Simplified Chinese/TraditionalChinese/Japanese/Korean/Russian/French/
+German/Czech/Portuguese/Polish/Dutch/Turkish/Thai
+(English/Simplified Chinese/Traditional Chinese/Japanese/русский/français/Deutsch/čeština/português/Polski/Nederlan ds/Türkiye/Thai)', 25);
+INSERT INTO public.t_product_attribute VALUES (246, 'accessories-for-camcorder', 'accessories-for-camcorder', 'Type-c Cable * 1, HDMI Cable * 1, NP-60 Lithium Battery * 1, Charger * 1,
+Glasses Cloth * 1, Camera Bag * 1, Lanyard * 1, User''s Manual * 1, Lens cap *1', 25);
+INSERT INTO public.t_product_attribute VALUES (247, 'image-resolution', 'image-resolution', '48M(8000×6000); 36M(6880×5160) 24M(5600×4200); 20M(5120×3840) 16M(4640×3480); 12M(4032×3024)8M(3264×2448); 5M(2592×1944)', 26);
+INSERT INTO public.t_product_attribute VALUES (248, 'video-resolution', 'video-resolution', '5K 30FPS; 4K 30FPS; 2.7K 30FPS ;1080P 120FPS; 1080P 60FPS; 1080P 30FPS;720P 240FPS; 720P 120FPS; 720P 60FPS; 720P 30FPS', 26);
+INSERT INTO public.t_product_attribute VALUES (249, 'image-sensor', 'image-sensor', '12 megapixel CMOS sensor (up to 48MP interpolation)', 26);
+INSERT INTO public.t_product_attribute VALUES (250, 'display-screen', 'display-screen', '2.8 inches 640 * 480 IPS high-definition', 26);
+INSERT INTO public.t_product_attribute VALUES (251, 'usb', 'usb', 'Type-C USB', 26);
+INSERT INTO public.t_product_attribute VALUES (252, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 26);
+INSERT INTO public.t_product_attribute VALUES (253, 'battery-capacity', 'battery-capacity', '1050mAh 3.7V Rechargeable Lithium Battery', 26);
+INSERT INTO public.t_product_attribute VALUES (254, 'zoom', 'zoom', '16x digital zoom', 26);
+INSERT INTO public.t_product_attribute VALUES (255, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese', 26);
+INSERT INTO public.t_product_attribute VALUES (256, 'accessories-for-camcorder', 'accessories-for-camcorder', 'USB Cable*1, HDMI Cable*1, Lithium Battery*1,Lanyard*1, Glasses Cloth*1, Camera Bag*1, User''s Manual*1', 26);
+INSERT INTO public.t_product_attribute VALUES (257, 'image-resolution', 'image-resolution', '48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);
+20M (5120 × 3840);16M (4640 × 3480);12M (4032 × 3024); 
+8M (3264 × 2448);5M (2592 × 1944)', 27);
+INSERT INTO public.t_product_attribute VALUES (258, 'video-resolution', 'video-resolution', '5K 30FPS; 4K 30FPS;2.7K 30FPS;1080P120FPS; 1080P 60FPS;
+1080P 30FPS;720P240FPS;720P 120FPS;720P 60FPS; 720P 30FPS', 27);
+INSERT INTO public.t_product_attribute VALUES (259, 'image-sensor', 'image-sensor', '12 Megapixel CMOS Sensor (Up to 48MP Interpolation)', 27);
+INSERT INTO public.t_product_attribute VALUES (260, 'display-screen', 'display-screen', '3.5 Inches 16: 9 IPS Screen', 27);
+INSERT INTO public.t_product_attribute VALUES (261, 'usb', 'usb', 'Type-C USB', 27);
+INSERT INTO public.t_product_attribute VALUES (262, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 27);
+INSERT INTO public.t_product_attribute VALUES (263, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Italian, Spanish, Portuguese, Russian, Polish, Vietnamese', 27);
+INSERT INTO public.t_product_attribute VALUES (264, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB cable*1, HDMI cable*1, Charger*1, Camera Bag*1,
+Lithium battery*1, UV Lens*1, Lens Cap*1, Glasses Cloth*1, Lanyard*1
+Wide Len*1(Optional)', 27);
+INSERT INTO public.t_product_attribute VALUES (265, 'image-resolution', 'image-resolution', '64M(9200×6900); 48M(8000×6000);
+44M(7600×5800); 36M(7936×4480);
+24M(5600×4200); 20M(5200×3900);
+16M(4608×3456); 12M(4000×3000);
+10M(3648×2736); 7M-Wide(3648×2048 HD);
+5M(2592×1944); 3M(2048×1536);
+2M-Wide(1920×1080 HD)', 28);
+INSERT INTO public.t_product_attribute VALUES (266, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS ；2.7K-30FPS ；
+FULL HD-30FPS ；HD-30FPS ； VGA-30FPS', 28);
+INSERT INTO public.t_product_attribute VALUES (267, 'zoom', 'zoom', '16x digital zoom', 28);
+INSERT INTO public.t_product_attribute VALUES (268, 'image-sensor', 'image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 28);
+INSERT INTO public.t_product_attribute VALUES (269, 'display-screen', 'display-screen', '3.0-inch IPS screen，16:9 screen（640*360）', 28);
+INSERT INTO public.t_product_attribute VALUES (271, 'expanded-memory-card', 'expanded-memory-card', 'Expanded memory card', 28);
+INSERT INTO public.t_product_attribute VALUES (272, 'battery-capacity', 'battery-capacity', '850mA/h 3.7V Rechargeable lithium battery', 28);
+INSERT INTO public.t_product_attribute VALUES (273, 'language', 'language', 'English , Deutsch , Français, Español , Italiano , Turkce , Pycский , Português , Nederlands ，Simplified Chinese , Traditional Chinese, Japanese ，Polski', 28);
+INSERT INTO public.t_product_attribute VALUES (274, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual *1, USB cable *1, Lithium batteries*1 , Lens cap *1, Camera lanyard *1, Camera bag*1，Lens cleaning cloth *1', 28);
+INSERT INTO public.t_product_attribute VALUES (275, 'image-resolution', 'image-resolution', '48M(8000×6000); 24M(5600×4200); 12M(4000×3000); 8M(3648×2736); 5M(2592×1944); 3M(2048×1536)', 29);
+INSERT INTO public.t_product_attribute VALUES (276, 'video-resolution', 'video-resolution', 'HD; FHD', 29);
+INSERT INTO public.t_product_attribute VALUES (277, 'front-image-sensor', 'front-image-sensor', '0.3 megapixel CMOS sensor', 29);
+INSERT INTO public.t_product_attribute VALUES (278, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor', 29);
+INSERT INTO public.t_product_attribute VALUES (279, 'display-screen', 'display-screen', '2.4 inches 640*480 IPS high-definition', 29);
+INSERT INTO public.t_product_attribute VALUES (280, 'usb', 'usb', 'Type-C USB', 29);
+INSERT INTO public.t_product_attribute VALUES (281, 'expanded-memory-card', 'expanded-memory-card', 'TF card slot (up to 128GB ), Support Support SDHC 6 level', 29);
+INSERT INTO public.t_product_attribute VALUES (282, 'battery-capacity', 'battery-capacity', '1150mAh 3.7V Rechargeable Lithium Battery', 29);
+INSERT INTO public.t_product_attribute VALUES (283, 'language', 'language', 'English, Simplified Chinese, Traditional Chinese, Japanese, Korean, Portuguese, French, German, Italian, Spanish, Russian, Hebrew, Turkish, Dutch, Polish', 29);
+INSERT INTO public.t_product_attribute VALUES (284, 'accessories-for-camcorder', 'accessories-for-camcorder', 'A user manual, A USB cable, A lanyard, A mirror cloth, 4 rolls of printing paper', 29);
+INSERT INTO public.t_product_attribute VALUES (285, 'image-resolution', 'image-resolution', '1M:1366*768 2M: 1920*1080 3M:2560×1440 5M: 3072*1728 8M:3840*2160 10M:4096*2394 12M:4608*2592', 30);
+INSERT INTO public.t_product_attribute VALUES (286, 'video-resolution', 'video-resolution', 'HD(1280*720) /FHD(1920*1080)', 30);
+INSERT INTO public.t_product_attribute VALUES (287, 'print-head', 'print-head', 'Low Voltage Thermal Printing； High definition, high precision printing（8PM/mm；fast printing(Print speed of up to 80mm / s)；low noise', 30);
+INSERT INTO public.t_product_attribute VALUES (288, 'print-paper-size', 'print-paper-size', 'length:25mm * width:56mm', 30);
+INSERT INTO public.t_product_attribute VALUES (289, 'usb', 'usb', 'Type-C', 30);
+INSERT INTO public.t_product_attribute VALUES (290, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 128GB ),Support SDHC class 6 above', 30);
+INSERT INTO public.t_product_attribute VALUES (291, 'battery-capacity', 'battery-capacity', 'Built-in rechargeable lithium battery 1000mAh/7.4V', 30);
+INSERT INTO public.t_product_attribute VALUES (292, 'zoom', 'zoom', '16X digital zoom', 30);
+INSERT INTO public.t_product_attribute VALUES (293, 'language', 'language', 'English/Deutsch/Français/Español/Italiano/Türkçe/Pусский/ภาษาไทย/Português/Nederlands/Simplified Chinese/Traditional Chinese/Japanese', 30);
+INSERT INTO public.t_product_attribute VALUES (294, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User manual*1, TYPE-C interface data cable*1, lanyard*1, thermal printing paper*4, Glasses Cloth*1', 30);
+INSERT INTO public.t_product_attribute VALUES (295, 'image-resolution', 'image-resolution', '64MP；48MP；44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP', 31);
+INSERT INTO public.t_product_attribute VALUES (296, 'video-resolution', 'video-resolution', '1080P 30FPS；720P 30FPS；480P 30FPS', 31);
+INSERT INTO public.t_product_attribute VALUES (297, 'image-sensor', 'image-sensor', '5 megapixel CMOS sensor (up to 64MP interpolation)', 31);
+INSERT INTO public.t_product_attribute VALUES (298, 'display-screen', 'display-screen', '2.4 inches 320*240 IPS high-definition', 31);
+INSERT INTO public.t_product_attribute VALUES (299, 'usb', 'usb', 'Type-C USB', 31);
+INSERT INTO public.t_product_attribute VALUES (300, 'expanded-memory-card', 'expanded-memory-card', 'TF card slot (4-256GB ), Support Support SDHC level 6', 31);
+INSERT INTO public.t_product_attribute VALUES (301, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium Battery', 31);
+INSERT INTO public.t_product_attribute VALUES (302, 'zoom', 'zoom', '16x digital zoom', 31);
+INSERT INTO public.t_product_attribute VALUES (303, 'language', 'language', 'English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Dutch,', 31);
+INSERT INTO public.t_product_attribute VALUES (304, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1', 31);
+INSERT INTO public.t_product_attribute VALUES (305, 'image-resolution', 'image-resolution', '48MP；44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP', 32);
+INSERT INTO public.t_product_attribute VALUES (306, 'video-resolution', 'video-resolution', '1080P；720P；480P', 32);
+INSERT INTO public.t_product_attribute VALUES (307, 'image-sensor', 'image-sensor', '5 megapixel CMOS sensor (up to 48MP interpolation)', 32);
+INSERT INTO public.t_product_attribute VALUES (308, 'display-screen', 'display-screen', '2.4-inch 320*240 IPS', 32);
+INSERT INTO public.t_product_attribute VALUES (309, 'usb', 'usb', 'Type-C USB', 32);
+INSERT INTO public.t_product_attribute VALUES (310, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 64GB ),Support SDHC/SDXC class 10 U1', 32);
+INSERT INTO public.t_product_attribute VALUES (311, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium battery', 32);
+INSERT INTO public.t_product_attribute VALUES (312, 'zoom', 'zoom', '16X powerful zoom', 32);
+INSERT INTO public.t_product_attribute VALUES (313, 'language', 'language', 'English,Español, Português, Français, Deutsch, Italiano,Nederlands,Traditional Chinese, Simplified Chinese, Japanese', 32);
+INSERT INTO public.t_product_attribute VALUES (314, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One Charger, One Lithium battery, One Camera lanyard', 32);
+INSERT INTO public.t_product_attribute VALUES (315, 'image-resolution', 'image-resolution', 'Front camera: 4654×2792，Rear selfie camera: 3650×2190，', 33);
+INSERT INTO public.t_product_attribute VALUES (316, 'video-resolution', 'video-resolution', '1920×1080', 33);
+INSERT INTO public.t_product_attribute VALUES (317, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor IMX135', 33);
+INSERT INTO public.t_product_attribute VALUES (318, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '8 megapixel CMOS sensor IMX219', 33);
+INSERT INTO public.t_product_attribute VALUES (319, 'display-screen', 'display-screen', '3.6-inch 800×480 IPS HD touch display', 33);
+INSERT INTO public.t_product_attribute VALUES (320, 'usb', 'usb', 'Type-C USB', 33);
+INSERT INTO public.t_product_attribute VALUES (321, 'expanded-memory-card', 'expanded-memory-card', 'MicroSD card slot (Maximum 32GB), supportSDXC C10 U1, FAT32', 33);
+INSERT INTO public.t_product_attribute VALUES (322, 'battery', 'battery', '2000mAh 3.7V Rechargeable Lithium Battery', 33);
+INSERT INTO public.t_product_attribute VALUES (323, 'control-chip', 'control-chip', 'MT6582V, ARM Cortex-A7 core architecture, 1.3GHz clock speed.', 33);
+INSERT INTO public.t_product_attribute VALUES (324, 'language', 'language', 'Simplified Chinese, Traditional Chinese, Dutch, English, French, Filipino/Tagalog, German, Hebrew, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Romanian, Russian, Spanish, Thai, Turkish, Ukrainian, Vietnamese, etc.', 33);
+INSERT INTO public.t_product_attribute VALUES (325, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One charger, One Camera bag, One Cleaning Cloth, One Carrying Strap', 33);
+INSERT INTO public.t_product_attribute VALUES (326, 'image-resolution', 'image-resolution', '64M(9248×6936)；56M(8640×6480)
+48M(8000×6000)；36M(6880×5160)
+24M(5600×4200)；20M(5120×3840) 
+16M(4640×3480)；12M(4032×3024)
+8M(3264×2448)； 5M(2592×1944)', 34);
+INSERT INTO public.t_product_attribute VALUES (327, 'video-resolution', 'video-resolution', '5K(5120×2880)30FPS; 4K(3840×2160)30FPS;
+2.7K(2688×1512)30FPS; 1080P(1920×1080)120FPS;
+1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS;
+720P(1280×720)120FPS; 720P(1280×720)60FPS;
+720P(1280×720)30FPS', 34);
+INSERT INTO public.t_product_attribute VALUES (328, 'front-image-sensor', 'front-image-sensor', '8 megapixel CMOS sensor GC8613', 34);
+INSERT INTO public.t_product_attribute VALUES (329, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13M image sensor IMX214', 34);
+INSERT INTO public.t_product_attribute VALUES (330, 'zoom', 'zoom', '6X Optical Zoom', 34);
+INSERT INTO public.t_product_attribute VALUES (331, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD touch screen display', 34);
+INSERT INTO public.t_product_attribute VALUES (332, 'usb', 'usb', 'Type-C USB', 34);
+INSERT INTO public.t_product_attribute VALUES (333, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 34);
+INSERT INTO public.t_product_attribute VALUES (334, 'battery-capacity', 'battery-capacity', '800mAh/3.7V Rechargeable Lithium Battery', 34);
+INSERT INTO public.t_product_attribute VALUES (335, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,
+Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 34);
+INSERT INTO public.t_product_attribute VALUES (336, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, Lithium battery*1, Charger *1, Lanyard*1,
+Glasses Cloth*1, Camera Bag*1', 34);
+INSERT INTO public.t_product_attribute VALUES (337, 'image-resolution', 'image-resolution', '48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD)', 35);
+INSERT INTO public.t_product_attribute VALUES (338, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS；2.7K-30FPS； FULL HD-30FPS；HD-30FPS； VGA-30FPS', 35);
+INSERT INTO public.t_product_attribute VALUES (339, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor (up to 48MP interpolation)', 35);
+INSERT INTO public.t_product_attribute VALUES (340, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor (up to 48MP interpolation)', 35);
+INSERT INTO public.t_product_attribute VALUES (341, 'display-screen', 'display-screen', '2.8 inches 640*480 IPS high-definition', 35);
+INSERT INTO public.t_product_attribute VALUES (342, 'usb', 'usb', 'Type-C USB', 35);
+INSERT INTO public.t_product_attribute VALUES (343, 'expanded-memory-card', 'expanded-memory-card', 'TF card slot (up to 256GB ), Support Support SDHC 6 level', 35);
+INSERT INTO public.t_product_attribute VALUES (344, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium Battery', 35);
+INSERT INTO public.t_product_attribute VALUES (345, 'zoom', 'zoom', '16x digital zoom', 35);
+INSERT INTO public.t_product_attribute VALUES (346, 'language', 'language', 'English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish', 35);
+INSERT INTO public.t_product_attribute VALUES (347, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1', 35);
+INSERT INTO public.t_product_attribute VALUES (348, 'image-resolution', 'image-resolution', '48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD)', 36);
+INSERT INTO public.t_product_attribute VALUES (349, 'video-resolution', 'video-resolution', '4K ULTRA HD -10FPS；2.7K-30FPS； FULL HD-30FPS；HD-30FPS；VGA-30FPS', 36);
+INSERT INTO public.t_product_attribute VALUES (350, 'front-image-sensor', 'front-image-sensor', '13 megapixel CMOS sensor (up to 48MP interpolation)', 36);
+INSERT INTO public.t_product_attribute VALUES (351, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '13 megapixel CMOS sensor (up to 48MP interpolation)', 36);
+INSERT INTO public.t_product_attribute VALUES (352, 'display-screen', 'display-screen', '2.8 inches 640*480 IPS high-definition', 36);
+INSERT INTO public.t_product_attribute VALUES (353, 'usb', 'usb', 'Type-C USB', 36);
+INSERT INTO public.t_product_attribute VALUES (354, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 36);
+INSERT INTO public.t_product_attribute VALUES (355, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium Battery', 36);
+INSERT INTO public.t_product_attribute VALUES (356, 'zoom', 'zoom', '16x digital zoom', 36);
+INSERT INTO public.t_product_attribute VALUES (357, 'language', 'language', 'English, Traditional Chinese, Simplified Chinese, French, German, Italian, Portuguese, Spanish, Russian, Japanese, Hebrew, Turkish, Dutch, Polish', 36);
+INSERT INTO public.t_product_attribute VALUES (358, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s Manual*1, USB Cable*1, Charger*1, Lithium Battery*1,Lanyard*1, Glasses Cloth*1, Camera Bag*1', 36);
+INSERT INTO public.t_product_attribute VALUES (359, 'image-resolution', 'image-resolution', '56M(8640 × 6840);48M (8000 × 6000); 36M (6880 × 5160); 24M (5600 × 4200);20M (5120 × 3840);16M (4640 × 3480); 12M (4032 × 3024); 8M (3264 × 2448); 5M (2592 × 1944）', 37);
+INSERT INTO public.t_product_attribute VALUES (360, 'video-resolution', 'video-resolution', '5K-30FPS;4K-30FPS; 2.7K-30FPS; 1080P-120FPS; 1080P-60FPS; 1080P-30FPS ;720P-120FPS; 720P-60FPS; 720P-30FPS', 37);
+INSERT INTO public.t_product_attribute VALUES (361, 'front-image-sensor', 'front-image-sensor', '16 Mega pixels CMOS sensor（Up to 56MP interpolation）IMX206', 37);
+INSERT INTO public.t_product_attribute VALUES (362, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '12 Mega pixels CMOS sensor（Up to 56MP interpolation）IMX386', 37);
+INSERT INTO public.t_product_attribute VALUES (363, 'display-screen', 'display-screen', '2.8 inch，640*480IPS HD display，IPS- LCD touch screen', 37);
+INSERT INTO public.t_product_attribute VALUES (364, 'usb', 'usb', 'Type-C USB', 37);
+INSERT INTO public.t_product_attribute VALUES (365, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 37);
+INSERT INTO public.t_product_attribute VALUES (366, 'battery-capacity', 'battery-capacity', '800mAh Lithium battery', 37);
+INSERT INTO public.t_product_attribute VALUES (367, 'zoom', 'zoom', '10X Optical Zoom, Support optical zoom', 37);
+INSERT INTO public.t_product_attribute VALUES (368, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 37);
+INSERT INTO public.t_product_attribute VALUES (369, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1,USB cable*1, Lithium battery*1, Camera lanyard*1,Camera Bag*1,', 37);
+INSERT INTO public.t_product_attribute VALUES (370, 'image-resolution', 'image-resolution', '64M(9200×6900); 48M(8000×6000); 44M(7600×5800); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080)', 38);
+INSERT INTO public.t_product_attribute VALUES (371, 'video-resolution', 'video-resolution', '4K(3840×2160)-10FPS; 2.7K(2688×1520)-30FPS; Full HD(1920×1080)-30FPS; HD(1280×720)-30FPS; VGA(640×480)-30FPS', 38);
+INSERT INTO public.t_product_attribute VALUES (372, 'image-sensor', 'image-sensor', '8 megapixel CMOS sensor (up to 64MP interpolation)', 38);
+INSERT INTO public.t_product_attribute VALUES (373, 'display-screen', 'display-screen', '2.8 inches 640*480 IPS high-definition', 38);
+INSERT INTO public.t_product_attribute VALUES (374, 'usb', 'usb', 'Type-C USB', 38);
+INSERT INTO public.t_product_attribute VALUES (375, 'expanded-memory-card', 'expanded-memory-card', 'TF card slot (up to 256GB ), Support SDHC Level 6', 38);
+INSERT INTO public.t_product_attribute VALUES (376, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium Battery', 38);
+INSERT INTO public.t_product_attribute VALUES (377, 'zoom', 'zoom', '16x digital zoom', 38);
+INSERT INTO public.t_product_attribute VALUES (378, 'language', 'language', 'English, German, French, Spanish, Italian, Turkish, Russian, Portuguese, Dutch, Simplified Chinese, Traditional Chinese, Japanese, Polish, Hebrew', 38);
+INSERT INTO public.t_product_attribute VALUES (379, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s Manual*1, USB Cable*1, Charger*1, Lithium Battery*1, Lanyard*1, Glasses Cloth*1, Camera Bag*1', 38);
+INSERT INTO public.t_product_attribute VALUES (380, 'image-resolution', 'image-resolution', '64M(9200×6900); 48M(8000×6000); 44M(7600×5800); 36M(7936×4480); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048×1536); 2M-Wide(1920×1080 HD)', 39);
+INSERT INTO public.t_product_attribute VALUES (381, 'video-resolution', 'video-resolution', '"4K ULTRA HD -10FPS ；2.7K-30FPS ；FULL HD-30FPS ；HD-30FPS ；VGA-30FPS"', 39);
+INSERT INTO public.t_product_attribute VALUES (382, 'image-sensor', 'image-sensor', '13 megapixel CMOS sensor (up to 64MP interpolation)', 39);
+INSERT INTO public.t_product_attribute VALUES (383, 'display-screen', 'display-screen', '3.0-inch IPS screen，16:9 screen', 39);
+INSERT INTO public.t_product_attribute VALUES (384, 'usb', 'usb', 'Type-C USB', 39);
+INSERT INTO public.t_product_attribute VALUES (385, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 39);
+INSERT INTO public.t_product_attribute VALUES (386, 'battery-capacity', 'battery-capacity', '800mAh 3.7V Rechargeable lithium battery', 39);
+INSERT INTO public.t_product_attribute VALUES (387, 'zoom', 'zoom', 'Max 16x Digital Zoom', 39);
+INSERT INTO public.t_product_attribute VALUES (388, 'language', 'language', '"English , Deutsch , Français, Español , Italiano , Turkce , Pycский , Português , Nederlands ，Simplified Chinese , Traditional Chinese, Japanese ，Polski"', 39);
+INSERT INTO public.t_product_attribute VALUES (389, 'accessories-for-camcorder', 'accessories-for-camcorder', '"User''s manual *1, USB cable *1, HD cable *1, Charger *1, Lithium batteries*1 , Lens cap *1, Camera lanyard *1, Camera bag*1，Lens cleaning cloth *1"', 39);
+INSERT INTO public.t_product_attribute VALUES (390, 'image-resolution', 'image-resolution', '44M( 7600×5800 ); 36M(7936×4480 HD); 24M(5600×4200); 20M(5200×3900); 16M(4608×3456); 12M(4000×3000); 10M(3648×2736); 7M-Wide(3648×2048 HD); 5M(2592×1944); 3M(2048× 1536);2M-Wide（n/a）', 40);
+INSERT INTO public.t_product_attribute VALUES (391, 'video-resolution', 'video-resolution', '2688×1520 2.7K; 1920×1080 FULL HD; 1280×720 HD; 640×480 VGA', 40);
+INSERT INTO public.t_product_attribute VALUES (392, 'image-sensor', 'image-sensor', '8 megapixel CMOS sensor (up to 44MP interpolation)', 40);
+INSERT INTO public.t_product_attribute VALUES (393, 'usb', 'usb', 'Type-C USB', 40);
+INSERT INTO public.t_product_attribute VALUES (394, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 128GB)', 40);
+INSERT INTO public.t_product_attribute VALUES (395, 'battery-life', 'battery-life', 'Taking Video≤ 90mins,taking photos≤ 150mins', 40);
+INSERT INTO public.t_product_attribute VALUES (396, 'zoom', 'zoom', '16X digital zoom', 40);
+INSERT INTO public.t_product_attribute VALUES (397, 'language', 'language', 'English,Français, Español, Português, Deutsch, Italiano,Simplified Chinese, Traditional Chinese, Simplified Chinese,Pycский, Japanese，Hebrew', 40);
+INSERT INTO public.t_product_attribute VALUES (398, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One Charger, One lithium battery, One Camera lanyard', 40);
+INSERT INTO public.t_product_attribute VALUES (399, 'image-resolution', 'image-resolution', '44MP；42MP；36MP；24MP；20MP；16MP；12MP；10MP；8MP；5MP', 41);
+INSERT INTO public.t_product_attribute VALUES (400, 'video-resolution', 'video-resolution', '1080P-30FPS；720P-30FPS；480P-30FPS', 41);
+INSERT INTO public.t_product_attribute VALUES (401, 'image-sensor', 'image-sensor', '5 megapixel CMOS sensor (up to 44MP interpolation)', 41);
+INSERT INTO public.t_product_attribute VALUES (402, 'display-screen', 'display-screen', '2.4-inch ,320*240 IPS', 41);
+INSERT INTO public.t_product_attribute VALUES (403, 'usb', 'usb', 'Type-C USB', 41);
+INSERT INTO public.t_product_attribute VALUES (404, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 64GB )', 41);
+INSERT INTO public.t_product_attribute VALUES (405, 'battery-capacity', 'battery-capacity', '700mAh 3.7V Rechargeable Lithium battery', 41);
+INSERT INTO public.t_product_attribute VALUES (406, 'zoom', 'zoom', 'Max 16X Digital Zoom', 41);
+INSERT INTO public.t_product_attribute VALUES (407, 'language', 'language', 'English,Español, Português, Français, Deutsch, Italiano,Nederlands,Traditional Chinese, Simplified Chinese, Japanese', 41);
+INSERT INTO public.t_product_attribute VALUES (408, 'accessories-for-camcorder', 'accessories-for-camcorder', 'One User''s manual,One USB cable,One Charger, One Lithium battery, One Camera lanyard', 41);
+INSERT INTO public.t_product_attribute VALUES (409, 'image-resolution', 'image-resolution', '64M(9248×6936)；56M(8640×6480)；48M(8000×6000)；36M(6880×5160)；24M(5600×4200)；20M(5120×3840) ；16M(4640×3480)；12M(4032×3024)； 8M(3264×2448)； 5M(2592×1944)', 42);
+INSERT INTO public.t_product_attribute VALUES (410, 'video-resolution', 'video-resolution', '5K(5120×2880)30FPS；4K(3840×2160)30FPS；2.7K(2688×1512)30FPS；1080P(1920×1080)120FPS；1080P(1920×1080)60FPS; 1080P(1920×1080)30FPS；720P(1280×720)120FPS；720P(1280×720)60FPS；720P(1280×720)30FPS', 42);
+INSERT INTO public.t_product_attribute VALUES (411, 'front-image-sensor', 'front-image-sensor', '16 megapixel CMOS sensor IMX206', 42);
+INSERT INTO public.t_product_attribute VALUES (412, 'rear-selfie-image-sensor', 'rear-selfie-image-sensor', '12M image sensor', 42);
+INSERT INTO public.t_product_attribute VALUES (413, 'display-screen', 'display-screen', '2.8 inch 640*480 IPS HD touch screen display', 42);
+INSERT INTO public.t_product_attribute VALUES (414, 'usb', 'usb', 'Type-C USB', 42);
+INSERT INTO public.t_product_attribute VALUES (415, 'expanded-memory-card', 'expanded-memory-card', 'TF Card slot (up to 256GB )', 42);
+INSERT INTO public.t_product_attribute VALUES (416, 'battery-capacity', 'battery-capacity', '800mAh 3.7V Rechargeable lithium battery', 42);
+INSERT INTO public.t_product_attribute VALUES (417, 'zoom', 'zoom', '5X Optical Zoom，2X Digital Zoom，Maximum 10X zoom', 42);
+INSERT INTO public.t_product_attribute VALUES (418, 'language', 'language', 'English,Simplified Chinese,Traditional Chinese,Japanese,Korean,French,German,Italian,Spanish,Portuguese,Russian,Polish ,Vietnamese', 42);
+INSERT INTO public.t_product_attribute VALUES (419, 'accessories-for-camcorder', 'accessories-for-camcorder', 'User''s manual*1, USB-TYPE C cable*1, NP-80 Lithium battery*1, Charger *1, Lanyard*1,Glasses Cloth*1, Camera Bag*1', 42);
+
+
+--
+-- Data for Name: t_product_category; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.834434+08', '2026-07-20 08:39:40.836411+08', 0, 1, 'Action Ccamera', 'action-camera', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.841727+08', '2026-07-20 08:39:40.841735+08', 0, 2, 'Compact Camera', 'compact-camera', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.842845+08', '2026-07-20 08:39:40.842852+08', 0, 3, 'Kids Camera', 'kids-camera', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.844588+08', '2026-07-20 08:39:40.844594+08', 0, 5, 'Mirrorless Camera', 'mirrorless-camera', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.845423+08', '2026-07-20 08:39:40.845429+08', 0, 6, 'Video Camera', 'video-camera', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:57:42.152379+08', '2026-07-20 15:43:43.878275+08', 1, 7, '微单相机', 'mirrorless', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:57:42.153467+08', '2026-07-20 15:43:43.881188+08', 1, 8, '卡片相机', 'compact', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:57:42.154362+08', '2026-07-20 15:43:43.883495+08', 1, 9, '运动相机', 'action', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:57:42.155195+08', '2026-07-20 15:43:43.886316+08', 1, 10, '摄像机', 'video', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:57:42.156065+08', '2026-07-20 15:43:43.88856+08', 1, 11, '儿童相机', 'kids', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 08:39:40.843741+08', '2026-07-21 16:24:55.933642+08', 0, 4, 'Lens', 'lens', 0);
+INSERT INTO public.t_product_category VALUES ('2026-07-20 15:43:43.890923+08', '2026-07-21 16:24:55.939361+08', 1, 12, '未分类', 'uncategorized', 999);
+
+
+--
+-- Data for Name: t_product_gallery; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_product_gallery VALUES (25, '/uploads/products/dc417x/_____20260226092042_1147_77-scaled.jpg', '', 0, 10);
+INSERT INTO public.t_product_gallery VALUES (26, '/uploads/products/dc417x/_____20260226092043_1148_77-scaled.jpg', '', 1, 10);
+INSERT INTO public.t_product_gallery VALUES (27, '/uploads/products/dc417x/_____20260226092041_1146_77-scaled.jpg', '', 2, 10);
+INSERT INTO public.t_product_gallery VALUES (28, '/uploads/products/dc413l/__-__-___4.webp', '', 0, 11);
+INSERT INTO public.t_product_gallery VALUES (29, '/uploads/products/dc413l/__-__-___2.webp', '', 1, 11);
+INSERT INTO public.t_product_gallery VALUES (30, '/uploads/products/dc413l/__-__-____3.webp', '', 2, 11);
+INSERT INTO public.t_product_gallery VALUES (7, '/uploads/products/hdv544km/photobank_3_11zon.webp', '', 0, 4);
+INSERT INTO public.t_product_gallery VALUES (8, '/uploads/products/hdv544km/photobank-1_4_11zon-1.webp', '', 1, 4);
+INSERT INTO public.t_product_gallery VALUES (13, '/uploads/products/dc218l/__-___-__5.webp', '', 0, 6);
+INSERT INTO public.t_product_gallery VALUES (14, '/uploads/products/dc218l/__-__-1-_4-scaled.webp', '', 1, 6);
+INSERT INTO public.t_product_gallery VALUES (15, '/uploads/products/dc218l/__-__-1-_3-scaled.webp', '', 2, 6);
+INSERT INTO public.t_product_gallery VALUES (16, '/uploads/products/go9/photobank-2_3_11zon.webp', '', 0, 7);
+INSERT INTO public.t_product_gallery VALUES (17, '/uploads/products/go9/photobank-3_2_11zon.webp', '', 1, 7);
+INSERT INTO public.t_product_gallery VALUES (18, '/uploads/products/go9/photobank-1_4_11zon.webp', '', 2, 7);
+INSERT INTO public.t_product_gallery VALUES (19, '/uploads/products/dc312x/__-__-_____.jpg', 'DC312X', 0, 8);
+INSERT INTO public.t_product_gallery VALUES (20, '/uploads/products/dc312x/__-__-__.jpg', 'DC312X', 1, 8);
+INSERT INTO public.t_product_gallery VALUES (21, '/uploads/products/dc312x/__-__-__-__.jpg', 'DC312X', 2, 8);
+INSERT INTO public.t_product_gallery VALUES (31, '/uploads/products/dc422x/__-___.jpg', '', 0, 12);
+INSERT INTO public.t_product_gallery VALUES (32, '/uploads/products/dc422x/__-____38375.jpg', '', 1, 12);
+INSERT INTO public.t_product_gallery VALUES (33, '/uploads/products/dc422x/__-__.jpg', '', 2, 12);
+INSERT INTO public.t_product_gallery VALUES (35, '/uploads/products/ve418/__-____2.webp', '', 1, 13);
+INSERT INTO public.t_product_gallery VALUES (36, '/uploads/products/ve418/__-____4.webp', '', 2, 13);
+INSERT INTO public.t_product_gallery VALUES (37, '/uploads/products/dc317l/__-_-___-2.jpg', '', 0, 14);
+INSERT INTO public.t_product_gallery VALUES (38, '/uploads/products/dc317l/__-_-___-2_21609.jpg', '', 1, 14);
+INSERT INTO public.t_product_gallery VALUES (39, '/uploads/products/dc317l/__-_-___-3.jpg', '', 2, 14);
+INSERT INTO public.t_product_gallery VALUES (40, '/uploads/products/hdv255k/____-__-___-___-___4.webp', '', 0, 15);
+INSERT INTO public.t_product_gallery VALUES (41, '/uploads/products/hdv255k/____-__-05_3.webp', '', 1, 15);
+INSERT INTO public.t_product_gallery VALUES (42, '/uploads/products/hdv255k/____-__-03_2.webp', '', 2, 15);
+INSERT INTO public.t_product_gallery VALUES (43, '/uploads/products/w3/W3-2.jpg', '', 0, 16);
+INSERT INTO public.t_product_gallery VALUES (44, '/uploads/products/w3/W3-4.jpg', '', 1, 16);
+INSERT INTO public.t_product_gallery VALUES (45, '/uploads/products/w3/W3-5.jpg', '', 2, 16);
+INSERT INTO public.t_product_gallery VALUES (46, '/uploads/products/dc320/___-5_4.webp', '', 0, 17);
+INSERT INTO public.t_product_gallery VALUES (47, '/uploads/products/dc320/___03.webp', '', 1, 17);
+INSERT INTO public.t_product_gallery VALUES (48, '/uploads/products/dc320/___04.webp', '', 2, 17);
+INSERT INTO public.t_product_gallery VALUES (49, '/uploads/products/wdc901/2-21.webp', '', 0, 18);
+INSERT INTO public.t_product_gallery VALUES (50, '/uploads/products/wdc901/4-20.webp', '', 1, 18);
+INSERT INTO public.t_product_gallery VALUES (51, '/uploads/products/wdc901/5-15.webp', '', 2, 18);
+INSERT INTO public.t_product_gallery VALUES (52, '/uploads/products/860a/__-__-2_2.webp', '', 0, 19);
+INSERT INTO public.t_product_gallery VALUES (53, '/uploads/products/860a/__-__-1_3.webp', '', 1, 19);
+INSERT INTO public.t_product_gallery VALUES (54, '/uploads/products/860a/__-__-2_4.webp', '', 2, 19);
+INSERT INTO public.t_product_gallery VALUES (55, '/uploads/products/dc209x/1-9.webp', '1', 0, 20);
+INSERT INTO public.t_product_gallery VALUES (56, '/uploads/products/dc209x/2-7.webp', '2', 1, 20);
+INSERT INTO public.t_product_gallery VALUES (57, '/uploads/products/dc209x/__-_-DC209X-___.webp', '', 2, 20);
+INSERT INTO public.t_product_gallery VALUES (58, '/uploads/products/dc208n/1-8.webp', '1', 0, 21);
+INSERT INTO public.t_product_gallery VALUES (59, '/uploads/products/dc208n/2-6.webp', '2', 1, 21);
+INSERT INTO public.t_product_gallery VALUES (60, '/uploads/products/dc208n/3-7.webp', '3', 2, 21);
+INSERT INTO public.t_product_gallery VALUES (61, '/uploads/products/dc226/3-10.webp', '3', 0, 22);
+INSERT INTO public.t_product_gallery VALUES (62, '/uploads/products/dc226/4-9.webp', '4', 1, 22);
+INSERT INTO public.t_product_gallery VALUES (63, '/uploads/products/dc206x/1-7.webp', '1', 0, 23);
+INSERT INTO public.t_product_gallery VALUES (64, '/uploads/products/dc206x/2-5.webp', '2', 1, 23);
+INSERT INTO public.t_product_gallery VALUES (2, '/uploads/products/dc105/DC105-4-scaled.webp', '', 1, 2);
+INSERT INTO public.t_product_gallery VALUES (3, '/uploads/products/dc105/DC105-1-scaled.webp', '', 2, 2);
+INSERT INTO public.t_product_gallery VALUES (4, '/uploads/products/dc501j/photobank-3_2_11zon-2.webp', '', 0, 3);
+INSERT INTO public.t_product_gallery VALUES (5, '/uploads/products/dc501j/photobank-2_1_11zon-2.webp', '', 1, 3);
+INSERT INTO public.t_product_gallery VALUES (6, '/uploads/products/dc501j/photobank-1_4_11zon-3.webp', '', 2, 3);
+INSERT INTO public.t_product_gallery VALUES (22, '/uploads/products/dc325/_____20260318102450_1185_77_7-scaled.webp', '', 0, 9);
+INSERT INTO public.t_product_gallery VALUES (23, '/uploads/products/dc325/_____20260318102449_1184_77_6-scaled.webp', '', 1, 9);
+INSERT INTO public.t_product_gallery VALUES (24, '/uploads/products/dc325/_____20260318102448_1183_77_5-scaled.webp', '', 2, 9);
+INSERT INTO public.t_product_gallery VALUES (9, '/uploads/products/hdv544km/photobank-2_1_11zon.webp', '', 2, 4);
+INSERT INTO public.t_product_gallery VALUES (10, '/uploads/products/hdv284k/photobank_3_11zon.webp', '', 0, 5);
+INSERT INTO public.t_product_gallery VALUES (11, '/uploads/products/hdv284k/photobank-1_4_11zon-1.webp', '', 1, 5);
+INSERT INTO public.t_product_gallery VALUES (12, '/uploads/products/hdv284k/photobank-2_1_11zon.webp', '', 2, 5);
+INSERT INTO public.t_product_gallery VALUES (34, '/uploads/products/ve418/__-___5.webp', '', 0, 13);
+INSERT INTO public.t_product_gallery VALUES (73, '/uploads/products/dc203/5-2.webp', '5', 1, 26);
+INSERT INTO public.t_product_gallery VALUES (74, '/uploads/products/dc203/3-4.webp', '3', 2, 26);
+INSERT INTO public.t_product_gallery VALUES (75, '/uploads/products/dc201s/DC201-4_11zon.webp', '', 0, 27);
+INSERT INTO public.t_product_gallery VALUES (76, '/uploads/products/dc201s/DC201-3_11zon.webp', '', 1, 27);
+INSERT INTO public.t_product_gallery VALUES (77, '/uploads/products/dc201s/DC201S-1.webp', '', 2, 27);
+INSERT INTO public.t_product_gallery VALUES (78, '/uploads/products/dc103w/__.webp', '', 0, 28);
+INSERT INTO public.t_product_gallery VALUES (79, '/uploads/products/dc103w/____.webp', '', 1, 28);
+INSERT INTO public.t_product_gallery VALUES (80, '/uploads/products/dc103w/___20437.webp', '', 2, 28);
+INSERT INTO public.t_product_gallery VALUES (81, '/uploads/products/dc506/__-_-__2.webp', '', 0, 29);
+INSERT INTO public.t_product_gallery VALUES (82, '/uploads/products/dc506/__-_-__3.webp', '', 1, 29);
+INSERT INTO public.t_product_gallery VALUES (83, '/uploads/products/dc506/__-_-___4.webp', '', 2, 29);
+INSERT INTO public.t_product_gallery VALUES (95, '/uploads/products/dc310/__-__-_4.webp', '', 2, 33);
+INSERT INTO public.t_product_gallery VALUES (96, '/uploads/products/dc309x/__-__-2-_-6X.jpg', '', 0, 34);
+INSERT INTO public.t_product_gallery VALUES (97, '/uploads/products/dc308/2-13.webp', '2', 0, 35);
+INSERT INTO public.t_product_gallery VALUES (98, '/uploads/products/dc306l/__-__-__-___7.webp', '', 0, 36);
+INSERT INTO public.t_product_gallery VALUES (99, '/uploads/products/dc306l/__-__-DC306L-_-from-JD_10.webp', '', 1, 36);
+INSERT INTO public.t_product_gallery VALUES (100, '/uploads/products/dc306l/__-fromAMZ-SKU-01-White_8.webp', '', 2, 36);
+INSERT INTO public.t_product_gallery VALUES (107, '/uploads/products/dc101l/2.webp', '2', 0, 39);
+INSERT INTO public.t_product_gallery VALUES (108, '/uploads/products/dc101l/3-1.webp', '3', 1, 39);
+INSERT INTO public.t_product_gallery VALUES (109, '/uploads/products/dc101l/4.webp', '4', 2, 39);
+INSERT INTO public.t_product_gallery VALUES (110, '/uploads/products/dc402/1-19.webp', '1', 0, 40);
+INSERT INTO public.t_product_gallery VALUES (111, '/uploads/products/dc402/2-17.webp', '2', 1, 40);
+INSERT INTO public.t_product_gallery VALUES (112, '/uploads/products/dc402/7-6.webp', '7', 2, 40);
+INSERT INTO public.t_product_gallery VALUES (113, '/uploads/products/dc403/5adc255962c05f018172e3f49c1ffcf.webp', '5adc255962c05f018172e3f49c1ffcf', 0, 41);
+INSERT INTO public.t_product_gallery VALUES (114, '/uploads/products/dc403/16db62727bd0e5a0763280af1dd54cd.webp', '16db62727bd0e5a0763280af1dd54cd', 1, 41);
+INSERT INTO public.t_product_gallery VALUES (115, '/uploads/products/dc403/d9d79ec15a1eb53dab30f0419ddeb6e.webp', 'd9d79ec15a1eb53dab30f0419ddeb6e', 2, 41);
+INSERT INTO public.t_product_gallery VALUES (116, '/uploads/products/dc408x/1-21.webp', '1', 0, 42);
+INSERT INTO public.t_product_gallery VALUES (117, '/uploads/products/dc408x/4-18.webp', '4', 1, 42);
+INSERT INTO public.t_product_gallery VALUES (118, '/uploads/products/dc408x/7-7.webp', '7', 2, 42);
+INSERT INTO public.t_product_gallery VALUES (1, '/uploads/products/dc105/DC105-2-scaled.webp', '', 0, 2);
+INSERT INTO public.t_product_gallery VALUES (65, '/uploads/products/dc206x/4-5.webp', '4', 2, 23);
+INSERT INTO public.t_product_gallery VALUES (66, '/uploads/products/dc205x/1-6.webp', '1', 0, 24);
+INSERT INTO public.t_product_gallery VALUES (67, '/uploads/products/dc205x/2-4.webp', '2', 1, 24);
+INSERT INTO public.t_product_gallery VALUES (68, '/uploads/products/dc205x/4-4.webp', '4', 2, 24);
+INSERT INTO public.t_product_gallery VALUES (69, '/uploads/products/dc202/6-1.webp', '6', 0, 25);
+INSERT INTO public.t_product_gallery VALUES (70, '/uploads/products/dc202/4-2.webp', '4', 1, 25);
+INSERT INTO public.t_product_gallery VALUES (71, '/uploads/products/dc202/2-2.webp', '2', 2, 25);
+INSERT INTO public.t_product_gallery VALUES (101, '/uploads/products/dc305x/__-__-from-AMZ.webp', '', 0, 37);
+INSERT INTO public.t_product_gallery VALUES (102, '/uploads/products/dc305x/__-_-10X-___.webp', '', 1, 37);
+INSERT INTO public.t_product_gallery VALUES (103, '/uploads/products/dc305x/__-_-__.webp', '', 2, 37);
+INSERT INTO public.t_product_gallery VALUES (72, '/uploads/products/dc203/4-3.webp', '4', 0, 26);
+INSERT INTO public.t_product_gallery VALUES (84, '/uploads/products/dc503j/__-__-__-_-2_3.webp', '', 0, 30);
+INSERT INTO public.t_product_gallery VALUES (85, '/uploads/products/dc503j/__-__-__-__-2_4.webp', '', 1, 30);
+INSERT INTO public.t_product_gallery VALUES (86, '/uploads/products/dc503j/__-__-__-__-1_2.webp', '', 2, 30);
+INSERT INTO public.t_product_gallery VALUES (87, '/uploads/products/dc406/3-19.webp', '3', 0, 31);
+INSERT INTO public.t_product_gallery VALUES (88, '/uploads/products/dc406/2-18.webp', '2', 1, 31);
+INSERT INTO public.t_product_gallery VALUES (89, '/uploads/products/dc406/1-20.webp', '1', 2, 31);
+INSERT INTO public.t_product_gallery VALUES (90, '/uploads/products/dc311/4-14.webp', '4', 0, 32);
+INSERT INTO public.t_product_gallery VALUES (91, '/uploads/products/dc311/3-16.webp', '3', 1, 32);
+INSERT INTO public.t_product_gallery VALUES (92, '/uploads/products/dc311/2-15.webp', '2', 2, 32);
+INSERT INTO public.t_product_gallery VALUES (104, '/uploads/products/dc302/1-12.webp', '1', 0, 38);
+INSERT INTO public.t_product_gallery VALUES (105, '/uploads/products/dc302/6-4.webp', '6', 1, 38);
+INSERT INTO public.t_product_gallery VALUES (106, '/uploads/products/dc302/3-11.webp', '3', 2, 38);
+INSERT INTO public.t_product_gallery VALUES (93, '/uploads/products/dc310/__-_-___2.webp', '', 0, 33);
+INSERT INTO public.t_product_gallery VALUES (94, '/uploads/products/dc310/__-_-____3.webp', '', 1, 33);
+
+
+--
+-- Data for Name: t_role; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_role VALUES (1, 'Admin', 'admin', '种子角色 admin');
+INSERT INTO public.t_role VALUES (2, 'Operator', 'operator', '种子角色 operator');
+
+
+--
+-- Data for Name: t_role_permission; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_role_permission VALUES (4179, 'product:read', 1);
+INSERT INTO public.t_role_permission VALUES (4180, 'product:create', 1);
+INSERT INTO public.t_role_permission VALUES (4181, 'product:update', 1);
+INSERT INTO public.t_role_permission VALUES (4182, 'product:delete', 1);
+INSERT INTO public.t_role_permission VALUES (4183, 'product:publish', 1);
+INSERT INTO public.t_role_permission VALUES (4184, 'news:read', 1);
+INSERT INTO public.t_role_permission VALUES (4185, 'news:create', 1);
+INSERT INTO public.t_role_permission VALUES (4186, 'news:update', 1);
+INSERT INTO public.t_role_permission VALUES (4187, 'news:delete', 1);
+INSERT INTO public.t_role_permission VALUES (4188, 'news:publish', 1);
+INSERT INTO public.t_role_permission VALUES (4189, 'inquiry:read', 1);
+INSERT INTO public.t_role_permission VALUES (4190, 'inquiry:update', 1);
+INSERT INTO public.t_role_permission VALUES (4191, 'role:read', 1);
+INSERT INTO public.t_role_permission VALUES (4192, 'role:create', 1);
+INSERT INTO public.t_role_permission VALUES (4193, 'role:update', 1);
+INSERT INTO public.t_role_permission VALUES (4194, 'audit:read', 1);
+INSERT INTO public.t_role_permission VALUES (4195, 'admin:login', 1);
+INSERT INTO public.t_role_permission VALUES (4196, 'category:read', 1);
+INSERT INTO public.t_role_permission VALUES (4197, 'category:create', 1);
+INSERT INTO public.t_role_permission VALUES (4198, 'category:update', 1);
+INSERT INTO public.t_role_permission VALUES (4199, 'category:delete', 1);
+INSERT INTO public.t_role_permission VALUES (4200, 'news:category:read', 1);
+INSERT INTO public.t_role_permission VALUES (4201, 'news:category:create', 1);
+INSERT INTO public.t_role_permission VALUES (4202, 'news:category:update', 1);
+INSERT INTO public.t_role_permission VALUES (4203, 'news:category:delete', 1);
+INSERT INTO public.t_role_permission VALUES (4204, 'media:upload', 1);
+INSERT INTO public.t_role_permission VALUES (4205, 'settings:update', 1);
+INSERT INTO public.t_role_permission VALUES (4206, 'product:read', 2);
+INSERT INTO public.t_role_permission VALUES (4207, 'product:create', 2);
+INSERT INTO public.t_role_permission VALUES (4208, 'product:update', 2);
+INSERT INTO public.t_role_permission VALUES (4209, 'product:delete', 2);
+INSERT INTO public.t_role_permission VALUES (4210, 'news:read', 2);
+INSERT INTO public.t_role_permission VALUES (4211, 'news:create', 2);
+INSERT INTO public.t_role_permission VALUES (4212, 'news:update', 2);
+INSERT INTO public.t_role_permission VALUES (4213, 'news:delete', 2);
+INSERT INTO public.t_role_permission VALUES (4214, 'inquiry:read', 2);
+INSERT INTO public.t_role_permission VALUES (4215, 'inquiry:update', 2);
+INSERT INTO public.t_role_permission VALUES (4216, 'admin:login', 2);
+INSERT INTO public.t_role_permission VALUES (4217, 'category:read', 2);
+INSERT INTO public.t_role_permission VALUES (4218, 'category:create', 2);
+INSERT INTO public.t_role_permission VALUES (4219, 'category:update', 2);
+INSERT INTO public.t_role_permission VALUES (4220, 'category:delete', 2);
+INSERT INTO public.t_role_permission VALUES (4221, 'news:category:read', 2);
+INSERT INTO public.t_role_permission VALUES (4222, 'news:category:create', 2);
+INSERT INTO public.t_role_permission VALUES (4223, 'news:category:update', 2);
+INSERT INTO public.t_role_permission VALUES (4224, 'news:category:delete', 2);
+INSERT INTO public.t_role_permission VALUES (4225, 'media:upload', 2);
+
+
+--
+-- Data for Name: t_setting; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_setting VALUES ('google_verification', '', 'Google 验证码', 'Google Search Console 站点验证');
+INSERT INTO public.t_setting VALUES ('ga_id', '', 'Google Analytics ID', 'GA4 测量 ID，格式 G-XXXXXXXXXX');
+
+
+--
+-- Data for Name: t_upload_record; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.825657+08', '2026-07-29 10:01:26.429111+08', 5, '/uploads/products/860a/__-__-1_3.webp', '__-__-1_3.webp', 34496, 'sync', 13, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.826663+08', '2026-07-29 10:01:26.430624+08', 6, '/uploads/products/dc312x/__-__-__-__.jpg', '__-__-__-__.jpg', 308087, 'sync', 14, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.827212+08', '2026-07-29 10:01:26.432327+08', 7, '/uploads/products/dc305x/__-_-__.webp', '__-_-__.webp', 62168, 'sync', 15, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.827735+08', '2026-07-29 10:01:26.433872+08', 8, '/uploads/products/dc422x/__-____38375.jpg', '__-____38375.jpg', 287653, 'sync', 16, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.828235+08', '2026-07-29 10:01:26.435297+08', 9, '/uploads/products/dc218l/cover.webp', 'cover.webp', 265314, 'sync', 17, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.828811+08', '2026-07-29 10:01:26.436544+08', 10, '/uploads/products/dc226/3-10.webp', '3-10.webp', 28482, 'sync', 18, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.829332+08', '2026-07-29 10:01:26.437738+08', 11, '/uploads/products/dc503j/__-__-__-_-2_3.webp', '__-__-__-_-2_3.webp', 30430, 'sync', 19, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.829842+08', '2026-07-29 10:01:26.438962+08', 12, '/uploads/products/dc506/cover.webp', 'cover.webp', 13408, 'sync', 20, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.830347+08', '2026-07-29 10:01:26.440164+08', 13, '/uploads/products/dc311/3-16.webp', '3-16.webp', 15702, 'sync', 21, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.830846+08', '2026-07-29 10:01:26.441593+08', 14, '/uploads/products/dc209x/__-_-DC209X-___.webp', '__-_-DC209X-___.webp', 44774, 'sync', 22, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.831611+08', '2026-07-29 10:01:26.442607+08', 15, '/uploads/products/dc311/4-14.webp', '4-14.webp', 16212, 'sync', 21, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.832504+08', '2026-07-29 10:01:26.443757+08', 16, '/uploads/products/dc309x/__-__-2-_-6X.jpg', '__-__-2-_-6X.jpg', 236262, 'sync', 23, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.833239+08', '2026-07-29 10:01:26.444894+08', 17, '/uploads/products/dc403/5adc255962c05f018172e3f49c1ffcf.webp', '5adc255962c05f018172e3f49c1ffcf.webp', 59946, 'sync', 24, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.833749+08', '2026-07-29 10:01:26.445736+08', 18, '/uploads/products/860a/__-__-2_4.webp', '__-__-2_4.webp', 37260, 'sync', 13, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.834226+08', '2026-07-29 10:01:26.44655+08', 19, '/uploads/products/dc506/__-_-__3.webp', '__-_-__3.webp', 19576, 'sync', 20, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.834758+08', '2026-07-29 10:01:26.447703+08', 20, '/uploads/products/wdc901/4-20.webp', '4-20.webp', 21938, 'sync', 25, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.835321+08', '2026-07-29 10:01:26.449085+08', 21, '/uploads/products/go9/cover.webp', 'cover.webp', 14078, 'sync', 26, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.835834+08', '2026-07-29 10:01:26.449881+08', 22, '/uploads/products/860a/cover.webp', 'cover.webp', 41036, 'sync', 13, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.836362+08', '2026-07-29 10:01:26.451038+08', 23, '/uploads/products/dc501j/photobank-1_4_11zon-3.webp', 'photobank-1_4_11zon-3.webp', 29512, 'sync', 27, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.836916+08', '2026-07-29 10:01:26.452572+08', 24, '/uploads/products/dc306l/cover.webp', 'cover.webp', 95206, 'sync', 28, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.837498+08', '2026-07-29 10:01:26.453876+08', 25, '/uploads/news/soncdian-wins-guangdong-quality-trust-recognition/cover.webp', 'cover.webp', 73192, 'sync', 29, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.837966+08', '2026-07-29 10:01:26.454719+08', 26, '/uploads/products/go9/photobank-3_2_11zon.webp', 'photobank-3_2_11zon.webp', 17834, 'sync', 26, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.838458+08', '2026-07-29 10:01:26.455922+08', 27, '/uploads/products/dc417x/_____20260226092043_1148_77-scaled.jpg', '_____20260226092043_1148_77-scaled.jpg', 413036, 'sync', 30, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.838991+08', '2026-07-29 10:01:26.457146+08', 28, '/uploads/products/dc208n/3-7.webp', '3-7.webp', 30232, 'sync', 31, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.839516+08', '2026-07-29 10:01:26.458312+08', 29, '/uploads/products/w3/W3-4.jpg', 'W3-4.jpg', 293616, 'sync', 32, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.839985+08', '2026-07-29 10:01:26.459478+08', 30, '/uploads/products/ve418/__-___5.webp', '__-___5.webp', 50484, 'sync', 33, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.840459+08', '2026-07-29 10:01:26.460638+08', 31, '/uploads/products/dc408x/4-18.webp', '4-18.webp', 37952, 'sync', 34, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.841033+08', '2026-07-29 10:01:26.462235+08', 32, '/uploads/products/dc310/__-_-___2.webp', '__-_-___2.webp', 20768, 'sync', 35, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.841716+08', '2026-07-29 10:01:26.463546+08', 33, '/uploads/products/hdv255k/cover.webp', 'cover.webp', 222816, 'sync', 36, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.842285+08', '2026-07-29 10:01:26.464894+08', 34, '/uploads/products/dc103w/__.webp', '__.webp', 30344, 'sync', 37, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.842822+08', '2026-07-29 10:01:26.466114+08', 35, '/uploads/products/dc105/DC105-2-scaled.webp', 'DC105-2-scaled.webp', 284818, 'sync', 38, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.843386+08', '2026-07-29 10:01:26.467323+08', 36, '/uploads/products/dc308/cover.webp', 'cover.webp', 28822, 'sync', 39, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.843958+08', '2026-07-29 10:01:26.468481+08', 37, '/uploads/products/dc302/6-4.webp', '6-4.webp', 26208, 'sync', 40, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.844512+08', '2026-07-29 10:01:26.469242+08', 38, '/uploads/products/dc408x/7-7.webp', '7-7.webp', 49440, 'sync', 34, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.845017+08', '2026-07-29 10:01:26.470037+08', 39, '/uploads/products/dc302/1-12.webp', '1-12.webp', 30044, 'sync', 40, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.845612+08', '2026-07-29 10:01:26.470935+08', 40, '/uploads/products/dc209x/2-7.webp', '2-7.webp', 30630, 'sync', 22, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.846283+08', '2026-07-29 10:01:26.472527+08', 41, '/uploads/products/dc402/2-17.webp', '2-17.webp', 72228, 'sync', 41, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.846806+08', '2026-07-29 10:01:26.473355+08', 42, '/uploads/products/dc311/cover.webp', 'cover.webp', 15758, 'sync', 21, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.847317+08', '2026-07-29 10:01:26.474651+08', 43, '/uploads/products/dc413l/__-__-____3.webp', '__-__-____3.webp', 40658, 'sync', 42, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.847926+08', '2026-07-29 10:01:26.475867+08', 44, '/uploads/news/songdian-named-2025-china-made-trusted-brand/cover.webp', 'cover.webp', 57588, 'sync', 43, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.848436+08', '2026-07-29 10:01:26.47705+08', 45, '/uploads/products/hdv284k/photobank_3_11zon.webp', 'photobank_3_11zon.webp', 37644, 'sync', 44, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.848926+08', '2026-07-29 10:01:26.477812+08', 46, '/uploads/products/hdv284k/photobank-2_1_11zon.webp', 'photobank-2_1_11zon.webp', 30898, 'sync', 44, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.84943+08', '2026-07-29 10:01:26.479149+08', 47, '/uploads/products/dc320/___03.webp', '___03.webp', 24514, 'sync', 45, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.849925+08', '2026-07-29 10:01:26.480116+08', 48, '/uploads/products/w3/cover.jpg', 'cover.jpg', 357160, 'sync', 32, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.850468+08', '2026-07-29 10:01:26.481021+08', 49, '/uploads/products/dc209x/1-9.webp', '1-9.webp', 42410, 'sync', 22, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.85108+08', '2026-07-29 10:01:26.482075+08', 50, '/uploads/products/dc506/__-_-___4.webp', '__-_-___4.webp', 13466, 'sync', 20, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.851734+08', '2026-07-29 10:01:26.483641+08', 51, '/uploads/products/dc101l/4.webp', '4.webp', 80178, 'sync', 46, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.852233+08', '2026-07-29 10:01:26.484424+08', 52, '/uploads/products/dc101l/2.webp', '2.webp', 62070, 'sync', 46, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.852766+08', '2026-07-29 10:01:26.485649+08', 53, '/uploads/products/dc325/_____20260318102448_1183_77_5-scaled.webp', '_____20260318102448_1183_77_5-scaled.webp', 314692, 'sync', 47, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.853262+08', '2026-07-29 10:01:26.486498+08', 54, '/uploads/products/dc403/d9d79ec15a1eb53dab30f0419ddeb6e.webp', 'd9d79ec15a1eb53dab30f0419ddeb6e.webp', 53346, 'sync', 24, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.853799+08', '2026-07-29 10:01:26.487667+08', 55, '/uploads/products/dc202/4-2.webp', '4-2.webp', 31680, 'sync', 48, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.854345+08', '2026-07-29 10:01:26.488435+08', 56, '/uploads/products/dc310/__-_-____3.webp', '__-_-____3.webp', 29946, 'sync', 35, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.854838+08', '2026-07-29 10:01:26.489264+08', 57, '/uploads/products/dc503j/__-__-__-__-2_4.webp', '__-__-__-__-2_4.webp', 47860, 'sync', 19, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.855347+08', '2026-07-29 10:01:26.490037+08', 58, '/uploads/products/dc302/cover.webp', 'cover.webp', 31134, 'sync', 40, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.855884+08', '2026-07-29 10:01:26.491001+08', 59, '/uploads/products/wdc901/2-21.webp', '2-21.webp', 29512, 'sync', 25, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.856381+08', '2026-07-29 10:01:26.492574+08', 60, '/uploads/products/dc203/4-3.webp', '4-3.webp', 73448, 'sync', 49, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.857761+08', '2026-07-29 10:01:26.494232+08', 62, '/uploads/products/dc417x/_____20260226092041_1146_77-scaled.jpg', '_____20260226092041_1146_77-scaled.jpg', 365169, 'sync', 30, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.858202+08', '2026-07-29 10:01:26.495146+08', 63, '/uploads/products/dc506/__-_-__2.webp', '__-_-__2.webp', 29076, 'sync', 20, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.85868+08', '2026-07-29 10:01:26.49587+08', 64, '/uploads/products/dc202/6-1.webp', '6-1.webp', 14736, 'sync', 48, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.859168+08', '2026-07-29 10:01:26.497148+08', 65, '/uploads/products/hdv544km/cover.webp', 'cover.webp', 27180, 'sync', 50, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.860078+08', '2026-07-29 10:01:26.498736+08', 67, '/uploads/products/dc325/cover.webp', 'cover.webp', 194664, 'sync', 47, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.860603+08', '2026-07-29 10:01:26.499909+08', 68, '/uploads/products/dc205x/4-4.webp', '4-4.webp', 70122, 'sync', 51, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.861156+08', '2026-07-29 10:01:26.50129+08', 69, '/uploads/products/dc106/cover.webp', 'cover.webp', 240278, 'sync', 52, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.861733+08', '2026-07-29 10:01:26.502749+08', 70, '/uploads/products/dc201s/cover.webp', 'cover.webp', 33690, 'sync', 53, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.862202+08', '2026-07-29 10:01:26.503706+08', 71, '/uploads/products/hdv544km/photobank_3_11zon.webp', 'photobank_3_11zon.webp', 37644, 'sync', 50, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.862804+08', '2026-07-29 10:01:26.504533+08', 72, '/uploads/products/go9/photobank-1_4_11zon.webp', 'photobank-1_4_11zon.webp', 8688, 'sync', 26, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.863384+08', '2026-07-29 10:01:26.505237+08', 73, '/uploads/products/dc208n/2-6.webp', '2-6.webp', 75656, 'sync', 31, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.863926+08', '2026-07-29 10:01:26.506027+08', 74, '/uploads/products/dc305x/__-_-10X-___.webp', '__-_-10X-___.webp', 174974, 'sync', 15, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.864505+08', '2026-07-29 10:01:26.506821+08', 75, '/uploads/products/hdv255k/____-__-___-___-___4.webp', '____-__-___-___-___4.webp', 20692, 'sync', 36, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.865029+08', '2026-07-29 10:01:26.507667+08', 76, '/uploads/products/dc218l/__-__-1-_4-scaled.webp', '__-__-1-_4-scaled.webp', 123202, 'sync', 17, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.865534+08', '2026-07-29 10:01:26.508358+08', 77, '/uploads/products/ve418/__-____4.webp', '__-____4.webp', 42984, 'sync', 33, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.866007+08', '2026-07-29 10:01:26.50952+08', 78, '/uploads/products/dc206x/4-5.webp', '4-5.webp', 60834, 'sync', 54, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.866557+08', '2026-07-29 10:01:26.510763+08', 79, '/uploads/products/dc406/3-19.webp', '3-19.webp', 30360, 'sync', 55, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.867038+08', '2026-07-29 10:01:26.511855+08', 80, '/uploads/products/wdc901/cover.webp', 'cover.webp', 79874, 'sync', 25, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.867992+08', '2026-07-29 10:01:26.513721+08', 82, '/uploads/products/hdv284k/photobank-1_4_11zon-1.webp', 'photobank-1_4_11zon-1.webp', 26000, 'sync', 44, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.868485+08', '2026-07-29 10:01:26.514562+08', 83, '/uploads/products/dc501j/cover.webp', 'cover.webp', 91042, 'sync', 27, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.869022+08', '2026-07-29 10:01:26.515395+08', 84, '/uploads/products/dc208n/cover.webp', 'cover.webp', 42154, 'sync', 31, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.86951+08', '2026-07-29 10:01:26.516105+08', 85, '/uploads/products/dc226/cover.webp', 'cover.webp', 39434, 'sync', 18, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.869971+08', '2026-07-29 10:01:26.516901+08', 86, '/uploads/products/dc503j/cover.webp', 'cover.webp', 38324, 'sync', 19, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.870408+08', '2026-07-29 10:01:26.517707+08', 87, '/uploads/products/w3/W3-5.jpg', 'W3-5.jpg', 303173, 'sync', 32, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.870975+08', '2026-07-29 10:01:26.518481+08', 88, '/uploads/products/dc403/cover.webp', 'cover.webp', 64766, 'sync', 24, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.871631+08', '2026-07-29 10:01:26.519249+08', 89, '/uploads/products/dc417x/cover.jpg', 'cover.jpg', 396230, 'sync', 30, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.872165+08', '2026-07-29 10:01:26.520095+08', 90, '/uploads/products/dc105/DC105-1-scaled.webp', 'DC105-1-scaled.webp', 303168, 'sync', 38, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.872712+08', '2026-07-29 10:01:26.52162+08', 91, '/uploads/products/dc317l/__-_-___-3.jpg', '__-_-___-3.jpg', 194892, 'sync', 56, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.873309+08', '2026-07-29 10:01:26.522631+08', 92, '/uploads/products/dc205x/cover.webp', 'cover.webp', 75268, 'sync', 51, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.873829+08', '2026-07-29 10:01:26.523377+08', 93, '/uploads/products/dc206x/cover.webp', 'cover.webp', 43250, 'sync', 54, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.874346+08', '2026-07-29 10:01:26.524186+08', 94, '/uploads/products/dc310/__-__-_4.webp', '__-__-_4.webp', 32272, 'sync', 35, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.874828+08', '2026-07-29 10:01:26.525002+08', 95, '/uploads/products/dc402/7-6.webp', '7-6.webp', 58708, 'sync', 41, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.87529+08', '2026-07-29 10:01:26.525785+08', 96, '/uploads/products/wdc901/5-15.webp', '5-15.webp', 42926, 'sync', 25, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.875786+08', '2026-07-29 10:01:26.52669+08', 97, '/uploads/products/dc101l/cover.jpg', 'cover.jpg', 397142, 'sync', 46, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.876296+08', '2026-07-29 10:01:26.527485+08', 98, '/uploads/products/hdv284k/cover.webp', 'cover.webp', 27180, 'sync', 44, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.877185+08', '2026-07-29 10:01:26.529534+08', 100, '/uploads/products/dc206x/1-7.webp', '1-7.webp', 73778, 'sync', 54, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.877625+08', '2026-07-29 10:01:26.530237+08', 101, '/uploads/products/dc201s/DC201S-1.webp', 'DC201S-1.webp', 108316, 'sync', 53, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.878141+08', '2026-07-29 10:01:26.531302+08', 102, '/uploads/products/dc201s/DC201-3_11zon.webp', 'DC201-3_11zon.webp', 50780, 'sync', 53, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.878645+08', '2026-07-29 10:01:26.532356+08', 103, '/uploads/products/dc422x/__-__.jpg', '__-__.jpg', 258178, 'sync', 16, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.879118+08', '2026-07-29 10:01:26.533253+08', 104, '/uploads/products/dc406/1-20.webp', '1-20.webp', 31960, 'sync', 55, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.879648+08', '2026-07-29 10:01:26.534099+08', 105, '/uploads/products/ve418/cover.webp', 'cover.webp', 51416, 'sync', 33, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.880182+08', '2026-07-29 10:01:26.534837+08', 106, '/uploads/products/dc103w/___20437.webp', '___20437.webp', 33772, 'sync', 37, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.880665+08', '2026-07-29 10:01:26.535743+08', 107, '/uploads/products/dc408x/1-21.webp', '1-21.webp', 52488, 'sync', 34, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.881871+08', '2026-07-29 10:01:26.537851+08', 109, '/uploads/products/dc317l/__-_-___-2.jpg', '__-_-___-2.jpg', 194307, 'sync', 56, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.882439+08', '2026-07-29 10:01:26.538639+08', 110, '/uploads/products/dc325/_____20260318102449_1184_77_6-scaled.webp', '_____20260318102449_1184_77_6-scaled.webp', 194664, 'sync', 47, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.882945+08', '2026-07-29 10:01:26.539425+08', 111, '/uploads/products/dc203/3-4.webp', '3-4.webp', 107764, 'sync', 49, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.883473+08', '2026-07-29 10:01:26.540256+08', 112, '/uploads/products/dc202/2-2.webp', '2-2.webp', 26684, 'sync', 48, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.884011+08', '2026-07-29 10:01:26.541076+08', 113, '/uploads/products/dc501j/photobank-2_1_11zon-2.webp', 'photobank-2_1_11zon-2.webp', 33618, 'sync', 27, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.884516+08', '2026-07-29 10:01:26.542087+08', 114, '/uploads/products/dc202/cover.webp', 'cover.webp', 50860, 'sync', 48, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.885012+08', '2026-07-29 10:01:26.543114+08', 115, '/uploads/products/hdv544km/photobank-2_1_11zon.webp', 'photobank-2_1_11zon.webp', 30898, 'sync', 50, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.885606+08', '2026-07-29 10:02:50.085132+08', 116, '/uploads/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence/cover.webp', 'cover.webp', 194664, 'sync', 59, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.886093+08', '2026-07-29 10:02:50.086443+08', 117, '/uploads/products/dc312x/__-__-_____.jpg', '__-__-_____.jpg', 300577, 'sync', 14, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.886584+08', '2026-07-29 10:02:50.087382+08', 118, '/uploads/products/dc201s/DC201-4_11zon.webp', 'DC201-4_11zon.webp', 136324, 'sync', 53, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.887068+08', '2026-07-29 10:02:50.088365+08', 119, '/uploads/products/hdv255k/____-__-05_3.webp', '____-__-05_3.webp', 18526, 'sync', 36, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.887523+08', '2026-07-29 10:02:50.089164+08', 120, '/uploads/products/dc101l/3-1.webp', '3-1.webp', 45870, 'sync', 46, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.856869+08', '2026-07-29 10:01:26.493378+08', 61, '/uploads/products/go9/photobank-2_3_11zon.webp', 'photobank-2_3_11zon.webp', 18590, 'sync', 26, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.859607+08', '2026-07-29 10:01:26.498+08', 66, '/uploads/products/dc325/_____20260318102450_1185_77_7-scaled.webp', '_____20260318102450_1185_77_7-scaled.webp', 201588, 'sync', 47, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.867523+08', '2026-07-29 10:01:26.512909+08', 81, '/uploads/products/dc306l/__-__-DC306L-_-from-JD_10.webp', '__-__-DC306L-_-from-JD_10.webp', 57608, 'sync', 28, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.876775+08', '2026-07-29 10:01:26.528687+08', 99, '/uploads/news/songdian-joins-m43-standard-group/cover.webp', 'cover.webp', 112392, 'sync', 57, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.881239+08', '2026-07-29 10:01:26.537047+08', 108, '/uploads/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners/cover.jpg', 'cover.jpg', 396230, 'sync', 58, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.887996+08', '2026-07-29 10:02:50.089906+08', 121, '/uploads/products/dc105/DC105-4-scaled.webp', 'DC105-4-scaled.webp', 226454, 'sync', 38, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.888567+08', '2026-07-29 10:02:50.090619+08', 122, '/uploads/products/dc308/2-13.webp', '2-13.webp', 24662, 'sync', 39, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.889051+08', '2026-07-29 10:02:50.091485+08', 123, '/uploads/products/dc218l/__-___-__5.webp', '__-___-__5.webp', 32810, 'sync', 17, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.889506+08', '2026-07-29 10:02:50.092297+08', 124, '/uploads/products/dc317l/__-_-___-2_21609.jpg', '__-_-___-2_21609.jpg', 194857, 'sync', 56, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.889939+08', '2026-07-29 10:02:50.093085+08', 125, '/uploads/products/dc205x/2-4.webp', '2-4.webp', 55732, 'sync', 51, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.890398+08', '2026-07-29 10:02:50.093818+08', 126, '/uploads/products/dc105/cover.webp', 'cover.webp', 247858, 'sync', 38, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.890988+08', '2026-07-29 10:02:50.094571+08', 127, '/uploads/products/dc413l/__-__-___4.webp', '__-__-___4.webp', 17576, 'sync', 42, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.891661+08', '2026-07-29 10:02:50.095402+08', 128, '/uploads/products/dc305x/cover.webp', 'cover.webp', 60728, 'sync', 15, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.89276+08', '2026-07-29 10:02:50.097301+08', 130, '/uploads/products/dc320/___04.webp', '___04.webp', 29916, 'sync', 45, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.893332+08', '2026-07-29 10:02:50.097985+08', 131, '/uploads/products/dc312x/__-__-__.jpg', '__-__-__.jpg', 177191, 'sync', 14, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.89387+08', '2026-07-29 10:02:50.098742+08', 132, '/uploads/products/dc306l/__-__-__-___7.webp', '__-__-__-___7.webp', 158594, 'sync', 28, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.894384+08', '2026-07-29 10:02:50.09941+08', 133, '/uploads/products/dc501j/photobank-3_2_11zon-2.webp', 'photobank-3_2_11zon-2.webp', 26866, 'sync', 27, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.894863+08', '2026-07-29 10:02:50.100104+08', 134, '/uploads/products/w3/W3-2.jpg', 'W3-2.jpg', 322061, 'sync', 32, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.895488+08', '2026-07-29 10:02:50.100999+08', 135, '/uploads/products/dc302/3-11.webp', '3-11.webp', 29882, 'sync', 40, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.895956+08', '2026-07-29 10:02:50.101798+08', 136, '/uploads/products/dc312x/cover.jpg', 'cover.jpg', 113931, 'sync', 14, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.89649+08', '2026-07-29 10:02:50.102575+08', 137, '/uploads/products/dc310/cover.webp', 'cover.webp', 33840, 'sync', 35, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.897641+08', '2026-07-29 10:02:50.105005+08', 139, '/uploads/news/songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner/cover.webp', 'cover.webp', 240278, 'sync', 61, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.898141+08', '2026-07-29 10:02:50.105846+08', 140, '/uploads/products/dc402/cover.webp', 'cover.webp', 75986, 'sync', 41, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.898641+08', '2026-07-29 10:02:50.106774+08', 141, '/uploads/products/dc103w/cover.webp', 'cover.webp', 37154, 'sync', 37, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.899134+08', '2026-07-29 10:02:50.107636+08', 142, '/uploads/products/dc413l/cover.webp', 'cover.webp', 19594, 'sync', 42, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.899725+08', '2026-07-29 10:02:50.108358+08', 143, '/uploads/products/dc103w/____.webp', '____.webp', 40940, 'sync', 37, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.900266+08', '2026-07-29 10:02:50.109165+08', 144, '/uploads/products/hdv255k/____-__-03_2.webp', '____-__-03_2.webp', 14568, 'sync', 36, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.900722+08', '2026-07-29 10:02:50.109876+08', 145, '/uploads/products/dc309x/cover.jpg', 'cover.jpg', 239479, 'sync', 23, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.90131+08', '2026-07-29 10:02:50.110579+08', 146, '/uploads/products/ve418/__-____2.webp', '__-____2.webp', 58190, 'sync', 33, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.9019+08', '2026-07-29 10:02:50.111473+08', 147, '/uploads/products/dc320/cover.webp', 'cover.webp', 28122, 'sync', 45, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.902429+08', '2026-07-29 10:02:50.112337+08', 148, '/uploads/products/dc403/16db62727bd0e5a0763280af1dd54cd.webp', '16db62727bd0e5a0763280af1dd54cd.webp', 62226, 'sync', 24, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.90297+08', '2026-07-29 10:02:50.113087+08', 149, '/uploads/products/dc317l/cover.jpg', 'cover.jpg', 110321, 'sync', 56, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.903492+08', '2026-07-29 10:02:50.113835+08', 150, '/uploads/products/dc406/cover.webp', 'cover.webp', 23260, 'sync', 55, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.904053+08', '2026-07-29 10:02:50.114534+08', 151, '/uploads/products/dc422x/__-___.jpg', '__-___.jpg', 177564, 'sync', 16, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.904554+08', '2026-07-29 10:02:50.115383+08', 152, '/uploads/products/dc205x/1-6.webp', '1-6.webp', 167892, 'sync', 51, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.905018+08', '2026-07-29 10:02:50.116262+08', 153, '/uploads/products/dc208n/1-8.webp', '1-8.webp', 73930, 'sync', 31, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.905451+08', '2026-07-29 10:02:50.117025+08', 154, '/uploads/products/dc413l/__-__-___2.webp', '__-__-___2.webp', 53594, 'sync', 42, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.905944+08', '2026-07-29 10:02:50.117882+08', 155, '/uploads/products/dc422x/cover.jpg', 'cover.jpg', 203612, 'sync', 16, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.906486+08', '2026-07-29 10:02:50.118591+08', 156, '/uploads/products/dc203/5-2.webp', '5-2.webp', 82028, 'sync', 49, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.906994+08', '2026-07-29 10:02:50.119465+08', 157, '/uploads/products/dc402/1-19.webp', '1-19.webp', 73318, 'sync', 41, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.907466+08', '2026-07-29 10:02:50.120194+08', 158, '/uploads/products/dc305x/__-__-from-AMZ.webp', '__-__-from-AMZ.webp', 48312, 'sync', 15, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.907898+08', '2026-07-29 10:02:50.120933+08', 159, '/uploads/products/dc206x/2-5.webp', '2-5.webp', 47346, 'sync', 54, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.908359+08', '2026-07-29 10:02:50.121737+08', 160, '/uploads/products/dc408x/cover.webp', 'cover.webp', 36552, 'sync', 34, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.90938+08', '2026-07-29 10:02:50.123351+08', 162, '/uploads/products/dc503j/__-__-__-__-1_2.webp', '__-__-__-__-1_2.webp', 32950, 'sync', 19, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.909822+08', '2026-07-29 10:02:50.124106+08', 163, '/uploads/products/dc406/2-18.webp', '2-18.webp', 27622, 'sync', 55, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.91024+08', '2026-07-29 10:02:50.124806+08', 164, '/uploads/products/dc203/cover.webp', 'cover.webp', 79930, 'sync', 49, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.910686+08', '2026-07-29 10:02:50.125515+08', 165, '/uploads/products/dc218l/__-__-1-_3-scaled.webp', '__-__-1-_3-scaled.webp', 54380, 'sync', 17, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.911327+08', '2026-07-29 10:02:50.126398+08', 166, '/uploads/products/dc226/4-9.webp', '4-9.webp', 35106, 'sync', 18, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.912009+08', '2026-07-29 10:02:50.127533+08', 167, '/uploads/news/songdian-manufacturing-oem-partner-for-kenko/cover.webp', 'cover.webp', 131460, 'sync', 62, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.913216+08', '2026-07-29 10:02:50.129384+08', 169, '/uploads/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit/cover.png', 'cover.png', 809148, 'sync', 63, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.913747+08', '2026-07-29 10:02:50.130214+08', 170, '/uploads/products/dc306l/__-fromAMZ-SKU-01-White_8.webp', '__-fromAMZ-SKU-01-White_8.webp', 126464, 'sync', 28, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.914324+08', '2026-07-29 10:02:50.130963+08', 171, '/uploads/products/dc209x/cover.webp', 'cover.webp', 32548, 'sync', 22, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.914808+08', '2026-07-29 10:02:50.131728+08', 172, '/uploads/products/dc311/2-15.webp', '2-15.webp', 16332, 'sync', 21, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.915311+08', '2026-07-29 10:02:50.132419+08', 173, '/uploads/products/dc320/___-5_4.webp', '___-5_4.webp', 25984, 'sync', 45, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.892197+08', '2026-07-29 10:02:50.096222+08', 129, '/uploads/products/hdv544km/photobank-1_4_11zon-1.webp', 'photobank-1_4_11zon-1.webp', 26000, 'sync', 50, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.897095+08', '2026-07-29 10:02:50.103879+08', 138, '/uploads/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness/cover.webp', 'cover.webp', 156928, 'sync', 60, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.908878+08', '2026-07-29 10:02:50.12254+08', 161, '/uploads/products/860a/__-__-2_2.webp', '__-__-2_2.webp', 34944, 'sync', 13, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 09:57:46.912594+08', '2026-07-29 10:02:50.128293+08', 168, '/uploads/products/dc417x/_____20260226092042_1147_77-scaled.jpg', '_____20260226092042_1147_77-scaled.jpg', 411783, 'sync', 30, NULL);
+INSERT INTO public.t_upload_record VALUES ('2026-07-29 10:09:24.535217+08', '2026-07-29 10:09:24.535224+08', 174, '/uploads/2026/5485b22a09694e4c8b3faec503a20ebe.png', 't2.png', 65, 'admin', 64, NULL);
+
+
+--
+-- Name: aerich_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.aerich_id_seq', 8, true);
+
+
+--
+-- Name: t_admin_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_admin_user_id_seq', 4, true);
+
+
+--
+-- Name: t_album_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_album_id_seq', 64, true);
+
+
+--
+-- Name: t_audit_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_audit_log_id_seq', 961, true);
+
+
+--
+-- Name: t_inquiry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_inquiry_id_seq', 5, true);
+
+
+--
+-- Name: t_news_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_news_category_id_seq', 3, true);
+
+
+--
+-- Name: t_news_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_news_id_seq', 9, true);
+
+
+--
+-- Name: t_product_attribute_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_product_attribute_id_seq', 419, true);
+
+
+--
+-- Name: t_product_category_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_product_category_id_seq', 14, true);
+
+
+--
+-- Name: t_product_gallery_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_product_gallery_id_seq', 118, true);
+
+
+--
+-- Name: t_product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_product_id_seq', 44, true);
+
+
+--
+-- Name: t_role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_role_id_seq', 2, true);
+
+
+--
+-- Name: t_role_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_role_permission_id_seq', 4225, true);
+
+
+--
+-- Name: t_upload_record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.t_upload_record_id_seq', 174, true);
+
+
+--
+-- Name: aerich aerich_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.aerich
+    ADD CONSTRAINT aerich_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_admin_user t_admin_user_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_admin_user
+    ADD CONSTRAINT t_admin_user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_admin_user t_admin_user_username_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_admin_user
+    ADD CONSTRAINT t_admin_user_username_key UNIQUE (username);
+
+
+--
+-- Name: t_album t_album_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_album
+    ADD CONSTRAINT t_album_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_album t_album_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_album
+    ADD CONSTRAINT t_album_slug_key UNIQUE (slug);
+
+
+--
+-- Name: t_audit_log t_audit_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_audit_log
+    ADD CONSTRAINT t_audit_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_inquiry t_inquiry_biz_req_no_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_inquiry
+    ADD CONSTRAINT t_inquiry_biz_req_no_key UNIQUE (biz_req_no);
+
+
+--
+-- Name: t_inquiry t_inquiry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_inquiry
+    ADD CONSTRAINT t_inquiry_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_news_category t_news_category_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news_category
+    ADD CONSTRAINT t_news_category_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_news_category t_news_category_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news_category
+    ADD CONSTRAINT t_news_category_slug_key UNIQUE (slug);
+
+
+--
+-- Name: t_news t_news_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news
+    ADD CONSTRAINT t_news_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_news t_news_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news
+    ADD CONSTRAINT t_news_slug_key UNIQUE (slug);
+
+
+--
+-- Name: t_product_attribute t_product_attribute_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_attribute
+    ADD CONSTRAINT t_product_attribute_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_product_category t_product_category_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_category
+    ADD CONSTRAINT t_product_category_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_product_category t_product_category_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_category
+    ADD CONSTRAINT t_product_category_slug_key UNIQUE (slug);
+
+
+--
+-- Name: t_product_gallery t_product_gallery_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_gallery
+    ADD CONSTRAINT t_product_gallery_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_product t_product_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product
+    ADD CONSTRAINT t_product_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_product t_product_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product
+    ADD CONSTRAINT t_product_slug_key UNIQUE (slug);
+
+
+--
+-- Name: t_role t_role_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role
+    ADD CONSTRAINT t_role_code_key UNIQUE (code);
+
+
+--
+-- Name: t_role_permission t_role_permission_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role_permission
+    ADD CONSTRAINT t_role_permission_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_role t_role_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role
+    ADD CONSTRAINT t_role_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_setting t_setting_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_setting
+    ADD CONSTRAINT t_setting_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: t_upload_record t_upload_record_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_upload_record
+    ADD CONSTRAINT t_upload_record_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: t_role_permission uid_t_role_perm_role_id_f04afd; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role_permission
+    ADD CONSTRAINT uid_t_role_perm_role_id_f04afd UNIQUE (role_id, permission_code);
+
+
+--
+-- Name: ix_t_news_search_vector; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_t_news_search_vector ON public.t_news USING gin (search_vector);
+
+
+--
+-- Name: ix_t_product_search_vector; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_t_product_search_vector ON public.t_product USING gin (search_vector);
+
+
+--
+-- Name: t_album fk_t_album_t_album_f7ee8391; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_album
+    ADD CONSTRAINT fk_t_album_t_album_f7ee8391 FOREIGN KEY (parent_id) REFERENCES public.t_album(id) ON DELETE CASCADE;
+
+
+--
+-- Name: t_upload_record fk_t_upload_t_album_48785bea; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_upload_record
+    ADD CONSTRAINT fk_t_upload_t_album_48785bea FOREIGN KEY (album_id) REFERENCES public.t_album(id) ON DELETE SET NULL;
+
+
+--
+-- Name: t_admin_user t_admin_user_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_admin_user
+    ADD CONSTRAINT t_admin_user_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.t_role(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: t_news t_news_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_news
+    ADD CONSTRAINT t_news_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.t_news_category(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: t_product_attribute t_product_attribute_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_attribute
+    ADD CONSTRAINT t_product_attribute_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.t_product(id) ON DELETE CASCADE;
+
+
+--
+-- Name: t_product t_product_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product
+    ADD CONSTRAINT t_product_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.t_product_category(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: t_product_gallery t_product_gallery_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_product_gallery
+    ADD CONSTRAINT t_product_gallery_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.t_product(id) ON DELETE CASCADE;
+
+
+--
+-- Name: t_role_permission t_role_permission_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.t_role_permission
+    ADD CONSTRAINT t_role_permission_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.t_role(id) ON DELETE CASCADE;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict cLVg7Pnaj8x0bvN707iNNCfK6ObdSvBXGji2tTxq3iNHjLaGdS8x2Deh1nn9otY
+

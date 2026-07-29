@@ -17,11 +17,16 @@ const nextConfig: NextConfig = {
         port: "8080",
         pathname: "/**",
       },
-      // Production: 后端静态资源域名（部署时取消注释并替换）
+      // Production: 后端静态资源（部署时改为实际 IP/域名）
       {
         protocol: "https",
         hostname: process.env.NEXT_PUBLIC_IMAGE_HOST || "api.songdian.tech",
         pathname: "/uploads/**",
+      },
+      {
+        protocol: "http",
+        hostname: process.env.NEXT_PUBLIC_IMAGE_HOST || "106.53.220.184",
+        pathname: "/**",
       },
     ],
     // 允许优化本机回环地址的图片（本地后端开发环境）

@@ -11,10 +11,8 @@ __pycache__/
 *.db
 *.sqlite3
 
-# 上传文件（测试/本地数据，生产在服务器上独立管理）
+# 运行时上传（UUID 命名，不提交）
 uploads/20*/
-uploads/products/
-uploads/news/
 
 # IDE
 .idea/

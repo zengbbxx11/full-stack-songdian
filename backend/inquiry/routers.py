@@ -64,3 +64,14 @@ async def update_status(
 ) -> Result:
     vo = await services.update_status(inquiry_id, data)
     return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.delete("/admin/inquiries/{inquiry_id}", summary="删除询盘")
+@audit(action="inquiry.delete", resource="inquiry:{inquiry_id}")
+async def delete_inquiry(
+    inquiry_id: int,
+    request: Request,
+    _user: AdminUser = Depends(require_permission("inquiry:update")),
+) -> Result:
+    await services.delete_inquiry(inquiry_id)
+    return Result.ok({"id": inquiry_id})

@@ -259,6 +259,7 @@ export default function ProductsPage() {
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <Link href={`/product-form?id=${p.id}`} className="text-brand-500 hover:text-brand-600 text-sm">Edit</Link>
+                    <Link href={`/product-form?copy_from=${p.id}`} className="text-blue-500 hover:text-blue-600 text-sm">Copy</Link>
                     <button onClick={() => handleDelete(p.id, p.title)} className="text-red-500 hover:text-red-600 text-sm">Delete</button>
                   </div>
                 </td>

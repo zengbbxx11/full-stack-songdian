@@ -50,6 +50,9 @@ export default function InquiriesPage() {
     next: "ARCHIVED",
   });
   const [statusSaving, setStatusSaving] = useState(false);
+  // 删除确认
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; target: Inquiry | null }>({ open: false, target: null });
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   // 列表加载失败：沿用原行为弹出错误提示（SWR 仅在 fetcher 抛错时置 error）。
   useEffect(() => {
@@ -114,6 +117,21 @@ export default function InquiriesPage() {
     } finally {
       setStatusSaving(false);
       setStatusConfirm({ open: false, target: null, next: "ARCHIVED" });
+    }
+  }
+
+  async function confirmDeleteInquiry() {
+    if (!deleteConfirm.target) return;
+    setDeleteSaving(true);
+    try {
+      await apiFetch(`/admin/inquiries/${deleteConfirm.target.id}`, { method: "DELETE" });
+      await mutate();
+      toast.success("Inquiry deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeleteSaving(false);
+      setDeleteConfirm({ open: false, target: null });
     }
   }
 
@@ -220,6 +238,12 @@ export default function InquiriesPage() {
                           Archive
                         </button>
                       )}
+                      <button
+                        onClick={() => setDeleteConfirm({ open: true, target: i })}
+                        className="text-sm text-red-500 hover:text-red-600"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -286,6 +310,17 @@ export default function InquiriesPage() {
         loading={statusSaving}
         onConfirm={confirmStatusChange}
         onCancel={() => setStatusConfirm({ open: false, target: null, next: "ARCHIVED" })}
+      />
+
+      {/* 删除确认 */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        title="Delete Inquiry"
+        message={`Are you sure you want to delete inquiry from "${deleteConfirm.target?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        loading={deleteSaving}
+        onConfirm={confirmDeleteInquiry}
+        onCancel={() => setDeleteConfirm({ open: false, target: null })}
       />
     </div>
   );

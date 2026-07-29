@@ -40,9 +40,10 @@ export default function NewsFormPage() {
   }, [id, toast]);
 
   // 上传图片文件到后端 → 返回 URL
-  async function uploadImage(file: File): Promise<string> {
+  async function uploadImage(file: File, newsSlug?: string): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
+    if (newsSlug) formData.append("categorize", `news:${newsSlug}`);
     const result = await apiFetch<{ url: string }>("/admin/upload", {
       method: "POST",
       body: formData,
@@ -52,7 +53,7 @@ export default function NewsFormPage() {
 
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
-    try { const url = await uploadImage(file); setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") })); }
+    try { const url = await uploadImage(file, form.slug); setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") })); }
     catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
     e.target.value = "";
   }

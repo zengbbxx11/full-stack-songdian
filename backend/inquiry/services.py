@@ -117,3 +117,11 @@ async def update_status(inquiry_id: int, data: InquiryStatusRequest) -> InquiryD
         inquiry.reply_note = data.reply_note
     await inquiry.save()
     return InquiryDetailVO.from_model(inquiry)
+
+
+async def delete_inquiry(inquiry_id: int) -> None:
+    """删除询盘记录。"""
+    inquiry = await Inquiry.get_or_none(id=inquiry_id)
+    if inquiry is None:
+        raise BizException(ErrorCode.C404001, "询盘不存在")
+    await inquiry.delete()

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# 环境变量（含密钥，绝不提交）
+.env
+
+# 数据库文件
+*.db
+*.sqlite3
+
+# 上传文件（测试/本地数据，生产在服务器上独立管理）
+uploads/20*/
+uploads/products/
+uploads/news/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 临时文件
+*.log
+tmp/

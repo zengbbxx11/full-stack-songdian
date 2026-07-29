@@ -8,13 +8,13 @@ const nextConfig: NextConfig = {
       {
         protocol: "http",
         hostname: "localhost",
-        port: "8000",
+        port: "8080",
         pathname: "/**",
       },
       {
         protocol: "http",
         hostname: "127.0.0.1",
-        port: "8000",
+        port: "8080",
         pathname: "/**",
       },
       // Production: 后端静态资源域名（部署时取消注释并替换）

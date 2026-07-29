@@ -23,7 +23,9 @@ export default function ProductFormPage() {
   const router = useRouter();
   const params = useSearchParams();
   const id = params.get("id");
+  const copyFrom = params.get("copy_from");
   const isEdit = !!id;
+  const isCopy = !!copyFrom;
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [cats, setCats] = useState<ProductCategory[]>([]);
@@ -68,24 +70,28 @@ export default function ProductFormPage() {
 
   useEffect(() => { loadCats(); }, [loadCats]);
 
-  // 编辑模式加载产品 + 画廊
+  // 编辑模式加载产品 + 画廊、复制模式预填
   useEffect(() => {
-    if (!id) return;
+    const sourceId = id || copyFrom;
+    if (!sourceId) return;
     setLoadingData(true);
-    apiFetch<Record<string, unknown>>(`/admin/products/${id}`).then((p) => {
-      setForm({ title: String(p.title || ""), slug: String(p.slug || ""), sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: String(p.status || "DRAFT"), cover_image: String(p.cover_image || "") });
+    apiFetch<Record<string, unknown>>(`/admin/products/${sourceId}`).then((p) => {
+      const title = copyFrom ? `Copy of ${String(p.title || "")}` : String(p.title || "");
+      const slug = copyFrom ? "" : String(p.slug || "");
+      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: "DRAFT", cover_image: String(p.cover_image || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("Failed to load product: " + msg);
     }).finally(() => setLoadingData(false));
-  }, [id, toast]);
+  }, [id, copyFrom, toast]);
 
   // 上传图片文件到后端 → 返回 URL
-  async function uploadImage(file: File): Promise<string> {
+  async function uploadImage(file: File, productSlug?: string): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
+    if (productSlug) formData.append("categorize", `product:${productSlug}`);
     const result = await apiFetch<{ url: string }>("/admin/upload", {
       method: "POST",
       body: formData,
@@ -100,7 +106,7 @@ export default function ProductFormPage() {
     setUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
-        const url = await uploadImage(files[i]);
+        const url = await uploadImage(files[i], form.slug);
         const newG = await apiFetch<GalleryItem>(`/admin/products/${id}/gallery`, {
           method: "POST",
           body: { image_url: url.replace(API_BASE, ""), alt: files[i].name, sort_order: galleries.length + i },
@@ -145,7 +151,7 @@ export default function ProductFormPage() {
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
     try {
-      const url = await uploadImage(file);
+      const url = await uploadImage(file, form.slug);
       setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") }));
     } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
     e.target.value = "";
@@ -177,7 +183,7 @@ export default function ProductFormPage() {
   return (
     <div className="max-w-4xl">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">
-        {isEdit ? "Edit Product" : "New Product"}
+        {isCopy ? "Copy Product" : isEdit ? "Edit Product" : "New Product"}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -243,8 +249,8 @@ export default function ProductFormPage() {
           </div>
         </div>
 
-        {/* 产品画廊（仅编辑模式） */}
-        {isEdit && (
+        {/* 产品画廊（编辑/复制模式） */}
+        {(isEdit || isCopy) && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
@@ -280,8 +286,8 @@ export default function ProductFormPage() {
           </div>
         )}
 
-        {/* 规格（仅编辑模式） */}
-        {isEdit && (
+        {/* 规格（编辑/复制模式） */}
+        {(isEdit || isCopy) && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">Specifications</h3>
 

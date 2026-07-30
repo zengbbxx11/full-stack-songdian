@@ -17,15 +17,15 @@ type Tool =
   | "link" | "ul" | "ol" | "quote" | "clear";
 
 const TOOLS: { key: Tool; label: string; title: string }[] = [
-  { key: "h2", label: "H2", title: "Heading 2" },
-  { key: "h3", label: "H3", title: "Heading 3" },
-  { key: "bold", label: "B", title: "Bold" },
-  { key: "italic", label: "I", title: "Italic" },
-  { key: "link", label: "🔗", title: "Insert Link" },
-  { key: "ul", label: "•≡", title: "Bullet List" },
-  { key: "ol", label: "1≡", title: "Numbered List" },
-  { key: "quote", label: "❝", title: "Blockquote" },
-  { key: "clear", label: "✕", title: "Clear Formatting" },
+  { key: "h2", label: "H2", title: "标题 2" },
+  { key: "h3", label: "H3", title: "标题 3" },
+  { key: "bold", label: "B", title: "加粗" },
+  { key: "italic", label: "I", title: "斜体" },
+  { key: "link", label: "🔗", title: "插入链接" },
+  { key: "ul", label: "•≡", title: "无序列表" },
+  { key: "ol", label: "1≡", title: "有序列表" },
+  { key: "quote", label: "❝", title: "引用" },
+  { key: "clear", label: "✕", title: "清除格式" },
 ];
 
 interface RichTextEditorProps {
@@ -85,7 +85,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         document.execCommand("formatBlock", false, "<blockquote>");
         break;
       case "link": {
-        const url = prompt("Enter URL:", "https://");
+        const url = prompt("请输入链接地址：", "https://");
         if (url) document.execCommand("createLink", false, url);
         break;
       }

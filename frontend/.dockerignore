@@ -1,0 +1,12 @@
+# 前端镜像构建时排除（不进构建上下文）
+node_modules/
+.next/
+.env
+.env.local
+.env*.local
+.git/
+.gitignore
+*.md
+Dockerfile
+.dockerignore
+README.md

@@ -54,7 +54,7 @@ export default function ProductFormPage() {
     try {
       if (confirmCallback) await confirmCallback();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "删除失败");
     }
     setConfirmOpen(false);
   }
@@ -64,7 +64,7 @@ export default function ProductFormPage() {
       const d = await apiFetch<Paginated<ProductCategory>>("/admin/categories?page_size=50");
       setCats(d.list || []);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load categories");
+      toast.error(err instanceof Error ? err.message : "加载分类失败");
     }
   }, [toast]);
 
@@ -83,7 +83,7 @@ export default function ProductFormPage() {
       setAttrs((p.attributes as AttributeItem[]) || []);
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
-      toast.error("Failed to load product: " + msg);
+      toast.error("加载产品失败：" + msg);
     }).finally(() => setLoadingData(false));
   }, [id, copyFrom, toast]);
 
@@ -113,7 +113,7 @@ export default function ProductFormPage() {
         });
         setGalleries(prev => [...prev, { id: newG.id, image_url: newG.image_url, alt: newG.alt, sort_order: newG.sort_order }]);
       }
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
     finally { setUploading(false); e.target.value = ""; }
   }
 
@@ -128,20 +128,20 @@ export default function ProductFormPage() {
       });
       setAttrs(prev => [...prev, { id: res.id, name: res.name, slug: res.slug, value: res.value }]);
       setNewAttr({ name: "", value: "" });
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to add"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "添加失败"); }
   }
 
   // 删除规格属性
   function handleDeleteAttr(attrId: number) {
     if (!id) return;
-    openConfirm("Delete Specification", "Delete this specification?", async () => {
+    openConfirm("删除规格", "确定删除该规格吗？", async () => {
       await apiFetch(`/admin/products/${id}/attributes/${attrId}`, { method: "DELETE" });
       setAttrs(prev => prev.filter(a => a.id !== attrId));
     });
   }
   function handleGalleryDelete(galleryId: number) {
     if (!id) return;
-    openConfirm("Delete Image", "Delete this image?", async () => {
+    openConfirm("删除图片", "确定删除该图片吗？", async () => {
       await apiFetch(`/admin/products/${id}/gallery/${galleryId}`, { method: "DELETE" });
       setGalleries(prev => prev.filter(g => g.id !== galleryId));
     });
@@ -153,7 +153,7 @@ export default function ProductFormPage() {
     try {
       const url = await uploadImage(file, form.slug);
       setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") }));
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
     e.target.value = "";
   }
 
@@ -164,12 +164,12 @@ export default function ProductFormPage() {
       if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/products", { method: "POST", body: payload });
       router.push("/products");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Save failed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); }
     finally { setSaving(false); }
   }
 
   function handleDelete() {
-    openConfirm("Delete Product", "Are you sure you want to delete this product?", async () => {
+    openConfirm("删除产品", "确定要删除该产品吗？", async () => {
       setDeleting(true);
       try {
         await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
@@ -183,66 +183,66 @@ export default function ProductFormPage() {
   return (
     <div className="max-w-4xl">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">
-        {isCopy ? "Copy Product" : isEdit ? "Edit Product" : "New Product"}
+        {isCopy ? "复制产品" : isEdit ? "编辑产品" : "新建产品"}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 基本信息 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">Basic Info</h3>
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">基本信息</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <Label>Title * <span className="text-xs text-gray-400 font-normal">(Product name shown on site)</span></Label>
+              <Label>标题 * <span className="text-xs text-gray-400 font-normal">（站点显示的产品名称）</span></Label>
               <Input value={form.title} onChange={e => {
                 const t = e.target.value;
                 setForm(prev => ({ ...prev, title: t, slug: prev.slug || t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") }));
               }} placeholder="e.g. DC105 4K Digital Camera" />
             </div>
             <div>
-              <Label>Slug * <span className="text-xs text-gray-400 font-normal">(URL path: /products/{form.slug || "slug"})</span></Label>
+              <Label>别名 * <span className="text-xs text-gray-400 font-normal">（URL 路径：/products/{form.slug || "slug"}）</span></Label>
               <Input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} placeholder="dc105-4k-digital-camera" />
             </div>
             <div>
-              <Label>Model / SKU <span className="text-xs text-gray-400 font-normal">(Factory model number)</span></Label>
+              <Label>型号 / SKU <span className="text-xs text-gray-400 font-normal">（工厂型号）</span></Label>
               <Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="DC105" />
             </div>
             <div>
               <Label>Category</Label>
               <select value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="">None</option>
+                <option value="">无</option>
                 {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
               <Label>Stock</Label>
               <select value={form.stock_status} onChange={e => setForm({...form, stock_status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="in_stock">In Stock</option><option value="out_of_stock">Out of Stock</option>
+                <option value="in_stock">有货</option><option value="out_of_stock">缺货</option>
               </select>
             </div>
             <div>
               <Label>Status</Label>
               <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option>
+                <option value="DRAFT">草稿</option><option value="PUBLISHED">已发布</option>
               </select>
             </div>
           </div>
-          <div><Label>Summary</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>Content (HTML)</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="Write your product description here..." /></div>
+          <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
+          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入产品描述..." /></div>
         </div>
 
         {/* 封面图 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">Cover Image</h3>
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
           <div className="flex items-start gap-4">
             {form.cover_image ? (
               <img src={`${API_BASE}${form.cover_image}`} className="w-32 h-32 object-cover rounded-lg border" alt="Cover" />
             ) : (
-              <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">No cover</div>
+              <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>
             )}
             <div className="flex-1 space-y-3">
               <Input value={form.cover_image} onChange={e => setForm({...form, cover_image: e.target.value})} placeholder="/uploads/products/x/cover.webp" />
               <label className="inline-flex items-center px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">
-                Upload Image
+                上传图片
                 <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
               </label>
             </div>
@@ -254,16 +254,16 @@ export default function ProductFormPage() {
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
-                Product Gallery ({galleries.length})
+                产品图库（{galleries.length}）
               </h3>
               <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg cursor-pointer hover:bg-brand-600 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
-                {uploading ? "Uploading..." : "+ Add Images"}
+                {uploading ? "上传中..." : "+ 添加图片"}
                 <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />
               </label>
             </div>
 
             {galleries.length === 0 ? (
-              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click "+ Add Images" to upload.</p>
+              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click "+ 添加图片" to upload.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {galleries.map(g => (
@@ -289,7 +289,7 @@ export default function ProductFormPage() {
         {/* 规格（编辑/复制模式） */}
         {(isEdit || isCopy) && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">Specifications</h3>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">规格参数</h3>
 
             {/* 已有规格列表 */}
             {attrs.length > 0 && (
@@ -299,7 +299,7 @@ export default function ProductFormPage() {
                     <span className="font-medium text-gray-700 dark:text-gray-300 w-32 truncate">{a.name}</span>
                     <span className="text-gray-400">=</span>
                     <span className="flex-1 text-gray-600 dark:text-gray-400">{a.value}</span>
-                    <button type="button" onClick={() => handleDeleteAttr(a.id)} className="text-red-500 hover:text-red-600 text-xs px-2">Delete</button>
+                    <button type="button" onClick={() => handleDeleteAttr(a.id)} className="text-red-500 hover:text-red-600 text-xs px-2">删除</button>
                   </div>
                 ))}
               </div>
@@ -309,24 +309,24 @@ export default function ProductFormPage() {
             <div className="flex items-center gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
               <input
                 type="text" value={newAttr.name} onChange={e => setNewAttr(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Name (e.g. Sensor)" className="w-40 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                placeholder="名称（如：传感器）" className="w-40 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               />
               <input
                 type="text" value={newAttr.value} onChange={e => setNewAttr(prev => ({ ...prev, value: e.target.value }))}
-                placeholder="Value (e.g. 48MP CMOS)" className="flex-1 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                placeholder="值（如：4800 万像素 CMOS）" className="flex-1 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddAttr())}
               />
-              <button type="button" onClick={handleAddAttr} className="px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 shrink-0">Add</button>
+              <button type="button" onClick={handleAddAttr} className="px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 shrink-0">添加</button>
             </div>
           </div>
         )}
 
         {/* 操作栏 */}
         <div className="flex justify-between">
-          <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "Deleting..." : "Delete Product"}</Button>}</div>
+          <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除产品"}</Button>}</div>
           <div className="flex gap-3">
-            <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Product"}</Button>
+            <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
+            <Button type="submit" disabled={saving}>{saving ? "保存中..." : "保存产品"}</Button>
           </div>
         </div>
       </form>

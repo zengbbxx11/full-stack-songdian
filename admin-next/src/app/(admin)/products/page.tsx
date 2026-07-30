@@ -72,12 +72,12 @@ export default function ProductsPage() {
     try {
       await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
       setLocalItems(prev => (prev ?? items).filter(p => p.id !== id));
-      toast.success("Product deleted");
+      toast.success("产品已删除");
       setConfirmOpen(false);
       setConfirmTarget(null);
       mutate(productsKey);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "删除失败");
     }
   }
 
@@ -153,7 +153,7 @@ export default function ProductsPage() {
               method: "PUT",
               body: { sort_order: newSo },
             }).catch((err) => {
-              toast.error(`Failed to save order for product ${p.id}: ${err instanceof Error ? err.message : "Unknown error"}`);
+              toast.error(`产品 ${p.id} 排序保存失败：${err instanceof Error ? err.message : "未知错误"}`);
             })
           );
         }
@@ -166,7 +166,7 @@ export default function ProductsPage() {
       setDirty(false);
       mutate(productsKey);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save order");
+      toast.error(err instanceof Error ? err.message : "排序保存失败");
     } finally {
       setSaving(false);
     }
@@ -184,35 +184,35 @@ export default function ProductsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Products</h2>
-          {saving && <span className="text-xs text-amber-500">Saving...</span>}
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">产品</h2>
+          {saving && <span className="text-xs text-amber-500">保存中...</span>}
           {dirty && !saving && (
-            <span className="text-xs text-orange-500 font-medium">Order changed — unsaved</span>
+            <span className="text-xs text-orange-500 font-medium">顺序已调整 — 未保存</span>
           )}
         </div>
-        <Link href="/product-form" className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">+ New Product</Link>
+        <Link href="/product-form" className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">+ 新建产品</Link>
       </div>
 
       {/* 排序确认栏 */}
       {dirty && (
         <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
           <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-          <span className="text-sm text-amber-800 flex-1">You have unsaved order changes. Save or cancel before switching pages.</span>
-          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">Cancel</button>
-          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">Save Order</button>
+          <span className="text-sm text-amber-800 flex-1">您有未保存的排序更改，切换页面前请先保存或取消。</span>
+          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
+          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
         </div>
       )}
 
       {/* 筛选栏 */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Search products..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:border-gray-700" />
+        <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索产品..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:border-gray-700" />
         <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
-          <option value="">All Categories</option>
+          <option value="">全部分类</option>
           {categories.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
-        <button onClick={() => { setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ Clear filters</button>
+        <button onClick={() => { setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ 清除筛选</button>
       </div>
 
       {/* 产品表格 */}
@@ -221,17 +221,17 @@ export default function ProductsPage() {
           <thead className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="px-2 py-3 w-8" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">产品</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {loading ? (
               <tr><td colSpan={5} className="px-4 py-3"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-3/4" /></td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">No products found</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">未找到产品</td></tr>
             ) : items.map((p, idx) => (
               <tr
                 key={p.id}
@@ -255,12 +255,12 @@ export default function ProductsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.category?.name || "-"}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{p.status}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <Link href={`/product-form?id=${p.id}`} className="text-brand-500 hover:text-brand-600 text-sm">Edit</Link>
-                    <Link href={`/product-form?copy_from=${p.id}`} className="text-blue-500 hover:text-blue-600 text-sm">Copy</Link>
-                    <button onClick={() => handleDelete(p.id, p.title)} className="text-red-500 hover:text-red-600 text-sm">Delete</button>
+                    <Link href={`/product-form?id=${p.id}`} className="text-brand-500 hover:text-brand-600 text-sm">编辑</Link>
+                    <Link href={`/product-form?copy_from=${p.id}`} className="text-blue-500 hover:text-blue-600 text-sm">复制</Link>
+                    <button onClick={() => handleDelete(p.id, p.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
                   </div>
                 </td>
               </tr>
@@ -269,12 +269,12 @@ export default function ProductsPage() {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-gray-400">Drag rows using the grip handle (⋮⋮) to reorder, then click <strong>Save Order</strong> to persist.</p>
+      <p className="mt-3 text-xs text-gray-400">拖动行首握把（⋮⋮）可调整顺序，然后点击<strong>保存排序</strong>生效。</p>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete Product"
-        message={`Are you sure you want to delete "${confirmTarget?.title}"? This action cannot be undone.`}
+        title="删除产品"
+        message={`确定要删除「${confirmTarget?.title}」吗？此操作不可撤销。`}
         onConfirm={confirmDelete}
         onCancel={() => { setConfirmOpen(false); setConfirmTarget(null); }}
       />

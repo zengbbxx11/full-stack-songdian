@@ -56,7 +56,7 @@ function buildTree(albums: Album[]): TreeAlbum[] {
 }
 
 function usageLabel(item: UsageItem): string {
-  const map: Record<string, string> = { product_gallery: "Product gallery", product_cover: "Product cover", news_cover: "News cover" };
+  const map: Record<string, string> = { product_gallery: "产品图库", product_cover: "产品封面", news_cover: "新闻封面" };
   return `${map[item.type] ?? item.type}: ${item.name}`;
 }
 
@@ -166,7 +166,7 @@ export default function MediaPage() {
     for (const file of Array.from(files)) {
       const fd = new FormData(); fd.append("file", file);
       if (uploadAlbumId !== null) fd.append("album_id", String(uploadAlbumId));
-      try { await apiFetch("/admin/upload", { method: "POST", body: fd }); } catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); }
+      try { await apiFetch("/admin/upload", { method: "POST", body: fd }); } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
     }
     setUploading(false); e.target.value = "";
     await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
@@ -174,8 +174,8 @@ export default function MediaPage() {
 
   // 删除
   const handleDelete = async (rec: UploadRecord, force = false) => {
-    try { await apiFetch(`/admin/upload/${rec.id}?force=${force}`, { method: "DELETE" }); toast.success("Deleted"); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); clearSelection(); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Delete failed"); }
+    try { await apiFetch(`/admin/upload/${rec.id}?force=${force}`, { method: "DELETE" }); toast.success("已删除"); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); clearSelection(); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); }
   };
   const handleDeleteClick = async (rec: UploadRecord) => {
     try {
@@ -217,20 +217,20 @@ export default function MediaPage() {
   const openCreateAlbum = () => { setAlbumForm({ name: "", slug: "", parent_id: "" }); setAlbumModal({ open: true, editing: null }); };
   const openEditAlbum = (a: Album) => { setAlbumForm({ name: a.name, slug: a.slug, parent_id: a.parent_id?.toString() ?? "" }); setAlbumModal({ open: true, editing: a }); };
   const saveAlbum = async () => {
-    if (!albumForm.name.trim()) { toast.error("Name required"); return; }
+    if (!albumForm.name.trim()) { toast.error("请输入名称"); return; }
     const body: Record<string, unknown> = { name: albumForm.name.trim(), slug: albumForm.slug.trim() || undefined };
     const pid = albumForm.parent_id ? Number(albumForm.parent_id) : null;
     if (albumModal.editing) { body.parent_id = pid === albumModal.editing.id ? undefined : pid; } else { body.parent_id = pid || undefined; }
     try {
-      if (albumModal.editing) { await apiFetch(`/admin/albums/${albumModal.editing.id}`, { method: "PUT", body }); toast.success("Album updated"); }
-      else { await apiFetch("/admin/albums", { method: "POST", body }); toast.success("Album created"); }
+      if (albumModal.editing) { await apiFetch(`/admin/albums/${albumModal.editing.id}`, { method: "PUT", body }); toast.success("相册已更新"); }
+      else { await apiFetch("/admin/albums", { method: "POST", body }); toast.success("相册已创建"); }
       setAlbumModal({ open: false, editing: null }); await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Save failed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); }
   };
   const deleteAlbum = async (a: Album) => {
     const childCount = a.count; // 注意：count 只含直系素材，不含子相册素材（后端聚合只按 album_id 分组）
     setConfirm({ title: "删除相册", message: `确定删除「${a.name}」吗？其中的 ${childCount} 个素材将变为"未分类"，所有子相册也将被级联删除。`, confirmText: "删除相册",
-      onConfirm: async () => { try { await apiFetch(`/admin/albums/${a.id}`, { method: "DELETE" }); toast.success("Deleted"); if (selectedAlbumId === a.id) setSelectedAlbumId(null); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); } catch (err) { toast.error(err instanceof Error ? err.message : "Delete failed"); } setConfirm(null); } });
+      onConfirm: async () => { try { await apiFetch(`/admin/albums/${a.id}`, { method: "DELETE" }); toast.success("已删除"); if (selectedAlbumId === a.id) setSelectedAlbumId(null); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); } catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); } setConfirm(null); } });
   };
 
   // ─────────────────────── 渲染 ───────────────────────
@@ -239,13 +239,13 @@ export default function MediaPage() {
       {/* 左侧树形相册 */}
       <aside className="w-56 shrink-0 bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Albums</h3>
-          <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="New Album"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">相册</h3>
+          <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="新建相册"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
         </div>
         <ul className="space-y-0.5">
-          <li><button onClick={() => setSelectedAlbumId(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />All</span><span className="text-xs tabular-nums">{albumData ? albumData.list.reduce((s,a)=>s+a.count,0)+uncategorized : 0}</span></button></li>
+          <li><button onClick={() => setSelectedAlbumId(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.reduce((s,a)=>s+a.count,0)+uncategorized : 0}</span></button></li>
           {uncategorized > 0 && (
-            <li><button onClick={() => setSelectedAlbumId(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />Uncategorized</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
+            <li><button onClick={() => setSelectedAlbumId(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />未分类</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
           )}
           {tree.map((node) => <AlbumNode key={node.id} album={node} selectedAlbumId={selectedAlbumId} onSelect={setSelectedAlbumId} onEdit={openEditAlbum} onDelete={deleteAlbum} />)}
         </ul>
@@ -253,18 +253,18 @@ export default function MediaPage() {
 
       {/* 主内容 */}
       <div className="flex-1 min-w-0">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">Media Library</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">媒体库</h2>
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx={11} cy={11} r={8}/><path d="m21 21-4.3-4.3" strokeLinecap="round"/></svg>
-            <input type="text" placeholder="Search..." value={keyword} onChange={(e) => setKeyword(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+            <input type="text" placeholder="搜索..." value={keyword} onChange={(e) => setKeyword(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
           </div>
           <select value={uploadAlbumId ?? ""} onChange={(e) => setUploadAlbumId(e.target.value ? Number(e.target.value) : null)} className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-2 max-w-[140px]">
-            <option value="">No album</option>
+            <option value="">无相册</option>
             {albums.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
           <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer ${uploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-brand-500 text-white hover:bg-brand-600"}`}>
-            {uploading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Uploading...</> : <><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/></svg> Upload</>}
+            {uploading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> 上传中...</> : <><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/></svg> 上传</>}
             <input type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" disabled={uploading} />
           </label>
           {/* 同步按钮：补齐 product/news 引用图片的记录 */}
@@ -274,7 +274,7 @@ export default function MediaPage() {
                 const r = await apiFetch<{ found: number; synced: number }>("/admin/upload/sync", { method: "POST" });
                 toast.success(`Synced ${r.synced}/${r.found} images`);
                 await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
-              } catch (err) { toast.error(err instanceof Error ? err.message : "Sync failed"); }
+              } catch (err) { toast.error(err instanceof Error ? err.message : "同步失败"); }
             }}
             className="text-xs px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
             title="Scan products & news for image references not yet tracked"
@@ -289,7 +289,7 @@ export default function MediaPage() {
                 const r = await apiFetch<{ categorized: number; albums_created: number }>("/admin/upload/auto-categorize", { method: "POST" });
                 toast.success(`Categorized ${r.categorized} images into ${r.albums_created} albums`);
                 await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
-              } catch (err) { toast.error(err instanceof Error ? err.message : "Categorize failed"); }
+              } catch (err) { toast.error(err instanceof Error ? err.message : "归类失败"); }
             }}
             className="text-xs px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
             title="Auto-categorize uncategorized images by product/news path"
@@ -333,7 +333,7 @@ export default function MediaPage() {
                         </div>
                       ) : null}
                       <div className="flex gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); copyUrl(`${API_BASE}${rec.url}`); }} className="flex-1 text-[11px] py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">Copy</button>
+                        <button onClick={(e) => { e.stopPropagation(); copyUrl(`${API_BASE}${rec.url}`); }} className="flex-1 text-[11px] py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">复制</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(rec); }} className="text-[11px] py-1 px-2 rounded bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"><TrashBinIcon className="w-3 h-3" /></button>
                       </div>
                     </div>
@@ -342,29 +342,29 @@ export default function MediaPage() {
               })}
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-5"><button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">Prev</button><span className="text-sm text-gray-500 dark:text-gray-400">Page {page} / {totalPages}</span><button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">Next</button></div>
+              <div className="flex items-center justify-center gap-2 mt-5"><button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">上一页</button><span className="text-sm text-gray-500 dark:text-gray-400">Page {page} / {totalPages}</span><button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800">下一页</button></div>
             )}
           </div>
-        ) : recordsData ? (<div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center"><p className="text-gray-400 dark:text-gray-600 text-sm">{keyword ? "No files match your search." : "No files in this album."}</p></div>) : null}
+        ) : recordsData ? (<div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center"><p className="text-gray-400 dark:text-gray-600 text-sm">{keyword ? "没有匹配搜索条件的文件。" : "该相册暂无文件。"}</p></div>) : null}
       </div>
 
       {/* 对话框 */}
-      <ConfirmDialog open={!!confirm} title={confirm?.title ?? ""} message={confirm?.message ?? ""} onConfirm={confirm?.onConfirm ?? (() => {})} onCancel={() => setConfirm(null)} confirmText={confirm?.confirmText ?? "Delete"} />
+      <ConfirmDialog open={!!confirm} title={confirm?.title ?? ""} message={confirm?.message ?? ""} onConfirm={confirm?.onConfirm ?? (() => {})} onCancel={() => setConfirm(null)} confirmText={confirm?.confirmText ?? "删除"} />
 
       <Modal isOpen={albumModal.open} onClose={() => setAlbumModal({ open: false, editing: null })}>
         <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">{albumModal.editing ? "Edit Album" : "New Album"}</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">{albumModal.editing ? "编辑相册" : "新建相册"}</h3>
           <div className="space-y-3">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label><input type="text" value={albumForm.name} onChange={(e) => setAlbumForm({ ...albumForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="Album name" autoFocus /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (optional)</label><input type="text" value={albumForm.slug} onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="url-friendly-slug" /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Album</label>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label><input type="text" value={albumForm.name} onChange={(e) => setAlbumForm({ ...albumForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="相册名称" autoFocus /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">别名（可选）</label><input type="text" value={albumForm.slug} onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="url-友好别名" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">父级相册</label>
               <select value={albumForm.parent_id} onChange={(e) => setAlbumForm({ ...albumForm, parent_id: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30">
-                <option value="">None (root)</option>
+                <option value="">无（根级）</option>
                 {albums.filter((a) => a.id !== albumModal.editing?.id).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex justify-end gap-3 mt-6"><button onClick={() => setAlbumModal({ open: false, editing: null })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">Cancel</button><button onClick={saveAlbum} className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">{albumModal.editing ? "Save" : "Create"}</button></div>
+          <div className="flex justify-end gap-3 mt-6"><button onClick={() => setAlbumModal({ open: false, editing: null })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">取消</button><button onClick={saveAlbum} className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">{albumModal.editing ? "保存" : "创建"}</button></div>
         </div>
       </Modal>
     </div>

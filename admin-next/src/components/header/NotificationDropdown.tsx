@@ -21,13 +21,13 @@ export default function NotificationDropdown() {
         className="absolute -right-[240px] mt-[17px] w-[320px] rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[350px] lg:right-0"
       >
         <h5 className="mb-4 text-base font-semibold text-gray-800 dark:text-gray-200">
-          Notifications
+          通知
         </h5>
         <div className="flex flex-col items-center justify-center py-8 text-center text-gray-400 dark:text-gray-500">
           <svg className="w-10 h-10 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
-          <p className="text-sm">No notifications</p>
+          <p className="text-sm">暂无通知</p>
         </div>
       </Dropdown>
     </div>

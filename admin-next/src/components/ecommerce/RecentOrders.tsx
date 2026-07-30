@@ -17,7 +17,7 @@ interface Product {
   price: string; // Price of the product (as a string with currency symbol)
   // status: string; // Status of the product
   image: string; // URL or path to the product image
-  status: "Delivered" | "Pending" | "Canceled"; // Status of the product
+  status: "已完成" | "待处理" | "已取消"; // Status of the product
 }
 
 // Define the table data using the interface
@@ -28,7 +28,7 @@ const tableData: Product[] = [
     variants: "2 Variants",
     category: "Laptop",
     price: "$2399.00",
-    status: "Delivered",
+    status: "已完成",
     image: "/images/product/product-01.jpg", // Replace with actual image URL
   },
   {
@@ -37,7 +37,7 @@ const tableData: Product[] = [
     variants: "1 Variant",
     category: "Watch",
     price: "$879.00",
-    status: "Pending",
+    status: "待处理",
     image: "/images/product/product-02.jpg", // Replace with actual image URL
   },
   {
@@ -46,7 +46,7 @@ const tableData: Product[] = [
     variants: "2 Variants",
     category: "SmartPhone",
     price: "$1869.00",
-    status: "Delivered",
+    status: "已完成",
     image: "/images/product/product-03.jpg", // Replace with actual image URL
   },
   {
@@ -55,7 +55,7 @@ const tableData: Product[] = [
     variants: "2 Variants",
     category: "Electronics",
     price: "$1699.00",
-    status: "Canceled",
+    status: "已取消",
     image: "/images/product/product-04.jpg", // Replace with actual image URL
   },
   {
@@ -64,7 +64,7 @@ const tableData: Product[] = [
     variants: "1 Variant",
     category: "Accessories",
     price: "$240.00",
-    status: "Delivered",
+    status: "已完成",
     image: "/images/product/product-05.jpg", // Replace with actual image URL
   },
 ];
@@ -191,9 +191,9 @@ export default function RecentOrders() {
                   <Badge
                     size="sm"
                     color={
-                      product.status === "Delivered"
+                      product.status === "已完成"
                         ? "success"
-                        : product.status === "Pending"
+                        : product.status === "待处理"
                         ? "warning"
                         : "error"
                     }

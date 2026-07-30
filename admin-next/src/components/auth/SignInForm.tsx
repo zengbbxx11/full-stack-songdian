@@ -33,7 +33,7 @@ export default function SignInForm() {
         body: JSON.stringify({ username, password }),
       });
       const json = await res.json();
-      if (json.code !== "0") throw new Error(json.msg || "Login failed");
+      if (json.code !== "0") throw new Error(json.msg || "登录失败");
       const token = json.data.access_token as string;
       // 存入 localStorage 供接口 Bearer 鉴权；路由守卫改用后端下发的 HttpOnly
       // access_token Cookie（security-audit F-15：JS 不可读，降低 XSS 窃取风险）。
@@ -51,30 +51,30 @@ export default function SignInForm() {
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
-              Songdian Admin
+              松典管理后台
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your credentials to sign in
+              请输入账号密码登录
             </p>
           </div>
           <div>
             <form onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div>
-                  <Label>Username <span className="text-error-500">*</span></Label>
+                  <Label>用户名 <span className="text-error-500">*</span></Label>
                   <Input
-                    placeholder="Enter your username"
+                    placeholder="请输入用户名"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
                   />
                 </div>
                 <div>
-                  <Label>Password <span className="text-error-500">*</span></Label>
+                  <Label>密码 <span className="text-error-500">*</span></Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="请输入密码"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -100,7 +100,7 @@ export default function SignInForm() {
 
                 <div>
                   <Button className="w-full" size="sm" type="submit" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign in"}
+                    {loading ? "登录中..." : "登录"}
                   </Button>
                 </div>
               </div>

@@ -7,8 +7,8 @@ import SignInForm from "@/components/auth/SignInForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign In | Songdian Admin",
-  description: "Sign in to Songdian Technology Admin Dashboard",
+  title: "登录 | 松典管理后台",
+  description: "登录松典科技管理后台",
 };
 
 export default function SignIn() {

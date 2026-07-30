@@ -26,12 +26,12 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { icon: <GridIcon />, name: "Dashboard", path: "/" },
-  { icon: <BoxCubeIcon />, name: "Products", path: "/products" },
-  { icon: <ListIcon />, name: "Categories", path: "/categories" },
-  { icon: <PageIcon />, name: "News", path: "/news" },
-  { icon: <UserCircleIcon />, name: "Inquiries", path: "/inquiries" },
-  { icon: <TableIcon />, name: "Media", path: "/media" },
+  { icon: <GridIcon />, name: "仪表盘", path: "/" },
+  { icon: <BoxCubeIcon />, name: "产品", path: "/products" },
+  { icon: <ListIcon />, name: "分类", path: "/categories" },
+  { icon: <PageIcon />, name: "新闻", path: "/news" },
+  { icon: <UserCircleIcon />, name: "询盘", path: "/inquiries" },
+  { icon: <TableIcon />, name: "媒体库", path: "/media" },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
         <path d="M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
       </svg>
     ),
-    name: "Settings",
+    name: "设置",
     path: "/settings",
   },
   {
@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
         <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
       </svg>
     ),
-    name: "Account",
+    name: "账号",
     path: "/account",
   },
 ];

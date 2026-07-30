@@ -7,15 +7,15 @@ import type { Metadata } from "next";
 import EcommerceMetrics from "@/components/ecommerce/EcommerceMetrics";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Songdian Admin",
-  description: "Songdian Technology Admin Dashboard",
+  title: "仪表盘 | 松典管理后台",
+  description: "松典科技管理后台仪表盘",
 };
 
 export default function Dashboard() {
   return (
     <div>
       <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">
-        Dashboard
+        仪表盘
       </h2>
       <EcommerceMetrics />
     </div>

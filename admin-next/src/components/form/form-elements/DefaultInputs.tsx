@@ -43,7 +43,7 @@ export default function DefaultInputs() {
           </div>
         </div>
         <div>
-          <Label>Password Input</Label>
+          <Label>密码输入框</Label>
           <div className="relative">
             <Input
               type={showPassword ? "text" : "password"}

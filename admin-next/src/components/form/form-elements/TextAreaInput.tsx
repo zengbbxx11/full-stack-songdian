@@ -34,7 +34,7 @@ export default function TextAreaInput() {
             value={messageTwo}
             error
             onChange={(value) => setMessageTwo(value)}
-            hint="Please enter a valid message."
+            hint="请输入有效信息。"
           />
         </div>
       </div>

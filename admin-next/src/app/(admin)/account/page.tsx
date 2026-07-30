@@ -73,7 +73,7 @@ export default function AccountPage() {
   if (!profile) {
     return (
       <div>
-        <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">Account Settings</h2>
+        <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">账号设置</h2>
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
           <div className="space-y-4 animate-pulse">
             <div className="h-5 w-40 rounded bg-gray-100 dark:bg-gray-800" />
@@ -86,27 +86,27 @@ export default function AccountPage() {
 
   return (
     <div>
-      <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">Account Settings</h2>
+      <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">账号设置</h2>
 
       {/* 当前信息 */}
       <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 className="mb-3 text-sm font-medium text-gray-500 uppercase">Current Account</h3>
+        <h3 className="mb-3 text-sm font-medium text-gray-500 uppercase">当前账号</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div><span className="text-gray-400">Username:</span> <span className="font-medium text-gray-800 dark:text-white/90">{profile.username}</span></div>
-          <div><span className="text-gray-400">Email:</span> <span className="text-gray-800 dark:text-white/90">{profile.email || "—"}</span></div>
-          <div><span className="text-gray-400">Role:</span> <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{profile.role_name || "—"}</span></div>
+          <div><span className="text-gray-400">用户名：</span> <span className="font-medium text-gray-800 dark:text-white/90">{profile.username}</span></div>
+          <div><span className="text-gray-400">邮箱：</span> <span className="text-gray-800 dark:text-white/90">{profile.email || "—"}</span></div>
+          <div><span className="text-gray-400">角色：</span> <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">{profile.role_name || "—"}</span></div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 修改用户名 */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Change Username</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">修改用户名</h3>
           <form onSubmit={handleUpdateUsername} className="space-y-4">
             <div>
-              <Label>New Username</Label>
+              <Label>新用户名</Label>
               <Input
-                placeholder="Enter new username"
+                placeholder="请输入新用户名"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
               />
@@ -116,37 +116,37 @@ export default function AccountPage() {
                 {usernameMsg}
               </p>
             )}
-            <Button size="sm" type="submit">Update Username</Button>
+            <Button size="sm" type="submit">更新用户名</Button>
           </form>
         </div>
 
         {/* 修改密码 */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Change Password</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">修改密码</h3>
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             <div>
-              <Label>Current Password</Label>
+              <Label>当前密码</Label>
               <Input
                 type="password"
-                placeholder="Enter current password"
+                placeholder="请输入当前密码"
                 value={currentPwd}
                 onChange={(e) => setCurrentPwd(e.target.value)}
               />
             </div>
             <div>
-              <Label>New Password</Label>
+              <Label>新密码</Label>
               <Input
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="至少 6 位字符"
                 value={newPwd}
                 onChange={(e) => setNewPwd(e.target.value)}
               />
             </div>
             <div>
-              <Label>Confirm New Password</Label>
+              <Label>确认新密码</Label>
               <Input
                 type="password"
-                placeholder="Re-enter new password"
+                placeholder="请再次输入新密码"
                 value={confirmPwd}
                 onChange={(e) => setConfirmPwd(e.target.value)}
               />
@@ -156,7 +156,7 @@ export default function AccountPage() {
                 {pwdMsg}
               </p>
             )}
-            <Button size="sm" type="submit">Change Password</Button>
+            <Button size="sm" type="submit">修改密码</Button>
           </form>
         </div>
       </div>

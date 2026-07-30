@@ -38,9 +38,9 @@ export default function SettingsPage() {
         method: "PUT",
         body: editValues,
       });
-      toast.success("Settings saved");
+      toast.success("设置已保存");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Save failed");
+      toast.error(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSaving(false);
     }
@@ -49,7 +49,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div>
-        <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">Settings</h2>
+        <h2 className="mb-6 text-2xl font-semibold text-gray-800 dark:text-white/90">设置</h2>
         <div className="space-y-4 animate-pulse">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-16 rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -62,9 +62,9 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Settings</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">设置</h2>
         <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? "保存中..." : "保存修改"}
         </Button>
       </div>
 
@@ -81,14 +81,14 @@ export default function SettingsPage() {
             <Input
               value={editValues[key] || ""}
               onChange={(e) => setEditValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              placeholder="Enter value..."
+              placeholder="请输入内容..."
             />
           </div>
         ))}
 
         {settings && Object.keys(settings).length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-white/[0.03]">
-            <p className="text-gray-400">No settings configured yet.</p>
+            <p className="text-gray-400">暂未配置任何设置。</p>
           </div>
         )}
       </div>

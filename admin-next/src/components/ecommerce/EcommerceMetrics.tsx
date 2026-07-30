@@ -60,10 +60,10 @@ export default function EcommerceMetrics() {
   const recentInquiries = inquiriesData?.list ?? [];
 
   const cards = [
-    { label: "Products", value: data.products, color: "bg-blue-500", icon: "📦" },
-    { label: "News", value: data.news, color: "bg-green-500", icon: "📰" },
-    { label: "Categories", value: data.categories, color: "bg-purple-500", icon: "📁" },
-    { label: "Inquiries", value: data.inquiries, color: "bg-amber-500", icon: "💬" },
+    { label: "产品", value: data.products, color: "bg-blue-500", icon: "📦" },
+    { label: "新闻", value: data.news, color: "bg-green-500", icon: "📰" },
+    { label: "分类", value: data.categories, color: "bg-purple-500", icon: "📁" },
+    { label: "询盘", value: data.inquiries, color: "bg-amber-500", icon: "💬" },
   ];
 
   // 产品分类分布饼图配置
@@ -85,9 +85,9 @@ export default function EcommerceMetrics() {
   // 询盘状态标签
   function inquiryStatusBadge(status: string) {
     switch (status) {
-      case "NEW": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">New</span>;
-      case "REPLIED": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Replied</span>;
-      case "ARCHIVED": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Archived</span>;
+      case "NEW": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">新</span>;
+      case "REPLIED": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">已回复</span>;
+      case "ARCHIVED": return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">已归档</span>;
       default: return <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{status}</span>;
     }
   }
@@ -117,7 +117,7 @@ export default function EcommerceMetrics() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 产品分类分布 */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Product Categories</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">产品分类</h3>
           {loading ? (
             <div className="h-[280px] flex items-center justify-center">
               <div className="h-48 w-48 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
@@ -125,19 +125,19 @@ export default function EcommerceMetrics() {
           ) : categoryStats.length > 0 ? (
             <Chart options={pieOptions} series={categoryStats.map((c) => c.count)} type="donut" height={280} />
           ) : (
-            <div className="flex h-[280px] items-center justify-center text-sm text-gray-400">No category data</div>
+            <div className="flex h-[280px] items-center justify-center text-sm text-gray-400">暂无分类数据</div>
           )}
         </div>
 
         {/* 内容统计概览 */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Content Overview</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">内容概览</h3>
           <div className="space-y-4">
             {[
-              { label: "Published Products", value: data.products, max: data.products || 1, color: "bg-blue-500" },
-              { label: "Published News", value: data.news, max: data.news || 1, color: "bg-green-500" },
-              { label: "Product Categories", value: data.categories, max: data.categories || 1, color: "bg-purple-500" },
-              { label: "Customer Inquiries", value: data.inquiries, max: data.inquiries || 1, color: "bg-amber-500" },
+              { label: "已发布产品", value: data.products, max: data.products || 1, color: "bg-blue-500" },
+              { label: "已发布新闻", value: data.news, max: data.news || 1, color: "bg-green-500" },
+              { label: "产品分类", value: data.categories, max: data.categories || 1, color: "bg-purple-500" },
+              { label: "客户询盘", value: data.inquiries, max: data.inquiries || 1, color: "bg-amber-500" },
             ].map((item) => (
               <div key={item.label}>
                 <div className="mb-1 flex items-center justify-between text-sm">
@@ -158,8 +158,8 @@ export default function EcommerceMetrics() {
             <div className="flex items-center gap-3">
               <span className="text-2xl">🚀</span>
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">Ready for Launch</p>
-                <p className="text-xs text-gray-400">All systems operational. Backend API healthy.</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-white/90">准备上线</p>
+                <p className="text-xs text-gray-400">所有系统运行正常，后端 API 健康。</p>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function EcommerceMetrics() {
 
       {/* 最近询盘 */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Recent Inquiries</h3>
+        <h3 className="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">最近询盘</h3>
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -176,7 +176,7 @@ export default function EcommerceMetrics() {
             ))}
           </div>
         ) : recentInquiries.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-400">No inquiries yet</div>
+          <div className="py-8 text-center text-sm text-gray-400">暂无询盘</div>
         ) : (
           <div className="space-y-3">
             {recentInquiries.map((inq) => (

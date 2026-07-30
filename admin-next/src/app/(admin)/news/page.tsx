@@ -54,10 +54,10 @@ export default function NewsPage() {
       await apiFetch(`/admin/news/${deleteConfirm.id}`, { method: "DELETE" });
       setLocalItems(prev => (prev ?? items).filter(n => n.id !== deleteConfirm.id));
       setDeleteConfirm(null);
-      toast.success("Article deleted");
+      toast.success("文章已删除");
       mutate(newsKey);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "删除失败");
     }
   }
 
@@ -87,14 +87,14 @@ export default function NewsPage() {
           method: "PUT",
           body: { sort_order: i },
         }).catch((err) => {
-          toast.error(`Failed to save order for "${n.title}": ${err instanceof Error ? err.message : "Unknown error"}`);
+          toast.error(`新闻 ${n.title} 排序保存失败：${err instanceof Error ? err.message : "未知错误"}`);
         })
       ));
       setOriginal([...items]);
       setDirty(false);
       mutate(newsKey);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save order");
+      toast.error(err instanceof Error ? err.message : "排序保存失败");
     } finally {
       setSaving(false);
     }
@@ -112,13 +112,13 @@ export default function NewsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">News</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">新闻</h2>
           {saving && <span className="text-xs text-amber-500">Saving...</span>}
           {dirty && !saving && (
             <span className="text-xs text-orange-500 font-medium">Order changed — unsaved</span>
           )}
         </div>
-        <Link href="/news-form" className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">+ New Article</Link>
+        <Link href="/news-form" className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">+ 新建文章</Link>
       </div>
 
       {/* 搜索框 */}
@@ -127,7 +127,7 @@ export default function NewsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search articles..."
+          placeholder="搜索文章..."
           className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-500 lg:w-80"
         />
       </div>
@@ -136,9 +136,9 @@ export default function NewsPage() {
       {dirty && (
         <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
           <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-          <span className="text-sm text-amber-800 flex-1">You have unsaved order changes. Save or cancel before switching pages.</span>
-          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">Cancel</button>
-          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">Save Order</button>
+          <span className="text-sm text-amber-800 flex-1">您有未保存的排序更改，切换页面前请先保存或取消。</span>
+          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
+          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
         </div>
       )}
       <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
@@ -146,10 +146,10 @@ export default function NewsPage() {
           <thead className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="px-2 py-3 w-8" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">标题</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">日期</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -182,12 +182,12 @@ export default function NewsPage() {
                   </svg>
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{n.title}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${n.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{n.status}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${n.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{n.status === "PUBLISHED" ? "已发布" : n.status === "DRAFT" ? "草稿" : n.status}</span></td>
                 <td className="px-4 py-3 text-gray-500">{n.published_at || n.created_time || "-"}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <Link href={`/news-form?id=${n.id}`} className="text-brand-500 hover:text-brand-600 text-sm">Edit</Link>
-                    <button onClick={() => handleDelete(n.id, n.title)} className="text-red-500 hover:text-red-600 text-sm">Delete</button>
+                    <Link href={`/news-form?id=${n.id}`} className="text-brand-500 hover:text-brand-600 text-sm">编辑</Link>
+                    <button onClick={() => handleDelete(n.id, n.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
                   </div>
                 </td>
               </tr>
@@ -195,11 +195,11 @@ export default function NewsPage() {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-gray-400">Drag rows using the grip handle to reorder, then click <strong>Save Order</strong> to persist.</p>
+      <p className="mt-3 text-xs text-gray-400">拖动行首握把可调整顺序，然后点击<strong>保存排序</strong>生效。</p>
       <ConfirmDialog
         open={deleteConfirm !== null}
-        title="Delete Article"
-        message={deleteConfirm ? `Delete "${deleteConfirm.title}"?` : ""}
+        title="删除文章"
+        message={deleteConfirm ? `确定删除「${deleteConfirm.title}」吗？` : ""}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteConfirm(null)}
       />

@@ -126,9 +126,9 @@ export default function InquiriesPage() {
     try {
       await apiFetch(`/admin/inquiries/${deleteConfirm.target.id}`, { method: "DELETE" });
       await mutate();
-      toast.success("Inquiry deleted");
+      toast.success("询盘已删除");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "删除失败");
     } finally {
       setDeleteSaving(false);
       setDeleteConfirm({ open: false, target: null });
@@ -138,7 +138,7 @@ export default function InquiriesPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Inquiries</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">询盘</h2>
         <span className="text-sm text-gray-400">
           {filtered.length} of {items.length}
         </span>
@@ -150,7 +150,7 @@ export default function InquiriesPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, email, company, or message..."
+          placeholder="搜索姓名、邮箱、公司或留言..."
           className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-500 lg:w-96"
         />
       </div>
@@ -159,12 +159,12 @@ export default function InquiriesPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Company</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Message</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Status</th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">姓名</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">邮箱</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">公司</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">留言</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">状态</th>
+              <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -242,7 +242,7 @@ export default function InquiriesPage() {
                         onClick={() => setDeleteConfirm({ open: true, target: i })}
                         className="text-sm text-red-500 hover:text-red-600"
                       >
-                        Delete
+                        删除
                       </button>
                     </div>
                   </td>
@@ -291,10 +291,10 @@ export default function InquiriesPage() {
                 onClick={() => setReply({ open: false, target: null, note: "", status: "REPLIED" })}
                 disabled={replySaving}
               >
-                Cancel
+                取消
               </Button>
               <Button size="sm" onClick={submitReply} disabled={replySaving}>
-                {replySaving ? "Saving..." : "Save Reply"}
+                {replySaving ? "保存中..." : "保存回复"}
               </Button>
             </div>
           </div>
@@ -315,9 +315,9 @@ export default function InquiriesPage() {
       {/* 删除确认 */}
       <ConfirmDialog
         open={deleteConfirm.open}
-        title="Delete Inquiry"
-        message={`Are you sure you want to delete inquiry from "${deleteConfirm.target?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title="删除询盘"
+        message={`确定要删除来自「${deleteConfirm.target?.name}」的询盘吗？此操作不可撤销。`}
+        confirmText="删除"
         loading={deleteSaving}
         onConfirm={confirmDeleteInquiry}
         onCancel={() => setDeleteConfirm({ open: false, target: null })}

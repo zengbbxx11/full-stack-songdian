@@ -1,0 +1,25 @@
+# 后端镜像构建时排除（不进镜像）
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.example
+.git/
+.gitignore
+uploads/
+db/
+tests/
+.pytest_cache/
+.ruff_cache/
+.idea/
+*.db
+*.sqlite3
+*.log
+tmp/
+diag*.txt
+AGENTS.md
+CODE_REVIEW_REMEDIATION.md
+cleanup_categories.py
+*.md
+Dockerfile
+.dockerignore

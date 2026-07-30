@@ -192,14 +192,14 @@ export default function CategoriesPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Categories</h2>
-        <Button size="sm" onClick={openCreate}>+ New Category</Button>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">分类</h2>
+        <Button size="sm" onClick={openCreate}>+ 新建分类</Button>
       </div>
 
       {loading ? (
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
           <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-          <p className="text-sm text-gray-400">Loading...</p>
+          <p className="text-sm text-gray-400">加载中...</p>
         </div>
       ) : error ? (
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center">
@@ -211,10 +211,10 @@ export default function CategoriesPage() {
             <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
               <tr>
                 <th className="w-8 px-2 py-3" />
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Slug</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Products</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">名称</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">别名</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">产品数</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -257,13 +257,13 @@ export default function CategoriesPage() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => openEdit(c)} className="text-sm text-brand-500 hover:text-brand-600">
-                          Edit
+                          编辑
                         </button>
                         <button
                           onClick={() => setDeleteTarget(c)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
-                          Delete
+                          删除
                         </button>
                       </div>
                     </td>
@@ -276,34 +276,34 @@ export default function CategoriesPage() {
       )}
 
       <p className="mt-3 text-xs text-gray-400">
-        Drag rows using the grip handle (⋮⋮) to reorder. Changes are saved automatically.
+        拖动行首握把（⋮⋮）可调整顺序，系统会自动保存。
       </p>
 
       {/* 新建 / 编辑对话框 */}
       <Modal isOpen={dialogOpen} onClose={() => { setDialogOpen(false); setEditing(null); }}>
         <div className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-gray-900">
           <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-            {editing?.id != null ? "Edit Category" : "New Category"}
+            {editing?.id != null ? "编辑分类" : "新建分类"}
           </h3>
           <div className="space-y-4">
             <div>
-              <Label>Name *</Label>
+              <Label>名称 *</Label>
               <Input
                 value={editing?.name || ""}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Cameras"
+                placeholder="例如：相机"
               />
             </div>
             <div>
-              <Label>Slug *</Label>
+              <Label>别名 *</Label>
               <Input
                 value={editing?.slug || ""}
                 onChange={(e) => setEditing((p) => (p ? { ...p, slug: e.target.value } : p))}
-                placeholder="cameras"
+                placeholder="相机"
               />
             </div>
             <div>
-              <Label>Sort Order</Label>
+              <Label>排序</Label>
               <Input
                 type="number"
                 value={editing?.sort_order || "0"}
@@ -314,10 +314,10 @@ export default function CategoriesPage() {
           </div>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditing(null); }}>
-              Cancel
+              取消
             </Button>
             <Button size="sm" onClick={handleSubmit} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? "保存中..." : "保存"}
             </Button>
           </div>
         </div>
@@ -326,9 +326,9 @@ export default function CategoriesPage() {
       {/* 删除确认 */}
       <ConfirmDialog
         open={deleteTarget != null}
-        title="Delete Category"
-        message={`Delete "${deleteTarget?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title="删除分类"
+        message={`确定删除「${deleteTarget?.name}」吗？此操作不可撤销。`}
+        confirmText="删除"
         loading={deleting}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}

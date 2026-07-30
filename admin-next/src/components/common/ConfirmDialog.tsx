@@ -18,7 +18,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   loading,
-  confirmText = "Delete",
+  confirmText = "删除",
 }: ConfirmDialogProps) {
   if (!open) return null;
 

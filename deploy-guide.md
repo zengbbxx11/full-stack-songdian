@@ -20,7 +20,7 @@
 
 **关键设计：**
 - 应用三服务（backend / frontend / admin-next）+ 数据两层（postgres / redis）**全部由 Docker Compose 编排、构建镜像、保活**。
-- PostgreSQL / Redis 用**官方镜像**直接进 Compose（**不编译自定义扩展**，见下方「中文全文检索」说明）。
+- PostgreSQL（**18 线**，官方 `postgres:18-bookworm`）/ Redis 用**官方镜像**直接进 Compose（**不编译自定义扩展**，见下方「中文全文检索」说明）。**PG 大版本须与 `db/seed_data.sql`（pg_dump 18 导出）一致，勿降为 16，否则种子导入失败。**
 - 仅 1Panel 的 **OpenResty** 留在 Compose 之外，负责外部 HTTPS 反代；其 host 网络模式直接连宿主机回环的 8000/3000/3001。
 - 不再需要「uv venv 直跑 + systemd」「1Panel 商店 PG/Redis 容器」「Node 容器 + pm2」那套。
 
@@ -134,7 +134,7 @@ docker compose up -d backend    # 重启后 run_seed 插入演示类目/商品/�
 
 ### 方式 B：导入 dev 全量数据（生产数据对齐用）
 
-`db/seed_data.sql` 是 pg_dump 全量导出（含 DDL + 数据），直接 `\i` 会因外键顺序 / DDL 与 aerich 已建表冲突而失败。采用「拆分 data 部分 + 禁用外键」：
+`db/seed_data.sql` 是 **pg_dump 18** 全量导出（含 DDL + 数据），直接 `\i` 会因外键顺序 / DDL 与 aerich 已建表冲突而失败。采用「拆分 data 部分 + 禁用外键」：（⚠️ Compose 内 PG 已锁定 **18 线**，与种子同版本；若误用 16 会导入报错）
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
@@ -288,7 +288,7 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 |----|------|
 | 保活方式 | 全部由 Docker Compose 管理（`restart: unless-stopped`），不再依赖 1Panel 进程守护或容器内 pm2 |
 | PG/Redis 位置 | 由本 Compose 用官方镜像自建（postgres / redis 服务），与应用同网络、经服务名互访；数据落命名卷 |
-| 中文检索 | 当前无 zhparser，后端自动降级 `simple`（可搜但不精准）；需生产级中文搜索再考虑自定义 PG 镜像 |
+| PG 版本 | 锁定 **18 线**（`postgres:18-bookworm`，官方镜像、无 zhparser），与 `db/seed_data.sql` 的 pg_dump 18 同版本；**勿降为 16**，否则种子导入失败 |
 | 域名变更 | `NEXT_PUBLIC_API_URL` 等是**构建期内联**变量，改域名需 `docker compose build` 重新构建镜像（非仅改 env） |
 | 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech`；若 API 域名不同，需同步改该配置并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
@@ -298,4 +298,4 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 
 ---
 
-*最后更新：2026-07-30（1Panel + Docker Compose 全栈，PG/Redis 进 Compose，PG 用官方镜像不编译 zhparser）*
+*最后更新：2026-07-30（1Panel + Docker Compose 全栈，PG/Redis 进 Compose，PG 锁定 18 线官方镜像不编译 zhparser）*

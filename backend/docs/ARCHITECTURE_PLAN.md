@@ -5,10 +5,12 @@
 > 实际技术栈与目录结构见根 `README.md` 和 `backend/README.md`。
 > ⚠️ **M6 数据迁移模块（WordPress ETL）已移除（2026-07-27）**：原 `backend/migration/`（wp_adapter/etl/image_sync/backfill 等）、`/api/v1/admin/migration/*` 端点、RBAC 权限 `migration:read`/`migration:run` 已全部删除。WP→PG 主迁移已完成，该模块为一次性工具，日常业务不依赖。**注意区分**：本文档其余处的「迁移」多指 **aerich 数据库 schema 迁移（DDL）**——该项保留，与 M6 无关。
 
+> ⚠️ **部署技术栈更新（2026-07-30）**：原设计基线设想「PostgreSQL 16 + zhparser 中文分词」，实际部署改为 **PostgreSQL 18**（官方镜像，与 `db/seed_data.sql` 的 pg_dump 18 导出同版本；**勿降为 16**，否则种子导入失败）且**不编译 zhparser**，后端检索自动降级内置 `simple`（可搜但不精准）。部署编排详见根 `deploy-guide.md`。
+>
 > **作者**：软件架构师（高见远，software-architect）
 > **定位**：把已冻结的设计文档（系统设计 / 高层架构 / 安全设计 / 部署设计）**收敛为「工程师可直接照写的文件级有序实现计划 + 合并后的数据模型定义」**。
 > **本轮范围**：仅后端 `songdian-b2b/backend/`。前端（Next.js）与管理后台（Vue-Pure-Admin）本轮不做。
-> **设计基线已冻结**：技术栈 FastAPI + Tortoise ORM + PostgreSQL 16（zhparser TSVector）+ Redis 7.2 + uv 虚拟环境 / 1Panel 部署；JWT(2h/refresh 7d) + RBAC。本文件**不重新设计**，只做落地编排。
+> **设计基线已冻结**：技术栈 FastAPI + Tortoise ORM + PostgreSQL 18（官方镜像，**未编译 zhparser**，中文检索降级 `simple`）+ Redis 8 + uv 虚拟环境 / 1Panel + Docker Compose 部署；JWT(2h/refresh 7d) + RBAC。本文件**不重新设计**，只做落地编排。
 
 ---
 

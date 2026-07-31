@@ -3,6 +3,7 @@ import type { ProductSummary } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import SafeImage from "@/components/SafeImage";
 import { ArrowRight } from "lucide-react";
+import { productPath } from "@/lib/product-url";
 
 /**
  * ProductCard 组件的 Props。
@@ -52,7 +53,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* 图片区域 */}
       <Link
-        href={`/products/${product.slug}`}
+        href={productPath(product)}
         className="block relative aspect-square shrink-0 bg-gray-50 overflow-hidden"
       >
         {product.image ? (
@@ -72,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* 信息区域 */}
       <div className="flex flex-col flex-1 p-3 md:p-4">
-        <Link href={`/products/${product.slug}`} className="flex-1">
+        <Link href={productPath(product)} className="flex-1">
           <h3 className="text-[15px] md:text-[17px] font-bold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
             {product.name}
           </h3>
@@ -88,7 +89,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* CTA —— 幽灵文字链：默认 Graphite 灰，卡片 hover 变红 + 箭头滑入 */}
         <Link
-          href={`/products/${product.slug}`}
+          href={productPath(product)}
           aria-label={`View details of ${product.name}`}
           className="mt-3 inline-flex items-center gap-1 text-xs md:text-sm font-medium text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e]"
         >

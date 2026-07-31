@@ -46,7 +46,7 @@
 
 ## 3. 产品详情页营销能力
 
-### 3.1 当前页面板块（`app/products/[slug]/page.tsx`）
+### 3.1 当前页面板块（`app/products/[...slug]/page.tsx`）
 
 | 板块 | 状态 | 说明 |
 |------|------|------|
@@ -64,6 +64,8 @@
 | 产品图集/图片画廊 | ✅ 有 | `ProductGallery` 客户端组件，主图+缩略图 |
 
 **结论：产品详情页有基础展示能力，但营销转化板块（场景/视频/下载/FAQ/案例）严重缺失。评分：需大幅补强。**
+
+> ⚠️ **2026-07-31 更正**：本审计当时的路由文件名为 `app/products/[slug]/page.tsx`，属历史快照。现产品详情页 URL 已从扁平 `/products/{slug}` 重构为**分类嵌套** `/products/{category}/{slug}`（如 `/products/action-camera/860a`），路由文件相应改为 catch-all `app/products/[...slug]/page.tsx`。旧扁平地址与错分类地址经边缘层 `proxy.ts` 返回 **308** 永久重定向到规范地址（`proxy.ts` 依据 `lib/generated/canonical-map.ts` 映射表，该表由 `npm run gen:map` 从后端产品接口生成，须随产品/分类变动重跑）。上述营销能力板块结论（场景/视频/下载/FAQ/案例缺失）仍然成立，未受 URL 重构影响。
 
 ---
 

@@ -48,8 +48,9 @@ npm run dev        # http://localhost:3000
 > 必须用 Node 24 而非默认的 Node 22 启动。不能用 `node_modules/.bin/next`（bash wrapper），
 > Node 24 直接执行会 SyntaxError，须直调 JS 入口 `next/dist/bin/next`。
 
-生产构建：
+生产构建（⚠️ 构建前须先生成产品 URL 规范映射）：
 ```bash
+npm run gen:map   # 生成 lib/generated/canonical-map.ts（需后端 API 可达，默认 http://localhost:8080）
 npm run build
 npm run start
 ```
@@ -100,7 +101,7 @@ frontend/
 │  │  └─ faq/                   # 常见问题（粘性目录 + 锚点直达）
 │  ├─ products/                 # 产品列表 + 分类筛选（ISR）
 │  │  ├─ loading.tsx            # 产品列表骨架屏
-│  │  └─ [slug]/                # 产品详情 + 相册 + 规格（ISR，Suspense 异步加载相关产品）
+│  │  └─ [...slug]/             # 产品详情 catch-all：规范地址 /products/{category}/{slug}；旧扁平地址经 proxy.ts 308 重定向（ISR + Suspense）
 │  ├─ news/                     # 新闻列表 + 置顶（ISR）
 │  │  └─ [slug]/                # 新闻详情（ISR）
 │  ├─ search/                   # 全站搜索页
@@ -156,7 +157,12 @@ frontend/
 │  └─ inquiries.json            # 询盘记录
 │
 ├─ public/                      # 静态资源（logo.png、展会图片、社媒图标等）
-├─ next.config.ts               # 图片优化（AVIF/WebP）+ 生产配置 + 重定向
+├─ next.config.ts               # 图片优化（AVIF/WebP）+ 生产配置 + 路由级重定向
+├─ proxy.ts                      # 产品 URL 规范化边缘中间件（308 重定向，Next 16 替代已弃用 middleware.ts）
+├─ scripts/
+│  └─ gen-canonical-map.mjs      # 生成 lib/generated/canonical-map.ts（slug → 规范路径）
+├─ lib/generated/
+│  └─ canonical-map.ts           # 自动生成的规范路径映射（被 proxy.ts 静态导入，未 gitignore，随仓库提交）
 ├─ postcss.config.mjs           # Tailwind v4 postcss 插件
 ├─ tsconfig.json                # 路径别名 @/* → 项目根
 └─ package.json
@@ -189,7 +195,7 @@ frontend/
 |------|---------|------|
 | `/` | FastAPI + `content-data.ts` | ISR 60s + **Streaming**（4 个 Suspense 边界） |
 | `/products` | FastAPI 产品列表 + 分类筛选 | ISR 60s |
-| `/products/[slug]` | FastAPI 产品详情 + 相关产品 | ISR 60s + **Suspense** |
+| `/products/[...slug]` | FastAPI 产品详情 + 相关产品 | ISR 60s + **Suspense**；规范地址为 `/products/{category}/{slug}`，旧扁平 `/products/{slug}` 与错分类地址经 `proxy.ts` 308 重定向 |
 | `/news` | FastAPI 新闻列表 | ISR 60s |
 | `/news/[slug]` | FastAPI 新闻详情 | ISR 60s |
 | `/search` | FastAPI 全文搜索 | SSR（实时 `no-store`，新内容即时可搜） |
@@ -207,6 +213,10 @@ frontend/
 | `/blog` | `/news` | 统一命名 |
 | `/blog/:slug*` | `/news/:slug*` | 同上 |
 | `/inquiry` | `/contact` | 询盘入口统一到联系页 |
+| `/products/{slug}` | `/products/{category}/{slug}` | 产品 URL 规范化（SEO 权重集中到分类嵌套地址） |
+| `/products/{wrongCategory}/{slug}` | `/products/{真实分类}/{slug}` | 分类段错误同样 308 到规范地址 |
+
+> 路由级重定向（`/services`、`/blog`、`/inquiry` 等）在 `next.config.ts` 配置；**产品 URL 规范化的 308 重定向在根目录 `proxy.ts`（边缘中间件）处理**——原因见下方「已知注意事项」。
 
 ---
 
@@ -261,16 +271,14 @@ frontend/
 
 ## 部署
 
-生产环境：**腾讯云服务器 + 1Panel Linux 面板**，自托管。详见 `deploy-guide.md`。
+生产环境：**腾讯云服务器 + 1Panel Linux 面板 + Docker Compose 全栈编排**，自托管。完整流程见仓库根目录 `deploy-guide.md`（含 `docker compose build` / `up`、数据导入、OpenResty 反代、防火墙）。
 
-```bash
-ssh ubuntu@106.53.220.184
-cd ~/songdianweb
-git pull
-npm install
-npm run build
-pm2 restart songdian
-```
+> ⚠️ 部署前务必在**本地（后端可达）**重新生成产品 URL 规范映射并提交：
+> ```bash
+> npm run gen:map   # 需后端 API 可达；生成 lib/generated/canonical-map.ts
+> git add lib/generated/canonical-map.ts && git commit -m "chore: refresh product canonical map"
+> ```
+> 否则生产环境的产品 308 重定向会使用旧映射（新增 / 改分类的产品落不到规范地址）。
 
 ---
 
@@ -280,3 +288,6 @@ pm2 restart songdian
 - **Node 24 必须**：Next.js 16.2 Turbopack 的 `next/image` 远程优化在 Node 22 下有 Web Streams 兼容性 bug（`controller[kState].transformAlgorithm is not a function`），导致 ```Jest worker``` 错误，必须用 Node ≥24
 - **`next build` 在受限沙箱会被 safe-delete 防护拦死**，请用 dev server 验证
 - **Leaflet 走按需加载**：`ContactMap` 经 `ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 包裹，仅联系页加载，不进首屏 bundle
+- **产品 URL 规范化用 `proxy.ts`（边缘中间件），不是页面 `redirect()`**：本环境 Next.js 16 + Turbopack 下，App Router 页面组件里的 `redirect()` / `permanentRedirect()` 不会发出真实 3xx（被渲染期吞掉）；产品地址的 308 重定向改由根目录 `proxy.ts`（替代已弃用的 `middleware.ts`）基于 `lib/generated/canonical-map.ts` 在边缘层完成。改 URL 结构时务必走 `proxy.ts`，勿改回页面级 `redirect()`。
+- **`npm run gen:map` 是 `next build` 的前置依赖**：`proxy.ts` 静态导入 `lib/generated/canonical-map.ts`；该文件由 `scripts/gen-canonical-map.mjs` 依据后端产品数据生成（未 gitignore，已提交当前快照）。构建 / 部署前若产品或分类有变动，需重新生成并提交，否则 308 重定向会用过期映射。
+- **`Module not found: Can't resolve 'postcss'` 构建报错**：多因 `node_modules/postcss` 被装成空目录（npm 只检查目录存在、不检查内容，部分安装被中断后跳过还原）。修复：`rm -rf node_modules/postcss && npm install` 重新补全即可。

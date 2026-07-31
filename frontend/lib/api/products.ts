@@ -71,15 +71,24 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   }
 }
 
-/** 获取全部已发布产品 slug（用于 SSG 预渲染 generateStaticParams 与 sitemap）。 */
-export async function getAllProductSlugs(): Promise<string[]> {
+/** 产品 slug 条目（含主分类 slug），用于 SSG 预渲染与 sitemap 生成嵌套 URL。 */
+export interface ProductSlugEntry {
+  /** 产品 slug */
+  slug: string;
+  /** 主分类 slug；当前数据均带分类，此字段始终非空 */
+  categorySlug: string | null;
+}
+
+/** 获取全部已发布产品的 slug + 主分类 slug（用于 SSG / sitemap 生成 /products/{category}/{slug}）。 */
+export async function getAllProductSlugEntries(): Promise<ProductSlugEntry[]> {
   try {
     const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", {
       page: 1,
-      page_size: 100,
+      // 一次性拉全量（当前 42 个），留出余量避免后续新增产品被截断
+      page_size: 300,
       status: "PUBLISHED",
     });
-    return data.list.map((p) => p.slug);
+    return data.list.map((p) => ({ slug: p.slug, categorySlug: p.category?.slug ?? null }));
   } catch {
     return [];
   }

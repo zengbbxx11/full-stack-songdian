@@ -71,7 +71,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 |------|---------|------|
 | `/` | FastAPI + content-data.ts | ISR 60s + Streaming（4 个 Suspense 边界） |
 | `/products` | FastAPI 产品列表 + 分类筛选 | ISR 60s |
-| `/products/[slug]` | FastAPI 产品详情 + 相册 | ISR 60s + Suspense（相关产品异步） |
+| `/products/[...slug]` | FastAPI 产品详情 + 相册 | ISR 60s + Suspense；规范地址 `/products/{category}/{slug}`，旧扁平地址经 `proxy.ts` 308 重定向 |
 | `/news` | FastAPI 新闻列表 | ISR 60s |
 | `/news/[slug]` | FastAPI 新闻详情 | ISR 60s |
 | `/about` | content-data.ts 静态内容 | Static |
@@ -81,15 +81,19 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `/search` | FastAPI 全文搜索 | SSR（实时 `no-store`，新内容即时可搜） |
 | `/privacy-policy` | content-data.ts 隐私政策 | Static |
 
-### 重定向（`next.config.ts` → 308 permanent）
+### 重定向（308 permanent）
 
-| 旧路由 | 新路由 | 原因 |
-|--------|--------|------|
-| `/services` | `/solutions` | 2026-07 路由重构 |
-| `/services/faq` | `/solutions/faq` | 同上 |
-| `/blog` | `/news` | 旧路径清理 |
-| `/blog/:slug*` | `/news/:slug*` | 同上 |
-| `/inquiry` | `/contact` | 同上 |
+| 旧路由 | 新路由 | 原因 | 实现位置 |
+|--------|--------|------|---------|
+| `/services` | `/solutions` | 2026-07 路由重构 | `next.config.ts` |
+| `/services/faq` | `/solutions/faq` | 同上 | `next.config.ts` |
+| `/blog` | `/news` | 旧路径清理 | `next.config.ts` |
+| `/blog/:slug*` | `/news/:slug*` | 同上 | `next.config.ts` |
+| `/inquiry` | `/contact` | 同上 | `next.config.ts` |
+| `/products/{slug}` | `/products/{category}/{slug}` | 产品 URL 规范化（SEO 权重集中到分类嵌套地址） | `proxy.ts`（边缘中间件） |
+| `/products/{wrongCategory}/{slug}` | `/products/{真实分类}/{slug}` | 分类段错误同样 308 到规范地址 | `proxy.ts`（边缘中间件） |
+
+> 注：路由级重定向在 `next.config.ts`；**产品 URL 规范化的 308 在根目录 `proxy.ts`**（因本环境页面级 `redirect()` 不生效，见 README「已知注意事项」）。
 
 ### 错误处理 & 加载状态
 
@@ -99,7 +103,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `app/not-found.tsx` | 全局 404 页面 |
 | `app/loading.tsx` | 根级骨架屏 |
 | `app/products/loading.tsx` | 产品列表页骨架屏 |
-| `app/products/[slug]/loading.tsx` | 产品详情页骨架屏（两栏布局） |
+| `app/products/[...slug]/loading.tsx` | 产品详情页骨架屏（两栏布局） |
 | `app/news/loading.tsx` | 新闻列表页骨架屏 |
 | `app/news/[slug]/loading.tsx` | 新闻详情页骨架屏 |
 
@@ -160,7 +164,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 |--------|------|------|
 | React `cache()` 请求去重 | `lib/api/*.ts` — `getProductBySlug` | `generateMetadata` + 页面组件共享同一个请求 |
 | Streaming + Suspense | `app/page.tsx` | 首页静态区块先出，数据区块流式填充 |
-| 产品详情 Suspense | `app/products/[slug]/page.tsx` | 相关产品不阻塞主内容渲染 |
+| 产品详情 Suspense | `app/products/[...slug]/page.tsx` | 相关产品不阻塞主内容渲染 |
 | 骨架屏 loading.tsx | 5 个 loading.tsx 文件 | 路由切换零白屏 |
 | 顶部进度条 | `components/NavigationProgress.tsx` | 点击即反馈，品牌红 #d4343e |
 | AVIF/WebP 图片 | `next.config.ts` — `images.formats` | 图片体积减 30-50% |

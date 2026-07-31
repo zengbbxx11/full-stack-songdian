@@ -97,6 +97,13 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / 各域�
 
 ## 五、构建并启动（Docker Compose 全栈）
 
+> ⚠️ **前端构建前置（产品 URL 规范映射）**：`frontend/proxy.ts` 在边缘层做产品 URL 规范化的 308 重定向，依赖 `frontend/lib/generated/canonical-map.ts`（由 `npm run gen:map` 生成，已随仓库提交）。该文件在 `docker compose build` 期**不会**重新生成（构建期后端尚未启动、不可达），所以构建前请在**本地后端可达**时刷新并提交：
+> ```bash
+> cd frontend && npm run gen:map && git add lib/generated/canonical-map.ts && git commit -m "chore: refresh product canonical map" && cd ..
+> git push
+> ```
+> 否则生产环境的 308 重定向会用旧映射（新增 / 改分类的产品落不到规范地址）。
+
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
@@ -295,7 +302,9 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 | 无 HTTPS | 没域名时 OpenResty 用 IP 反代、登录走 HTTP 明文；建议买域名 + Let's Encrypt（1Panel 一键） |
 | 数据导入 | 见「六、导入数据」：aerich 已建表，导入 `seed_data.sql` 须拆 data 部分 + 禁外键，避免 FK 顺序报错 |
 | 数据库升级 | 升 PG 大版本时注意迁移 `pg_data` 卷（先备份再升）；Redis 升级注意 `redis_data` 兼容 |
+| 前端 URL 规范映射 | `frontend/lib/generated/canonical-map.ts` 由 `npm run gen:map` 生成并随仓库提交；产品/分类变动后需重新生成+提交，再 `docker compose build`，否则产品 308 重定向用旧映射 |
+| postcss 构建报错 | 若 `next build` 报 `Module not found: Can't resolve 'postcss'`，是 `node_modules/postcss` 被装成空目录所致；`rm -rf node_modules/postcss && npm install` 补全即可（本地 dev/CI 均可能遇到） |
 
 ---
 
-*最后更新：2026-07-30（1Panel + Docker Compose 全栈，PG/Redis 进 Compose，PG 锁定 18 线官方镜像不编译 zhparser）*
+*最后更新：2026-07-31（补充前端构建前置 `npm run gen:map`：产品 URL 规范映射需构建前生成并提交，否则生产 308 重定向用旧映射；记录 postcss 构建报错修复）*

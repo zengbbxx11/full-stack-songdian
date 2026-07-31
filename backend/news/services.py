@@ -63,12 +63,23 @@ async def list_categories() -> list[NewsCategoryVO]:
     return [NewsCategoryVO.from_model(c) for c in cats]
 
 
+NEWS_LIST_TTL = 300  # 5 min
+
 async def list_news(
     req: PageRequest,
     category_id: int | None = None,
     status: str | None = None,
     keyword: str | None = None,
 ) -> tuple[list[NewsPageVO], int]:
+    ck = cache_key("news", "list", str(category_id), str(status), str(keyword or ""), str(req.offset), str(req.limit))
+    raw = await get_redis().get(ck)
+    if raw:
+        try:
+            data = json.loads(raw)
+            return [NewsPageVO(**v) for v in data["items"]], data["total"]
+        except Exception:
+            pass
+
     q = News.filter(deleted=0)
     if category_id is not None:
         q = q.filter(category_id=category_id)
@@ -78,7 +89,14 @@ async def list_news(
         q = q.filter(title__icontains=keyword)
     total = await q.count()
     rows = await q.order_by("sort_order", "-created_time").offset(req.offset).limit(req.limit).prefetch_related("category")
-    return [NewsPageVO.from_model(r) for r in rows], total
+    vos = [NewsPageVO.from_model(r) for r in rows]
+
+    try:
+        await get_redis().setex(ck, NEWS_LIST_TTL, json.dumps({"items": [v.model_dump(mode="json") for v in vos], "total": total}, default=str))
+    except Exception:
+        pass
+
+    return vos, total
 
 
 async def get_news_detail(slug: str) -> NewsDetailVO:

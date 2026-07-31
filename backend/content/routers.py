@@ -152,3 +152,12 @@ async def list_admin_users(
     """返回全部启用状态的 AdminUser 列表（仅 id + username），不要求特殊权限。"""
     users = await services.list_admin_users()
     return Result.ok(users)
+
+
+@router.get("/admin/stats", summary="仪表盘统计数据")
+async def dashboard_stats(
+    _user: AdminUser = Depends(get_current_user),
+) -> Result:
+    """返回产品/新闻/询盘计数 + 询盘趋势（近 30 天）+ 国家分布。"""
+    data = await services.get_dashboard_stats()
+    return Result.ok(data)

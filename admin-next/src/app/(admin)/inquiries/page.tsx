@@ -57,8 +57,8 @@ export default function InquiriesPage() {
 
   /* ── 回复/操作对话框 ── */
   const [reply, setReply] = useState<{
-    open: boolean; target: Inquiry | null; note: string; status: InquiryStatus;
-  }>({ open: false, target: null, note: "", status: "CONTACTING" });
+    open: boolean; target: Inquiry | null; note: string; status: InquiryStatus; country: string;
+  }>({ open: false, target: null, note: "", status: "CONTACTING", country: "" });
   const [replySaving, setReplySaving] = useState(false);
 
   /* ── 状态切换确认 ── */
@@ -101,13 +101,14 @@ export default function InquiriesPage() {
 
   /* ── 操作：打开回复/状态对话框 ── */
   async function openReply(i: Inquiry) {
-    setReply({ open: true, target: i, note: "", status: "CONTACTING" });
+    setReply({ open: true, target: i, note: "", status: "CONTACTING", country: "" });
     try {
       const detail = await apiFetch<Inquiry>(`/admin/inquiries/${i.id}`);
       setReply((prev) => ({
         ...prev,
         note: detail.reply_note || "",
         status: detail.status,
+        country: detail.country || "",
       }));
     } catch { /* 详情拉取失败不阻塞，沿用列表数据 */ }
   }
@@ -118,7 +119,7 @@ export default function InquiriesPage() {
     try {
       await apiFetch(`/admin/inquiries/${reply.target.id}/status`, {
         method: "PUT",
-        body: { status: reply.status, reply_note: reply.note },
+        body: { status: reply.status, reply_note: reply.note, country: reply.country },
       });
       // 同时追加一条跟进记录
       if (reply.note.trim()) {
@@ -129,7 +130,7 @@ export default function InquiriesPage() {
       }
       await mutate();
       toast.success("已保存");
-      setReply({ open: false, target: null, note: "", status: "CONTACTING" });
+      setReply({ open: false, target: null, note: "", status: "CONTACTING", country: "" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "保存失败");
     } finally {
@@ -386,6 +387,16 @@ export default function InquiriesPage() {
                   <option value="DEAL">DEAL — 成交</option>
                   <option value="LOST">LOST — 丢单</option>
                 </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">国家 <span className="text-xs text-gray-400 font-normal">（后台手动标记）</span></label>
+                <input
+                  type="text"
+                  value={reply.country}
+                  onChange={(e) => setReply((p) => ({ ...p, country: e.target.value }))}
+                  placeholder="如 China, USA, Germany"
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">备注 / 回复内容</label>

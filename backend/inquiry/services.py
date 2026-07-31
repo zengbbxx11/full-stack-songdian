@@ -130,6 +130,8 @@ async def update_status(inquiry_id: int, data: InquiryStatusRequest) -> InquiryD
         inquiry.reply_note = data.reply_note
     if data.tags is not None:
         inquiry.tags = data.tags
+    if data.country is not None:
+        inquiry.country = data.country
     await inquiry.save()
     return InquiryDetailVO.from_model(inquiry)
 

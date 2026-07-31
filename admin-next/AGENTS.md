@@ -113,3 +113,4 @@ admin-next/src/
 P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **询盘 CRM**：`inquiries/page.tsx` 全面重写——表格新增「负责人」列（点击弹出分配面板）、「标签」列（逗号编辑）、状态五态管线流转按钮、展开行显示跟进时间线。新增分配弹窗和标签编辑弹窗。后端新增 `PUT .../assign` + `POST .../follow-note` 端点。
 - **产品 SEO 管理**：`product-form/page.tsx` 新增「SEO 元数据」面板（seo_title / seo_description 输入框 + 字数计数器）；`products/page.tsx` 表格新增「SEO」列（已设置=绿色 / 未设置=灰色，点击弹出快速编辑弹窗）。
+- **产品批量操作**：`products/page.tsx` 新增全选/单选 Checkbox + 批量操作栏（发布选中/隐藏选中/删除选中），`Promise.all` 并发逐条 PUT/DELETE。

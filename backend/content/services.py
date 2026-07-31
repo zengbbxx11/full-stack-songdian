@@ -279,3 +279,23 @@ async def list_admin_users() -> list[dict]:
     """列出所有启用状态的管理员账号（供询盘分配下拉等场景，2026-07-31 新增）。"""
     users = await AdminUser.filter(status=AdminStatus.ENABLED.value).only("id", "username").all()
     return [{"id": u.id, "username": u.username} for u in users]
+
+
+async def get_dashboard_stats() -> dict:
+    """返回仪表盘统计数据：询盘国家分布 + 状态分布。"""
+    from inquiry.models import Inquiry
+    from collections import Counter
+
+    all_inquiries = await Inquiry.all().values("status", "country")
+
+    # 状态分布
+    status_dist = dict(Counter(r["status"] for r in all_inquiries))
+
+    # 国家分布（Top 10）
+    countries = [{"country": k or "Unknown", "count": v}
+                 for k, v in Counter(r["country"] or "Unknown" for r in all_inquiries).most_common(10)]
+
+    return {
+        "inquiry_countries": countries,
+        "inquiry_status": status_dist,
+    }

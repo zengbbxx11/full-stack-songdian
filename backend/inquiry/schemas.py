@@ -29,7 +29,8 @@ class InquirySubmitRequest(BaseModel):
 class InquiryStatusRequest(BaseModel):
     status: str
     reply_note: str | None = Field(default=None, max_length=1000)
-    tags: list[str] | None = None  # 2026-07-31：可选整体覆盖标签数组
+    tags: list[str] | None = None
+    country: str | None = None  # 后台手动标记国家
 
     @field_validator("status")
     @classmethod

@@ -114,3 +114,8 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **询盘 CRM**：`inquiries/page.tsx` 全面重写——表格新增「负责人」列（点击弹出分配面板）、「标签」列（逗号编辑）、状态五态管线流转按钮、展开行显示跟进时间线。新增分配弹窗和标签编辑弹窗。后端新增 `PUT .../assign` + `POST .../follow-note` 端点。
 - **产品 SEO 管理**：`product-form/page.tsx` 新增「SEO 元数据」面板（seo_title / seo_description 输入框 + 字数计数器）；`products/page.tsx` 表格新增「SEO」列（已设置=绿色 / 未设置=灰色，点击弹出快速编辑弹窗）。
 - **产品批量操作**：`products/page.tsx` 新增全选/单选 Checkbox + 批量操作栏（发布选中/隐藏选中/删除选中），`Promise.all` 并发逐条 PUT/DELETE。
+- **用户管理**：`users/page.tsx` 新增用户管理页——表格列出所有后台账号 + 新建弹窗（username/password）+ 删除（admin 不可删）+ 密码重置弹窗。所有新账号统一管理员权限。
+- **仪表盘增强**：`EcommerceMetrics.tsx` 新增询盘国家分布（按 country 字段 Top 10）和询盘状态分布进度条。后端 `GET /admin/stats`。
+- **审计日志**：`audit-logs/page.tsx` 新增审计日志表格页——时间/用户/操作/资源/结果/IP，分页+搜索。侧边栏新增入口。
+- **动态头部**：`UserDropdown.tsx` 改为从 `/admin/profile` 动态读取用户名，显示真实 username + 首字母头像（不再硬编码"管理员"/"A"）。
+- **询盘国家标记**：`inquiries/page.tsx` 跟进对话框新增 Country 输入框，保存时写入数据库（纯后台标记，客户表单不需要国家字段）。

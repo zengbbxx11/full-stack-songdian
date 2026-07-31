@@ -97,31 +97,99 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / 各域�
 
 ## 五、构建并启动（Docker Compose 全栈）
 
-> ⚠️ **前端构建前置（产品 URL 规范映射）**：`frontend/proxy.ts` 在边缘层做产品 URL 规范化的 308 重定向，依赖 `frontend/lib/generated/canonical-map.ts`（由 `npm run gen:map` 生成，已随仓库提交）。该文件在 `docker compose build` 期**不会**重新生成（构建期后端尚未启动、不可达），所以构建前请在**本地后端可达**时刷新并提交：
+> ⚠️ **前端构建前置（产品 URL 规范映射）**：`frontend/proxy.ts` 依赖 `frontend/lib/generated/canonical-map.ts`。发布前在本地刷新并一并 push：
 > ```bash
 > cd frontend && npm run gen:map && git add lib/generated/canonical-map.ts && git commit -m "chore: refresh product canonical map" && cd ..
 > git push
 > ```
-> 否则生产环境的 308 重定向会用旧映射（新增 / 改分类的产品落不到规范地址）。
+
+### 5.1 首次构建
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# 1) 构建全部镜像（backend / frontend / admin-next；PG·Redis 用官方镜像直接拉取）
+# 确保有 .env（含 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL 等）
+test -f .env || { echo "ERROR: .env missing!"; exit 1; }
+
+# 构建全部镜像（首次约 5-10 分钟，含前端/后端 npm install + next build）
 docker compose build
-
-# 2) 启动（postgres→redis→backend(aerich 建表)→frontend/admin，按健康依赖顺序起）
-docker compose up -d
-
-# 3) 查看状态与日志
-docker compose ps
-docker compose logs -f backend      # 关注 aerich upgrade 是否成功、/healthz 是否 200
 ```
 
-**启动链路说明：**
-- `postgres` / `redis` 先起并通过 healthcheck；`backend` 等二者健康后再起，`command` 为 `aerich upgrade && uvicorn ...`。
-- `frontend` / `admin-next` 通过 `depends_on: backend.healthy` 等待后端探活后再启动。
-- 上传文件挂载在命名卷 `uploads_data`；PG 数据在 `pg_data`、Redis 在 `redis_data`，容器重建不丢。
+### 5.2 启动（按健康依赖顺序自动编排）
+
+```bash
+# 前台启动看日志（首次推荐，确认 aerich 建表成功）
+docker compose up
+
+# 看到以下关键日志后 Ctrl+C，改后台运行：
+# ✓ backend  | ... aerich upgrade ... Success
+# ✓ backend  | Uvicorn running on http://0.0.0.0:8000
+# ✓ frontend | Ready in XXs
+
+# 后台运行
+docker compose up -d
+```
+
+### 5.3 逐服务验证
+
+```bash
+# 1) 五服务状态（全部应为 Up 或 healthy）
+docker compose ps
+
+# 2) 后端存活
+curl -s http://127.0.0.1:8000/healthz
+# → {"status":"alive"}
+
+# 3) 后端就绪（含 DB + Redis 探测）
+curl -s http://127.0.0.1:8000/readyz
+# → {"status":"ready","database":"connected","redis":"connected"}
+
+# 4) 产品列表（确认表已建好，数据为空）
+curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | python3 -m json.tool | head -5
+
+# 5) 询盘 CRM 字段存在（NEW/CONTACTING/QUOTED/DEAL/LOST 五态管线已就绪）
+curl -s -X POST http://127.0.0.1:8000/api/v1/inquiries \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"t@t.com","message":"deploy check","biz_req_no":"deploy-check-1"}' \
+  | python3 -m json.tool | grep -E '"status"|"assigned_user_id"|"tags"'
+
+# 6) 官网前端（容器内 localhost:3000 可达）
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/
+# → 200
+
+# 7) 管理后台
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/signin
+# → 200
+
+# 8) 新端点验证（需先登录取 token）
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/admin/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASSWORD\"}" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['access_token'])")
+
+# Dashboard stats
+curl -s "http://127.0.0.1:8000/api/v1/admin/stats" -H "Authorization: Bearer $TOKEN"
+# → {"code":"0","data":{"counts":{...},"inquiry_countries":[...],"inquiry_status":{...}}}
+
+# 审计日志
+curl -s "http://127.0.0.1:8000/api/v1/admin/audit-logs?page_size=1" -H "Authorization: Bearer $TOKEN"
+# → {"code":"0","data":{"list":[...],"total":...}}
+
+# 用户列表
+curl -s "http://127.0.0.1:8000/api/v1/admin/users/list" -H "Authorization: Bearer $TOKEN"
+# → {"code":"0","data":[{"username":"admin",...}]}
+```
+
+### 5.4 启动链路说明
+
+| 阶段 | 容器 | 动作 |
+|------|------|------|
+| 1 | postgres | 初始化，`pg_isready` 健康检查通过 |
+| 2 | redis | 初始化，`redis-cli PING` 健康检查通过 |
+| 3 | backend | 依赖 postgres+redis 均健康 → `aerich upgrade`（自动建表含 SEO/CRM 全量列）→ `uvicorn` |
+| 4 | frontend | 依赖 backend `/healthz` 探活 → `next start -p 3000` |
+| 5 | admin-next | 依赖 backend `/healthz` 探活 → `next start -p 3001` |
+
+**关键：aerich upgrade 自动执行**——backend 的 `command` 为 `sh -c "aerich upgrade && uvicorn main:app ..."`。迁移文件 `9_*_add_seo_and_crm_fields.py` 含 Product（seo_title/seo_description）+ Inquiry（assigned_user/follow_notes/last_contact_time/tags）共 6 列 ADD COLUMN，首次启动自动建表。
 
 ---
 
@@ -225,16 +293,47 @@ sudo ufw enable
 
 ## 九、验证清单
 
-| 检查项 | 操作 |
-|--------|------|
-| 容器状态 | `docker compose ps`（五服务均为 healthy/Up） |
-| 后端存活 | `curl http://127.0.0.1:8000/healthz` → `{"status":"alive"}` |
-| 数据完整 | `curl -s http://127.0.0.1:8000/api/v1/products?page_size=1` |
-| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/products?keyword=相机"`（simple 分词下仍可命中） |
-| 官网 | 浏览器 `https://www.songdian.tech` |
-| 管理后台 | 浏览器 `https://admin.songdian.tech` |
-| 图片显示 | 打开某产品页，确认 `api.songdian.tech/uploads/...` 图片加载 |
-| 进程状态 | `docker compose ps` / `docker compose logs` |
+### 9.1 容器层
+
+| 检查项 | 命令 | 预期结果 |
+|--------|------|----------|
+| 五容器运行 | `docker compose ps` | 全部 Up/healthy，无 restarting |
+| backend 日志 | `docker compose logs backend --tail 20` | `aerich upgrade ... Success` + `Uvicorn running` |
+| 磁盘空间 | `df -h /` | 可用 >20%（容器镜像约 2-3GB） |
+
+### 9.2 API 层（服务器内部）
+
+| 检查项 | 命令 | 预期结果 |
+|--------|------|----------|
+| 后端存活 | `curl -s http://127.0.0.1:8000/healthz` | `{"status":"alive"}` |
+| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | `{"status":"ready","database":"connected","redis":"connected"}` |
+| 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
+| SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
+| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera"` | 返回匹配产品 |
+| Dashboard stats | 带 token 调 `GET /api/v1/admin/stats` | 返回 counts + inquiry_countries + inquiry_status |
+| 审计日志 | 带 token 调 `GET /api/v1/admin/audit-logs?page_size=1` | 返回 list + total |
+
+### 9.3 前端层（服务器内部）
+
+| 检查项 | 命令 | 预期结果 |
+|--------|------|----------|
+| 官网首页 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/` | 200 |
+| 产品页 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/products/action-camera/860a` | 200 |
+| 管理后台 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/signin` | 200 |
+
+### 9.4 公网访问（浏览器）
+
+| 检查项 | URL | 预期 |
+|--------|-----|------|
+| 官网首页 | `https://www.songdian.tech` | 正常显示，图片加载 |
+| 产品详情 | 点击任意产品 | SEO title/description 正确（前端 fallback 逻辑生效） |
+| 管理后台 | `https://admin.songdian.tech` | 用 ADMIN_PASSWORD 登���成功 |
+| Dashboard | 后台首页 | 4 个计数卡片 + 询盘国家分布 + 状态分布 + 分类饼图 |
+| 审计日志 | 侧边栏 → 审计日志 | 登录操作已有记录 |
+| 用户管理 | 侧边栏 → Users | admin 账号在列表中，可新建/删除/重置密码 |
+| 询盘 CRM | 侧边栏 → 询盘 | 五态下拉 + 分配 + 跟进时间线 + 标签 |
+| 产品 SEO | 产品列表 → SEO 列 | 未设置为灰色，已设置为绿色，点击弹出编辑 |
+| 批量操作 | 产品列表 → 勾选多行 | 浮现发布/隐藏/删除批量操作栏 |
 
 ---
 
@@ -243,19 +342,44 @@ sudo ufw enable
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# 更新代码并重新构建发布
-git pull
-docker compose build
-docker compose up -d
+# ── 日常更新流程 ──
+# 改代码后本地 push，服务器上：
+git pull                    # 拉最新代码
+docker compose build        # 重新构建（前端需 next build，约 3min）
+docker compose up -d        # 新老容器无缝替换
 
-# 仅更新后端（改了 Python 代码）
+# 仅更新后端（改了 Python 代码，~30s）
 docker compose up -d --build backend
 
-# 查看日志
-docker compose logs -f backend
-docker compose logs -f frontend
+# 仅更新上游配置（改了 .env 但没改代码）
+docker compose up -d        # 重新注入环境变量
 
-# 重启单个服务
+# ── 查看日志 ──
+docker compose logs -f backend         # 后端实时日志
+docker compose logs -f frontend        # 官网日志
+docker compose logs -f admin-next      # 后台日志
+docker compose logs --tail=50          # 所有服务最后 50 行
+
+# ── 重启单个 ──
+docker compose restart frontend        # 不改镜像快速重启
+
+# ── 系统资源 ──
+docker stats                            # 各容器 CPU/内存实时占用
+docker compose ps                       # 当前状态一览
+```
+
+### 运维要点（今日新增功能）
+
+| 功能 | 运维说明 |
+|------|---------|
+| **产品 SEO** | 运营在后台产品表单的 SEO 面板填��� seo_title/seo_description；空值不影响，前端自动 fallback |
+| **询盘 CRM** | 五态管线：NEW→CONTACTING→QUOTED→DEAL/LOST；终态不可再流转 |
+| **询盘国家分布** | 运营在后台询盘跟进对话框标记 country，Dashboard 统计才有数据 |
+| **用户管理** | admin 账号不可删除；所有新账号统一 admin 权限；重置密码即时生效 |
+| **审计日志** | 36 处操作自动记录，后台侧边栏 → 审计日志查看 |
+| **GA4 事件** | `cta_click` / `product_view` / `contact_submit` 三个转化事件已埋点；需配置 `NEXT_PUBLIC_GA_ID` |
+| **Redis 缓存** | 产品列表(5min) / 分类(30min) / 新闻列表(5min) 自动缓存，写操作自动失效 |
+| **备份** | `scripts/backup.sh` 覆盖 PG + uploads，配置 cron 每日凌晨 3 点执行 |
 docker compose restart admin-next
 ```
 

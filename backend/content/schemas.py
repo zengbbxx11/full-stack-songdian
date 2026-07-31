@@ -101,3 +101,14 @@ class AuditPageVO(BaseModel):
             id=m.id, user_id=m.user_id, username=m.username, action=m.action,
             resource=m.resource, result=m.result, ip=m.ip, created_time=m.created_time,
         )
+
+
+class CreateUserRequest(BaseModel):
+    """新建用户请求 — 所有账号统一管理员权限。"""
+    username: str = Field(..., max_length=64)
+    password: str = Field(..., max_length=100)
+
+
+class ResetPasswordRequest(BaseModel):
+    """重置密码请求。"""
+    new_password: str = Field(..., min_length=4, max_length=100)

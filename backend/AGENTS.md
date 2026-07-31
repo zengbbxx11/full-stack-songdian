@@ -80,7 +80,7 @@ backend/
 | `/admin/inquiries/{id}/assign` | JWT+RBAC | 分配/取消分配销售人员（2026-07 CRM 新增） |
 | `/admin/inquiries/{id}/follow-note` | JWT+RBAC | 追加跟进记录（2026-07 CRM 新增） |
 | `/admin/login` `/admin/refresh` | — | 登录/刷新令牌（**注意：路径无 `/auth` 段**） |
-| `/admin/products` `/admin/news` `/admin/categories` `/admin/users` `/admin/roles` `/admin/inquiries` `/admin/upload` `/admin/settings` | JWT+RBAC | 后台 CRUD 与管理 |
+| `/admin/products` `/admin/news` `/admin/categories` `/admin/users` `/admin/users/list` `/admin/roles` `/admin/inquiries` `/admin/upload` `/admin/settings` `/admin/stats` `/admin/audit-logs` | JWT+RBAC | 后台 CRUD 与管理 |
 
 ---
 
@@ -129,3 +129,9 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **P0.3 产品 SEO**：`product/models.py` 新增 `seo_title`(VARCHAR 120) / `seo_description`(VARCHAR 300)，运营可为重点产品手动精修 SEO 元数据。前端优先读取这两个字段，空则回退原有的 title/content_html 截取。
 - **P0.4 询盘 CRM**：`inquiry/` 模块全面升级——状态三态→五态管线（NEW→CONTACTING→QUOTED→DEAL/LOST）；新增 `assigned_user`(FK→AdminUser)、`follow_notes`(JSONB 时间线)、`last_contact_time`、`tags`(JSONB)；新增 `PUT .../assign` + `POST .../follow-note` 端点。迁移含历史数据自动兼容（REPLIED→CONTACTING, ARCHIVED→LOST）。
 - **P0.7 后台 SEO 管理**：`product-form` 新增 SEO 元数据面板（seo_title / seo_description + 字数计数器），产品列表页新增 SEO 列 + 快速编辑弹窗。
+- **产品列表缓存**：`product/services.py` 产品列表（5min TTL）+ 产品分类（30min TTL）Cache-Aside Redis 缓存。`news/services.py` 新闻列表同模式。
+- **Dashboard 统计**：`content/services.py` 新增 `get_dashboard_stats()`，返回产品/新闻/分类计数 + 询盘国家分布 + 询盘状态分布。路由 `GET /admin/stats`。
+- **用户管理**：`content/services.py` 新增 `list_users` / `create_user`（统一 admin 角色）/ `delete_user`（admin 账号受保护）/ `reset_password`。路由 `GET/POST/DELETE /admin/users` + `PUT .../reset-password`。
+- **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页+搜索）。
+- **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
+- **迁移**：`migrations/models/9_*_add_seo_and_crm_fields.py` 为 aerich 自动生成的合并迁移（含 SEO + CRM 全部列变更）。

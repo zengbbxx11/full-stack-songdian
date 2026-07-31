@@ -24,6 +24,8 @@ from content.schemas import (
     RoleCreateRequest,
     RolePermRequest,
     UpdateProfileRequest,
+    CreateUserRequest,
+    ResetPasswordRequest,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["content"])
@@ -152,3 +154,46 @@ async def list_admin_users(
     """返回全部启用状态的 AdminUser 列表（仅 id + username），不要求特殊权限。"""
     users = await services.list_admin_users()
     return Result.ok(users)
+
+
+@router.get("/admin/users/list", summary="Backend user list with roles")
+async def list_users_admin(
+    _user: AdminUser = Depends(require_permission("admin:login")),
+) -> Result:
+    users = await services.list_users()
+    return Result.ok(users)
+
+
+@router.post("/admin/users", summary="Create backend user（统一管理员权限）")
+async def create_user(
+    data: CreateUserRequest,
+    _user: AdminUser = Depends(require_permission("admin:login")),
+) -> Result:
+    result = await services.create_user(data.username, data.password)
+    return Result.ok(result)
+
+
+@router.delete("/admin/users/{user_id}", summary="Delete backend user")
+async def delete_user(
+    user_id: int,
+    _user: AdminUser = Depends(require_permission("admin:login")),
+) -> Result:
+    await services.delete_user(user_id)
+    return Result.ok({"id": user_id})
+
+
+@router.put("/admin/users/{user_id}/reset-password", summary="Reset user password")
+async def reset_user_password(
+    user_id: int, data: ResetPasswordRequest,
+    _user: AdminUser = Depends(require_permission("admin:login")),
+) -> Result:
+    result = await services.reset_password(user_id, data.new_password)
+    return Result.ok(result)
+
+
+@router.get("/admin/stats", summary="Dashboard statistics")
+async def dashboard_stats(
+    _user: AdminUser = Depends(require_permission("admin:login")),
+) -> Result:
+    data = await services.get_dashboard_stats()
+    return Result.ok(data)

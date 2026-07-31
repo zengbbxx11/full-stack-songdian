@@ -78,6 +78,6 @@ DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
     ],
 }
 
-# 角色编码集合
 ROLE_ADMIN = "admin"
 ROLE_OPERATOR = "operator"
+ROLE_SALES = "sales"

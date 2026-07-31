@@ -279,3 +279,85 @@ async def list_admin_users() -> list[dict]:
     """列出所有启用状态的管理员账号（供询盘分配下拉等场景，2026-07-31 新增）。"""
     users = await AdminUser.filter(status=AdminStatus.ENABLED.value).only("id", "username").all()
     return [{"id": u.id, "username": u.username} for u in users]
+
+
+async def list_users() -> list[dict]:
+    users = await AdminUser.all().prefetch_related("role")
+    return [
+        {"id": u.id, "username": u.username, "email": u.email,
+         "status": u.status, "role_name": u.role.name if u.role else None,
+         "role_code": u.role.code if u.role else None, "created_time": u.created_time}
+        for u in users
+    ]
+
+
+async def create_user(username: str, password: str) -> dict:
+    """创建后台用户（统一管理员角色）。"""
+    from common.password import hash_password
+    existing = await AdminUser.get_or_none(username=username)
+    if existing:
+        raise BizException(ErrorCode.A010002, "Username exists")
+    # 所有新用户统一分配 admin 角色
+    role = await Role.get_or_none(code="admin")
+    user = await AdminUser.create(
+        username=username, password_hash=hash_password(password),
+        role=role, status=AdminStatus.ENABLED.value,
+    )
+    return {"id": user.id, "username": user.username}
+
+
+async def delete_user(user_id: int) -> None:
+    """删除后台用户（保留 admin 账号不可删）。"""
+    user = await AdminUser.get_or_none(id=user_id)
+    if user is None:
+        raise BizException(ErrorCode.C404001, "User not found")
+    if user.username == "admin":
+        raise BizException(ErrorCode.C400001, "Cannot delete admin account")
+    await user.delete()
+
+
+async def reset_password(user_id: int, new_password: str) -> dict:
+    """重置用户密码。"""
+    from common.password import hash_password
+    user = await AdminUser.get_or_none(id=user_id)
+    if user is None:
+        raise BizException(ErrorCode.C404001, "User not found")
+    user.password_hash = hash_password(new_password)
+    await user.save()
+    return {"id": user.id, "username": user.username}
+
+
+async def get_dashboard_stats() -> dict:
+    """Dashboard stats — inquiry country & status distribution."""
+    from product.models import Product, ProductCategory
+    from news.models import News
+    from inquiry.models import Inquiry
+
+    product_count = await Product.filter(deleted=0).count()
+    news_count = await News.filter(deleted=0).count()
+    category_count = await ProductCategory.filter(deleted=0).count()
+    inquiries = await Inquiry.all()
+    inquiry_count = len(inquiries)
+
+    # Country distribution from filled-in country field
+    country_map: dict[str, int] = {}
+    for i in inquiries:
+        c = (i.country or "").strip()
+        if not c:
+            c = "Unknown"
+        country_map[c] = country_map.get(c, 0) + 1
+    countries = sorted([{"country": k, "count": v} for k, v in country_map.items()],
+                       key=lambda x: x["count"], reverse=True)[:10]
+
+    # Status distribution
+    status_map: dict[str, int] = {}
+    for i in inquiries:
+        s = i.status or ""
+        status_map[s] = status_map.get(s, 0) + 1
+
+    return {
+        "counts": {"products": product_count, "news": news_count,
+                   "categories": category_count, "inquiries": inquiry_count},
+        "inquiry_countries": countries,
+        "inquiry_status": status_map,
+    }

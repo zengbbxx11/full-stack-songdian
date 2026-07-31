@@ -435,6 +435,97 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 
 ---
 
+## 十二、无域名部署（仅 IP：106.53.220.184）
+
+如果暂时没有域名，使用 **IP + 路径反代** 模式。改动集中在一处（`.env`），OpenResty 配置简单。
+
+### 12.1 架构差异
+
+```
+有域名模式：                      仅 IP 模式：
+www.songdian.tech → :3000         106.53.220.184/        → frontend:3000
+admin.songdian.tech → :3001       106.53.220.184:3001/   → admin-next:3001
+api.songdian.tech    → :8000      106.53.220.184/api/    → backend:8000
+                                  106.53.220.184/uploads/→ backend:8000
+```
+
+### 12.2 修改 .env（构建前必须）
+
+```bash
+# 编辑 .env，改以下两行：
+CORS_ORIGINS=http://106.53.220.184,http://106.53.220.184:3001
+NEXT_PUBLIC_API_URL=http://106.53.220.184
+```
+
+> ⚠️ `NEXT_PUBLIC_API_URL` 是**构建期内联**变量，改后必须 `docker compose build` 重建镜像。
+
+### 12.3 OpenResty 配置（1Panel）
+
+1Panel → 网站 → 创建网站 → 静态网站：
+
+| 配置 | 值 |
+|------|-----|
+| 域名 | `106.53.220.184` |
+| 端口 | `80` |
+
+创建后 → 配置文件 → 追加：
+
+```nginx
+# 管理后台（独立端口 3001，需在云安全组放行 3001）
+server {
+    listen 3001;
+    server_name 106.53.220.184;
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# 主站 server 块内追加 API/上传代理
+location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /uploads/ {
+    proxy_pass http://127.0.0.1:8000;
+}
+```
+
+### 12.4 防火墙放行管理后台端口
+
+```bash
+# 服务器防火墙
+sudo ufw allow 3001/tcp
+
+# ⚠️ 云服务器安全组也要放行 3001
+```
+
+### 12.5 访问方式
+
+| 服务 | 地址 |
+|------|------|
+| 官网 | `http://106.53.220.184` |
+| 管理后台 | `http://106.53.220.184:3001` |
+| API | `http://106.53.220.184/api/v1/products` |
+
+### 12.6 注意事项
+
+| 项 | 说明 |
+|----|------|
+| HTTP 明文 | 无域名无法申请 Let's Encrypt 证书，登录走 HTTP 明文（IP 无法签发可信证书） |
+| 管理后台端口 | 3001 端口外网可达，建议后续买域名后关闭 |
+| 图片域名 | `frontend/next.config.ts` 已包含 `106.53.220.184` 和 `localhost` 的 remotePatterns，IP 模式直接可用 |
+| 切换域名 | 买域名后只需改 `.env` 的 `CORS_ORIGINS` / `NEXT_PUBLIC_API_URL` 并 `docker compose build`，再加 OpenResty 的 443 站点即可 |
+
+---
+
 ## ⚠️ 注意事项
 
 | 项 | 说明 |

@@ -3,9 +3,10 @@
 # 架构：应用三服务（backend/frontend/admin-next）+ 数据两层（postgres/redis）
 # 全部由本 Compose 编排、构建镜像、保活。
 # 仅 1Panel 的 OpenResty 留在 Compose 之外，负责外部 HTTPS 反代：
-#   https://www.songdian.tech   → frontend:3000
-#   https://admin.songdian.tech → admin-next:3001
-#   https://api.songdian.tech   → backend:8000   （/api、/uploads 反代）
+#  有域名：                     仅 IP（无域名）：
+#   https://www.songdian.tech   → frontend:3000        http://106.53.220.184/        → frontend:3000
+#   https://admin.songdian.tech → admin-next:3001     http://106.53.220.184:3001/   → admin-next:3001
+#   https://api.songdian.tech   → backend:8000        http://106.53.220.184/api/    → backend:8000
 # OpenResty 以 host 网络模式运行，反代目标写 http://127.0.0.1:8000 / :3000 / :3001
 # （Compose 已把这三个端口发布到宿主机回环）。
 #

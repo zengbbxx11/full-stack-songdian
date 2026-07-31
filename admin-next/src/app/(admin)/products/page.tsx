@@ -29,12 +29,12 @@ export default function ProductsPage() {
   const [seoEdit, setSeoEdit] = useState<{ open: boolean; target: Product | null; seoTitle: string; seoDesc: string }>({ open: false, target: null, seoTitle: "", seoDesc: "" });
   const [seoSaving, setSeoSaving] = useState(false);
 
-  // 构建产品列表 SWR key
+  // 构建产品列表 SWR key（fix: 改用 admin 端点，显示全部产品含草稿）
   const productsKey = useMemo(() => {
     const params = new URLSearchParams({ page_size: "100" });
     if (keyword) params.set("keyword", keyword);
     if (categoryId) params.set("category_id", categoryId);
-    return `/products?${params}`;
+    return `/admin/products?${params}`;
   }, [keyword, categoryId]);
 
   const { data: productsData, isLoading: productsLoading } = useSWR<Paginated<Product>>(
@@ -107,7 +107,7 @@ export default function ProductsPage() {
     setSaving(true);
     try {
       // 1) 拉取全量产品（全局排序上下文 → 确定每个产品的邻居）
-      const allResp = await apiFetch<Paginated<Product>>("/products?page_size=200");
+      const allResp = await apiFetch<Paginated<Product>>("/admin/products?page_size=200");
       const allProducts: Product[] = (allResp.list ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
       // 2) 构建可见产品 id 集合

@@ -53,7 +53,19 @@ async def list_categories() -> Result:
     return Result.ok([i.model_dump(mode="json") for i in items])
 
 
-# ─────────────── 后台（写，需 RBAC）───────────────
+# ─────────────── 后台（读 + 写，需 RBAC）───────────────
+@router.get("/admin/products", summary="后台产品分页列表（含草稿）")
+async def list_products_admin(
+    req: PageRequest = Depends(),
+    keyword: str | None = Query(default=None),
+    category_id: int | None = Query(default=None),
+    _user: AdminUser = Depends(require_permission("product:read")),
+) -> Result:
+    """返回全部产品（含 DRAFT/PUBLISHED），供后台产品列表页。"""
+    items, total = await services.list_products(req, category_id, None, keyword)
+    return Result.ok(PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump())
+
+
 @router.post("/admin/products", summary="创建产品")
 @audit(action="product.create", resource="product:{slug}")
 async def create_product(

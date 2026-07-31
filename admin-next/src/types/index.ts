@@ -50,6 +50,9 @@ export interface Product {
   sort_order: number;
   cover_image: string | null;
   category: { id: number; name: string } | null;
+  /** SEO 字段（2026-07-31 新增：可空，空则前端回退） */
+  seo_title: string | null;
+  seo_description: string | null;
 }
 
 /** 新闻（对应后台新闻列表/详情中的字段子集）。 */

@@ -36,7 +36,7 @@ export default function ProductFormPage() {
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "in_stock", status: "DRAFT", cover_image: "" });
+  const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "in_stock", status: "DRAFT", cover_image: "", seo_title: "", seo_description: "" });
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
@@ -78,7 +78,7 @@ export default function ProductFormPage() {
     apiFetch<Record<string, unknown>>(`/admin/products/${sourceId}`).then((p) => {
       const title = copyFrom ? `Copy of ${String(p.title || "")}` : String(p.title || "");
       const slug = copyFrom ? "" : String(p.slug || "");
-      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: "DRAFT", cover_image: String(p.cover_image || "") });
+      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: "DRAFT", cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
     }).catch((err: unknown) => {
@@ -228,6 +228,30 @@ export default function ProductFormPage() {
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
           <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入产品描述..." /></div>
+        </div>
+
+        {/* SEO 元数据 */}
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">SEO 元数据 <span className="text-xs text-gray-400 font-normal">（选填，留空则自动使用标题和简介）</span></h3>
+          <div>
+            <Label>SEO 标题 <span className="text-xs text-gray-400 font-normal">（推荐 60 字符以内，留空则用产品标题）</span></Label>
+            <div className="relative">
+              <Input value={form.seo_title} onChange={e => setForm({...form, seo_title: e.target.value})} placeholder="比产品标题更精炼的 SEO 标题，如：4K Action Camera OEM Manufacturer | Songdian" maxLength={120} />
+              <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${form.seo_title.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_title.length}/120</span>
+            </div>
+          </div>
+          <div>
+            <Label>SEO 描述 <span className="text-xs text-gray-400 font-normal">（推荐 120-160 字符，留空则用简介截取）</span></Label>
+            <div className="relative">
+              <textarea
+                value={form.seo_description} onChange={e => setForm({...form, seo_description: e.target.value})}
+                rows={3} maxLength={300}
+                placeholder="吸引用户点击的 meta 描述，含核心关键词和卖点。如：Songdian is a leading OEM digital camera manufacturer offering custom design, competitive pricing, and fast delivery. Contact us for a quote."
+                className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              />
+              <span className={`absolute right-2 bottom-2 text-xs ${form.seo_description.length > 160 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_description.length}/300</span>
+            </div>
+          </div>
         </div>
 
         {/* 封面图 */}

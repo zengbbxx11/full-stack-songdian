@@ -25,6 +25,9 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [localItems, setLocalItems] = useState<Product[] | null>(null);
+  // SEO 快速编辑弹窗
+  const [seoEdit, setSeoEdit] = useState<{ open: boolean; target: Product | null; seoTitle: string; seoDesc: string }>({ open: false, target: null, seoTitle: "", seoDesc: "" });
+  const [seoSaving, setSeoSaving] = useState(false);
 
   // 构建产品列表 SWR key
   const productsKey = useMemo(() => {
@@ -180,6 +183,25 @@ export default function ProductsPage() {
 
   function handleDragOver(e: React.DragEvent) { e.preventDefault(); }
 
+  // SEO 快速保存
+  async function handleSeoSave() {
+    if (!seoEdit.target) return;
+    setSeoSaving(true);
+    try {
+      await apiFetch(`/admin/products/${seoEdit.target.id}`, {
+        method: "PUT",
+        body: { seo_title: seoEdit.seoTitle || null, seo_description: seoEdit.seoDesc || null },
+      });
+      toast.success("SEO 已更新");
+      setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" });
+      mutate(productsKey);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "SEO 保存失败");
+    } finally {
+      setSeoSaving(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -224,14 +246,15 @@ export default function ProductsPage() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">产品</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SEO</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-3"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-3/4" /></td></tr>
+              <tr><td colSpan={6} className="px-4 py-3"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-3/4" /></td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">未找到产品</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">未找到产品</td></tr>
             ) : items.map((p, idx) => (
               <tr
                 key={p.id}
@@ -257,6 +280,18 @@ export default function ProductsPage() {
                 <td className="px-4 py-3 text-gray-500">{p.category?.name || "-"}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
                 <td className="px-4 py-3">
+                  <button
+                    onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${
+                      p.seo_title
+                        ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
+                        : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"
+                    }`}
+                  >
+                    {p.seo_title ? "已设置" : "未设置"}
+                  </button>
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <Link href={`/product-form?id=${p.id}`} className="text-brand-500 hover:text-brand-600 text-sm">编辑</Link>
                     <Link href={`/product-form?copy_from=${p.id}`} className="text-blue-500 hover:text-blue-600 text-sm">复制</Link>
@@ -270,6 +305,51 @@ export default function ProductsPage() {
       </div>
 
       <p className="mt-3 text-xs text-gray-400">拖动行首握把（⋮⋮）可调整顺序，然后点击<strong>保存排序</strong>生效。</p>
+
+      {/* SEO 快速编辑弹窗 */}
+      {seoEdit.open && seoEdit.target && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" })} />
+          <div className="relative w-full max-w-lg mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+            <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+              SEO 设置 — {seoEdit.target.title}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <Label>SEO 标题 <span className="text-xs text-gray-400">（推荐 60 字以内，留空用产品标题）</span></Label>
+                <div className="relative">
+                  <Input value={seoEdit.seoTitle} onChange={e => setSeoEdit(p => ({ ...p, seoTitle: e.target.value }))} placeholder="留空则自动使用产品标题" maxLength={120} />
+                  <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${seoEdit.seoTitle.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{seoEdit.seoTitle.length}/120</span>
+                </div>
+              </div>
+              <div>
+                <Label>SEO 描述 <span className="text-xs text-gray-400">（推荐 120-160 字以内，留空用简介截取）</span></Label>
+                <div className="relative">
+                  <textarea
+                    value={seoEdit.seoDesc} onChange={e => setSeoEdit(p => ({ ...p, seoDesc: e.target.value }))}
+                    rows={4} maxLength={300}
+                    placeholder="留空则自动使用产品简介截取前 160 字符"
+                    className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  />
+                  <span className={`absolute right-2 bottom-2 text-xs ${seoEdit.seoDesc.length > 160 ? "text-amber-500" : "text-gray-400"}`}>{seoEdit.seoDesc.length}/300</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" })}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+                disabled={seoSaving}
+              >取消</button>
+              <button
+                onClick={handleSeoSave}
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50"
+                disabled={seoSaving}
+              >{seoSaving ? "保存中..." : "保存 SEO"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmOpen}

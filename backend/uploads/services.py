@@ -3,7 +3,8 @@
 设计约束（design-admin-ui.md §1.2 缺口② / §1.4）：
 - 存储抽象为 ``StorageBackend``（Protocol），当前仅 ``LocalStorageBackend``（默认）。
   未来切 OSS/COS 仅新增实现 + 改 ``settings``（见 ``get_storage_backend`` 工厂）。
-- 校验：扩展名白名单（jpg/png/webp/gif）、单文件 ≤ ``max_upload_mb``。
+- 校验：扩展名白名单（jpg/png/webp/gif）+ 魔数（magic bytes）+ mimetypes 双重校验、
+  单文件 ≤ ``max_upload_mb``。
 - 落盘：写入 ``MEDIA_ROOT``（复用 main.py 的 StaticFiles 挂载目录），按年份分子目录，
   返回相对 URL ``{media_url}/{year}/{uuid}.ext}``。
 - 成功后写 ``UploadRecord`` 溯源（best-effort）。
@@ -11,6 +12,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import os
 import re
 import uuid
@@ -28,6 +30,36 @@ logger = logging.getLogger(__name__)
 
 # 扩展名白名单（小写，含点）
 ALLOWED_EXT: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
+
+# 图片魔数（magic bytes）：文件头前 N 字节 → MIME 类型，用于防扩展名伪造
+_IMAGE_MAGIC: dict[bytes, str] = {
+    b"\xff\xd8\xff": "image/jpeg",          # JPEG: FF D8 FF
+    b"\x89PNG\r\n\x1a\n": "image/png",      # PNG: 89 50 4E 47 0D 0A 1A 0A
+    b"RIFF": "image/webp",                  # WEBP: RIFF....WEBP（先匹配 RIFF 容器）
+    b"GIF87a": "image/gif",                 # GIF87a
+    b"GIF89a": "image/gif",                 # GIF89a
+}
+_ALLOWED_MIMES: frozenset[str] = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif"})
+
+
+def _validate_image_content(content: bytes, filename: str) -> str:
+    """通过文件头魔数 + mimetypes 双重校验，返回确认的 MIME 类型。
+
+    一、mimetypes 基于文件名扩展名推断 MIME 类型；
+    二、魔数匹配文件头真实内容（防扩展名伪造 / 脚本伪装成图片）。
+    任一步失败即抛 BizException C400001。
+    """
+    # 第一步：mimetypes 类型推断
+    mime, _ = mimetypes.guess_type(filename)
+    if mime not in _ALLOWED_MIMES:
+        raise BizException(ErrorCode.C400001, f"不支持的文件类型：{mime or '未知'}")
+
+    # 第二步：魔数校验（取文件头最多 8 字节匹配已知签名词典）
+    header = content[:8]
+    for magic, expected_mime in _IMAGE_MAGIC.items():
+        if header.startswith(magic):
+            return expected_mime
+    raise BizException(ErrorCode.C400001, "文件内容与扩展名不匹配，疑似伪造")
 
 
 class StorageBackend(Protocol):
@@ -50,6 +82,10 @@ class LocalStorageBackend:
             raise BizException(ErrorCode.C400001, f"不支持的文件类型：{ext or '未知'}")
 
         content = await file.read()
+
+        # 魔数 + mimetypes 双重校验（防扩展名伪造 / 脚本伪装成图片上传）
+        _validate_image_content(content, filename)
+
         max_bytes = settings.max_upload_mb * 1024 * 1024
         if len(content) > max_bytes:
             raise BizException(

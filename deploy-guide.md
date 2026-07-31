@@ -259,20 +259,42 @@ docker compose logs -f frontend
 docker compose restart admin-next
 ```
 
-### 数据库备份（Compose 内 PG，需自管备份）
+### 自动备份（scripts/backup.sh）
+
+项目提供 `scripts/backup.sh` 自动化备份脚本，覆盖 **PostgreSQL 全量导出** + **upload 上传文件快照**，保留 7 天滚动清理。
 
 ```bash
-# 全量导出到宿主机（建议写入 cron 每日执行）
+# 一、首次设置
 mkdir -p /home/ubuntu/backups
-docker compose exec -T postgres pg_dump -U songdian songdian_b2b > /home/ubuntu/backups/db_$(date +%Y%m%d).sql
+chmod +x scripts/backup.sh
 
-# 恢复（将下方 songdian 替换为实际 PG_USER/PG_DB）
-docker compose exec -T postgres psql -U songdian -d songdian_b2b < /home/ubuntu/backups/db_YYYYMMDD.sql
+# 二、手动执行（验证脚本可用）
+bash scripts/backup.sh
+
+# 三、加入 cron 每日凌晨 3 点自动执行
+crontab -e
+# 添加下行（注意替换路径）：
+# 0 3 * * * cd /home/ubuntu/full-stack-songdian && bash scripts/backup.sh >> /home/ubuntu/backups/cron.log 2>&1
 ```
 
-> 数据在命名卷 `pg_data`，容器重建不丢；但误删卷 / 迁移服务器时仍需上述备份。
-> 建议加 cron（每日 03:00 压缩备份）：
-> `0 3 * * * cd /home/ubuntu/full-stack-songdian && docker compose exec -T postgres pg_dump -U songdian songdian_b2b | gzip > /home/ubuntu/backups/db_$(date +\%Y\%m\%d).sql.gz`
+**备份内容：**
+
+| 数据 | 文件名格式 | 方式 |
+|------|-----------|------|
+| PostgreSQL | `db_YYYYMMDD.sql.gz` | `docker compose exec -T postgres pg_dump \| gzip` |
+| 上传文件 | `uploads_YYYYMMDD.tar.gz` | `docker run` 挂载 `uploads_data` 卷 → tar |
+
+**保留策略**：`find -mtime +7` 删除 7 天前文件，但每月 1 号的备份**长期保留**（不自动清理）。
+
+**恢复：**
+
+```bash
+# PostgreSQL 恢复
+gunzip -c /home/ubuntu/backups/db_YYYYMMDD.sql.gz | docker compose exec -T postgres psql -U songdian -d songdian_b2b
+
+# uploads 恢复（解压到卷）
+docker run --rm -v songdian-b2b_uploads_data:/data alpine sh -c "cd /data && tar xzf -" < /home/ubuntu/backups/uploads_YYYYMMDD.tar.gz
+```
 
 ---
 

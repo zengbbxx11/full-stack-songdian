@@ -35,9 +35,12 @@ class NewsStatus(BaseEnum):
 
 
 class InquiryStatus(BaseEnum):
+    """询盘状态（2026-07-31 升级为 CRM 五态管线）。"""
     NEW = "NEW"
-    REPLIED = "REPLIED"
-    ARCHIVED = "ARCHIVED"
+    CONTACTING = "CONTACTING"   # 已建立联系
+    QUOTED = "QUOTED"           # ���报价
+    DEAL = "DEAL"               # 成交
+    LOST = "LOST"               # 丢单
 
 
 class SmtpStatus(BaseEnum):

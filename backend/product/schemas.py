@@ -31,6 +31,9 @@ class ProductCreateRequest(BaseModel):
     status: str = ProductStatus.DRAFT.value
     # tags：标签名数组，如 ["OEM", "4K", "Waterproof"]；缺省空数组（T04）。
     tags: list[str] = []
+    # SEO 字段（可选，空则回退系统默认值）
+    seo_title: str | None = Field(default=None, max_length=120, description="页面标题（推荐 ~60 字符）")
+    seo_description: str | None = Field(default=None, max_length=300, description="Meta 描述（推荐 120-160 字符）")
 
     @field_validator("slug")
     @classmethod
@@ -68,6 +71,9 @@ class ProductUpdateRequest(BaseModel):
     sort_order: float | None = None
     # tags：编辑时整体覆盖（T04）。缺省空数组。
     tags: list[str] = []
+    # SEO 字段（传 null / 不传则清空该字段，回退系统默认值）
+    seo_title: str | None = Field(default=None, max_length=120)
+    seo_description: str | None = Field(default=None, max_length=300)
     version: int | None = None  # 乐观锁占位（当前以 id 为主键）
 
     @field_validator("slug")
@@ -182,6 +188,9 @@ class ProductPageVO(BaseModel):
     sort_order: float = 0.0
     # tags: 标签名字符串数组，如 ["OEM", "4K", "Waterproof"]；与模型字段同名
     tags: list[str] = []
+    # SEO 字段（2026-07-31 新增）
+    seo_title: str | None = None
+    seo_description: str | None = None
 
     @classmethod
     def from_model(cls, m) -> ProductPageVO:  # type: ignore[valid-type]
@@ -195,6 +204,9 @@ class ProductPageVO(BaseModel):
             sort_order=m.sort_order,
             # DB 为 NULL 时兜底空数组，避免向展示层返回 None
             tags=m.tags or [],
+            # SEO 字段透传（NULL 即 None，前端做回退）
+            seo_title=getattr(m, "seo_title", None),
+            seo_description=getattr(m, "seo_description", None),
         )
 
 

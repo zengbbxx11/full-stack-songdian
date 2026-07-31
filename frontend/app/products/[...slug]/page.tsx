@@ -54,13 +54,16 @@ export async function generateMetadata({
   // canonical 始终以产品真实主分类为准，避免 URL 分类段拼写偏差导致标签错乱
   const canonical = productPath(product);
   const plainDesc = stripHtml(product.shortDescription || "").slice(0, 160);
+  // SEO 标题 & 描述：优先使用后端 seo_* 字段（运营精修），空则回退 title/shortDescription
+  const seoTitle = product.seoTitle || product.name;
+  const seoDesc = product.seoDescription || plainDesc || `OEM/ODM ${product.name} — ${COMPANY.name}`;
   return {
-    title: product.name,
-    description: plainDesc || `OEM/ODM ${product.name} — ${COMPANY.name}`,
+    title: seoTitle,
+    description: seoDesc,
     alternates: { canonical },
     openGraph: {
-      title: product.name,
-      description: plainDesc,
+      title: seoTitle,
+      description: seoDesc,
       images: product.images?.[0]?.src ? [{ url: product.images[0].src, width: 800, height: 800 }] : [],
       type: "website",
     },

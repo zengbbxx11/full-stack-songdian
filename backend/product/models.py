@@ -43,6 +43,9 @@ class Product(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
     tags = fields.JSONField(null=True, default=list)
     sort_order = fields.FloatField(default=0.0)  # 前端拖拽排序，浮点数支持精准插入
     search_vector = TSVectorField()
+    # SEO 专属字段（2026-07-31 新增）：运营可为重点产品手写精修，空则回退 title/content_html
+    seo_title = fields.CharField(max_length=120, null=True)          # 覆盖页面 <title>（推荐 ~60 字符）
+    seo_description = fields.CharField(max_length=300, null=True)    # 覆盖 meta description（推荐 120-160 字符）
 
     galleries: fields.ReverseRelation[ProductGallery]
     attributes: fields.ReverseRelation[ProductAttribute]

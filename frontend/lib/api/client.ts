@@ -117,6 +117,9 @@ export interface ProductPageDTO {
   cover_image: string | null;
   // 产品标签 —— 标签名称字符串数组（如 ["OEM","4K","Waterproof"]）；DB 为 NULL 时由后端正文兜底为空数组。
   tags: string[];
+  // SEO 字段（2026-07-31 新增，后端透传，空则前端回退 title/content_html）
+  seo_title: string | null;
+  seo_description: string | null;
 }
 
 export interface ProductDetailDTO extends ProductPageDTO {

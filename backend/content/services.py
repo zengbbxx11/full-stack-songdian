@@ -273,3 +273,9 @@ async def update_profile(user: AdminUser, data: UpdateProfileRequest) -> Profile
 
     await user.save()
     return ProfileVO.from_model(user)
+
+
+async def list_admin_users() -> list[dict]:
+    """列出所有启用状态的管理员账号（供询盘分配下拉等场景，2026-07-31 新增）。"""
+    users = await AdminUser.filter(status=AdminStatus.ENABLED.value).only("id", "username").all()
+    return [{"id": u.id, "username": u.username} for u in users]

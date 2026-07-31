@@ -143,3 +143,12 @@ async def update_profile(
 ) -> Result:
     vo = await services.update_profile(_user, data)
     return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.get("/admin/users", summary="管理员账号列表（供询盘分配等下拉使用）")
+async def list_admin_users(
+    _user: AdminUser = Depends(get_current_user),
+) -> Result:
+    """返回全部启用状态的 AdminUser 列表（仅 id + username），不要求特殊权限。"""
+    users = await services.list_admin_users()
+    return Result.ok(users)

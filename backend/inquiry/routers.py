@@ -2,8 +2,10 @@
 
 路径前缀 /api/v1。
 - 公开：POST /inquiries（IP 限流 + 幂等）。
-- 后台：GET /admin/inquiries、GET /admin/inquiries/{id}、PUT /admin/inquiries/{id}/status，
+- 后台：GET /admin/inquiries、GET /admin/inquiries/{id}、PUT /admin/inquiries/{id}/status、
+  PUT /admin/inquiries/{id}/assign、POST /admin/inquiries/{id}/follow-note，
   需 RBAC（inquiry:read / inquiry:update）。
+2026-07-31 CRM 升级：新增分配、跟进记录端点。
 """
 from __future__ import annotations
 
@@ -16,6 +18,8 @@ from common.result import PageRequest, PageResponse, Result
 from content.models import AdminUser
 from inquiry import services
 from inquiry.schemas import (
+    FollowNoteRequest,
+    InquiryAssignRequest,
     InquiryStatusRequest,
     InquirySubmitRequest,
 )
@@ -63,6 +67,30 @@ async def update_status(
     _user: AdminUser = Depends(require_permission("inquiry:update")),
 ) -> Result:
     vo = await services.update_status(inquiry_id, data)
+    return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.put("/admin/inquiries/{inquiry_id}/assign", summary="分配/取消分配销售人员")
+@audit(action="inquiry.assign", resource="inquiry:{inquiry_id}")
+async def assign_user(
+    inquiry_id: int,
+    data: InquiryAssignRequest,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("inquiry:update")),
+) -> Result:
+    vo = await services.assign_user(inquiry_id, data, current_user)
+    return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.post("/admin/inquiries/{inquiry_id}/follow-note", summary="追加跟进记录")
+@audit(action="inquiry.follow_note", resource="inquiry:{inquiry_id}")
+async def add_follow_note(
+    inquiry_id: int,
+    data: FollowNoteRequest,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("inquiry:update")),
+) -> Result:
+    vo = await services.add_follow_note(inquiry_id, data, current_user)
     return Result.ok(vo.model_dump(mode="json"))
 
 

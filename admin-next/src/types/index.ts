@@ -64,10 +64,17 @@ export interface NewsItem {
   created_time: string | null;
 }
 
-/** 询盘状态：后端枚举 NEW / REPLIED / ARCHIVED（inquiry/models.py）。 */
-export type InquiryStatus = "NEW" | "REPLIED" | "ARCHIVED";
+/** 询盘状态（2026-07-31 CRM 升级：五态管线）。 */
+export type InquiryStatus = "NEW" | "CONTACTING" | "QUOTED" | "DEAL" | "LOST";
 
-/** 询盘（对应 InquiryVO / InquiryDetailVO）。 */
+/** 跟进记录条目。 */
+export interface FollowNote {
+  time: string;
+  user: string;
+  note: string;
+}
+
+/** 询盘（对应 InquiryVO / InquiryDetailVO，2026-07-31 新增 CRM 字段）。 */
 export interface Inquiry {
   id: number;
   name: string;
@@ -82,6 +89,12 @@ export interface Inquiry {
   status: InquiryStatus;
   smtp_status: string;
   reply_note: string | null;
+  // CRM 字段（2026-07-31）
+  assigned_user_id: number | null;
+  assigned_user_name: string | null;
+  tags: string[];
+  last_contact_time: string | null;
+  follow_notes: FollowNote[];
   created_time: string | null;
   updated_time: string | null;
 }

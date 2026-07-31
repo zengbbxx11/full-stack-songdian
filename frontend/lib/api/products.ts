@@ -157,5 +157,8 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
     relatedIds: [],
     stockStatus: p.stock_status,
     dateModified: p.updated_time ?? p.created_time ?? "",
+    // SEO 字段透传（后端 NULL → null，前端 generateMetadata 做回退）
+    seoTitle: p.seo_title ?? null,
+    seoDescription: p.seo_description ?? null,
   };
 }

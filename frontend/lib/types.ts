@@ -208,6 +208,10 @@ export interface ProductDetail {
   stockStatus: string;
   /** ISO 8601 最后修改日期字符串 */
   dateModified: string;
+  /** SEO 页面标题（覆盖 name，空则回退 name） */
+  seoTitle: string | null;
+  /** SEO Meta 描述（覆盖 shortDescription，空则回退截取） */
+  seoDescription: string | null;
 }
 
 /**

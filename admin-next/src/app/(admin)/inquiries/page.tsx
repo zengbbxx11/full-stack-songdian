@@ -1,11 +1,14 @@
 /*
  * 页面：询盘管理页（/inquiries）
- * 职责：展示官网提交的询盘列表，支持搜索、展开查看详情、回复（写入 reply_note 并把状态置为 REPLIED）、
- * 以及一键标记为 REPLIED / ARCHIVED。状态流转统一走 PUT /api/v1/admin/inquiries/{id}/status。
+ * 职责：展示官网提交的询盘列表，支持搜索、状态流转（五态 CRM 管线）、
+ * 分配销售人员、标签编辑、跟进记录时间线。
  *
- * 后端状态枚举（inquiry/models.py）：NEW / REPLIED / ARCHIVED。
+ * 后端状态枚举（common/enums.py 2026-07-31 CRM 升级）：
+ *   NEW → CONTACTING → QUOTED → DEAL / LOST
  *
- * 相关 issue：#5（统一 API 客户端）、#16（统一错误提示）、#22（回复 + 状态流转）、#24（表格横向滚动）。
+ * 新增端点：
+ *   PUT  /admin/inquiries/{id}/assign       — 分配/取消分配
+ *   POST /admin/inquiries/{id}/follow-note  — 追加跟进
  */
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
@@ -14,18 +17,30 @@ import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Button from "@/components/ui/button/Button";
 import { apiFetch, swrFetcher } from "@/lib/api-client";
-import type { Inquiry, InquiryStatus, Paginated } from "@/types";
+import type { AdminUser, Inquiry, InquiryStatus, FollowNote, Paginated } from "@/types";
 
-/** 各状态对应的徽章样式。 */
+/* ── 各状态对应徽章样式 ── */
 const STATUS_BADGE: Record<InquiryStatus, string> = {
   NEW: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  REPLIED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  ARCHIVED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  CONTACTING: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  QUOTED: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  DEAL: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  LOST: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+};
+
+/* ── 合法状态流转映射（非终态才显示操作按钮） ── */
+const NEXT_STATUS: Record<InquiryStatus, InquiryStatus[]> = {
+  NEW: ["CONTACTING", "LOST"],
+  CONTACTING: ["QUOTED", "LOST"],
+  QUOTED: ["DEAL", "LOST"],
+  DEAL: [],
+  LOST: [],
 };
 
 export default function InquiriesPage() {
   const toast = useToast();
-  // 列表数据交由 SWR 管理（issue #23）：data 即已解包的分页信封，加载/错误状态由 hook 提供。
+
+  /* ── 数据 ── */
   const { data, error, isLoading, mutate } = useSWR<Paginated<Inquiry>, Error>(
     "/admin/inquiries?page_size=100",
     (path: string) => swrFetcher<Paginated<Inquiry>>(path)
@@ -34,67 +49,87 @@ export default function InquiriesPage() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // 回复对话框
-  const [reply, setReply] = useState<{ open: boolean; target: Inquiry | null; note: string; status: InquiryStatus }>({
-    open: false,
-    target: null,
-    note: "",
-    status: "REPLIED",
-  });
+  /* ── 管理员列表（分配下拉） ── */
+  const { data: adminUsers = [] } = useSWR<AdminUser[]>(
+    "/admin/users",
+    (path) => swrFetcher<AdminUser[]>(path)
+  );
+
+  /* ── 回复/操作对话框 ── */
+  const [reply, setReply] = useState<{
+    open: boolean; target: Inquiry | null; note: string; status: InquiryStatus;
+  }>({ open: false, target: null, note: "", status: "CONTACTING" });
   const [replySaving, setReplySaving] = useState(false);
 
-  // 状态切换确认
-  const [statusConfirm, setStatusConfirm] = useState<{ open: boolean; target: Inquiry | null; next: InquiryStatus }>({
-    open: false,
-    target: null,
-    next: "ARCHIVED",
-  });
+  /* ── 状态切换确认 ── */
+  const [statusConfirm, setStatusConfirm] = useState<{
+    open: boolean; target: Inquiry | null; next: InquiryStatus;
+  }>({ open: false, target: null, next: "LOST" });
   const [statusSaving, setStatusSaving] = useState(false);
-  // 删除确认
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; target: Inquiry | null }>({ open: false, target: null });
+
+  /* ── 删除确认 ── */
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean; target: Inquiry | null;
+  }>({ open: false, target: null });
   const [deleteSaving, setDeleteSaving] = useState(false);
 
-  // 列表加载失败：沿用原行为弹出错误提示（SWR 仅在 fetcher 抛错时置 error）。
+  /* ── 分配对话框 ── */
+  const [assignTarget, setAssignTarget] = useState<Inquiry | null>(null);
+  const [assignSaving, setAssignSaving] = useState(false);
+
+  /* ── 标签编辑 ── */
+  const [tagTarget, setTagTarget] = useState<Inquiry | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [tagSaving, setTagSaving] = useState(false);
+
+  /* ── 列表加载失败 ── */
   useEffect(() => {
     if (error) toast.error(error instanceof Error ? error.message : "加载询盘失败");
   }, [error]);
 
-  // 本地搜索过滤（基于 SWR 返回的 items 派生，无需独立 state）
+  /* ── 本地搜索过滤 ── */
   const filtered = useMemo(() => {
     if (!search.trim()) return items;
     const q = search.toLowerCase();
-    return items.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) ||
-        i.email.toLowerCase().includes(q) ||
-        (i.company?.toLowerCase().includes(q) ?? false) ||
-        i.message.toLowerCase().includes(q)
+    return items.filter((i) =>
+      i.name.toLowerCase().includes(q) ||
+      i.email.toLowerCase().includes(q) ||
+      (i.company?.toLowerCase().includes(q) ?? false) ||
+      i.message.toLowerCase().includes(q)
     );
   }, [search, items]);
 
-  // 打开回复对话框：拉取详情以回填已有 reply_note
+  /* ── 操作：打开回复/状态对话框 ── */
   async function openReply(i: Inquiry) {
-    setReply({ open: true, target: i, note: "", status: "REPLIED" });
+    setReply({ open: true, target: i, note: "", status: "CONTACTING" });
     try {
       const detail = await apiFetch<Inquiry>(`/admin/inquiries/${i.id}`);
-      setReply((prev) => ({ ...prev, note: detail.reply_note || "", status: detail.status }));
-    } catch {
-      // 详情拉取失败不阻塞回复；沿用当前状态
-    }
+      setReply((prev) => ({
+        ...prev,
+        note: detail.reply_note || "",
+        status: detail.status,
+      }));
+    } catch { /* 详情拉取失败不阻塞，沿用列表数据 */ }
   }
 
   async function submitReply() {
     if (!reply.target) return;
     setReplySaving(true);
     try {
-      await apiFetch<Inquiry>(`/admin/inquiries/${reply.target.id}/status`, {
+      await apiFetch(`/admin/inquiries/${reply.target.id}/status`, {
         method: "PUT",
         body: { status: reply.status, reply_note: reply.note },
       });
-      // 变更成功后让 SWR 重新拉取列表，保证与后端一致（issue #23）。
+      // 同时追加一条跟进记录
+      if (reply.note.trim()) {
+        await apiFetch(`/admin/inquiries/${reply.target.id}/follow-note`, {
+          method: "POST",
+          body: { note: `[状态 → ${reply.status}] ${reply.note}` },
+        }).catch(() => { /* 跟进记录失败不阻塞主操作 */ });
+      }
       await mutate();
-      toast.success("回复已保存");
-      setReply({ open: false, target: null, note: "", status: "REPLIED" });
+      toast.success("已保存");
+      setReply({ open: false, target: null, note: "", status: "CONTACTING" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "保存失败");
     } finally {
@@ -102,13 +137,14 @@ export default function InquiriesPage() {
     }
   }
 
+  /* ── 操作：状态流转 ── */
   async function confirmStatusChange() {
     if (!statusConfirm.target) return;
     setStatusSaving(true);
     try {
-      await apiFetch<Inquiry>(`/admin/inquiries/${statusConfirm.target.id}/status`, {
+      await apiFetch(`/admin/inquiries/${statusConfirm.target.id}/status`, {
         method: "PUT",
-        body: { status: statusConfirm.next, reply_note: statusConfirm.target.reply_note },
+        body: { status: statusConfirm.next },
       });
       await mutate();
       toast.success(`已标记为 ${statusConfirm.next}`);
@@ -116,10 +152,11 @@ export default function InquiriesPage() {
       toast.error(err instanceof Error ? err.message : "操作失败");
     } finally {
       setStatusSaving(false);
-      setStatusConfirm({ open: false, target: null, next: "ARCHIVED" });
+      setStatusConfirm({ open: false, target: null, next: "LOST" });
     }
   }
 
+  /* ── 操作：删除 ── */
   async function confirmDeleteInquiry() {
     if (!deleteConfirm.target) return;
     setDeleteSaving(true);
@@ -135,13 +172,56 @@ export default function InquiriesPage() {
     }
   }
 
+  /* ── 操作：分配 ── */
+  async function doAssign(userId: number | null) {
+    if (!assignTarget) return;
+    setAssignSaving(true);
+    try {
+      await apiFetch(`/admin/inquiries/${assignTarget.id}/assign`, {
+        method: "PUT",
+        body: { assigned_user_id: userId },
+      });
+      await mutate();
+      toast.success(userId ? "已分配" : "已取消分配");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "分配失败");
+    } finally {
+      setAssignSaving(false);
+      setAssignTarget(null);
+    }
+  }
+
+  /* ── 操作：保存标签 ── */
+  async function saveTags() {
+    if (!tagTarget) return;
+    setTagSaving(true);
+    try {
+      const tags = tagInput
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      await apiFetch(`/admin/inquiries/${tagTarget.id}/status`, {
+        method: "PUT",
+        body: { status: tagTarget.status, tags },
+      });
+      await mutate();
+      toast.success("标签已更新");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "标签更新失败");
+    } finally {
+      setTagSaving(false);
+      setTagTarget(null);
+      setTagInput("");
+    }
+  }
+
+  /* ── 渲染 ── */
   return (
     <div>
+      {/* 头部 */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">询盘</h2>
-        <span className="text-sm text-gray-400">
-          {filtered.length} of {items.length}
-        </span>
+        <span className="text-sm text-gray-400">{filtered.length} of {items.length}</span>
       </div>
 
       {/* 搜索框 */}
@@ -155,45 +235,43 @@ export default function InquiriesPage() {
         />
       </div>
 
+      {/* 表格 */}
       <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">姓名</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">邮箱</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">公司</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">留言</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">状态</th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">操作</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">姓名</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">邮箱</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">留言</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">负责人</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">标签</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">状态</th>
+              <th className="px-3 py-3 text-right text-xs font-medium uppercase text-gray-500">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div
-                        className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800"
-                        style={{ width: "60%", animationDelay: `${i * 0.1}s` }}
-                      />
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <td key={j} className="px-3 py-3">
+                      <div className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" style={{ width: "60%" }} />
                     </td>
                   ))}
                 </tr>
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  {search ? "No matching inquiries" : "No inquiries yet"}
+                <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
+                  {search ? "无匹配询盘" : "暂无询盘"}
                 </td>
               </tr>
             ) : (
               filtered.map((i) => (
                 <tr key={i.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{i.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{i.email}</td>
-                  <td className="px-4 py-3 text-gray-500">{i.company || "-"}</td>
-                  <td className="px-4 py-3 text-gray-500 max-w-[280px]">
+                  <td className="px-3 py-3 font-medium text-gray-800 dark:text-white/90">{i.name}</td>
+                  <td className="px-3 py-3 text-gray-500 text-xs">{i.email}</td>
+                  <td className="px-3 py-3 text-gray-500 max-w-[240px]">
                     <button
                       onClick={() => setExpandedId(expandedId === i.id ? null : i.id)}
                       className="text-left hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
@@ -205,42 +283,74 @@ export default function InquiriesPage() {
                         </span>
                       )}
                     </button>
-                    {expandedId === i.id && i.reply_note && (
-                      <div className="mt-2 rounded-lg bg-gray-50 p-2 text-xs text-gray-500 dark:bg-gray-800">
-                        <span className="font-medium text-gray-600 dark:text-gray-300">Reply: </span>
-                        {i.reply_note}
+                    {/* 跟进时间线 */}
+                    {expandedId === i.id && i.follow_notes && i.follow_notes.length > 0 && (
+                      <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                        {i.follow_notes.map((fn: FollowNote, idx: number) => (
+                          <div key={idx} className="rounded bg-gray-50 p-1.5 text-xs text-gray-500 dark:bg-gray-800">
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {fn.user} · {fn.time?.slice(0, 19).replace("T", " ")}
+                            </span>
+                            <div className="mt-0.5">{fn.note}</div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  {/* 负责人 */}
+                  <td className="px-3 py-3 text-gray-500 text-xs">
+                    <button
+                      onClick={() => setAssignTarget(i)}
+                      className="text-left hover:text-brand-500 cursor-pointer"
+                    >
+                      {i.assigned_user_name || <span className="text-gray-300 italic">未分配</span>}
+                    </button>
+                  </td>
+                  {/* 标签 */}
+                  <td className="px-3 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {i.tags && i.tags.length > 0 ? (
+                        i.tags.map((t) => (
+                          <span key={t} className="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            {t}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-300 italic">无</span>
+                      )}
+                      <button
+                        onClick={() => { setTagTarget(i); setTagInput((i.tags || []).join(", ")); }}
+                        className="text-xs text-gray-400 hover:text-brand-500"
+                      >+</button>
+                    </div>
+                  </td>
+                  {/* 状态徽章 */}
+                  <td className="px-3 py-3">
                     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[i.status]}`}>
                       {i.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button onClick={() => openReply(i)} className="text-sm text-brand-500 hover:text-brand-600">
-                        Reply
+                  {/* 操作按钮 */}
+                  <td className="px-3 py-3 text-right">
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <button onClick={() => openReply(i)} className="text-xs text-brand-500 hover:text-brand-600">
+                        跟进
                       </button>
-                      {i.status !== "REPLIED" && (
+                      {NEXT_STATUS[i.status].map((ns) => (
                         <button
-                          onClick={() => setStatusConfirm({ open: true, target: i, next: "REPLIED" })}
-                          className="text-sm text-green-600 hover:text-green-700"
+                          key={ns}
+                          onClick={() => setStatusConfirm({ open: true, target: i, next: ns })}
+                          className={`text-xs ${ns === "LOST" ? "text-red-500 hover:text-red-600" : "text-green-600 hover:text-green-700"}`}
                         >
-                          Mark Replied
+                          → {ns}
                         </button>
-                      )}
-                      {i.status !== "ARCHIVED" && (
-                        <button
-                          onClick={() => setStatusConfirm({ open: true, target: i, next: "ARCHIVED" })}
-                          className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          Archive
-                        </button>
+                      ))}
+                      {i.status !== "LOST" && i.status !== "DEAL" && NEXT_STATUS[i.status].length === 0 && (
+                        <span className="text-xs text-gray-300">终态</span>
                       )}
                       <button
                         onClick={() => setDeleteConfirm({ open: true, target: i })}
-                        className="text-sm text-red-500 hover:text-red-600"
+                        className="text-xs text-red-400 hover:text-red-500 ml-1"
                       >
                         删除
                       </button>
@@ -253,66 +363,123 @@ export default function InquiriesPage() {
         </table>
       </div>
 
-      {/* 回复对话框 */}
+      {/* ──────────────────── 回复/跟进对话框 ──────────────────── */}
       {reply.open && reply.target && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !replySaving && setReply({ open: false, target: null, note: "", status: "REPLIED" })} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => !replySaving && setReply((p) => ({ ...p, open: false }))} />
           <div className="relative w-full max-w-lg mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
-            <h3 className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">Reply to {reply.target.name}</h3>
+            <h3 className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">
+              跟进 {reply.target.name}
+            </h3>
             <p className="mb-4 text-xs text-gray-400">{reply.target.email}</p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">状态</label>
                 <select
                   value={reply.status}
                   onChange={(e) => setReply((p) => ({ ...p, status: e.target.value as InquiryStatus }))}
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 >
-                  <option value="NEW">NEW</option>
-                  <option value="REPLIED">REPLIED</option>
-                  <option value="ARCHIVED">ARCHIVED</option>
+                  <option value="NEW">NEW — 新询盘</option>
+                  <option value="CONTACTING">CONTACTING — 已联系</option>
+                  <option value="QUOTED">QUOTED — 已报价</option>
+                  <option value="DEAL">DEAL — 成交</option>
+                  <option value="LOST">LOST — 丢单</option>
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Reply Message</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">备注 / 回复内容</label>
                 <textarea
                   value={reply.note}
                   onChange={(e) => setReply((p) => ({ ...p, note: e.target.value }))}
-                  rows={5}
-                  placeholder="Write your reply..."
+                  rows={4}
+                  placeholder="记录本次跟进内容..."
                   className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setReply({ open: false, target: null, note: "", status: "REPLIED" })}
-                disabled={replySaving}
-              >
+              <Button variant="outline" size="sm" onClick={() => setReply((p) => ({ ...p, open: false }))} disabled={replySaving}>
                 取消
               </Button>
               <Button size="sm" onClick={submitReply} disabled={replySaving}>
-                {replySaving ? "保存中..." : "保存回复"}
+                {replySaving ? "保存中..." : "保存"}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 状态切换确认 */}
+      {/* ──────────────────── 分配对话框 ──────────────────── */}
+      {assignTarget && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setAssignTarget(null)} />
+          <div className="relative w-full max-w-xs mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+            <h3 className="mb-4 text-sm font-semibold text-gray-800 dark:text-white/90">
+              分配给 {assignTarget.name}
+            </h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => doAssign(null)}
+                disabled={assignSaving}
+                className="w-full rounded-lg border border-gray-200 px-4 py-2 text-left text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+              >
+                <span className="text-gray-400 italic">取消分配</span>
+              </button>
+              {adminUsers.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => doAssign(u.id)}
+                  disabled={assignSaving}
+                  className={`w-full rounded-lg border px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                    assignTarget.assigned_user_id === u.id
+                      ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20"
+                      : "border-gray-200 dark:border-gray-700"
+                  }`}
+                >
+                  {u.username}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────── 标签编辑对话框 ──────────────────── */}
+      {tagTarget && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setTagTarget(null)} />
+          <div className="relative w-full max-w-xs mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+            <h3 className="mb-3 text-sm font-semibold text-gray-800 dark:text-white/90">编辑标签</h3>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              placeholder="逗号分隔，如 VIP, sample, hot"
+              className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" size="sm" onClick={() => setTagTarget(null)} disabled={tagSaving}>取消</Button>
+              <Button size="sm" onClick={saveTags} disabled={tagSaving}>
+                {tagSaving ? "保存中..." : "保存"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────── 状态切换确认 ──────────────────── */}
       <ConfirmDialog
         open={statusConfirm.open}
-        title={statusConfirm.next === "ARCHIVED" ? "Archive Inquiry" : "Mark as Replied"}
-        message={`Are you sure you want to mark "${statusConfirm.target?.name}" as ${statusConfirm.next}?`}
-        confirmText={statusConfirm.next === "ARCHIVED" ? "Archive" : "Mark Replied"}
+        title="确认状态变更"
+        message={`确定将「${statusConfirm.target?.name}」标记为 ${statusConfirm.next}？`}
+        confirmText={`→ ${statusConfirm.next}`}
         loading={statusSaving}
         onConfirm={confirmStatusChange}
-        onCancel={() => setStatusConfirm({ open: false, target: null, next: "ARCHIVED" })}
+        onCancel={() => setStatusConfirm({ open: false, target: null, next: "LOST" })}
       />
 
-      {/* 删除确认 */}
+      {/* ──────────────────── 删除确认 ──────────────────── */}
       <ConfirmDialog
         open={deleteConfirm.open}
         title="删除询盘"

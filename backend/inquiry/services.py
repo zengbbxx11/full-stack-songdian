@@ -3,18 +3,27 @@
 设计约束：
 - 提交：幂等（biz_req_no，Redis SETNX 24h），重复提交返回首次结果。
 - 持久化后置 smtp_status=PENDING，触发 SMTP；未配置 SMTP 保持 PENDING（BD-02/MOCK）。
-- 状态机：NEW→REPLIED/ARCHIVED，REPLIED→ARCHIVED。
+- 状态机（2026-07-31 CRM 升级）：
+  NEW → CONTACTING / LOST
+  CONTACTING → QUOTED / LOST
+  QUOTED → DEAL / LOST
+  LOST 为终态，不可再流转。
 """
 from __future__ import annotations
 
+import json
 import re
+from datetime import UTC, datetime
 
 from common.enums import InquiryStatus, SmtpStatus
 from common.exceptions import BizException, ErrorCode
 from common.idempotency import acquire_idempotency
 from common.result import PageRequest
+from content.models import AdminUser
 from inquiry.models import Inquiry
 from inquiry.schemas import (
+    FollowNoteRequest,
+    InquiryAssignRequest,
     InquiryDetailVO,
     InquiryStatusRequest,
     InquirySubmitRequest,
@@ -87,34 +96,40 @@ async def list_inquiries(
     _allowed = {"created_time", "id", "status", "name", "email", "company"}
     if order_by.lstrip("-") not in _allowed:
         order_by = "-created_time"
-    rows = await q.order_by(order_by).offset(req.offset).limit(req.limit)
+    rows = await q.order_by(order_by).offset(req.offset).limit(req.limit).select_related("assigned_user")
     return [InquiryVO.from_model(r) for r in rows], total
 
 
 async def get_inquiry(inquiry_id: int) -> InquiryDetailVO:
-    inquiry = await Inquiry.get_or_none(id=inquiry_id)
+    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     return InquiryDetailVO.from_model(inquiry)
 
 
+# ── 状态机（2026-07-31 CRM 升级为五态管线） ──
 _ALLOWED_TRANSITIONS = {
-    InquiryStatus.NEW.value: {InquiryStatus.REPLIED.value, InquiryStatus.ARCHIVED.value},
-    InquiryStatus.REPLIED.value: {InquiryStatus.ARCHIVED.value},
-    InquiryStatus.ARCHIVED.value: {InquiryStatus.ARCHIVED.value},
+    InquiryStatus.NEW.value: {InquiryStatus.CONTACTING.value, InquiryStatus.LOST.value},
+    InquiryStatus.CONTACTING.value: {InquiryStatus.QUOTED.value, InquiryStatus.LOST.value},
+    InquiryStatus.QUOTED.value: {InquiryStatus.DEAL.value, InquiryStatus.LOST.value},
+    InquiryStatus.DEAL.value: set(),   # 终态
+    InquiryStatus.LOST.value: set(),   # 终态
 }
 
 
 async def update_status(inquiry_id: int, data: InquiryStatusRequest) -> InquiryDetailVO:
-    inquiry = await Inquiry.get_or_none(id=inquiry_id)
+    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     allowed = _ALLOWED_TRANSITIONS.get(inquiry.status, set())
-    if data.status not in allowed:
+    # 同一状态不变时跳过流转校验（仅更新 tags/reply_note）
+    if data.status != inquiry.status and data.status not in allowed:
         raise BizException(ErrorCode.C400001, f"非法的状态流转：{inquiry.status} → {data.status}")
     inquiry.status = data.status
     if data.reply_note is not None:
         inquiry.reply_note = data.reply_note
+    if data.tags is not None:
+        inquiry.tags = data.tags
     await inquiry.save()
     return InquiryDetailVO.from_model(inquiry)
 
@@ -125,3 +140,59 @@ async def delete_inquiry(inquiry_id: int) -> None:
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     await inquiry.delete()
+
+
+# ── CRM 新增操作（2026-07-31） ──
+
+async def assign_user(inquiry_id: int, data: InquiryAssignRequest, operator: AdminUser) -> InquiryDetailVO:
+    """分配/取消分配销售人员。"""
+    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    if inquiry is None:
+        raise BizException(ErrorCode.C404001, "询盘不存在")
+    if data.assigned_user_id is not None:
+        assignee = await AdminUser.get_or_none(id=data.assigned_user_id)
+        if assignee is None:
+            raise BizException(ErrorCode.C404001, "被分配的账号不存在")
+        inquiry.assigned_user = assignee
+    else:
+        inquiry.assigned_user = None  # type: ignore[assignment]
+    await inquiry.save()
+    # 自动追加一条跟进记录
+    note_text = f"分配给 {assignee.username}" if data.assigned_user_id else "取消分配"
+    await _append_follow_note(inquiry_id, note_text, operator.username)
+    return InquiryDetailVO.from_model(inquiry)
+
+
+async def add_follow_note(inquiry_id: int, data: FollowNoteRequest, operator: AdminUser) -> InquiryDetailVO:
+    """追加跟进记录，并更新 last_contact_time。"""
+    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    if inquiry is None:
+        raise BizException(ErrorCode.C404001, "询盘不存在")
+    await _append_follow_note(inquiry_id, data.note, operator.username)
+    inquiry.last_contact_time = datetime.now(UTC)
+    await inquiry.save()
+    return InquiryDetailVO.from_model(inquiry)
+
+
+async def update_tags(inquiry_id: int, tags: list[str]) -> InquiryDetailVO:
+    """整体覆盖标签数组。"""
+    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    if inquiry is None:
+        raise BizException(ErrorCode.C404001, "询盘不存在")
+    inquiry.tags = tags
+    await inquiry.save()
+    return InquiryDetailVO.from_model(inquiry)
+
+
+async def _append_follow_note(inquiry_id: int, note: str, username: str) -> None:
+    """内部公共：逐条追加跟进时间线记录（不重新查 Inquiry，调用方负责）。"""
+    entry = {"time": datetime.now(UTC).isoformat(), "user": username, "note": note}
+    # 用原生 update 避免并发覆盖 risk
+    from tortoise import connections
+    conn = connections.get("default")
+    await conn.execute_query(
+        """UPDATE "t_inquiry"
+           SET follow_notes = COALESCE(follow_notes, '[]'::jsonb) || $1::jsonb
+           WHERE id = $2""",
+        [f"[{json.dumps(entry)}]", inquiry_id],
+    )

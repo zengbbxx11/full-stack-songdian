@@ -326,7 +326,7 @@
 
 | 清单要求 | 核实结果 | 证据 |
 |----------|----------|------|
-| 健康检查端点 | ✅ **已实现** | `GET /healthz`（存活）+ `GET /readyz`（就绪，含 DB/Redis 探测） |
+| 健康检查端点 | ✅ **已实现** | `GET /healthz`（存活）+ `GET /readyz`（就绪，含 DB/Redis 探测）。前端/后台容器已补 healthcheck |
 | CPU / Memory / Disk 监控 | ❌ **缺失** | 无 Prometheus / Grafana 等 |
 | API Error 监控 | ❌ **缺失** | 无 |
 | Response Time 监控 | ❌ **缺失** | 无 |
@@ -395,7 +395,7 @@
 
 3. **备份体系已建立**：`scripts/backup.sh` 覆盖 PG dump + uploads tar 双轨备份，7 天滚动保留，需在服务器配置 cron。
 
-4. **前端/后台 Docker 健康检查缺失**：容器挂了 Docker 感知不到。
+4. **Docker 健康检查已补全**：frontend/admin-next 容器加 healthcheck，Docker 能感知容器故障并自动重启。
 
 ---
 

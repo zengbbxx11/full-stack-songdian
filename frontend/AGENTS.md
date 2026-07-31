@@ -122,7 +122,8 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `lib/seo.ts` | JSON-LD 结构化数据生成器 |
 | `lib/html-cleaner.ts` | 富文本 HTML 清洗器（去内联样式/容器）+ `sanitize-html` 白名单消毒（堵存储型 XSS），新闻/产品详情 `dangerouslySetInnerHTML` 必经此层 |
 | `lib/site-config.ts` | 页脚链接等静态配置 |
-| `lib/types.ts` | TypeScript 类型定义（ProductSummary, ProductDetail, WCProductCategory 等） |
+| `lib/types.ts` | TypeScript 类型定义（ProductSummary, ProductDetail, WCProductCategory 等；ProductDetail 含 seoTitle/seoDescription 字段） |
+| `app/products/[...slug]/page.tsx` | 产品详情页 — `generateMetadata` 优先读取后端 seoTitle/seoDescription，空则回退 title/content_html 截取 |
 | `components/Header.tsx` | 导航栏（白底黑字，品牌红 hover，CSS transition） |
 | `components/Footer.tsx` | 页脚 |
 | `components/NavigationProgress.tsx` | 顶部路由切换进度条（品牌红 #d4343e，零依赖） |
@@ -263,3 +264,9 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 `lib/types.ts` 已清理 WordPress/WooCommerce 原始结构类型（死代码）：移除 WP 核心全量类型与
 `WCProductTag` / `WCProductAttribute` / `WCProduct`，仅保留仍被应用层类型引用的
 `WCProductImage` / `WCProductCategory` / `WCAttribute`。详见 `../backend/CODE_REVIEW_REMEDIATION.md` #9。
+
+## 审计修复（2026-07-31）
+
+P0 级审计修复（详见 `../audit_verification_report.md`）：
+- **产品 SEO**：`ProductDetail` 类型新增 `seoTitle` / `seoDescription` 字段。产品详情页 `generateMetadata` 优先读这两个字段，空则回退原有的 title/content_html 截取。Open Graph 同步使用 SEO 值。
+- **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段，产品详情页可按分类过滤并渲染相关 FAQ（含 JSON-LD 结构化数据）。

@@ -54,13 +54,14 @@ cd backend
 backend/
 ├── main.py              # 应用入口：lifespan 初始化、路由注册、静态挂载、异常处理
 ├── common/              # 配置/异常/Redis/日志/中间件/HTML 消毒/设置路由
-├── product/             # 产品 + 分类 + 相册 + 规格属性
+├── product/             # 产品 + 分类 + 相册 + 规格属性（含 SEO 字段 seo_title/seo_description）
 ├── news/                # 新闻 + 分类
 ├── content/             # 管理员用户 + 角色 + RBAC 权限 + 审计日志
-├── inquiry/             # 询盘表单 + SMTP 邮件
+├── inquiry/             # 询盘 CRM（五态管线 NEW→CONTACTING→QUOTED→DEAL/LOST + 分配/跟进/标签）
 ├── search/              # 联合搜索（PG TSVector / 降级）
-├── uploads/             # 上传管理路由
+├── uploads/             # 上传管理（扩展名白名单 + mimetypes + magic bytes 三重校验）
 ├── seed/                # 幂等种子数据
+├── scripts/             # ../scripts/backup.sh — 生产自动备份脚本
 └── tests/               # pytest 测试
 ```
 
@@ -75,7 +76,9 @@ backend/
 | `/news` `/news-categories` | 公开 | 新闻列表/分类 |
 | `/news/{slug}` | 公开 | 新闻详情 |
 | `/search` | 公开 | 联合全文搜索 |
-| `/inquiries` | 公开(POST) | 提交询盘 |
+| `/inquiries` | 公开(POST) | 提交询盘（幂等 biz_req_no + IP 限流） |
+| `/admin/inquiries/{id}/assign` | JWT+RBAC | 分配/取消分配销售人员（2026-07 CRM 新增） |
+| `/admin/inquiries/{id}/follow-note` | JWT+RBAC | 追加跟进记录（2026-07 CRM 新增） |
 | `/admin/login` `/admin/refresh` | — | 登录/刷新令牌（**注意：路径无 `/auth` 段**） |
 | `/admin/products` `/admin/news` `/admin/categories` `/admin/users` `/admin/roles` `/admin/inquiries` `/admin/upload` `/admin/settings` | JWT+RBAC | 后台 CRUD 与管理 |
 
@@ -118,3 +121,11 @@ backend/
 - `asyncio.get_event_loop()` → `get_running_loop()`；
 - `content/list_audit_logs` 的 `order_by` 加白名单；
 - `search/services.py` 分页下沉到 DB。
+
+## 审计修复（2026-07-31）
+
+P0 级审计修复（详见 `../audit_verification_report.md`）：
+- **P0.1 上传安全**：`uploads/services.py` 新增 mimetypes + magic bytes 双重校验，防扩展名伪造攻击。
+- **P0.3 产品 SEO**：`product/models.py` 新增 `seo_title`(VARCHAR 120) / `seo_description`(VARCHAR 300)，运营可为重点产品手动精修 SEO 元数据。前端优先读取这两个字段，空则回退原有的 title/content_html 截取。
+- **P0.4 询盘 CRM**：`inquiry/` 模块全面升级——状态三态→五态管线（NEW→CONTACTING→QUOTED→DEAL/LOST）；新增 `assigned_user`(FK→AdminUser)、`follow_notes`(JSONB 时间线)、`last_contact_time`、`tags`(JSONB)；新增 `PUT .../assign` + `POST .../follow-note` 端点。迁移含历史数据自动兼容（REPLIED→CONTACTING, ARCHIVED→LOST）。
+- **P0.7 后台 SEO 管理**：`product-form` 新增 SEO 元数据面板（seo_title / seo_description + 字数计数器），产品列表页新增 SEO 列 + 快速编辑弹窗。

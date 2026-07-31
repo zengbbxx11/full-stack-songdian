@@ -62,9 +62,9 @@ admin-next/src/
 | 路由 | 说明 |
 |------|------|
 | `/` | Dashboard |
-| `/products` `/categories` | 产品列表（拖拽排序）/ 分类管理 |
-| `/news` `/inquiries` `/media` | 新闻列表（拖拽排序）/ 询盘 / 媒体管理 |
-| `/product-form` `/news-form` | 产品 / 新闻编辑表单 |
+| `/products` `/categories` | 产品列表（拖拽排序 + SEO 快速编辑）/ 分类管理 |
+| `/news` `/inquiries` `/media` | 新闻列表（拖拽排序）/ 询盘 CRM（分配/标签/跟进时间线）/ 媒体管理 |
+| `/product-form` `/news-form` | 产品 / 新闻编辑表单（含 SEO 元数据面板） |
 | `/signin` `/signup` | 认证（公开） |
 
 ---
@@ -107,3 +107,9 @@ admin-next/src/
 - 仍需保持 matcher 排除 `/api` 与 `/uploads`（见雷区 ④），否则登录被拦截。
 
 详见 `../backend/CODE_REVIEW_REMEDIATION.md` #13。
+
+## 审计修复（2026-07-31）
+
+P0 级审计修复（详见 `../audit_verification_report.md`）：
+- **询盘 CRM**：`inquiries/page.tsx` 全面重写——表格新增「负责人」列（点击弹出分配面板）、「标签」列（逗号编辑）、状态五态管线流转按钮、展开行显示跟进时间线。新增分配弹窗和标签编辑弹窗。后端新增 `PUT .../assign` + `POST .../follow-note` 端点。
+- **产品 SEO 管理**：`product-form/page.tsx` 新增「SEO 元数据」面板（seo_title / seo_description 输入框 + 字数计数器）；`products/page.tsx` 表格新增「SEO」列（已设置=绿色 / 未设置=灰色，点击弹出快速编辑弹窗）。

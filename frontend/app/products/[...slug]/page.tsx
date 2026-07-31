@@ -25,6 +25,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
 import { Badge } from "@/components/ui/badge";
 import { CtaButton } from "@/components/CtaButton";
+import { ProductViewTracker } from "@/components/ProductViewTracker";
 import { cleanPostContent } from "@/lib/html-cleaner";
 import { generateBreadcrumbs, productSchema, safeJsonLd } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
@@ -216,6 +217,7 @@ export default async function ProductDetailPage({
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
+        <ProductViewTracker productName={product.name} productSlug={product.slug} />
 
         {/* 面包屑导航 */}
         <section className="py-5" style={{ backgroundColor: "#171A20" }}>
@@ -285,6 +287,7 @@ export default async function ProductDetailPage({
                 <div className="flex flex-wrap gap-3 mb-8">
                   <CtaButton
                     href="/contact"
+                    ctaLabel="Product Detail - Send Inquiry"
                     className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[42px] px-8 text-[14px]"
                   >
                     Send Inquiry

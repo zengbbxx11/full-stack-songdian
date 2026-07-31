@@ -109,6 +109,13 @@ export default function InquiryForm() {
 
       setSubmitted(true);
       reset();
+
+      // GA4 打点
+      if (typeof window !== "undefined" && (window as any).gtag) {
+        (window as any).gtag("event", "contact_submit", {
+          page: window.location.pathname,
+        });
+      }
     } catch (err) {
       setError(
         err instanceof Error

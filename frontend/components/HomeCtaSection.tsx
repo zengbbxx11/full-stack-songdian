@@ -10,8 +10,14 @@
 import Link from "next/link";
 import AnimatedSection from "@/components/motion/AnimatedSection";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { trackEvent } from "@/lib/analytics";
 
 export default function HomeCtaSection() {
+  function handleInquiryClick() {
+    trackEvent("cta_click", { cta_label: "Home - Send an Inquiry", destination: "/contact" });
+    window.location.href = "/contact";
+  }
+
   return (
     <AnimatedSection>
       <section className="py-16 md:py-24" style={{ backgroundColor: "#171A20" }}>
@@ -24,7 +30,7 @@ export default function HomeCtaSection() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <InteractiveHoverButton
-              onClick={() => window.location.href = "/contact"}
+              onClick={handleInquiryClick}
               fill="bg-[#d4343e]"
               className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-8 text-[14px]"
             >

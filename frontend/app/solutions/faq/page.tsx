@@ -125,6 +125,7 @@ export default function FAQPage() {
                 </p>
                 <CtaButton
                   href="/contact"
+                  ctaLabel="FAQ - Contact Our Team"
                   className="mt-5 border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[46px] px-6 text-[14px]"
                 >
                   Contact Our Team

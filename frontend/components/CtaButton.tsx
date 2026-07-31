@@ -9,18 +9,28 @@
  */
 
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { trackEvent } from "@/lib/analytics";
 
 interface CtaButtonProps {
   href: string;
   children: React.ReactNode;
   className?: string;
   fill?: string;
+  /** GA4 事件标签，用于区分不同位置的 CTA。不传则不打点。 */
+  ctaLabel?: string;
 }
 
-export function CtaButton({ href, children, className, fill = "bg-[#d4343e]" }: CtaButtonProps) {
+export function CtaButton({ href, children, className, fill = "bg-[#d4343e]", ctaLabel }: CtaButtonProps) {
+  function handleClick() {
+    if (ctaLabel) {
+      trackEvent("cta_click", { cta_label: ctaLabel, destination: href });
+    }
+    window.location.href = href;
+  }
+
   return (
     <InteractiveHoverButton
-      onClick={() => { window.location.href = href; }}
+      onClick={handleClick}
       fill={fill}
       className={className}
     >

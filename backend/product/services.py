@@ -17,6 +17,12 @@ from common.enums import ProductStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
 from common.redis_client import cache_key, get_redis
+
+# 缓存 TTL（秒）
+DETAIL_TTL = 3600
+LIST_TTL = 300       # 列表 5 分钟
+CAT_TTL = 1800        # 分类 30 分钟
+
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from product.models import (
@@ -45,8 +51,6 @@ from tortoise.transactions import in_transaction
 SORT_ORDER_MIN = -1_000_000.0
 SORT_ORDER_MAX = 1_000_000.0
 
-DETAIL_TTL = 300  # 5min
-
 
 async def _cache_get_detail(slug: str) -> dict | None:
     try:
@@ -71,8 +75,20 @@ async def _cache_del_detail(slug: str) -> None:
 
 
 async def list_categories() -> list[CategoryVO]:
+    ck = cache_key("product", "categories")
+    raw = await get_redis().get(ck)
+    if raw:
+        try:
+            return [CategoryVO(**v) for v in json.loads(raw)]
+        except Exception:
+            pass
     cats = await ProductCategory.filter(deleted=0).order_by("sort_order", "id")
-    return [CategoryVO.from_model(c) for c in cats]
+    vos = [CategoryVO.from_model(c) for c in cats]
+    try:
+        await get_redis().setex(ck, CAT_TTL, json.dumps([v.model_dump(mode="json") for v in vos], default=str))
+    except Exception:
+        pass
+    return vos
 
 
 async def list_products(
@@ -81,6 +97,17 @@ async def list_products(
     status: str | None = None,
     keyword: str | None = None,
 ) -> tuple[list[ProductPageVO], int]:
+    # Cache-Aside 读取
+    ck = cache_key("product", "list", str(category_id), str(status), str(keyword or ""), str(req.offset), str(req.limit))
+    raw = await get_redis().get(ck)
+    if raw:
+        try:
+            data = json.loads(raw)
+            vos = [ProductPageVO(**v) for v in data["items"]]
+            return vos, data["total"]
+        except Exception:
+            pass  # 缓存损坏，回源查库
+
     q = Product.filter(deleted=0)
     if category_id is not None:
         q = q.filter(category_id=category_id)
@@ -90,7 +117,15 @@ async def list_products(
         q = q.filter(title__icontains=keyword)
     total = await q.count()
     rows = await q.order_by("sort_order", "-created_time").offset(req.offset).limit(req.limit).prefetch_related("category")
-    return [ProductPageVO.from_model(r) for r in rows], total
+    vos = [ProductPageVO.from_model(r) for r in rows]
+
+    # Cache-Aside 写入
+    try:
+        await get_redis().setex(ck, LIST_TTL, json.dumps({"items": [v.model_dump(mode="json") for v in vos], "total": total}, default=str))
+    except Exception:
+        pass
+
+    return vos, total
 
 
 async def get_product_detail(slug: str) -> ProductDetailVO:

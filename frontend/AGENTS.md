@@ -137,7 +137,9 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义，键盘可选） |
 | `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`） |
 | `components/CookieSettingsTrigger.tsx` | 页脚「Cookie Settings」重开入口（派发 `cookie-settings:open` 事件） |
-| `components/CtaButton.tsx` | 转化型 CTA 客户端包装：`InteractiveHoverButton` + `onClick` 跳转 `window.location.href`，供 Server Component 页面使用 |
+| `components/ProductViewTracker.tsx` | 产品详情页 GA4 `product_view` 事件打点（客户端组件，useEffect 触发） |
+| `components/CtaButton.tsx` | 转化型 CTA 客户端包装：`InteractiveHoverButton` + `onClick` + GA4 `cta_click` 事件 |
+| `lib/analytics.ts` | GA4 事件追踪 — `trackEvent()` 安全封装（无 gtag 时静默跳过） |
 | `components/HomeCtaSection.tsx` | 首页底部转化 CTA 区块（客户端组件，承载 InteractiveHoverButton） |
 | `components/ui/interactive-hover-button.tsx` | Magic UI 风格交互悬停按钮（dot 展开 + 文字滑出 + 箭头滑入；纯 CSS 过渡，`fill` 自定义悬停色） |
 
@@ -269,4 +271,5 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 
 P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **产品 SEO**：`ProductDetail` 类型新增 `seoTitle` / `seoDescription` 字段。产品详情页 `generateMetadata` 优先读这两个字段，空则回退原有的 title/content_html 截取。Open Graph 同步使用 SEO 值。
-- **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段，产品详情页可按分类过滤并渲染相关 FAQ（含 JSON-LD 结构化数据）。
+- **GA4 事件追踪**：新增 5 个自定义事件 —— `cta_click`（CtaButton + HomeCtaSection）、`product_view`（ProductViewTracker）、`contact_submit`（InquiryForm）。`lib/analytics.ts` 安全封装，无 GA ID 或未同意 Cookie 时静默跳过。
+- **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段。

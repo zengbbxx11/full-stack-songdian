@@ -120,6 +120,13 @@ async def _seed_settings() -> None:
     defaults = [
         ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
         ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
+        # ── SMTP 询盘邮件通知（管理后台可改，保存即生效，无需重启）──
+        ("smtp_host", "", "SMTP 服务器", "如 smtp.qq.com（留空 = 询盘仅落库，不发邮件）"),
+        ("smtp_port", "587", "SMTP 端口", "常用 587（STARTTLS）或 465"),
+        ("smtp_user", "", "SMTP 账号", "如 3932182720@qq.com"),
+        ("smtp_password", "", "SMTP 授权码", "QQ 邮箱授权码（非登录密码）；显示为 ******，留空不修改"),
+        ("inquiry_email_from", "", "发件人地址", "与 SMTP 账号一致"),
+        ("inquiry_email_to", "", "收件人地址", "询盘通知发给谁（可逗号分隔多个）"),
     ]
     for key, value, label, desc in defaults:
         await Setting.get_or_create(key=key, defaults={"value": value, "label": label, "description": desc})

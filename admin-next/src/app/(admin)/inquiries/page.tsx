@@ -52,7 +52,7 @@ export default function InquiriesPage() {
   /* ── 管理员列表（分配下拉） ── */
   const { data: adminUsers = [] } = useSWR<AdminUser[]>(
     "/admin/users",
-    (path) => swrFetcher<AdminUser[]>(path)
+    (path: string) => swrFetcher<AdminUser[]>(path)
   );
 
   /* ── 回复/操作对话框 ── */

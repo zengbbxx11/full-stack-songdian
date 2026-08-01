@@ -60,6 +60,9 @@ export interface NewsItem {
   id: number;
   title: string;
   slug: string;
+  summary: string | null;
+  content_html: string | null;
+  cover_image: string | null;
   status: string;
   sort_order: number;
   author: string | null;

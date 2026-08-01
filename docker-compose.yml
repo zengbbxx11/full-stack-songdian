@@ -94,9 +94,11 @@ services:
       # 上传文件数据卷：挂到独立数据目录 uploads_data/（与代码模块 uploads/ 分离，
       # 否则卷会遮住镜像里的 uploads/models.py 等代码 → Module not found）
       - uploads_data:/app/backend/uploads_data
-    # 启动前先跑 aerich 升级建表（幂等），随后起 uvicorn
+    # 启动前：aerich 升级建表（幂等）→ 同步内置图片到数据卷（cp -n 不覆盖已有）→ 起 uvicorn
     command: >
-      sh -c "aerich upgrade && uvicorn main:app --host 0.0.0.0 --port 8000
+      sh -c "aerich upgrade &&
+      mkdir -p uploads_data && cp -rn uploads/. uploads_data/ 2>/dev/null || true;
+      uvicorn main:app --host 0.0.0.0 --port 8000
       --proxy-headers --forwarded-allow-ips=127.0.0.1 --workers 4"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/healthz'); sys.exit(0)"]

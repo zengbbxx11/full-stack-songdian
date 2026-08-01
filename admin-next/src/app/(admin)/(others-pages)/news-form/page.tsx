@@ -32,7 +32,7 @@ export default function NewsFormPage() {
     if (!id) return;
     setLoadingData(true);
     apiFetch<NewsItem>(`/admin/news/${id}`).then((p) => {
-      setForm({ title: p.title || "", slug: p.slug || "", summary: (p as Record<string, unknown>).summary as string || "", content_html: (p as Record<string, unknown>).content_html as string || "", author: p.author || "", status: p.status || "DRAFT", cover_image: (p as Record<string, unknown>).cover_image as string || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
+      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("加载文章失败：" + msg);
@@ -62,8 +62,8 @@ export default function NewsFormPage() {
     e.preventDefault(); setSaving(true);
     try {
       // 如果未填写发布时间则从请求体中移除，避免空字符串导致后端 Pydantic 校验失败
-      const payload = { ...form };
-      if (!payload.published_at) delete (payload as Record<string, unknown>).published_at;
+      const payload: Record<string, unknown> = { ...form };
+      if (!payload.published_at) delete payload.published_at;
       if (isEdit) await apiFetch(`/admin/news/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/news", { method: "POST", body: payload });
       router.push("/news");

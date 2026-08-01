@@ -65,7 +65,8 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       # 连接 Compose 内 postgres / redis 服务（Docker 内置 DNS，服务名即主机名）
-      DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@postgres:5432/${PG_DB}
+      # 注意：Tortoise-ORM 认 postgres://（asyncpg），不认 postgresql:// 前缀
+      DATABASE_URL: postgres://${PG_USER}:${PG_PASSWORD}@postgres:5432/${PG_DB}
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALG: HS256

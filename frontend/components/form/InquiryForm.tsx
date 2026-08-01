@@ -78,7 +78,12 @@ export default function InquiryForm() {
   const onSubmit = async (values: InquiryFormValues) => {
     setError(null);
     try {
-      const bizReqNo = crypto.randomUUID();
+      // 生成业务单号：优先 crypto.randomUUID（HTTPS/localhost 才可用），
+      // HTTP（如 IP 直连）下 fallback 到时间戳+随机串，避免 randomUUID is not a function
+      const bizReqNo =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `inq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const body: Record<string, string | null> = {
         name: values.fullName,
         email: values.email,

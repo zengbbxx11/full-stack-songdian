@@ -36,6 +36,25 @@ PUBLIC_SETTINGS_TTL = 300  # 缓存 5 分钟
 # SMTP 密码占位符：GET 脱敏返回、PUT 传回时保留原值
 SMTP_PASSWORD_MASK = "******"
 
+# SMTP 配置 key 的默认元信息（惰性创建：不依赖 SEED_ON_START，保证设置页始终有邮件通知面板）
+_SMTP_DEFAULTS = [
+    ("smtp_host", "", "SMTP 服务器", "如 smtp.qq.com（留空 = 询盘仅落库，不发邮件）"),
+    ("smtp_port", "587", "SMTP 端口", "常用 587（STARTTLS）或 465"),
+    ("smtp_user", "", "SMTP 账号", "如 3932182720@qq.com"),
+    ("smtp_password", "", "SMTP 授权码", "QQ 邮箱授权码（非登录密码）；显示为 ******，留空不修改"),
+    ("inquiry_email_from", "", "发件人地址", "与 SMTP 账号一致"),
+    ("inquiry_email_to", "", "收件人地址", "询盘通知发给谁（可逗号分隔多个）"),
+]
+
+
+async def ensure_smtp_settings() -> None:
+    """幂等创建 SMTP 配置 key（get_or_create，已存在跳过）。
+
+    独立于 SEED_ON_START：无论种子开关如何，管理后台设置页都能看到「邮件通知」面板。
+    """
+    for key, value, label, desc in _SMTP_DEFAULTS:
+        await Setting.get_or_create(key=key, defaults={"value": value, "label": label, "description": desc})
+
 
 @router.get("/public/settings", summary="公开获取系统设置（无需认证）")
 async def get_public_settings() -> Result:
@@ -76,6 +95,8 @@ async def list_settings(
     供管理后台设置页初始加载使用，无需额外 RBAC 权限（仅需登录）。
     smtp_password 脱敏：非空时返回 ******，避免授权码回显到前端。
     """
+    # 惰性创建 SMTP key（不依赖 SEED_ON_START）
+    await ensure_smtp_settings()
     rows = await Setting.all()
     data = {r.key: {"value": r.value, "label": r.label, "description": r.description} for r in rows}
     if data.get("smtp_password", {}).get("value"):

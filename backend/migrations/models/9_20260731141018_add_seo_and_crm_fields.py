@@ -4,20 +4,37 @@ RUN_IN_TRANSACTION = True
 
 
 async def upgrade(db: BaseDBAsyncClient) -> str:
+    # 幂等迁移：兼容「全新生产库」（0-7 之后直接跑）与「本地已手动迁移过的库」。
+    # 全新库没有历史遗留列（use_cases_html 等），老库有 → 全部 IF EXISTS / IF NOT EXISTS 处理。
     return """
-        ALTER TABLE "t_product" DROP COLUMN "use_cases_html";
-        ALTER TABLE "t_product" DROP COLUMN "download_files";
-        ALTER TABLE "t_product" DROP COLUMN "video_url";
-        ALTER TABLE "t_product" DROP COLUMN "seo_keywords";
-        ALTER TABLE "t_product" DROP COLUMN "canonical_url";
+        -- t_product：清理历史遗留列（本地手动迁移残留；全新库无此列，IF EXISTS 安全跳过）
+        ALTER TABLE "t_product" DROP COLUMN IF EXISTS "use_cases_html";
+        ALTER TABLE "t_product" DROP COLUMN IF EXISTS "download_files";
+        ALTER TABLE "t_product" DROP COLUMN IF EXISTS "video_url";
+        ALTER TABLE "t_product" DROP COLUMN IF EXISTS "seo_keywords";
+        ALTER TABLE "t_product" DROP COLUMN IF EXISTS "canonical_url";
+        -- t_product：SEO 列（全新库需 ADD；老库已手动加过则跳过）
+        ALTER TABLE "t_product" ADD COLUMN IF NOT EXISTS "seo_title" VARCHAR(120);
+        ALTER TABLE "t_product" ADD COLUMN IF NOT EXISTS "seo_description" VARCHAR(300);
         ALTER TABLE "t_product" ALTER COLUMN "seo_title" TYPE VARCHAR(120) USING "seo_title"::VARCHAR(120);
         ALTER TABLE "t_product" ALTER COLUMN "seo_description" TYPE VARCHAR(300) USING "seo_description"::VARCHAR(300);
-        ALTER TABLE "t_inquiry" ADD "follow_notes" JSONB;
-        ALTER TABLE "t_inquiry" DROP COLUMN "assigned_user_name";
+        -- t_inquiry：CRM 字段（全新库需 ADD；老库已手动加过则跳过）
+        ALTER TABLE "t_inquiry" ADD COLUMN IF NOT EXISTS "assigned_user_id" INT;
+        ALTER TABLE "t_inquiry" ADD COLUMN IF NOT EXISTS "follow_notes" JSONB;
+        ALTER TABLE "t_inquiry" ADD COLUMN IF NOT EXISTS "last_contact_time" TIMESTAMPTZ;
+        ALTER TABLE "t_inquiry" ADD COLUMN IF NOT EXISTS "tags" JSONB;
+        ALTER TABLE "t_inquiry" DROP COLUMN IF EXISTS "assigned_user_name";
         COMMENT ON COLUMN "t_inquiry"."assigned_user_id" IS '负责跟进的销售人员';
         COMMENT ON COLUMN "t_inquiry"."last_contact_time" IS '最近一次联系时间';
+        -- 旧设计的独立跟进表（已并入 follow_notes JSONB）
         DROP TABLE IF EXISTS "t_inquiry_follow_up";
-        ALTER TABLE "t_inquiry" ADD CONSTRAINT "fk_t_inquir_t_admin__24769a2e" FOREIGN KEY ("assigned_user_id") REFERENCES "t_admin_user" ("id") ON DELETE SET NULL;"""
+        -- FK：assigned_user_id → t_admin_user（DO 块防重复；PG 无 ADD CONSTRAINT IF NOT EXISTS）
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_t_inquir_t_admin__24769a2e') THEN
+                ALTER TABLE "t_inquiry" ADD CONSTRAINT "fk_t_inquir_t_admin__24769a2e" FOREIGN KEY ("assigned_user_id") REFERENCES "t_admin_user" ("id") ON DELETE SET NULL;
+            END IF;
+        END $$;"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:

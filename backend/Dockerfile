@@ -19,6 +19,10 @@ COPY pyproject.toml ./
 RUN pip install --no-cache-dir uv \
     && uv sync --no-dev
 
+# uv sync 默认创建 .venv 虚拟环境（新版 uv 已移除 --system 参数），
+# 把 .venv/bin 加入 PATH，使 aerich / uvicorn 等命令可直接调用
+ENV PATH="/app/backend/.venv/bin:$PATH"
+
 # 复制业务代码（.dockerignore 已排除 .venv / .env / uploads / db 等非镜像内容）
 COPY . .
 

@@ -17,7 +17,7 @@ WORKDIR /app/backend
 # 用 uv 安装生产依赖：先放 pyproject.toml，uv sync 会按需生成/复用 uv.lock（确定性构建）
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir uv \
-    && uv sync --no-dev --system
+    && uv sync --no-dev
 
 # 复制业务代码（.dockerignore 已排除 .venv / .env / uploads / db 等非镜像内容）
 COPY . .

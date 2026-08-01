@@ -77,10 +77,10 @@ services:
       SECURITY_FAIL_CLOSED: "true"
       SEED_ON_START: ${SEED_ON_START:-false}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MEDIA_ROOT: uploads_data
+      MEDIA_URL: /uploads
       HOST: 0.0.0.0
       PORT: "8000"
-      MEDIA_ROOT: uploads
-      MEDIA_URL: /uploads
       MAX_UPLOAD_MB: "10"
       MAX_UPLOAD_FILES: "20"
       MAX_UPLOAD_TOTAL_MB: "100"
@@ -91,7 +91,9 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - uploads_data:/app/backend/uploads
+      # 上传文件数据卷：挂到独立数据目录 uploads_data/（与代码模块 uploads/ 分离，
+      # 否则卷会遮住镜像里的 uploads/models.py 等代码 → Module not found）
+      - uploads_data:/app/backend/uploads_data
     # 启动前先跑 aerich 升级建表（幂等），随后起 uvicorn
     command: >
       sh -c "aerich upgrade && uvicorn main:app --host 0.0.0.0 --port 8000

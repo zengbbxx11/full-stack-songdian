@@ -6,9 +6,10 @@ __pycache__/
 .env.example
 .git/
 .gitignore
-# ⚠️ 注意：uploads/ 是代码模块（Album/UploadRecord 模型），必须进镜像；上传文件数据在 Docker 卷 uploads_data，不在此目录
+# ⚠️ 注意：uploads/ 是代码模块（Album/UploadRecord 模型），必须进镜像；上传文件数据在 Docker 卷 uploads_data（挂 uploads_data/ 目录），不在此目录
 db/
 tests/
+uploads_data/
 .pytest_cache/
 .ruff_cache/
 .idea/

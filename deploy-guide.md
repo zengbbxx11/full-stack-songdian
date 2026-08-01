@@ -207,24 +207,24 @@ docker compose up -d backend    # 重启后 run_seed 插入演示类目/商品/�
 
 > 此时管理员初始密码取 `ADMIN_PASSWORD`。适合「先跑起来看效果」的冷启动场景。
 
-### 方式 B：导入 dev 全量数据（生产数据对齐用）
+### 方式 B：导入 dev 全量数据（生产数据对齐用，**推荐**）
 
-`db/seed_data.sql` 是 **pg_dump 18** 全量导出（含 DDL + 数据），直接 `\i` 会因外键顺序 / DDL 与 aerich 已建表冲突而失败。采用「拆分 data 部分 + 禁用外键」：（⚠️ Compose 内 PG 已锁定 **18 线**，与种子同版本；若误用 16 会导入报错）
+`db/seed_data.sql` 是 **pg_dump 18 全量导出**（含完整 DDL + 数据），**已包含 2026-08-01 全部新列**（产品 SEO 字段、询盘 CRM 字段等）。
+
+> ⚠️ **为什么必须用完整 seed 而不是「aerich 建表 + 只导数据」**：aerich 迁移链（0-7 + 9）建的表**缺列**——本地开发库经历过多次手动 ALTER（`sort_order`、`seo_title` 等不在迁移里），迁移链覆盖不全。若只导 seed 的 data 部分，会报 `column "xxx" does not exist`。**正确做法：整个 schema 以 seed 为准**（DROP SCHEMA 后导入完整 seed），表结构与数据完全对齐。
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# 1) 拆出纯数据部分（跳过 CREATE TABLE / ALTER / INDEX 等 DDL）
-awk '
-  /^--/ { next }
-  /^(CREATE|ALTER|SET|SELECT.*setval|COMMENT)/ { in_schema=1 }
-  /^(COPY|INSERT|\\copy)/ { in_schema=0 }
-  { if (!in_schema) print }
-' db/seed_data.sql > /tmp/seed_data_only.sql
+# 1) 把 seed 完整文件拷进 postgres 容器（psql 的 \i 读不到宿主机路径）
+docker compose exec -T postgres sh -c 'cat > /tmp/seed_full.sql' < db/seed_data.sql
 
-# 2) 通过 compose exec 连 PG（按 .env 的 PG_USER/PG_DB；下面以 songdian 为例，请替换为实际值）
-#    先用 DO 块禁用全部外键触发器，导入后再启用（绕开 t_product / t_product_category 顺序问题）
-docker compose exec -T postgres psql -U songdian -d songdian_b2b -v ON_ERROR_STOP=0 <<'SQL'
+# 2) 重置 schema（清掉 aerich 建的不完整表；首次部署可省略 aerich 流程）
+docker compose exec -T postgres psql -U postgres -d songdian_b2b -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 3) 导入完整 seed（DDL + 数据一起；禁外键绕开字母序 FK 问题）
+#    用户/库名按 .env 实际 PG_USER / PG_DB 替换（示例 postgres / songdian_b2b）
+docker compose exec -T postgres psql -U postgres -d songdian_b2b -v ON_ERROR_STOP=0 <<'SQL'
 DO $$
 DECLARE r RECORD;
 BEGIN
@@ -232,7 +232,7 @@ BEGIN
     EXECUTE format('ALTER TABLE %s DISABLE TRIGGER ALL', r.tbl);
   END LOOP;
 END $$;
-\i /tmp/seed_data_only.sql
+\i /tmp/seed_full.sql
 DO $$
 DECLARE r RECORD;
 BEGIN
@@ -241,11 +241,18 @@ BEGIN
   END LOOP;
 END $$;
 SQL
+
+# 4) 验证
+curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | head -c 200
 ```
 
 > ⚠️ 若同时用「方式 B 导入全量」又开着 `SEED_ON_START=true`，会重复插入。二者取一。
-> ⚠️ 导入前确保 backend 已 `aerich upgrade` 建好表（即 `docker compose up -d` 已成功跑过一次）。
-> ⚠️ 上面 `songdian` 用户 / 库名请替换为你 `.env` 中实际的 `PG_USER` / `PG_DB`。
+> ⚠️ **seed 更新方法**：本地开发库有新增列/数据后，重新导出并提交：
+> ```bash
+> # 本地 Windows（PG 18 环境变量按实际）
+> PGPASSWORD=<本地密码> "C:/ProgramData/envkit/services/postgres/18.4/bin/pg_dump.exe" -U postgres -d songdianB2B -f ../db/seed_data.sql
+> git add db/seed_data.sql && git commit -m "chore: refresh seed_data.sql"
+> ```
 
 ---
 
@@ -442,18 +449,20 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 ### 12.1 架构差异
 
 ```
-有域名模式：                      仅 IP 模式：
-www.songdian.tech → :3000         106.53.220.184/        → frontend:3000
-admin.songdian.tech → :3001       106.53.220.184:3001/   → admin-next:3001
-api.songdian.tech    → :8000      106.53.220.184/api/    → backend:8000
+有域名模式：                      仅 IP 模式（端口分工，见下）：
+www.songdian.tech → :3000         106.53.220.184        → OpenResty:80 → frontend:3000
+admin.songdian.tech → :3001       106.53.220.184:8081   → OpenResty:8081 → admin-next:3001
+api.songdian.tech    → :8000      106.53.220.184/api/   → OpenResty:80 → backend:8000
                                   106.53.220.184/uploads/→ backend:8000
 ```
+
+> ⚠️ **后台公网端口用 8081，不用 3001**：admin-next 容器已把 3001 发布到宿主机 `127.0.0.1:3001`（安全设计，外网不可直连），OpenResty（host 网络）无法再监听 3001（端口冲突，nginx 配置不生效）。所以 OpenResty 用 **8081** 做公网入口，反代到容器内网 `127.0.0.1:3001`。
 
 ### 12.2 修改 .env（构建前必须）
 
 ```bash
 # 编辑 .env，改以下两行：
-CORS_ORIGINS=http://106.53.220.184,http://106.53.220.184:3001
+CORS_ORIGINS=http://106.53.220.184,http://106.53.220.184:8081
 NEXT_PUBLIC_API_URL=http://106.53.220.184
 ```
 
@@ -461,20 +470,50 @@ NEXT_PUBLIC_API_URL=http://106.53.220.184
 
 ### 12.3 OpenResty 配置（1Panel）
 
-1Panel → 网站 → 创建网站 → 静态网站：
+**官网站点**（1Panel → 网站 → 创建网站 → 静态网站）：
 
 | 配置 | 值 |
 |------|-----|
 | 域名 | `106.53.220.184` |
 | 端口 | `80` |
+| 代号 | `songdian-web` |
 
-创建后 → 配置文件 → 追加：
+**后台站点**（同上再创建一个）：
+
+| 配置 | 值 |
+|------|-----|
+| 域名 | `106.53.220.184` |
+| 端口 | `8081`（⚠️ 不要用 3001，被容器占用；创建时若报端口占用，先选 8082 创建成功后再改回 8081） |
+| 代号 | `songdian-admin`（⚠️ 必须与官网代号不同，否则报「代号已存在」） |
+
+创建后 → 配置两个站点的配置文件：
 
 ```nginx
-# 管理后台（独立端口 3001，需在云安全组放行 3001）
+# ── 官网站点（106.53.220.184.conf，server 块内）──
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+location /api/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+location /uploads/ {
+    proxy_pass http://127.0.0.1:8000;
+}
+
+# ── 后台站点（songdian-admin.conf，整个 server 块替换）──
 server {
-    listen 3001;
+    listen 8081;
     server_name 106.53.220.184;
+    access_log /www/sites/songdian-admin/log/access.log main;
+    error_log /www/sites/songdian-admin/log/error.log;
     location / {
         proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
@@ -483,36 +522,35 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-
-# 主站 server 块内追加 API/上传代理
-location /api/ {
-    proxy_pass http://127.0.0.1:8000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /uploads/ {
-    proxy_pass http://127.0.0.1:8000;
-}
 ```
 
-### 12.4 防火墙放行管理后台端口
+> ⚠️ `location` 必须写在 `server { }` **花括号内部**（`error_page` 之后、最后 `}` 之前），否则 nginx 报 `"location" directive is not allowed here`。
+
+### 12.4 防火墙放行（两层都要）
+
+**① 服务器 ufw**：
 
 ```bash
-# 服务器防火墙
-sudo ufw allow 3001/tcp
-
-# ⚠️ 云服务器安全组也要放行 3001
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw allow 8081/tcp && sudo ufw enable
+# 检查：sudo ufw status 应有 8081
 ```
+
+**② 腾讯云控制台防火墙**（轻量服务器「防火墙」入口，不是 1Panel）：
+
+| 协议 | 端口 | 来源 |
+|------|------|------|
+| TCP | 80 | 0.0.0.0/0 |
+| TCP | 8081 | 0.0.0.0/0 |
+| TCP | 22 | 0.0.0.0/0 |
+
+> ⚠️ 两层都要放行：1Panel 面板防火墙 ≠ 腾讯云控制台防火墙 ≠ 服务器 ufw。外部访问不了时先 `ss -tlnp | grep 端口` 看监听地址，再逐层排查。
 
 ### 12.5 访问方式
 
 | 服务 | 地址 |
 |------|------|
 | 官网 | `http://106.53.220.184` |
-| 管理后台 | `http://106.53.220.184:3001` |
+| 管理后台 | `http://106.53.220.184:8081/signin` |
 | API | `http://106.53.220.184/api/v1/products` |
 
 ### 12.6 注意事项
@@ -520,7 +558,7 @@ sudo ufw allow 3001/tcp
 | 项 | 说明 |
 |----|------|
 | HTTP 明文 | 无域名无法申请 Let's Encrypt 证书，登录走 HTTP 明文（IP 无法签发可信证书） |
-| 管理后台端口 | 3001 端口外网可达，建议后续买域名后关闭 |
+| 管理后台端口 | 公网入口 **8081**（OpenResty 反代到容器 3001）；容器 3000/3001/8000 仅绑 127.0.0.1 不外露 |
 | 图片域名 | `frontend/next.config.ts` 已包含 `106.53.220.184` 和 `localhost` 的 remotePatterns，IP 模式直接可用 |
 | 切换域名 | 买域名后只需改 `.env` 的 `CORS_ORIGINS` / `NEXT_PUBLIC_API_URL` 并 `docker compose build`，再加 OpenResty 的 443 站点即可 |
 
@@ -533,15 +571,23 @@ sudo ufw allow 3001/tcp
 | 保活方式 | 全部由 Docker Compose 管理（`restart: unless-stopped`），不再依赖 1Panel 进程守护或容器内 pm2 |
 | PG/Redis 位置 | 由本 Compose 用官方镜像自建（postgres / redis 服务），与应用同网络、经服务名互访；数据落命名卷 |
 | PG 版本 | 锁定 **18 线**（`postgres:18-bookworm`，官方镜像、无 zhparser），与 `db/seed_data.sql` 的 pg_dump 18 同版本；**勿降为 16**，否则种子导入失败 |
+| ⚠️ **PG18 卷挂载点** | 卷必须挂 `/var/lib/postgresql`（内部按 major 版本分子目录）。挂旧路径 `/var/lib/postgresql/data` 会报「18+ images require...」启动失败（postgres:18 镜像新约定） |
+| ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
+| 图片自动同步 | backend 启动命令 `cp -rn uploads/. uploads_data/`（`-n` 不覆盖运营上传文件，幂等）：git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷 |
 | 域名变更 | `NEXT_PUBLIC_API_URL` 等是**构建期内联**变量，改域名需 `docker compose build` 重新构建镜像（非仅改 env） |
-| 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech`；若 API 域名不同，需同步改该配置并重建 |
+| 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech` + `106.53.220.184` + `localhost`；若 API 域名不同，需同步改该配置并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | 无 HTTPS | 没域名时 OpenResty 用 IP 反代、登录走 HTTP 明文；建议买域名 + Let's Encrypt（1Panel 一键） |
-| 数据导入 | 见「六、导入数据」：aerich 已建表，导入 `seed_data.sql` 须拆 data 部分 + 禁外键，避免 FK 顺序报错 |
+| 数据导入 | 见「六、导入数据」：**必须完整 seed 导入**（DROP SCHEMA → \i 完整 seed → 禁外键）。⚠️ 勿用「aerich 建表 + 只导 data」——迁移链缺列（`sort_order`/`seo_title` 等不在迁移里），会报 `column does not exist` |
+| 迁移链说明 | aerich 迁移 0-7 + 9（无 8）。迁移 9 已改为**幂等**（`ADD IF NOT EXISTS` / `DROP IF EXISTS` / DO 块 FK），全新库与本地库都能过；backup 首次建表由 backend `command` 的 `aerich upgrade` 自动执行 |
+| 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
+| 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
+| 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
 | 数据库升级 | 升 PG 大版本时注意迁移 `pg_data` 卷（先备份再升）；Redis 升级注意 `redis_data` 兼容 |
 | 前端 URL 规范映射 | `frontend/lib/generated/canonical-map.ts` 由 `npm run gen:map` 生成并随仓库提交；产品/分类变动后需重新生成+提交，再 `docker compose build`，否则产品 308 重定向用旧映射 |
 | postcss 构建报错 | 若 `next build` 报 `Module not found: Can't resolve 'postcss'`，是 `node_modules/postcss` 被装成空目录所致；`rm -rf node_modules/postcss && npm install` 补全即可（本地 dev/CI 均可能遇到） |
+| Next 16.2 构建 | `next.config.ts` **不要写 `eslint: {}`**（16.2 已移除该键，type check 报错）；`useSearchParams()` 页面必须包 `<Suspense>`，否则静态生成报 CSR bailout |
 
 ---
 
-*最后更新：2026-07-31（补充前端构建前置 `npm run gen:map`：产品 URL 规范映射需构建前生成并提交，否则生产 308 重定向用旧映射；记录 postcss 构建报错修复）*
+*最后更新：2026-08-01（实战上线：PG18 卷挂载点 `/var/lib/postgresql`；uploads 代码/数据分离 + 自动同步；完整 seed 导入（勿拆 data）；后台公网端口 8081（容器占 3001 冲突）；腾讯云防火墙 + ufw 双层放行；迁移 9 幂等；uv sync .venv PATH；postgres:// scheme；Next16.2 构建修复）*

@@ -134,4 +134,5 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **用户管理**：`content/services.py` 新增 `list_users` / `create_user`（统一 admin 角色）/ `delete_user`（admin 账号受保护）/ `reset_password`。路由 `GET/POST/DELETE /admin/users` + `PUT .../reset-password`。
 - **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页+搜索）。
 - **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
-- **迁移**：`migrations/models/9_*_add_seo_and_crm_fields.py` 为 aerich 自动生成的合并迁移（含 SEO + CRM 全部列变更）。
+- **迁移**：`migrations/models/9_*_add_seo_and_crm_fields.py` 为合并迁移（SEO + CRM 列变更）。⚠️ **无迁移 8**（功能并入 9）；迁移 9 已改为**幂等**（`ADD IF NOT EXISTS` / `DROP IF EXISTS` / DO 块加 FK），全新库与本地已手动迁移库都能跑。生产首次部署由 backend `command` 的 `aerich upgrade` 自动执行。
+- ⚠️ **生产数据导入**：本地库经历过多轮手动 ALTER，aerich 迁移链建的表**缺列**（`sort_order`/`seo_title` 不在迁移里）。生产首次导入**必须用完整 `db/seed_data.sql`**（DROP SCHEMA → \i 完整 seed → 禁外键），勿「aerich 建表 + 只导 data」。seed 更新：本地开发库重新 pg_dump 后提交（含新列）。

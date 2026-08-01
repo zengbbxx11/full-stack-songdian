@@ -12,8 +12,6 @@ const backendProxyUrl =
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
-  // 镜像构建阶段不跑 ESLint（lint 应放在 CI 单独执行，避免偶发告警阻断部署镜像）
-  eslint: { ignoreDuringBuilds: true },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${backendProxyUrl}/api/:path*` },

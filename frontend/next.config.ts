@@ -3,8 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
-  // 镜像构建阶段不跑 ESLint（lint 应放在 CI 单独执行，避免偶发告警阻断部署镜像）
-  eslint: { ignoreDuringBuilds: true },
   images: {
     // 启用 AVIF + WebP 现代图片格式 — 比 JPEG/PNG 小 30-50%，弱网体验显著提升
     formats: ["image/avif", "image/webp"],

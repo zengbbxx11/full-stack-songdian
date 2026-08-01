@@ -273,3 +273,8 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **产品 SEO**：`ProductDetail` 类型新增 `seoTitle` / `seoDescription` 字段。产品详情页 `generateMetadata` 优先读这两个字段，空则回退原有的 title/content_html 截取。Open Graph 同步使用 SEO 值。
 - **GA4 事件追踪**：新增 5 个自定义事件 —— `cta_click`（CtaButton + HomeCtaSection）、`product_view`（ProductViewTracker）、`contact_submit`（InquiryForm）。`lib/analytics.ts` 安全封装，无 GA ID 或未同意 Cookie 时静默跳过。
 - **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段。
+
+## 生产构建与 HTTP 兼容修复（2026-08-01）
+
+- **询盘提交 randomUUID 兼容**：`components/form/InquiryForm.tsx` 的 `crypto.randomUUID()` 在 HTTP（非 HTTPS，如 IP 直连）环境不存在（非安全上下文）——已加 fallback：可用则 `randomUUID()`，否则 `inq-${Date.now()}-${Math.random()...}`。勿改回直接调用。
+- **首页预渲染兜底**：`app/page.tsx` 的 `NewsSection` 对 `getPosts()` 加 `.catch(() => ({ posts: [], pagination: null }))`——`docker compose build` 时后端未启动不会因预渲染 404 失败（降级空数据，运行时正常拉取）。新增首页数据区块时**必须**带同类兜底，否则生产构建会挂。

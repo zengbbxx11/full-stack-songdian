@@ -115,6 +115,12 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **产品 SEO 管理**：`product-form/page.tsx` 新增「SEO 元数据」面板（seo_title / seo_description 输入框 + 字数计数器）；`products/page.tsx` 表格新增「SEO」列（已设置=绿色 / 未设置=灰色，点击弹出快速编辑弹窗）。
 - **产品批量操作**：`products/page.tsx` 新增全选/单选 Checkbox + 批量操作栏（发布选中/隐藏选中/删除选中），`Promise.all` 并发逐条 PUT/DELETE。
 - **用户管理**：`users/page.tsx` 新增用户管理页——表格列出所有后台账号 + 新建弹窗（username/password）+ 删除（admin 不可删）+ 密码重置弹窗。所有新账号统一管理员权限。
+
+## 邮件通知 SMTP 后台配置（2026-08-01）
+
+- `settings/page.tsx` 新增「邮件通知（询盘 SMTP）」分组：识别 `smtp_*` / `inquiry_email_*` 键归组展示（两列栅格），右上角「测试发送」按钮（先 PUT 保存当前表单 → POST `/admin/settings/smtp/test` 用已存配置发信）。
+- `smtp_password` 后端脱敏：GET 返回 `******`，PUT 回传掩码时后端保留原值（前端无需特殊处理）。
+- ⚠️ SMTP 配置 key 由后端惰性创建（`GET /admin/settings` 触发），前端**不要**在页面里手动建 key；页面只依赖后端返回的 key 渲染。
 - **仪表盘增强**：`EcommerceMetrics.tsx` 新增询盘国家分布（按 country 字段 Top 10）和询盘状态分布进度条。后端 `GET /admin/stats`。
 - **审计日志**：`audit-logs/page.tsx` 新增审计日志表格页——时间/用户/操作/资源/结果/IP，分页+搜索。侧边栏新增入口。
 - **动态头部**：`UserDropdown.tsx` 改为从 `/admin/profile` 动态读取用户名，显示真实 username + 首字母头像（不再硬编码"管理员"/"A"）。

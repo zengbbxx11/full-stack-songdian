@@ -5,7 +5,7 @@
  * 提交走 POST/PUT /api/v1/admin/news。
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -17,6 +17,14 @@ import { apiFetch, API_BASE } from "@/lib/api-client";
 import type { NewsItem } from "@/types";
 
 export default function NewsFormPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading...</div>}>
+      <NewsFormInner />
+    </Suspense>
+  );
+}
+
+function NewsFormInner() {
   const router = useRouter();
   const params = useSearchParams();
   const id = params.get("id");

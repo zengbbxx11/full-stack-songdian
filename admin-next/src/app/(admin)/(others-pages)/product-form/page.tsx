@@ -5,7 +5,7 @@
  * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
  */
 "use client";
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -20,6 +20,14 @@ interface GalleryItem { id: number; image_url: string; alt: string | null; sort_
 interface AttributeItem { id: number; name: string; slug: string; value: string; }
 
 export default function ProductFormPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading...</div>}>
+      <ProductFormInner />
+    </Suspense>
+  );
+}
+
+function ProductFormInner() {
   const router = useRouter();
   const params = useSearchParams();
   const id = params.get("id");

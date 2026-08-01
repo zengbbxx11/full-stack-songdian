@@ -4,7 +4,7 @@ import React from "react";
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message: string;
+  message: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;

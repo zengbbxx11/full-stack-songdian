@@ -172,7 +172,8 @@ async function ExhibitionSection() {
 
 /** 最新资讯 — 异步获取文章列表 */
 async function NewsSection() {
-  const { posts } = await getPosts({ perPage: 3 });
+  // 兜底：构建期/后端不可达时降级为空数组，避免预渲染失败（Next build 会执行本组件）
+  const { posts } = await getPosts({ perPage: 3 }).catch(() => ({ posts: [], pagination: null }));
 
   return (
     <section className="py-16 md:py-24 bg-white">

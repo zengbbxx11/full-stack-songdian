@@ -46,10 +46,11 @@ async def load_smtp_config() -> dict[str, str]:
         "inquiry_email_from": settings.inquiry_email_from or "",
         "inquiry_email_to": settings.inquiry_email_to or "",
     }
-    # 库配置覆盖（t_setting 存在即优先；生产环境管理后台可在线改）
+    # 库配置覆盖（t_setting 存在且**非空**才覆盖，避免空串误吞环境变量配置）
     rows = await Setting.filter(key__in=SMTP_SETTING_KEYS)
     for r in rows:
-        cfg[r.key] = r.value or ""
+        if r.value:
+            cfg[r.key] = r.value
     return cfg
 
 

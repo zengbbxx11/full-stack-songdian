@@ -132,7 +132,7 @@ export default function MediaPage() {
   const [keyword, setKeyword] = useState(""); const [page, setPage] = useState(1); const pageSize = 20;
   const [uploading, setUploading] = useState(false); const [uploadAlbumId, setUploadAlbumId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [confirm, setConfirm] = useState<{ title: string; message: React.ReactNode; onConfirm: () => void; confirmText?: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void; confirmText?: string } | null>(null);
   const [albumModal, setAlbumModal] = useState<{ open: boolean; editing: Album | null }>({ open: false, editing: null });
   const [albumForm, setAlbumForm] = useState({ name: "", slug: "", parent_id: "" });
   // 引用缓存：按 record id 存储 usage 信息，hover 时懒加载

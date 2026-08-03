@@ -11,9 +11,9 @@
 ## 架构总览
 
 ```
-浏览器 ──https://www.songdian.tech────► OpenResty(:80/443) ──127.0.0.1:3000──► frontend 容器
-浏览器 ──https://admin.songdian.tech──► OpenResty(:80/443) ──127.0.0.1:3001──► admin-next 容器
-浏览器 ──https://api.songdian.tech────► OpenResty(:80/443) ──127.0.0.1:8000──► backend 容器
+浏览器 ──http://106.53.220.184/────► OpenResty(:80) ──127.0.0.1:3000──► frontend 容器
+浏览器 ──http://106.53.220.184:3001/─► OpenResty/端口映射 ──127.0.0.1:3001──► admin-next 容器
+浏览器 ──http://106.53.220.184/api/──► OpenResty(:80) ──127.0.0.1:8000──► backend 容器
                                                   │
                        postgres:5432 / redis:6379 ← Compose 内数据服务（与应用同网络）
 ```
@@ -67,7 +67,7 @@ cd full-stack-songdian
 ```bash
 cd /home/ubuntu/full-stack-songdian
 cp .env.example .env
-vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / 各域名
+vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD；无域名时保留 IP 配置
 ```
 
 `.env` 字段说明（详见 `.env.example` 注释）：
@@ -189,7 +189,7 @@ curl -s "http://127.0.0.1:8000/api/v1/admin/users/list" -H "Authorization: Beare
 | 4 | frontend | 依赖 backend `/healthz` 探活 → `next start -p 3000` |
 | 5 | admin-next | 依赖 backend `/healthz` 探活 → `next start -p 3001` |
 
-**关键：aerich upgrade 自动执行**——backend 的 `command` 为 `sh -c "aerich upgrade && uvicorn main:app ..."`。迁移文件 `9_*_add_seo_and_crm_fields.py` 含 Product（seo_title/seo_description）+ Inquiry（assigned_user/follow_notes/last_contact_time/tags）共 6 列 ADD COLUMN，首次启动自动建表。
+**关键：aerich upgrade 自动执行**——backend 的 `command` 为 `sh -c "aerich upgrade && uvicorn main:app ..."`。迁移链现在保留 `8_20260730162240_add_seo_and_crm_fields.py` 兼容已部署数据库，再由 9 号迁移完成幂等清理和外键规范化。云端已有数据时只执行正常的 `docker compose up -d`，不要删除 `pg_data` 或重置 schema。
 
 ---
 
@@ -211,7 +211,7 @@ docker compose up -d backend    # 重启后 run_seed 插入演示类目/商品/�
 
 `db/seed_data.sql` 是 **pg_dump 18 全量导出**（含完整 DDL + 数据），**已包含 2026-08-01 全部新列**（产品 SEO 字段、询盘 CRM 字段等）。
 
-> ⚠️ **为什么必须用完整 seed 而不是「aerich 建表 + 只导数据」**：aerich 迁移链（0-7 + 9）建的表**缺列**——本地开发库经历过多次手动 ALTER（`sort_order`、`seo_title` 等不在迁移里），迁移链覆盖不全。若只导 seed 的 data 部分，会报 `column "xxx" does not exist`。**正确做法：整个 schema 以 seed 为准**（DROP SCHEMA 后导入完整 seed），表结构与数据完全对齐。
+> ⚠️ **为什么必须用完整 seed 而不是「aerich 建表 + 只导数据」**：即使迁移链已补齐为 0-9，本地开发库仍经历过多次手动 ALTER（例如部分 `sort_order` 字段不在迁移里），迁移链覆盖不全。若只导 seed 的 data 部分，会报 `column "xxx" does not exist`。**已有云端数据不得 DROP SCHEMA**；新环境应按本指南导入完整 schema+data seed。
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
@@ -578,8 +578,8 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech` + `106.53.220.184` + `localhost`；若 API 域名不同，需同步改该配置并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | 无 HTTPS | 没域名时 OpenResty 用 IP 反代、登录走 HTTP 明文；建议买域名 + Let's Encrypt（1Panel 一键） |
-| 数据导入 | 见「六、导入数据」：**必须完整 seed 导入**（DROP SCHEMA → \i 完整 seed → 禁外键）。⚠️ 勿用「aerich 建表 + 只导 data」——迁移链缺列（`sort_order`/`seo_title` 等不在迁移里），会报 `column does not exist` |
-| 迁移链说明 | aerich 迁移 0-7 + 9（无 8）。迁移 9 已改为**幂等**（`ADD IF NOT EXISTS` / `DROP IF EXISTS` / DO 块 FK），全新库与本地库都能过；backup 首次建表由 backend `command` 的 `aerich upgrade` 自动执行 |
+| 数据导入 | 新环境见「六、导入数据」：可完整导入 seed；已有云端数据禁止 DROP SCHEMA。不要只导 data，部分历史字段（如 `sort_order`）仍需以完整 schema 为准 |
+| 迁移链说明 | aerich 迁移 0-9（已补回云端曾执行但仓库缺失的 8 号兼容迁移）。8/9 均使用幂等 DDL；已有云库不重放已记录版本，新库可完整执行 `aerich upgrade`。禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
 | 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
 | 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
@@ -592,4 +592,4 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 
 ---
 
-*最后更新：2026-08-01（实战上线：PG18 卷挂载点 `/var/lib/postgresql`；uploads 代码/数据分离 + 自动同步；完整 seed 导入（勿拆 data）；后台公网端口 8081（容器占 3001 冲突）；腾讯云防火墙 + ufw 双层放行；迁移 9 幂等；uv sync .venv PATH；postgres:// scheme；Next16.2 构建修复）*
+*最后更新：2026-08-03（云端 IP `106.53.220.184`；询盘默认 API 与响应码修复；前后台全量分页读取；补回 Aerich 8 号兼容迁移；保留现有 PostgreSQL/Redis 数据卷）*

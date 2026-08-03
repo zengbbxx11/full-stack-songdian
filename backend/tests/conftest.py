@@ -16,6 +16,7 @@ QA 隔离策略（严格把关、避免跨用例污染）：
 from __future__ import annotations
 
 import os
+import glob as _glob
 import uuid as _uuid
 
 # 必须在导入 main 之前设置环境变量
@@ -32,7 +33,6 @@ for _suffix in ("", "-wal", "-shm", "-journal"):
             pass
 
 # 清理遗留的旧 test_*.db* 文件（测试中断时未执行 finally 清理的残留）
-import glob as _glob
 for _p in _glob.glob(os.path.join(_PROJECT_ROOT, "test_*.db*")):
     try:
         os.remove(_p)
@@ -50,6 +50,16 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
+
+# 测试不得读取开发者本机 .env 中的真实 SMTP 配置，避免用例发送外部邮件。
+for _smtp_field in (
+    "smtp_host",
+    "smtp_user",
+    "smtp_password",
+    "inquiry_email_from",
+    "inquiry_email_to",
+):
+    setattr(_cfg.settings, _smtp_field, "")
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -84,4 +94,18 @@ def client():
     便于断言（而非在测试内直接抛出异常）。
     """
     with TestClient(app, raise_server_exceptions=False) as c:
+        # 产品分类由生产数据导入流程负责；测试单独创建一条，避免测试依赖生产 seed 内容。
+        login = c.post(
+            "/api/v1/admin/login",
+            json={"username": "admin", "password": _cfg.settings.admin_password or "Songdian@2026"},
+        )
+        if login.status_code == 200 and login.json().get("code") in (0, "0"):
+            token = login.json()["data"]["access_token"]
+            c.post(
+                "/api/v1/admin/categories",
+                headers={"Authorization": f"Bearer {token}"},
+                json={"name": "QA Category", "slug": f"qa-category-{_uuid.uuid4().hex[:8]}"},
+            )
+            # 后续用例应从匿名状态开始，不能继承登录接口下发的 Cookie。
+            c.cookies.clear()
         yield c

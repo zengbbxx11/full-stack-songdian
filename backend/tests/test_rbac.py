@@ -19,6 +19,7 @@ from httpx import ASGITransport
 from common.config import close_db, init_db
 from common.password import hash_password
 from content.models import AdminUser, Role
+from product.models import ProductCategory
 from main import app
 from seed.seed_data import run_seed
 
@@ -69,6 +70,7 @@ def test_low_permission_role_forbidden_but_allowed():
     async def _run():
         await init_db()
         await run_seed()
+        await ProductCategory.create(name="QA Category", slug=f"qa-category-{uuid.uuid4().hex[:8]}")
         op = await Role.get_or_none(code="operator")
         assert op is not None, "种子应含 operator 角色"
         uname = "qa_operator_" + uuid.uuid4().hex[:8]

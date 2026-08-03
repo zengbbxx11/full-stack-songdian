@@ -8,7 +8,7 @@ import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, swrFetcher, API_BASE } from "@/lib/api-client";
+import { apiFetch, apiFetchAllPages, swrFetcher, API_BASE } from "@/lib/api-client";
 import type { Product, ProductCategory, Paginated } from "@/types";
 
 export default function ProductsPage() {
@@ -31,13 +31,13 @@ export default function ProductsPage() {
   const [seoSaving, setSeoSaving] = useState(false);
 
   const productsKey = useMemo(() => {
-    const params = new URLSearchParams({ page_size: "100" });
+    const params = new URLSearchParams({ page_size: "50" });
     if (keyword) params.set("keyword", keyword);
     if (categoryId) params.set("category_id", categoryId);
     return `/admin/products?${params}`;
   }, [keyword, categoryId]);
 
-  const { data: productsData, isLoading: productsLoading } = useSWR<Paginated<Product>>(productsKey, swrFetcher);
+  const { data: productsData, isLoading: productsLoading } = useSWR<Paginated<Product>>(productsKey, (path: string) => apiFetchAllPages<Product>(path));
   const { data: catsData } = useSWR<Paginated<ProductCategory>>("/admin/categories?page_size=50", swrFetcher);
   const categories = catsData?.list ?? [];
 
@@ -131,7 +131,7 @@ export default function ProductsPage() {
   async function handleSaveOrder() {
     setSaving(true);
     try {
-      const allResp = await apiFetch<Paginated<Product>>("/admin/products?page_size=200");
+      const allResp = await apiFetchAllPages<Product>("/admin/products");
       const allProducts: Product[] = (allResp.list ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
       const visibleIdSet = new Set(items.map(p => p.id));
       const newGlobalOrder: Product[] = []; let vi = 0;

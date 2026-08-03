@@ -12,17 +12,12 @@ import json
 import math
 
 from tortoise.functions import Max
+from tortoise.transactions import in_transaction
 
 from common.enums import ProductStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
 from common.redis_client import cache_key, get_redis
-
-# 缓存 TTL（秒）
-DETAIL_TTL = 3600
-LIST_TTL = 300       # 列表 5 分钟
-CAT_TTL = 1800        # 分类 30 分钟
-
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from product.models import (
@@ -43,9 +38,12 @@ from product.schemas import (
     ProductDetailVO,
     ProductPageVO,
     ProductUpdateRequest,
-    ReorderReq,
 )
-from tortoise.transactions import in_transaction
+
+# 缓存 TTL（秒）
+DETAIL_TTL = 3600
+LIST_TTL = 300       # 列表 5 分钟
+CAT_TTL = 1800        # 分类 30 分钟
 
 # sort_order 允许范围（security-audit F-18）：拒绝 NaN/非有限/极端值
 SORT_ORDER_MIN = -1_000_000.0

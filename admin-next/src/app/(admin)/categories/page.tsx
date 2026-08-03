@@ -14,7 +14,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, apiFetchAllPages } from "@/lib/api-client";
 import type { ProductCategory, Paginated } from "@/types";
 
 /** 列表行：后端分类 VO + 本地统计的产品数。 */
@@ -55,7 +55,7 @@ export default function CategoriesPage() {
     try {
       const [catJson, prodJson] = await Promise.all([
         apiFetch<Paginated<ProductCategory>>("/admin/categories?page_size=50"),
-        apiFetch<{ list: { category: { id: number } | null }[] }>("/products?page_size=200").catch(
+        apiFetchAllPages<{ category: { id: number } | null }>("/products").catch(
           () => ({ list: [] as { category: { id: number } | null }[] })
         ),
       ]);

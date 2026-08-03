@@ -65,12 +65,21 @@ export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
 /** 获取全部已发布文章 slug（用于 SSG 预渲染 generateStaticParams 与 sitemap）。 */
 export async function getAllPostSlugs(): Promise<string[]> {
   try {
-    const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
-      page: 1,
-      page_size: 100,
-      status: "PUBLISHED",
-    });
-    return data.list.map((n) => n.slug);
+    const list: NewsPageDTO[] = [];
+    let page = 1;
+    let total = 0;
+    do {
+      const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
+        page,
+        page_size: 50,
+        status: "PUBLISHED",
+      });
+      list.push(...data.list);
+      total = data.total;
+      page += 1;
+      if (data.list.length === 0) break;
+    } while (list.length < total);
+    return list.map((n) => n.slug);
   } catch {
     return [];
   }
@@ -85,12 +94,21 @@ export async function getAdjacentPosts(slug: string): Promise<{
   next: { slug: string; title: string; date: string } | null;
 }> {
   try {
-    const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
-      page: 1,
-      page_size: 100,
-      status: "PUBLISHED",
-    });
-    const sorted = [...data.list].sort((a, b) =>
+    const list: NewsPageDTO[] = [];
+    let page = 1;
+    let total = 0;
+    do {
+      const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
+        page,
+        page_size: 50,
+        status: "PUBLISHED",
+      });
+      list.push(...data.list);
+      total = data.total;
+      page += 1;
+      if (data.list.length === 0) break;
+    } while (list.length < total);
+    const sorted = [...list].sort((a, b) =>
       (b.published_at || "").localeCompare(a.published_at || ""),
     );
     const idx = sorted.findIndex((n) => n.slug === slug);

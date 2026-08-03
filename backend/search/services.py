@@ -14,8 +14,6 @@ import time
 from common.exceptions import BizException, ErrorCode
 from common.redis_client import cache_key, get_redis
 from common.search_vector import is_sqlite, resolve_tsconfig
-from news.models import News
-from product.models import Product
 from search.schemas import SearchItemVO, SearchPageVO
 
 CACHE_TTL = 60

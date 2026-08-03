@@ -16,7 +16,7 @@ import useSWR from "swr";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Button from "@/components/ui/button/Button";
-import { apiFetch, swrFetcher } from "@/lib/api-client";
+import { apiFetch, apiFetchAllPages, swrFetcher } from "@/lib/api-client";
 import type { AdminUser, Inquiry, InquiryStatus, FollowNote, Paginated } from "@/types";
 
 /* ── 各状态对应徽章样式 ── */
@@ -42,8 +42,8 @@ export default function InquiriesPage() {
 
   /* ── 数据 ── */
   const { data, error, isLoading, mutate } = useSWR<Paginated<Inquiry>, Error>(
-    "/admin/inquiries?page_size=100",
-    (path: string) => swrFetcher<Paginated<Inquiry>>(path)
+    "/admin/inquiries?page_size=50",
+    (path: string) => apiFetchAllPages<Inquiry>(path)
   );
   const items = data?.list ?? [];
   const [search, setSearch] = useState("");

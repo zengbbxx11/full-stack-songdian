@@ -2,6 +2,13 @@
 
 基于 FastAPI + Next.js 的 Songdian 工厂 B2B 外贸全栈系统，展示型官网前端（产品目录 + 询盘）与 Next.js 管理后台分离部署。
 
+## 当前云端部署
+
+- 公网官网入口：<http://106.53.220.184/>
+- 当前部署无域名，前端公网 API 基地址使用 `http://106.53.220.184`。
+- Docker Compose 内部服务仍使用 `backend:8000`、`postgres:5432`、`redis:6379`，不要把容器间地址改成公网 IP。
+- 生产环境的根目录 `.env` 由 `.env.example` 复制后填写真实密钥；`NEXT_PUBLIC_API_URL` 必须与公网反向代理路径一致。
+
 ---
 
 ## 技术栈

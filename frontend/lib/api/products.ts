@@ -82,13 +82,21 @@ export interface ProductSlugEntry {
 /** 获取全部已发布产品的 slug + 主分类 slug（用于 SSG / sitemap 生成 /products/{category}/{slug}）。 */
 export async function getAllProductSlugEntries(): Promise<ProductSlugEntry[]> {
   try {
-    const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", {
-      page: 1,
-      // 一次性拉全量（当前 42 个），留出余量避免后续新增产品被截断
-      page_size: 300,
-      status: "PUBLISHED",
-    });
-    return data.list.map((p) => ({ slug: p.slug, categorySlug: p.category?.slug ?? null }));
+    const list: ProductPageDTO[] = [];
+    let page = 1;
+    let total = 0;
+    do {
+      const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", {
+        page,
+        page_size: 50,
+        status: "PUBLISHED",
+      });
+      list.push(...data.list);
+      total = data.total;
+      page += 1;
+      if (data.list.length === 0) break;
+    } while (list.length < total);
+    return list.map((p) => ({ slug: p.slug, categorySlug: p.category?.slug ?? null }));
   } catch {
     return [];
   }

@@ -50,7 +50,7 @@ npm run dev        # http://localhost:3000
 
 生产构建（⚠️ 构建前须先生成产品 URL 规范映射）：
 ```bash
-npm run gen:map   # 生成 lib/generated/canonical-map.ts（需后端 API 可达，默认 http://localhost:8080）
+npm run gen:map   # 生成 lib/generated/canonical-map.ts（需后端 API 可达，默认 http://localhost:8000）
 npm run build
 npm run start
 ```

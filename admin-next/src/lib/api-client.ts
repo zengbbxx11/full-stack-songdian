@@ -18,6 +18,13 @@ export const TOKEN_KEY = "admin_token";
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export interface PaginatedData<T> {
+  list: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 /** API 路由统一前缀。 */
 const API_PREFIX = "/api/v1";
 
@@ -149,6 +156,30 @@ export async function apiFetch<T = unknown>(
 
   // 解包：返回信封中的 data；无 data 字段时返回整个对象（兼容个别直接返回对象的接口）。
   return (payload?.data ?? payload) as T;
+}
+
+/** 拉取所有分页，供后台需要全量排序/统计的功能使用。后端单页上限为 50。 */
+export async function apiFetchAllPages<T>(
+  path: string,
+  pageSize = 50,
+): Promise<PaginatedData<T>> {
+  const base = new URL(path, "http://internal.local");
+  const list: T[] = [];
+  let page = 1;
+  let total = 0;
+
+  do {
+    const current = new URL(base);
+    current.searchParams.set("page", String(page));
+    current.searchParams.set("page_size", String(Math.min(pageSize, 50)));
+    const data = await apiFetch<PaginatedData<T>>(`${current.pathname}${current.search}`);
+    list.push(...(data.list ?? []));
+    total = data.total ?? list.length;
+    page += 1;
+    if (!data.list?.length) break;
+  } while (list.length < total);
+
+  return { list, total, page: 1, page_size: Math.min(pageSize, 50) };
 }
 
 /**

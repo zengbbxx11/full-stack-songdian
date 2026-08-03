@@ -20,7 +20,6 @@ from common.search_vector import update_search_vector
 from news.models import News, NewsCategory
 from news.schemas import (
     NewsCategoryCreate,
-    NewsCategoryReorderReq,
     NewsCategoryUpdate,
     NewsCategoryVO,
     NewsCreateRequest,

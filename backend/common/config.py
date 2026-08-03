@@ -74,7 +74,10 @@ class Settings(BaseSettings):
 
     # ── CORS（security-audit F-09）：显式来源，禁用凭据，避免通配 + cookie 风险 ──
     # 逗号分隔，如 "http://localhost:3000,http://localhost:3001"。Bearer 鉴权无需凭据。
-    cors_origins: str = "http://localhost:3000,http://localhost:3001"
+    cors_origins: str = (
+        "http://localhost:3000,http://localhost:3001,"
+        "http://127.0.0.1:3000,http://127.0.0.1:3001"
+    )
 
     # ── 受信代理（security-audit F-06）：仅这些直连 IP 的 X-Forwarded-For 才被信任 ──
     # 逗号分隔，如 "10.0.0.1,127.0.0.1"。为空则一律不信任 XFF。
@@ -209,6 +212,11 @@ async def init_db() -> None:
     SQLite 模式下会自动建表（CREATE TABLE IF NOT EXISTS）。
     PostgreSQL 模式下需要用 aerich 工具手动跑迁移（见 README §3）。
     """
+    # 测试会反复创建 TestClient；Tortoise 的全局 fallback 只能同时存在一个。
+    # 正常生产启动只会命中一次，这里额外清理残留 context，避免测试/热重载污染下一次初始化。
+    if Tortoise._get_context() is not None:
+        await Tortoise.close_connections()
+
     # Tortoise.init 连数据库 + 注册全部 model
     await Tortoise.init(
         db_url=settings.database_url,

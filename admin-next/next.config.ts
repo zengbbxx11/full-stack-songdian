@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
 
 // 后端代理地址：admin-next 服务端代理 /api 与 /uploads 时使用。
-// - 本地开发：http://localhost:8080
+// - 本地开发：http://localhost:8000
 // - Docker Compose：http://backend:8000（compose 服务名 DNS，容器间直连，不走公网回环）
-// 优先级：BACKEND_PROXY_URL > NEXT_PUBLIC_API_URL > localhost:8080
+// 优先级：BACKEND_PROXY_URL > NEXT_PUBLIC_API_URL > localhost:8000
 const backendProxyUrl =
   process.env.BACKEND_PROXY_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8080";
+  "http://localhost:8000";
 
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）

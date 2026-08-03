@@ -13,7 +13,7 @@
  *  - 提交成功改为页面内成功态，替代原生 alert。
  */
 
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,7 @@ import FormField from "./FormField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { API_BASE } from "@/lib/api/client";
 import { Loader2, Clock, BadgeCheck, Globe, Check } from "lucide-react";
 
 const cameraCategories = [
@@ -52,6 +53,8 @@ const TRUST_ITEMS = [
 ];
 
 export default function InquiryForm() {
+  const inquiryId = useId();
+  const fallbackCounter = useRef(0);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +86,7 @@ export default function InquiryForm() {
       const bizReqNo =
         typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
-          : `inq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          : `inq-${inquiryId}-${++fallbackCounter.current}`;
       const body: Record<string, string | null> = {
         name: values.fullName,
         email: values.email,
@@ -99,7 +102,7 @@ export default function InquiryForm() {
       };
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/inquiries`,
+        `${API_BASE}/api/v1/inquiries`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -107,8 +110,8 @@ export default function InquiryForm() {
         }
       );
 
-      const json = await res.json();
-      if (json.code !== 0) {
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || String(json.code) !== "0") {
         throw new Error(json.msg || "Submission failed. Please try again.");
       }
 

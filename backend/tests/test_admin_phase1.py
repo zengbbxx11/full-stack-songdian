@@ -68,12 +68,19 @@ class TestLocalStorageWhitelist:
 
     @patch("uploads.services.settings")
     async def test_allows_jpg_png_webp_gif(self, mock_settings):
-        """验证白名单内所有扩展名均可通过扩展名校验（mock 磁盘写入）。"""
+        """验证白名单内所有扩展名均可通过扩展名与文件头校验。"""
         import tempfile
         from pathlib import Path
 
         mock_settings.max_upload_mb = 10
         mock_settings.media_url = "/uploads"
+        valid_headers = {
+            ".jpg": b"\xff\xd8\xff\xe0" + b"0" * 20,
+            ".jpeg": b"\xff\xd8\xff\xe0" + b"0" * 20,
+            ".png": b"\x89PNG\r\n\x1a\n" + b"0" * 20,
+            ".webp": b"RIFF" + b"0" * 4 + b"WEBP" + b"0" * 20,
+            ".gif": b"GIF89a" + b"0" * 20,
+        }
 
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -81,7 +88,7 @@ class TestLocalStorageWhitelist:
 
             for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
                 filename = f"photo{ext}"
-                file = UploadFile(filename=filename, file=io.BytesIO(b"testdata"))
+                file = UploadFile(filename=filename, file=io.BytesIO(valid_headers[ext]))
                 url = await backend.save(file, filename)
                 assert url.startswith("/uploads/")
                 assert url.endswith(ext)

@@ -118,7 +118,8 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `lib/api/products.ts` | 产品数据访问层（列表/详情/分类/slug） |
 | `lib/api/news.ts` | 新闻数据访问层 |
 | `lib/api/search.ts` | 全文搜索数据访问层 |
-| `lib/inquiry-service.ts` | 询盘提交 Server Action（文件持久化 + SMTP 邮件通知） |
+| `components/form/InquiryForm.tsx` | 当前询盘表单：提交 FastAPI，由后端落 PostgreSQL 并发送 SMTP 通知 |
+| `lib/inquiry-service.ts` | 旧版文件持久化 Server Action，当前页面未引用，勿作为生产链路 |
 | `lib/seo.ts` | JSON-LD 结构化数据生成器 |
 | `lib/html-cleaner.ts` | 富文本 HTML 清洗器（去内联样式/容器）+ `sanitize-html` 白名单消毒（堵存储型 XSS），新闻/产品详情 `dangerouslySetInnerHTML` 必经此层 |
 | `lib/site-config.ts` | 页脚链接等静态配置 |
@@ -194,7 +195,9 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称（SEO） | `Songdian Technology...` |
 | `SMTP_HOST` | SMTP 服务器（询盘邮件） | （可选） |
 | `SMTP_PORT` | SMTP 端口 | `587` |
-| `SMTP_USER` / `SMTP_PASS` | SMTP 认证（授权码） | （可选） |
+| `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的后端主机（不含协议） | `106.53.220.184` |
+
+> SMTP 已迁移到 FastAPI 后端和管理后台“系统设置”；frontend 不配置 SMTP 口令。
 | `INQUIRY_EMAIL_TO` | 接收询盘通知的邮箱 | （可选） |
 
 > ⚠️ SMTP 四项不填则仅保存到 `data/inquiries.json`，不发邮件。

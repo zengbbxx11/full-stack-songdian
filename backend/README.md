@@ -13,7 +13,7 @@
 
 | 组件 | 版本要求 | 说明 |
 | --- | --- | --- |
-| Python | **>= 3.14** | `pyproject.toml` 硬性约束；本机开发通过 .venv 运行 Python 3.13.12（实际可用） |
+| Python | **>= 3.14** | `pyproject.toml` 硬性约束；推荐用 uv 按 `uv.lock` 创建环境 |
 | FastAPI | >= 0.139.2 | 设计冻结版本，已真实可用 |
 | Tortoise ORM | >= 1.1.7 | 设计冻结版本，已真实可用 |
 | aerich | >= 0.9.3 | 迁移工具 |
@@ -140,8 +140,8 @@ python tests/smoke.py
 pytest tests/ -q
 ```
 
-初始管理员：`admin` / `Songdian@2026`（角色 `admin`，绑定全部权限码）。
-> 口令可通过环境变量 `ADMIN_PASSWORD` 覆盖；若未设置，种子数据会自动生成随机密码并记录到日志。
+初始管理员用户名为 `admin`（角色 `admin`，绑定全部权限码）。
+> 初始口令取环境变量 `ADMIN_PASSWORD`；若未设置，种子器会生成一次性随机密码并记录到日志，不存在硬编码默认口令。
 
 ---
 
@@ -156,11 +156,13 @@ pytest tests/ -q
 | M2 新闻 | POST/PUT/DELETE | /admin/news、/admin/news/{id} |
 | M3 搜索 | GET | /search?q=&type=&page=&page_size= |
 | M4 询盘 | POST | /inquiries |
-| M4 询盘 | GET/PUT | /admin/inquiries、/admin/inquiries/{id} |
+| M4 询盘 | GET/PUT/POST/DELETE | /admin/inquiries、/admin/inquiries/{id}、状态、分配、跟进记录 |
 | M5 内容 | POST | /admin/login、/admin/logout、/admin/refresh（令牌族轮换） |
 | M5 内容 | GET/PUT | /admin/profile（查看/修改当前用户信息） |
 | M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs |
-| 上传 | POST | /admin/upload（单文件）、/admin/upload/batch（多文件） |
+| M5 内容 | GET/POST/PUT/DELETE | /admin/users、/admin/users/list、/admin/stats |
+| 设置 | GET/PUT/POST | /public/settings、/admin/settings、/admin/settings/smtp/test |
+| 上传/媒体库 | GET/POST/PUT/DELETE | /admin/upload、/admin/upload/batch、/admin/upload/records、/admin/albums |
 | 系统 | GET | /healthz、/readyz |
 
 ---
@@ -177,8 +179,8 @@ pytest tests/ -q
 - **单 Tortoise app 标签 `models`**；跨模块外键 `models.Role` 形式。
 - **JWT 安全（H2/H5 修复后）**：HS256，access(2h)/refresh(7d)，jti 黑名单 + 令牌族（`fid`）吊销；
   `logout` 吊销整族、`refresh` 轮换并吊销旧族（含重用检测）。
-  **生产必须显式设置 `JWT_SECRET`**——未设置时后端自动生成临时随机密钥并告警，
-  但重启即失效、不可用于生产。
+  **生产必须显式设置 `JWT_SECRET`**——生产环境未设置或仍为占位值时后端拒绝启动；
+  仅开发环境会生成临时随机密钥并告警。
 - **审计归因（H3 修复后）**：`@audit(action, resource)` 自动记录操作人（解析 `_user` 依赖）
   与资源（`resource.format(**kwargs)`），正确写入审计日志。
 
@@ -193,7 +195,7 @@ JWT_SECRET=<≥32字节随机值，如 openssl rand -base64 48>            # 生
 JWT_ALG=HS256
 ACCESS_TOKEN_TTL=7200
 REFRESH_TOKEN_TTL=604800
-ADMIN_PASSWORD=Songdian@2026                                      # 初始管理员口令（可覆盖）
+ADMIN_PASSWORD=<强随机初始管理员口令>                              # 留空则生成一次性随机口令
 SEED_ON_START=true
 HOST=0.0.0.0
 PORT=8000
@@ -220,14 +222,13 @@ uv run python -m seed.seed_data
 > 未配置 Redis 时自动降级内存字典；未配置 SMTP 时询盘只入库不真发邮件；
 > 未装 zhparser 的 PG 下全文检索自动降级 `simple` 配置，**功能正常**。
 
-**生产（Ubuntu + 1Panel，推荐）**
+**生产（腾讯云轻量服务器 + Docker Compose + 1Panel OpenResty）**
 
-后端以 uv venv 跑在 1Panel 主机上，PostgreSQL / Redis 由 1Panel 应用商店安装并管理
-（默认不暴露宿主机端口）。完整步骤见根目录 [`docs/deploy-1panel.md`](../../docs/deploy-1panel.md)
-与根 `README.md`「一键部署（Ubuntu + 1Panel，推荐）」。
+当前生产服务器公网 IP 为 `106.53.220.184`，暂无域名。PostgreSQL、Redis、backend、frontend、
+admin-next 均由根目录 `docker-compose.yml` 编排；仅 1Panel OpenResty 位于 Compose 外负责公网反代。
+完整步骤以根目录 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
-> **生产必须显式设置 `JWT_SECRET`**（≥32 字节随机值）——未设置时后端自动生成临时随机密钥并告警，
-> 但重启即失效、不可用于生产（所有已签发 refresh 令牌失效、用户被强制登出）。
+> **生产必须显式设置 `JWT_SECRET`**（≥32 字节随机值），未设置或仍为占位值时应用会拒绝启动。
 
 ## 9. 代码审查修复记录
 
@@ -249,4 +250,4 @@ uv run python -m seed.seed_data
 `APP_ENV`）；`t_*_category.sort_order` 改为 double precision、`t_news.status` 默认 `DRAFT`、清理
 WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两处致全站 500 的回归
 （`ToastContext` TDZ、`categories` 页 Modal 具名导入）。详见
-[`SECURITY-REMEDIATION.md`](./SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。
+[`SECURITY-REMEDIATION.md`](../SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。

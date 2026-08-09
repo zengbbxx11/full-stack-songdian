@@ -63,25 +63,24 @@ npm run start
 |------|--------|------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | 站点规范地址 |
+| `NEXT_PUBLIC_IMAGE_HOST` | `106.53.220.184` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
 | `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | — | 站点描述（SEO） |
 | `NEXT_PUBLIC_ISR_REVALIDATE` | `60` | ISR 缓存时间（秒） |
 | `NEXT_PUBLIC_GA_ID` | — | Google Analytics 4 测量 ID（如 `G-XXXX`）。**仅当用户在 Cookie 同意横幅接受「分析」类后才加载**；不配置则 GA 完全不加载，站点零追踪 |
 
-### SMTP 邮件通知（可选）
+### 询盘与 SMTP
 
-配置后，Contact 页询盘提交会自动发送邮件通知。不配置则仅保存到 `data/inquiries.json`。
+Contact 页直接调用 FastAPI `POST /api/v1/inquiries`；后端将询盘保存到 PostgreSQL，并按管理后台
+“系统设置”中的 SMTP 配置发送通知。`backend/.env` 中的 `SMTP_*` / `INQUIRY_EMAIL_*` 仅作为后端
+兜底，官网前端无需配置 SMTP，也不再把生产询盘保存到 `data/inquiries.json`。
 
-| 变量 | 示例 | 说明 |
-|------|------|------|
-| `SMTP_HOST` | `smtp.qq.com` | SMTP 服务器地址 |
-| `SMTP_PORT` | `587` | 端口（TLS=587, SSL=465） |
-| `SMTP_USER` | `xxx@qq.com` | 发件邮箱完整地址 |
-| `SMTP_PASS` | 授权码 | **必须是授权码，非登录密码** |
-| `INQUIRY_EMAIL_TO` | `zengxb21@proton.me` | 接收通知的邮箱 |
-| `INQUIRY_EMAIL_FROM` | — | 发件人显示地址（默认取 SMTP_USER） |
+当前腾讯云无域名部署使用 `NEXT_PUBLIC_API_URL=http://106.53.220.184`；修改任何
+`NEXT_PUBLIC_*` 构建变量后必须重新执行 `docker compose build frontend`。
 
-建议在项目根目录创建 `.env.local` 按需覆盖（不入库）。
+后续启用域名时，将 API、SEO 规范地址和图片主机分别切换为 `https://api.songdian.tech`、
+`https://www.songdian.tech`、`api.songdian.tech` 即可；这些值已作为 Docker build args 注入，
+不需要修改应用代码。
 
 ---
 
@@ -144,7 +143,7 @@ frontend/
 │  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
 │  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
 │  ├─ content-data.ts           # 全站可编辑文案
-│  ├─ inquiry-service.ts        # 询盘服务端 action（文件持久化 + SMTP）
+│  ├─ inquiry-service.ts        # 旧询盘 Server Action（未被当前生产表单引用，待清理）
 │  ├─ seo.ts                    # 结构化数据：organization / breadcrumb / article / product / faq
 │  ├─ media.ts                  # 图片资源映射
 │  ├─ site-config.ts            # 页脚链接等静态配置

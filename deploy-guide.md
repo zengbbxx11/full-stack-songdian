@@ -12,7 +12,7 @@
 
 ```
 浏览器 ──http://106.53.220.184/────► OpenResty(:80) ──127.0.0.1:3000──► frontend 容器
-浏览器 ──http://106.53.220.184:3001/─► OpenResty/端口映射 ──127.0.0.1:3001──► admin-next 容器
+浏览器 ──http://106.53.220.184:8081/─► OpenResty(:8081) ──127.0.0.1:3001──► admin-next 容器
 浏览器 ──http://106.53.220.184/api/──► OpenResty(:80) ──127.0.0.1:8000──► backend 容器
                                                   │
                        postgres:5432 / redis:6379 ← Compose 内数据服务（与应用同网络）
@@ -21,7 +21,7 @@
 **关键设计：**
 - 应用三服务（backend / frontend / admin-next）+ 数据两层（postgres / redis）**全部由 Docker Compose 编排、构建镜像、保活**。
 - PostgreSQL（**18 线**，官方 `postgres:18-bookworm`）/ Redis 用**官方镜像**直接进 Compose（**不编译自定义扩展**，见下方「中文全文检索」说明）。**PG 大版本须与 `db/seed_data.sql`（pg_dump 18 导出）一致，勿降为 16，否则种子导入失败。**
-- 仅 1Panel 的 **OpenResty** 留在 Compose 之外，负责外部 HTTPS 反代；其 host 网络模式直接连宿主机回环的 8000/3000/3001。
+- 仅 1Panel 的 **OpenResty** 留在 Compose 之外，负责公网反代；当前无域名部署使用 HTTP `:80`（官网/API）和 `:8081`（后台），其 host 网络模式直接连宿主机回环的 8000/3000/3001。
 - 不再需要「uv venv 直跑 + systemd」「1Panel 商店 PG/Redis 容器」「Node 容器 + pm2」那套。
 
 ---
@@ -313,7 +313,7 @@ sudo ufw enable
 | 检查项 | 命令 | 预期结果 |
 |--------|------|----------|
 | 后端存活 | `curl -s http://127.0.0.1:8000/healthz` | `{"status":"alive"}` |
-| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | `{"status":"ready","database":"connected","redis":"connected"}` |
+| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | `{"status":"ready","db":true,"redis":true}`；依赖异常时为 `degraded` |
 | 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
 | SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
 | 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera"` | 返回匹配产品 |
@@ -560,7 +560,54 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | HTTP 明文 | 无域名无法申请 Let's Encrypt 证书，登录走 HTTP 明文（IP 无法签发可信证书） |
 | 管理后台端口 | 公网入口 **8081**（OpenResty 反代到容器 3001）；容器 3000/3001/8000 仅绑 127.0.0.1 不外露 |
 | 图片域名 | `frontend/next.config.ts` 已包含 `106.53.220.184` 和 `localhost` 的 remotePatterns，IP 模式直接可用 |
-| 切换域名 | 买域名后只需改 `.env` 的 `CORS_ORIGINS` / `NEXT_PUBLIC_API_URL` 并 `docker compose build`，再加 OpenResty 的 443 站点即可 |
+| 切换域名 | 买域名后切换 `.env` 的 CORS、API、站点规范地址和图片主机四项配置，重建前端镜像，再配置 OpenResty HTTPS 站点；详见下一节 |
+
+### 12.7 从 IP 平滑切换到域名（预留方案）
+
+下面以 `www.songdian.tech`（官网）、`api.songdian.tech`（API/上传）和
+`admin.songdian.tech`（后台）为例；如果最终购买其他域名，整体替换示例主机名即可。腾讯云中国大陆
+服务器应先按腾讯云要求完成域名实名认证、备案和解析，再启用正式公网访问。
+
+#### 第一步：解析与 HTTPS
+
+1. 为 `www`、`api`、`admin` 添加指向 `106.53.220.184` 的 A 记录。
+2. 在 1Panel/OpenResty 创建三个 HTTPS 站点并申请证书，反代目标保持不变：
+   - `www` → `http://127.0.0.1:3000`
+   - `api` → `http://127.0.0.1:8000`（同时代理 `/api/`、`/uploads/`）
+   - `admin` → `http://127.0.0.1:3001`
+3. 域名模式统一使用标准 `443`，不再要求用户访问公网 `:8081`；`3000/3001/8000` 仍只绑定回环。
+
+#### 第二步：切换构建变量
+
+根目录 `.env` 改为：
+
+```dotenv
+CORS_ORIGINS=https://www.songdian.tech,https://admin.songdian.tech
+NEXT_PUBLIC_API_URL=https://api.songdian.tech
+NEXT_PUBLIC_SITE_URL=https://www.songdian.tech
+NEXT_PUBLIC_IMAGE_HOST=api.songdian.tech
+```
+
+其中 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 都是构建期变量，
+已由 `docker-compose.yml` 作为 build args 传给 frontend；切换后必须重建两个 Next.js 镜像：
+
+```bash
+docker compose build frontend admin-next
+docker compose up -d frontend admin-next
+```
+
+#### 第三步：验证、回滚与收口
+
+```bash
+curl -I https://www.songdian.tech/
+curl -s https://api.songdian.tech/healthz
+curl -I https://admin.songdian.tech/signin
+```
+
+- 切换初期可以临时把 IP 来源也保留在 `CORS_ORIGINS` 中，待三个域名验证完成后再删除，便于回滚。
+- 确认登录、询盘、图片、sitemap、canonical URL 均已使用 HTTPS 域名后，可将 IP 官网做 301 跳转。
+- 确认后台域名稳定后，关闭腾讯云防火墙和 ufw 的公网 `8081`，减少暴露面；容器端口配置无需修改。
+- 回滚时恢复上一版 `.env` 的四个 IP 配置并重新构建前端即可，PostgreSQL、Redis 和上传卷不受影响。
 
 ---
 
@@ -574,7 +621,7 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | ⚠️ **PG18 卷挂载点** | 卷必须挂 `/var/lib/postgresql`（内部按 major 版本分子目录）。挂旧路径 `/var/lib/postgresql/data` 会报「18+ images require...」启动失败（postgres:18 镜像新约定） |
 | ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
 | 图片自动同步 | backend 启动命令 `cp -rn uploads/. uploads_data/`（`-n` 不覆盖运营上传文件，幂等）：git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷 |
-| 域名变更 | `NEXT_PUBLIC_API_URL` 等是**构建期内联**变量，改域名需 `docker compose build` 重新构建镜像（非仅改 env） |
+| 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env） |
 | 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech` + `106.53.220.184` + `localhost`；若 API 域名不同，需同步改该配置并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | 无 HTTPS | 没域名时 OpenResty 用 IP 反代、登录走 HTTP 明文；建议买域名 + Let's Encrypt（1Panel 一键） |
@@ -592,4 +639,4 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 
 ---
 
-*最后更新：2026-08-03（云端 IP `106.53.220.184`；询盘默认 API 与响应码修复；前后台全量分页读取；补回 Aerich 8 号兼容迁移；保留现有 PostgreSQL/Redis 数据卷）*
+*最后更新：2026-08-09（腾讯云轻量服务器、暂无域名；公网官网/API 使用 `:80`，管理后台使用 OpenResty `:8081`；Compose 应用端口仅绑定宿主机回环）*

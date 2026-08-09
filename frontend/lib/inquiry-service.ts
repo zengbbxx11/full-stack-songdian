@@ -1,7 +1,8 @@
 "use server";
 
 /**
- * 询盘提交服务 — 服务端 action
+ * @deprecated 当前生产表单已改为调用 FastAPI /api/v1/inquiries。
+ * 询盘提交服务 — 旧版服务端 action（保留仅供历史参考，未被当前页面引用）
  * ------------------------------------------------------------------
  * 将客户询盘数据持久化到 data/inquiries.json，并可选通过
  * SMTP（nodemailer）发送邮件通知。即使邮件发送���败，

@@ -13,7 +13,7 @@
 监听 `8081` 后反代到宿主机回环 `127.0.0.1:3001`。Docker 内 API 代理使用
 `BACKEND_PROXY_URL=http://backend:8000`，不要改成公网 IP。
 Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 风格组件。
-`middleware.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` cookie），接口层另有 RBAC 兜底。
+`proxy.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` cookie），接口层另有 RBAC 兜底。
 
 ---
 
@@ -38,7 +38,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | 图表 | apexcharts / react-apexcharts、@fullcalendar/*、swiper |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
 | 数据获取 | SWR (v2) + 全局 `SWRProvider`（封装 `apiFetch`，详见 `lib/api-client.ts`） |
-| 守卫 | `middleware.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` cookie） |
+| 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` cookie） |
 
 ---
 
@@ -56,7 +56,7 @@ admin-next/src/
 ├── icons/               # ⚠️ SVG 图标用 generated.tsx（内联 React 组件），不要走 @svgr/webpack
 ├── layout/              # 侧边栏 / 顶部栏布局
 ├── lib/                 # API 客户端等工具
-└── middleware.ts        # 路由守卫（见雷区 ④）
+└── proxy.ts        # 路由守卫（见雷区 ④）
 ```
 
 ---
@@ -78,7 +78,7 @@ admin-next/src/
 1. **Node 必须 24.18.0**：Node 22 与 Next 16 Turbopack 的 `next/image` Web Streams 不兼容，启动即报错。
 2. **严禁 `@svgr/webpack`**：该依赖虽在 `package.json` devDependencies，但本机 Turbopack 的 webpack-loader worker 子进程**启动即崩（exit 1）**，会拖垮所有页面 500。SVG 图标一律用 `src/icons/generated.tsx` 里的内联 React 组件，不要 `import Icon from './x.svg'`。
 3. **必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：这是唯一正确的 Tailwind v4 管线。删除它 → Next 16 退化为原生 Tailwind，在本机多 lockfile 仓库里会误判 workspace 根、漏扫 `.tsx` 里的布局类 → 整页「没有样式」（HTTP 仍 200，肉眼像裸 HTML）。
-4. **`middleware.ts` 的 matcher 必须排除 `/api` 与 `/uploads`**：当前为 `["/((?!_next/static|_next/image|favicon.ico|api/|uploads/).*)"]`。若写成 `["/((?!_next/static|_next/image|favicon.ico).*)"]` 会把登录接口 `/api/v1/admin/login` 也当未登录页重定向到 /signin → 浏览器端永远登录失败。
+4. **`proxy.ts` 的 matcher 必须排除 `/api` 与 `/uploads`**：当前为 `["/((?!_next/static|_next/image|favicon.ico|api/|uploads/).*)"]`。若写成 `["/((?!_next/static|_next/image|favicon.ico).*)"]` 会把登录接口 `/api/v1/admin/login` 也当未登录页重定向到 /signin → 浏览器端永远登录失败。
 5. **客户端组件必须显式 `"use client"`**：含 `useState/useRef/useEffect` 的组件忘了加 → 报 500「importing a module that depends on useState into a RSC module」。
 6. **中文注释不能写进 JSDoc `/** */`**：Rust 写的 `next-code-frame` 按 byte 索引定位 JSDoc 字符串，遇 UTF-8 多字节字符会 panic（`end byte index X is not a char boundary`）。统一用 `//` 行注释写中文。
 7. **React 19 禁止 useEffect 同步 setState**：lint 规则 `react-hooks/set-state-in-effect`。prop 变化时重置子组件 state 用 `key={prop}` 强制重挂载，而非 useEffect+setState。
@@ -96,14 +96,14 @@ admin-next/src/
 | 改 API 调用 | `lib/`（封装 fetch 到 `/api/v1/admin/*`） |
 | 改数据获取/SWR | `lib/api-client.ts`（`swrFetcher`/`apiFetch`）+ 各 list 页 `useSWR` |
 | 加图标 | 在 `icons/generated.tsx` 加内联 SVG 组件（**勿用 @svgr/webpack**） |
-| 改路由守卫 | `middleware.ts`（注意 matcher 排除项，见雷区 ④） |
+| 改路由守卫 | `proxy.ts`（注意 matcher 排除项，见雷区 ④） |
 | 改配色/主题 | `app/globals.css` + `tailwind` 配置 |
 
 ---
 
 ## 路由守卫安全（2026-07-28 修复）
 
-`middleware.ts` 现使用 `jose` 校验 `access_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
+`proxy.ts` 现使用 `jose` 校验 `access_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
 要求：
 
 - `admin-next` 必须配置与后端一致的 `JWT_SECRET`（服务端变量，`env.example` 有模板）；

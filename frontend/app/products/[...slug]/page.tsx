@@ -239,7 +239,6 @@ export default async function ProductDetailPage({
                       mainImage={primaryImage}
                       mainAlt={product.images?.[0]?.alt || product.name}
                       gallery={galleryImages}
-                      category={product.categories[0]?.name}
                     />
                     {/* 产品标签 — 放在大图下方 */}
                     {product.tags.length > 0 && (

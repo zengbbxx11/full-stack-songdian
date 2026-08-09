@@ -13,7 +13,7 @@
  *  - 提交成功改为页面内成功态，替代原生 alert。
  */
 
-import { useId, useRef, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/api/client";
 import { Loader2, Clock, BadgeCheck, Globe, Check } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 const cameraCategories = [
   { label: "Compact Cameras", value: "compact-digital-cameras" },
@@ -52,9 +53,14 @@ const TRUST_ITEMS = [
   { icon: Globe, text: "Trusted in 60+ countries" },
 ];
 
+function createInquiryRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `inq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function InquiryForm() {
-  const inquiryId = useId();
-  const fallbackCounter = useRef(0);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,10 +89,7 @@ export default function InquiryForm() {
     try {
       // 生成业务单号：优先 crypto.randomUUID（HTTPS/localhost 才可用），
       // HTTP（如 IP 直连）下 fallback 到时间戳+随机串，避免 randomUUID is not a function
-      const bizReqNo =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `inq-${inquiryId}-${++fallbackCounter.current}`;
+      const bizReqNo = createInquiryRequestId();
       const body: Record<string, string | null> = {
         name: values.fullName,
         email: values.email,
@@ -110,7 +113,10 @@ export default function InquiryForm() {
         }
       );
 
-      const json = await res.json().catch(() => ({}));
+      const json = (await res.json().catch(() => ({}))) as {
+        code?: string | number;
+        msg?: string;
+      };
       if (!res.ok || String(json.code) !== "0") {
         throw new Error(json.msg || "Submission failed. Please try again.");
       }
@@ -119,11 +125,7 @@ export default function InquiryForm() {
       reset();
 
       // GA4 打点
-      if (typeof window !== "undefined" && (window as any).gtag) {
-        (window as any).gtag("event", "contact_submit", {
-          page: window.location.pathname,
-        });
-      }
+      trackEvent("contact_submit", { page: window.location.pathname });
     } catch (err) {
       setError(
         err instanceof Error

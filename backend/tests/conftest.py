@@ -42,7 +42,10 @@ for _p in _glob.glob(os.path.join(_PROJECT_ROOT, "test_*.db*")):
 os.environ.setdefault("DATABASE_URL", f"sqlite://{_TEST_DB}")
 os.environ.setdefault("REDIS_URL", "")
 os.environ.setdefault("SEED_ON_START", "true")
-os.environ.setdefault("JWT_SECRET", "test-secret-for-qa")
+os.environ.setdefault("JWT_SECRET", "test-secret-for-qa-at-least-32-bytes")
+# 测试登录用例使用固定凭据；显式注入可避免生产安全策略在未配置密码时
+# 为每个隔离数据库生成随机临时密码，导致后续管理员 API 用例无法认证。
+os.environ["ADMIN_PASSWORD"] = "Songdian@2026"
 
 import common.config as _cfg  # noqa: E402
 import common.redis_client as _rc  # noqa: E402

@@ -5,8 +5,8 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # 先仅复制依赖清单并安装，充分利用 Docker 层缓存（仅改代码时不必重装依赖）
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # NEXT_PUBLIC_API_URL：构建期内联变量（浏览器直连的 API 地址），需 ARG/ENV 注入
 ARG NEXT_PUBLIC_API_URL
@@ -33,6 +33,7 @@ FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
 
 # JWT_SECRET 运行期仍需（服务端校验 token），再次注入
 ARG JWT_SECRET

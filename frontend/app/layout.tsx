@@ -35,7 +35,8 @@
 
 import type { Metadata, Viewport } from "next";
 import { initSuperMeta } from "next-super-meta";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingInquiry from "@/components/FloatingInquiry";
@@ -57,18 +58,6 @@ initSuperMeta({
 // ------------------------------------------------------------------
 
 /** Geist Sans — primary body / heading font, loaded with Latin subset */
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-/** Geist Mono — monospace font for code / technical content */
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 // ------------------------------------------------------------------
 // Site URL — used for canonical links, OG images, and JSON-LD @id
@@ -197,7 +186,11 @@ export default function RootLayout({
     // <html> 标签：设置 lang="en" 以利无障碍与 SEO，挂载字体 CSS 变量，
     // 并启用 Tailwind 的抗锯齿平滑渲染
     // ------------------------------------------------------------------
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         {/* JSON-LD 结构化数据 —— 注入供 Google 富媒体结果使用 */}
         {/* Organization 架构：名称、Logo、URL、sameAs 社交档案 */}

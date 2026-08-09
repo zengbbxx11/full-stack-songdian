@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { superMeta } from "next-super-meta";
-import { Factory, PencilRuler, Store, Check, ArrowRight } from "lucide-react";
+import { Factory, PencilRuler, Store, Check } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";

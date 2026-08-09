@@ -89,7 +89,7 @@ admin-next/
 │   │   ├── ThemeContext.tsx       # 暗色模式
 │   │   └── SWRProvider.tsx        # SWR 全局配置（注入 fetcher + 关闭聚焦重校）
 │   ├── icons/                    # SVG 图标
-│   └── middleware.ts             # 路由守卫（token 校验 + 未登录重定向）
+│   └── proxy.ts             # 路由守卫（token 校验 + 未登录重定向）
 └── public/images/                # 静态资源
 ```
 
@@ -133,7 +133,7 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 代码注释：中文
 - 禁止使用 `@svgr/webpack`（本机 Turbopack webpack-loader worker 会崩溃）
 - 必须保留 `postcss.config.mjs`（`@tailwindcss/postcss`，若删除则 Tailwind 原生扫描漏掉 .tsx 布局类，整页无样式）
-- `middleware.ts` 的 matcher 必须排除 `/api` 和 `/uploads`（否则登录 POST 被守卫拦截）
+- `proxy.ts` 的 matcher 必须排除 `/api` 和 `/uploads`（否则登录 POST 被守卫拦截）
 
 ## 环境变量
 

@@ -8,8 +8,6 @@
 
 import { superMeta } from "next-super-meta";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import Image from "next/image";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import SectionHeading from "@/components/SectionHeading";

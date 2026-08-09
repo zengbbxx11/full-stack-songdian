@@ -4,6 +4,7 @@
  * 匹配文章详情页的单栏布局，在内容数据获取期间展示。
  */
 export default function NewsDetailLoading() {
+  const lineWidths = [85, 72, 64, 80, 58, 76, 69, 82];
   return (
     <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
       {/* 分类/日期骨架 */}
@@ -26,12 +27,12 @@ export default function NewsDetailLoading() {
 
       {/* 内容骨架 — 多个段落 */}
       <div className="space-y-3">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {lineWidths.map((width, i) => (
           <div
             key={i}
             className="h-4 rounded animate-pulse bg-[#F4F4F4]"
             style={{
-              width: `${85 - Math.random() * 30}%`,
+              width: `${width}%`,
               animationDelay: `${i * 0.08}s`,
             }}
           />

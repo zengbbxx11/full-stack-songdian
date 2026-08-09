@@ -62,8 +62,10 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    setMobileOpen(false);
-    setActiveDropdown(null);
+    queueMicrotask(() => {
+      setMobileOpen(false);
+      setActiveDropdown(null);
+    });
   }, [pathname]);
 
   useEffect(() => {

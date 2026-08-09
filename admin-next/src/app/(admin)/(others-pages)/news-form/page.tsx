@@ -5,6 +5,8 @@
  * 提交走 POST/PUT /api/v1/admin/news。
  */
 "use client";
+// 后台预览使用运行时上传地址；保留原生 img，避免把任意媒体源交给图片优化代理。
+/* eslint-disable @next/next/no-img-element */
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/form/input/InputField";
@@ -31,20 +33,18 @@ function NewsFormInner() {
   const isEdit = !!id;
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "" });
   const toast = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    setLoadingData(true);
     apiFetch<NewsItem>(`/admin/news/${id}`).then((p) => {
       setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("加载文章失败：" + msg);
-    }).finally(() => setLoadingData(false));
+    });
   }, [id, toast]);
 
   // 上传图片文件到后端 → 返回 URL

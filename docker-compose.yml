@@ -97,8 +97,8 @@ services:
     # 启动前：aerich 升级建表（幂等）→ 同步内置图片到数据卷（cp -n 不覆盖已有）→ 起 uvicorn
     command: >
       sh -c "aerich upgrade &&
-      mkdir -p uploads_data && cp -rn uploads/. uploads_data/ 2>/dev/null || true;
-      uvicorn main:app --host 0.0.0.0 --port 8000
+      mkdir -p uploads_data && (cp -rn uploads/. uploads_data/ 2>/dev/null || true) &&
+      exec uvicorn main:app --host 0.0.0.0 --port 8000
       --proxy-headers --forwarded-allow-ips=127.0.0.1 --workers 4"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/healthz'); sys.exit(0)"]
@@ -154,7 +154,7 @@ services:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001',r=>{process.exit(r.statusCode===200?0:1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/signin',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3

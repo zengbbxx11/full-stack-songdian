@@ -14,10 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 工作目录（compose build context = backend/，故代码根即 /app/backend）
 WORKDIR /app/backend
 
-# 用 uv 安装生产依赖：先放 pyproject.toml，uv sync 会按需生成/复用 uv.lock（确定性构建）
-COPY pyproject.toml ./
+# 用锁文件安装生产依赖，确保同一提交可重复构建出相同依赖集合。
+COPY pyproject.toml uv.lock ./
 RUN pip install --no-cache-dir uv \
-    && uv sync --no-dev
+    && uv sync --frozen --no-dev
 
 # uv sync 默认创建 .venv 虚拟环境（新版 uv 已移除 --system 参数），
 # 把 .venv/bin 加入 PATH，使 aerich / uvicorn 等命令可直接调用

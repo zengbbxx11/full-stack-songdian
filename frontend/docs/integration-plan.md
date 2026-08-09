@@ -244,11 +244,11 @@
 - **依赖**：T02、T03
 - **验收**：首页产品类目/最新资讯用后端真实数据；Hero 有图（本地资源）。
 
-### T06（下轮/可选）— 询盘提交对接 `POST /inquiries`
-- **文件**：`lib/inquiry-service.ts`（改）、`app/contact/page.tsx`（改）
-- **改动内容**：把本地写 `data/inquiries.json` 改为调 `POST /api/v1/inquiries`（需确认该接口请求/响应结构，本轮未读 inquiry 写接口）。
+### T06（已完成）— 询盘提交对接 `POST /inquiries`
+- **文件**：`components/form/InquiryForm.tsx`
+- **现状**：表单调用 `POST /api/v1/inquiries`，由 FastAPI 持久化 PostgreSQL 并发送 SMTP 通知；旧的本地 JSON Server Action 已删除。
 - **依赖**：T01
-- **验收**：联系页提交询盘直达后端。
+- **验收**：联系页提交询盘直达后端，前端不保存客户数据、不持有 SMTP 凭据。
 
 ---
 

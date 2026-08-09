@@ -15,8 +15,8 @@
 | 样式 | Tailwind CSS v4（`@tailwindcss/postcss`）+ shadcn/ui 组件库 |
 | 后端 | 项目自有 FastAPI REST API（`backend/`，端口 8000） |
 | 数据迁移 | 旧 WordPress 数据经一次性 ETL 迁至 PostgreSQL（`backend/migration/` 模块已随 M6 移除），前端仅消费 FastAPI |
-| 表单 | react-hook-form + Zod（客户端校验 + 服务端 action 提交） |
-| 邮件 | nodemailer SMTP（询盘通知，可选配置） |
+| 表单 | react-hook-form + Zod（客户端校验 + FastAPI 提交） |
+| 邮件 | FastAPI 后端 SMTP（管理后台在线配置，环境变量兜底） |
 | 动画 | framer-motion（`components/motion/*`） |
 | 图标 | lucide-react（`^1.23.0`） |
 | HTML 消毒 | `sanitize-html`（服务端白名单过滤，`lib/html-cleaner.ts`） |
@@ -37,7 +37,7 @@
 ## 快速开始
 
 ```bash
-npm install
+npm ci
 npm run dev        # http://localhost:3000
 ```
 
@@ -63,25 +63,24 @@ npm run start
 |------|--------|------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | 站点规范地址 |
+| `NEXT_PUBLIC_IMAGE_HOST` | `106.53.220.184` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
 | `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | — | 站点描述（SEO） |
 | `NEXT_PUBLIC_ISR_REVALIDATE` | `60` | ISR 缓存时间（秒） |
 | `NEXT_PUBLIC_GA_ID` | — | Google Analytics 4 测量 ID（如 `G-XXXX`）。**仅当用户在 Cookie 同意横幅接受「分析」类后才加载**；不配置则 GA 完全不加载，站点零追踪 |
 
-### SMTP 邮件通知（可选）
+### 询盘与 SMTP
 
-配置后，Contact 页询盘提交会自动发送邮件通知。不配置则仅保存到 `data/inquiries.json`。
+Contact 页直接调用 FastAPI `POST /api/v1/inquiries`；后端将询盘保存到 PostgreSQL，并按管理后台
+“系统设置”中的 SMTP 配置发送通知。`backend/.env` 中的 `SMTP_*` / `INQUIRY_EMAIL_*` 仅作为后端
+兜底；官网前端不持有 SMTP 凭据，也不在前端文件系统保存客户数据。
 
-| 变量 | 示例 | 说明 |
-|------|------|------|
-| `SMTP_HOST` | `smtp.qq.com` | SMTP 服务器地址 |
-| `SMTP_PORT` | `587` | 端口（TLS=587, SSL=465） |
-| `SMTP_USER` | `xxx@qq.com` | 发件邮箱完整地址 |
-| `SMTP_PASS` | 授权码 | **必须是授权码，非登录密码** |
-| `INQUIRY_EMAIL_TO` | `zengxb21@proton.me` | 接收通知的邮箱 |
-| `INQUIRY_EMAIL_FROM` | — | 发件人显示地址（默认取 SMTP_USER） |
+当前腾讯云无域名部署使用 `NEXT_PUBLIC_API_URL=http://106.53.220.184`；修改任何
+`NEXT_PUBLIC_*` 构建变量后必须重新执行 `docker compose build frontend`。
 
-建议在项目根目录创建 `.env.local` 按需覆盖（不入库）。
+后续启用域名时，将 API、SEO 规范地址和图片主机分别切换为 `https://api.songdian.tech`、
+`https://www.songdian.tech`、`api.songdian.tech` 即可；这些值已作为 Docker build args 注入，
+不需要修改应用代码。
 
 ---
 
@@ -144,7 +143,6 @@ frontend/
 │  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
 │  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
 │  ├─ content-data.ts           # 全站可编辑文案
-│  ├─ inquiry-service.ts        # 询盘服务端 action（文件持久化 + SMTP）
 │  ├─ seo.ts                    # 结构化数据：organization / breadcrumb / article / product / faq
 │  ├─ media.ts                  # 图片资源映射
 │  ├─ site-config.ts            # 页脚链接等静态配置
@@ -290,4 +288,4 @@ frontend/
 - **Leaflet 走按需加载**：`ContactMap` 经 `ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 包裹，仅联系页加载，不进首屏 bundle
 - **产品 URL 规范化用 `proxy.ts`（边缘中间件），不是页面 `redirect()`**：本环境 Next.js 16 + Turbopack 下，App Router 页面组件里的 `redirect()` / `permanentRedirect()` 不会发出真实 3xx（被渲染期吞掉）；产品地址的 308 重定向改由根目录 `proxy.ts`（替代已弃用的 `middleware.ts`）基于 `lib/generated/canonical-map.ts` 在边缘层完成。改 URL 结构时务必走 `proxy.ts`，勿改回页面级 `redirect()`。
 - **`npm run gen:map` 是 `next build` 的前置依赖**：`proxy.ts` 静态导入 `lib/generated/canonical-map.ts`；该文件由 `scripts/gen-canonical-map.mjs` 依据后端产品数据生成（未 gitignore，已提交当前快照）。构建 / 部署前若产品或分类有变动，需重新生成并提交，否则 308 重定向会用过期映射。
-- **`Module not found: Can't resolve 'postcss'` 构建报错**：多因 `node_modules/postcss` 被装成空目录（npm 只检查目录存在、不检查内容，部分安装被中断后跳过还原）。修复：`rm -rf node_modules/postcss && npm install` 重新补全即可。
+- **`Module not found: Can't resolve 'postcss'` 构建报错**：多因依赖安装中断。修复：`rm -rf node_modules && npm ci` 按 lockfile 完整重装。

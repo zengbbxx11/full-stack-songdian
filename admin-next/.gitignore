@@ -8,3 +8,7 @@
 # env
 .env
 .env.local
+
+# TypeScript / logs
+*.tsbuildinfo
+*.log

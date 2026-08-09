@@ -5,7 +5,7 @@
 # 仅 1Panel 的 OpenResty 留在 Compose 之外，负责外部反代：
 #  有域名：                     仅 IP（无域名）：
 #   https://www.songdian.tech   → frontend:3000        http://106.53.220.184/        → frontend:3000
-#   https://admin.songdian.tech → admin-next:3001     http://106.53.220.184:3001/   → admin-next:3001
+#   https://admin.songdian.tech → admin-next:3001     http://106.53.220.184:8081/   → OpenResty → admin-next:3001
 #   https://api.songdian.tech   → backend:8000        http://106.53.220.184/api/    → backend:8000
 # OpenResty 以 host 网络模式运行，反代目标写 http://127.0.0.1:8000 / :3000 / :3001
 # （Compose 已把这三个端口发布到宿主机回环）。
@@ -94,11 +94,13 @@ services:
       # 上传文件数据卷：挂到独立数据目录 uploads_data/（与代码模块 uploads/ 分离，
       # 否则卷会遮住镜像里的 uploads/models.py 等代码 → Module not found）
       - uploads_data:/app/backend/uploads_data
-    # 启动前：aerich 升级建表（幂等）→ 同步内置图片到数据卷（cp -n 不覆盖已有）→ 起 uvicorn
+    # 启动前：aerich 升级必须成功 → 同步内置图片到数据卷（仅复制失败可忽略）→ 起 uvicorn
     command: >
-      sh -c "aerich upgrade &&
-      mkdir -p uploads_data && cp -rn uploads/. uploads_data/ 2>/dev/null || true;
-      uvicorn main:app --host 0.0.0.0 --port 8000
+      sh -c "set -e;
+      aerich upgrade;
+      mkdir -p uploads_data;
+      cp -rn uploads/. uploads_data/ 2>/dev/null || true;
+      exec uvicorn main:app --host 0.0.0.0 --port 8000
       --proxy-headers --forwarded-allow-ips=127.0.0.1 --workers 4"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/healthz'); sys.exit(0)"]
@@ -116,6 +118,9 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # 为旧服务器 .env 提供 IP 默认值；配置域名后由 .env 覆盖。
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://106.53.220.184}
+        NEXT_PUBLIC_IMAGE_HOST: ${NEXT_PUBLIC_IMAGE_HOST:-106.53.220.184}
     ports:
       - "127.0.0.1:3000:3000"
     environment:
@@ -139,7 +144,6 @@ services:
       context: ./admin-next
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        JWT_SECRET: ${JWT_SECRET}
         BACKEND_PROXY_URL: http://backend:8000
     ports:
       - "127.0.0.1:3001:3001"

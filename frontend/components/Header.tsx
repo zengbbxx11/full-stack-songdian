@@ -62,8 +62,11 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    setMobileOpen(false);
-    setActiveDropdown(null);
+    const timer = window.setTimeout(() => {
+      setMobileOpen(false);
+      setActiveDropdown(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   useEffect(() => {

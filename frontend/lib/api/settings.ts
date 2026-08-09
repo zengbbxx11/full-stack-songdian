@@ -6,7 +6,7 @@
  * 返回空对象时由调用方 fallback 到 content-data.ts 硬编码常量。
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
  * 后端公开设置接口返回的联系信息字段。

@@ -31,7 +31,7 @@ function NewsFormInner() {
   const isEdit = !!id;
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
+  const [, setLoadingData] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "" });
   const toast = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);

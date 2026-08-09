@@ -13,7 +13,7 @@
  *  - 提交成功改为页面内成功态，替代原生 alert。
  */
 
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics";
 import { Loader2, Clock, BadgeCheck, Globe, Check } from "lucide-react";
 
 const cameraCategories = [
@@ -52,9 +53,10 @@ const TRUST_ITEMS = [
   { icon: Globe, text: "Trusted in 60+ countries" },
 ];
 
+let fallbackSequence = 0;
+
 export default function InquiryForm() {
   const inquiryId = useId();
-  const fallbackCounter = useRef(0);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,7 +88,7 @@ export default function InquiryForm() {
       const bizReqNo =
         typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
-          : `inq-${inquiryId}-${++fallbackCounter.current}`;
+          : `inq-${inquiryId}-${++fallbackSequence}`;
       const body: Record<string, string | null> = {
         name: values.fullName,
         email: values.email,
@@ -119,11 +121,9 @@ export default function InquiryForm() {
       reset();
 
       // GA4 打点
-      if (typeof window !== "undefined" && (window as any).gtag) {
-        (window as any).gtag("event", "contact_submit", {
-          page: window.location.pathname,
-        });
-      }
+      trackEvent("contact_submit", {
+        page: typeof window !== "undefined" ? window.location.pathname : "/",
+      });
     } catch (err) {
       setError(
         err instanceof Error

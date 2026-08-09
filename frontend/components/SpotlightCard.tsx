@@ -11,7 +11,19 @@
  * 设计取自品牌色 Electric Blue (#3E6AE1)，与全站 hover 体系一致。
  */
 
-import { useRef, useState, useEffect, type CSSProperties, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToReducedMotion(onStoreChange: () => void) {
+  const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+  mediaQuery.addEventListener("change", onStoreChange);
+  return () => mediaQuery.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
 
 interface SpotlightCardProps {
   /** 被包裹的卡片内容（通常是一个 <Link> 整卡） */
@@ -29,15 +41,11 @@ export default function SpotlightCard({
 }: SpotlightCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [prefersReduced, setPrefersReduced] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReduced(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  const prefersReduced = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotionSnapshot,
+    () => false,
+  );
 
   // 鼠标移动时记录相对卡片左上角的坐标，驱动光晕跟随
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {

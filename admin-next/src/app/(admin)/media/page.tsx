@@ -46,7 +46,6 @@ function buildTree(albums: Album[]): TreeAlbum[] {
     if (!byParent.has(pid)) byParent.set(pid, []);
     byParent.get(pid)!.push(a);
   }
-  const sorted = (list: Album[]) => [...list].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
   function walk(parentId: number | null, depth: number): TreeAlbum[] {
     return (byParent.get(parentId) ?? []).sort((a, b) => a.sort_order - b.sort_order || a.id - b.id).map((a) => ({
       ...a, depth, children: walk(a.id, depth + 1),
@@ -152,12 +151,23 @@ export default function MediaPage() {
   const { data: recordsData, isLoading } = useSWR<PaginatedRecords>(recordsKey, swrFetcher);
   const records = recordsData?.list ?? []; const total = recordsData?.total ?? 0; const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [selectedAlbumId, keyword]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSelectedIds(new Set());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [selectedAlbumId, keyword]);
 
   // 多选
   const allSelected = records.length > 0 && selectedIds.size === records.length;
   const toggleSelectAll = () => setSelectedIds(allSelected ? new Set() : new Set(records.map((r) => r.id)));
-  const toggleSelect = (id: number) => { const n = new Set(selectedIds); n.has(id) ? n.delete(id) : n.add(id); setSelectedIds(n); };
+  const toggleSelect = (id: number) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
   const clearSelection = () => setSelectedIds(new Set());
 
   // 上传
@@ -205,7 +215,7 @@ export default function MediaPage() {
   const copyUrl = (url: string) => { navigator.clipboard.writeText(url); toast.success("Copied!"); };
 
   // 懒加载引用信息（hover 触发，已缓存则直接返回）
-  const fetchUsage = async (recId: number, url: string) => {
+  const fetchUsage = async (recId: number) => {
     if (usageCache.has(recId)) return;
     try {
       const info = await apiFetch<UsageInfo>(`/admin/upload/${recId}/usage`);
@@ -317,7 +327,7 @@ export default function MediaPage() {
               {records.map((rec) => {
                 const isSelected = selectedIds.has(rec.id);
                 return (
-                  <div key={rec.id} className={`group relative rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${isSelected ? "border-brand-500 bg-brand-50/30 dark:bg-brand-900/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`} onClick={() => toggleSelect(rec.id)} onMouseEnter={() => fetchUsage(rec.id, rec.url)}>
+                  <div key={rec.id} className={`group relative rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${isSelected ? "border-brand-500 bg-brand-50/30 dark:bg-brand-900/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`} onClick={() => toggleSelect(rec.id)} onMouseEnter={() => fetchUsage(rec.id)}>
                     <div className={`absolute top-2 left-2 z-10 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}><input type="checkbox" checked={isSelected} readOnly className="w-4 h-4 rounded border-white bg-white/80 text-brand-500 focus:ring-brand-500 shadow-sm" /></div>
                     <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800"><img src={`${API_BASE}${rec.url}`} alt={rec.title || rec.file_name} className="w-full h-full object-cover" loading="lazy" /></div>
                     <div className="p-2">

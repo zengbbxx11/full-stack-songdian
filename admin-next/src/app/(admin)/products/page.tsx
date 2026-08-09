@@ -145,10 +145,10 @@ export default function ProductsPage() {
         if (!visibleIdSet.has(p.id)) continue;
         const leftSo = i > 0 ? (computed.get(newGlobalOrder[i - 1].id) ?? (newGlobalOrder[i - 1].sort_order ?? 0)) : null;
         const rightSo = i < newGlobalOrder.length - 1 ? (newGlobalOrder[i + 1].sort_order ?? 0) : null;
-        let newSo = leftSo === null && rightSo === null ? 0 : leftSo === null ? rightSo! - 1 : rightSo === null ? leftSo + 1 : (leftSo + rightSo) / 2;
+        const newSo = leftSo === null && rightSo === null ? 0 : leftSo === null ? rightSo! - 1 : rightSo === null ? leftSo + 1 : (leftSo + rightSo) / 2;
         computed.set(p.id, newSo);
         if (Math.abs((allProducts.find(ap => ap.id === p.id)?.sort_order ?? 0) - newSo) > 0.0001) {
-          updates.push(apiFetch(`/admin/products/${p.id}`, { method: "PUT", body: { sort_order: newSo } }).catch((err) => { toast.error(`产品 ${p.id} 排序保存失败`); }));
+          updates.push(apiFetch(`/admin/products/${p.id}`, { method: "PUT", body: { sort_order: newSo } }).catch(() => { toast.error(`产品 ${p.id} 排序保存失败`); }));
         }
       }
       await Promise.all(updates);

@@ -7,7 +7,6 @@
  * 交互组件：FaqToc（client）负责目录锚点导航；问答折叠用原生 <details>。
  */
 
-import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { superMeta } from "next-super-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";

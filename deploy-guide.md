@@ -12,7 +12,7 @@
 
 ```
 浏览器 ──http://106.53.220.184/────► OpenResty(:80) ──127.0.0.1:3000──► frontend 容器
-浏览器 ──http://106.53.220.184:3001/─► OpenResty/端口映射 ──127.0.0.1:3001──► admin-next 容器
+浏览器 ──http://106.53.220.184:8081/─► OpenResty(:8081) ──127.0.0.1:3001──► admin-next 容器
 浏览器 ──http://106.53.220.184/api/──► OpenResty(:80) ──127.0.0.1:8000──► backend 容器
                                                   │
                        postgres:5432 / redis:6379 ← Compose 内数据服务（与应用同网络）
@@ -21,7 +21,7 @@
 **关键设计：**
 - 应用三服务（backend / frontend / admin-next）+ 数据两层（postgres / redis）**全部由 Docker Compose 编排、构建镜像、保活**。
 - PostgreSQL（**18 线**，官方 `postgres:18-bookworm`）/ Redis 用**官方镜像**直接进 Compose（**不编译自定义扩展**，见下方「中文全文检索」说明）。**PG 大版本须与 `db/seed_data.sql`（pg_dump 18 导出）一致，勿降为 16，否则种子导入失败。**
-- 仅 1Panel 的 **OpenResty** 留在 Compose 之外，负责外部 HTTPS 反代；其 host 网络模式直接连宿主机回环的 8000/3000/3001。
+- 仅 1Panel 的 **OpenResty** 留在 Compose 之外，负责公网反代；当前无域名部署使用 HTTP `:80`（官网/API）和 `:8081`（后台），其 host 网络模式直接连宿主机回环的 8000/3000/3001。
 - 不再需要「uv venv 直跑 + systemd」「1Panel 商店 PG/Redis 容器」「Node 容器 + pm2」那套。
 
 ---
@@ -77,9 +77,11 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD；无域�
 | `PG_USER` / `PG_PASSWORD` / `PG_DB` | Compose 内 postgres 服务初始化所用（首次建库生效；后续改此处不影响已建库） |
 | `JWT_SECRET` | ≥32 字节随机值；**backend 与 admin-next 共用同一值**（admin 用它服务端校验令牌） |
 | `ADMIN_PASSWORD` | 初始管理员密码（仅在 `SEED_ON_START=true` 由应用种子器使用时生效） |
-| `SEED_ON_START` | `true`=冷启动即导入演示种子数据；`false`=手动导入 `seed_data.sql`（默认） |
+| `SEED_ON_START` | `true`=幂等创建管理员、角色权限、新闻分类和系统设置；`false`=不运行应用种子器（生产默认） |
 | `CORS_ORIGINS` | 官网 + 后台公网域名，逗号分隔，**禁用通配** |
 | `NEXT_PUBLIC_API_URL` | 浏览器直连的 API 地址（走 OpenResty 反代）；官网与后台共用 |
+| `NEXT_PUBLIC_SITE_URL` | 官网 canonical、sitemap、robots 使用的规范地址 |
+| `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的上传主机；只填主机名，不带协议 |
 
 > ⚠️ `.env` 含密钥，已被根目录 `.gitignore` 忽略，绝不入库。
 > 注：`DATABASE_URL` / `REDIS_URL` 由 compose 直接按服务名拼接（`postgres` / `redis`），**无需在 .env 配置**，避免暴露宿主机地址。
@@ -111,7 +113,7 @@ cd /home/ubuntu/full-stack-songdian
 # 确保有 .env（含 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL 等）
 test -f .env || { echo "ERROR: .env missing!"; exit 1; }
 
-# 构建全部镜像（首次约 5-10 分钟，含前端/后端 npm install + next build）
+# 构建全部镜像（首次约 5-10 分钟；后端用 uv，两个 Next.js 项目用 npm）
 docker compose build
 ```
 
@@ -142,9 +144,9 @@ curl -s http://127.0.0.1:8000/healthz
 
 # 3) 后端就绪（含 DB + Redis 探测）
 curl -s http://127.0.0.1:8000/readyz
-# → {"status":"ready","database":"connected","redis":"connected"}
+# → {"status":"ready","db":true,"redis":true}
 
-# 4) 产品列表（确认表已建好，数据为空）
+# 4) 产品列表（确认表已建好；未导入业务数据时 list 为空）
 curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | python3 -m json.tool | head -5
 
 # 5) 询盘 CRM 字段存在（NEW/CONTACTING/QUOTED/DEAL/LOST 五态管线已就绪）
@@ -161,7 +163,7 @@ curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/signin
 # → 200
 
-# 8) 新端点验证（需先登录取 token）
+# 8) 管理端点验证（需先登录取 token；仅适用于应用种子器创建且密码取 ADMIN_PASSWORD 的账号）
 TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/admin/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASSWORD\"}" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['access_token'])")
@@ -189,7 +191,10 @@ curl -s "http://127.0.0.1:8000/api/v1/admin/users/list" -H "Authorization: Beare
 | 4 | frontend | 依赖 backend `/healthz` 探活 → `next start -p 3000` |
 | 5 | admin-next | 依赖 backend `/healthz` 探活 → `next start -p 3001` |
 
-**关键：aerich upgrade 自动执行**——backend 的 `command` 为 `sh -c "aerich upgrade && uvicorn main:app ..."`。迁移链现在保留 `8_20260730162240_add_seo_and_crm_fields.py` 兼容已部署数据库，再由 9 号迁移完成幂等清理和外键规范化。云端已有数据时只执行正常的 `docker compose up -d`，不要删除 `pg_data` 或重置 schema。
+**关键：aerich upgrade 自动且严格执行**——backend 启动脚本启用 `set -e`，迁移失败时容器直接退出，
+不会带着旧表结构继续启动；只有内置图片复制失败允许降级。迁移链保留
+`8_20260730162240_add_seo_and_crm_fields.py` 兼容已部署数据库，再由 9 号迁移完成幂等清理和外键规范化。
+云端已有数据时只执行正常的 `docker compose up -d`，不要删除 `pg_data` 或重置 schema。
 
 ---
 
@@ -197,56 +202,47 @@ curl -s "http://127.0.0.1:8000/api/v1/admin/users/list" -H "Authorization: Beare
 
 backend 容器启动后库里**只有表结构、没有业务数据**。两种方式二选一：
 
-### 方式 A：应用种子器（最快，推荐首次上线用）
+### 方式 A：应用种子器（仅初始化基础管理数据）
 
 在 `.env` 中设 `SEED_ON_START=true`（默认 `false`），然后重启 backend：
 
 ```bash
-docker compose up -d backend    # 重启后 run_seed 插入演示类目/商品/管理员账号
+docker compose up -d backend    # 重启后 run_seed 幂等创建管理员、角色权限、新闻分类和系统设置
 ```
 
-> 此时管理员初始密码取 `ADMIN_PASSWORD`。适合「先跑起来看效果」的冷启动场景。
+> 此方式**不会导入产品和新闻业务内容**。新建管理员的初始密码取 `ADMIN_PASSWORD`；适合先验证后台和 API 的冷启动场景。
 
-### 方式 B：导入 dev 全量数据（生产数据对齐用，**推荐**）
+### 方式 B：导入仓库全量快照（需要现有演示内容时使用）
 
 `db/seed_data.sql` 是 **pg_dump 18 全量导出**（含完整 DDL + 数据），**已包含 2026-08-01 全部新列**（产品 SEO 字段、询盘 CRM 字段等）。
 
-> ⚠️ **为什么必须用完整 seed 而不是「aerich 建表 + 只导数据」**：即使迁移链已补齐为 0-9，本地开发库仍经历过多次手动 ALTER（例如部分 `sort_order` 字段不在迁移里），迁移链覆盖不全。若只导 seed 的 data 部分，会报 `column "xxx" does not exist`。**已有云端数据不得 DROP SCHEMA**；新环境应按本指南导入完整 schema+data seed。
+> `seed_data.sql` 是完整 schema + data 快照，不是可重复执行的增量脚本。它包含 `aerich` 版本记录和
+> owner `postgres`，因此本方式要求 `.env` 使用默认 `PG_USER=postgres`。**只允许全新环境或明确要重置的
+> 演示环境执行；已有云端业务数据绝对不要执行 DROP SCHEMA。**
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# 1) 把 seed 完整文件拷进 postgres 容器（psql 的 \i 读不到宿主机路径）
+# 1) 先停应用容器，避免重置过程中仍有请求访问数据库
+docker compose stop frontend admin-next backend
+
+# 2) 把完整快照拷进 postgres 容器
 docker compose exec -T postgres sh -c 'cat > /tmp/seed_full.sql' < db/seed_data.sql
 
-# 2) 重置 schema（清掉 aerich 建的不完整表；首次部署可省略 aerich 流程）
+# 3) 仅在全新/可重置环境清空 schema
 docker compose exec -T postgres psql -U postgres -d songdian_b2b -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-# 3) 导入完整 seed（DDL + 数据一起；禁外键绕开字母序 FK 问题）
-#    用户/库名按 .env 实际 PG_USER / PG_DB 替换（示例 postgres / songdian_b2b）
-docker compose exec -T postgres psql -U postgres -d songdian_b2b -v ON_ERROR_STOP=0 <<'SQL'
-DO $$
-DECLARE r RECORD;
-BEGIN
-  FOR r IN (SELECT conname, conrelid::regclass AS tbl FROM pg_constraint WHERE contype='f') LOOP
-    EXECUTE format('ALTER TABLE %s DISABLE TRIGGER ALL', r.tbl);
-  END LOOP;
-END $$;
-\i /tmp/seed_full.sql
-DO $$
-DECLARE r RECORD;
-BEGIN
-  FOR r IN (SELECT conname, conrelid::regclass AS tbl FROM pg_constraint WHERE contype='f') LOOP
-    EXECUTE format('ALTER TABLE %s ENABLE TRIGGER ALL', r.tbl);
-  END LOOP;
-END $$;
-SQL
+# 4) 严格导入完整快照；任一 SQL 错误立即退出，不要用 ON_ERROR_STOP=0 掩盖失败
+docker compose exec -T postgres \
+  psql -U postgres -d songdian_b2b -v ON_ERROR_STOP=1 -f /tmp/seed_full.sql
 
-# 4) 验证
+# 5) 重新启动应用并验证
+docker compose up -d backend frontend admin-next
 curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | head -c 200
 ```
 
-> ⚠️ 若同时用「方式 B 导入全量」又开着 `SEED_ON_START=true`，会重复插入。二者取一。
+> ⚠️ 使用方式 B 时保持 `SEED_ON_START=false`。快照内管理员密码来自导出时数据库，根 `.env` 的
+> `ADMIN_PASSWORD` 不会自动改写该快照中的密码；登录后应在后台修改密码，忘记密码则使用后台的重置流程。
 > ⚠️ **seed 更新方法**：本地开发库有新增列/数据后，重新导出并提交：
 > ```bash
 > # 本地 Windows（PG 18 环境变量按实际）
@@ -256,7 +252,7 @@ curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | head -c 200
 
 ---
 
-## 七、OpenResty 反向代理（1Panel）
+## 七、OpenResty 反向代理（域名模式，未来启用）
 
 1Panel → 网站 → 创建网站 → 反向代理：
 
@@ -313,7 +309,7 @@ sudo ufw enable
 | 检查项 | 命令 | 预期结果 |
 |--------|------|----------|
 | 后端存活 | `curl -s http://127.0.0.1:8000/healthz` | `{"status":"alive"}` |
-| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | `{"status":"ready","database":"connected","redis":"connected"}` |
+| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | `{"status":"ready","db":true,"redis":true}`；依赖异常时为 `degraded` |
 | 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
 | SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
 | 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera"` | 返回匹配产品 |
@@ -328,13 +324,13 @@ sudo ufw enable
 | 产品页 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/products/action-camera/860a` | 200 |
 | 管理后台 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/signin` | 200 |
 
-### 9.4 公网访问（浏览器）
+### 9.4 公网访问（域名启用后）
 
 | 检查项 | URL | 预期 |
 |--------|-----|------|
 | 官网首页 | `https://www.songdian.tech` | 正常显示，图片加载 |
 | 产品详情 | 点击任意产品 | SEO title/description 正确（前端 fallback 逻辑生效） |
-| 管理后台 | `https://admin.songdian.tech` | 用 ADMIN_PASSWORD 登���成功 |
+| 管理后台 | `https://admin.songdian.tech` | 使用有效管理员账号登录成功 |
 | Dashboard | 后台首页 | 4 个计数卡片 + 询盘国家分布 + 状态分布 + 分类饼图 |
 | 审计日志 | 侧边栏 → 审计日志 | 登录操作已有记录 |
 | 用户管理 | 侧边栏 → Users | admin 账号在列表中，可新建/删除/重置密码 |
@@ -358,8 +354,12 @@ docker compose up -d        # 新老容器无缝替换
 # 仅更新后端（改了 Python 代码，~30s）
 docker compose up -d --build backend
 
-# 仅更新上游配置（改了 .env 但没改代码）
-docker compose up -d        # 重新注入环境变量
+# 仅修改后端运行时配置（如 CORS/JWT；没改 NEXT_PUBLIC_*）
+docker compose up -d --force-recreate backend admin-next
+
+# 修改 NEXT_PUBLIC_*（构建期内联）必须重建两个前端镜像
+docker compose build frontend admin-next
+docker compose up -d frontend admin-next
 
 # ── 查看日志 ──
 docker compose logs -f backend         # 后端实时日志
@@ -375,20 +375,18 @@ docker stats                            # 各容器 CPU/内存实时占用
 docker compose ps                       # 当前状态一览
 ```
 
-### 运维要点（今日新增功能）
+### 功能运维要点
 
 | 功能 | 运维说明 |
 |------|---------|
-| **产品 SEO** | 运营在后台产品表单的 SEO 面板填��� seo_title/seo_description；空值不影响，前端自动 fallback |
+| **产品 SEO** | 运营在后台产品表单的 SEO 面板填写 seo_title/seo_description；空值不影响，前端自动 fallback |
 | **询盘 CRM** | 五态管线：NEW→CONTACTING→QUOTED→DEAL/LOST；终态不可再流转 |
 | **询盘国家分布** | 运营在后台询盘跟进对话框标记 country，Dashboard 统计才有数据 |
 | **用户管理** | admin 账号不可删除；所有新账号统一 admin 权限；重置密码即时生效 |
-| **审计日志** | 36 处操作自动记录，后台侧边栏 → 审计日志查看 |
+| **审计日志** | 关键管理操作自动记录，后台侧边栏 → 审计日志查看 |
 | **GA4 事件** | `cta_click` / `product_view` / `contact_submit` 三个转化事件已埋点；需配置 `NEXT_PUBLIC_GA_ID` |
 | **Redis 缓存** | 产品列表(5min) / 分类(30min) / 新闻列表(5min) 自动缓存，写操作自动失效 |
 | **备份** | `scripts/backup.sh` 覆盖 PG + uploads，配置 cron 每日凌晨 3 点执行 |
-docker compose restart admin-next
-```
 
 ### 自动备份（scripts/backup.sh）
 
@@ -420,11 +418,24 @@ crontab -e
 **恢复：**
 
 ```bash
-# PostgreSQL 恢复
-gunzip -c /home/ubuntu/backups/db_YYYYMMDD.sql.gz | docker compose exec -T postgres psql -U songdian -d songdian_b2b
+# 读取实际数据库用户/库名（.env 值不要含 shell 特殊语法）
+set -a; source .env; set +a
 
-# uploads 恢复（解压到卷）
+# PostgreSQL 恢复会替换当前数据库：先停应用并清空 schema
+docker compose stop frontend admin-next backend
+docker compose exec -T postgres \
+  psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1 \
+  -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+gunzip -c /home/ubuntu/backups/db_YYYYMMDD.sql.gz | \
+  docker compose exec -T postgres \
+  psql -U "$PG_USER" -d "$PG_DB" -v ON_ERROR_STOP=1
+
+# uploads 恢复（会覆盖同名文件；需要完全回滚时应先清空卷）
 docker run --rm -v songdian-b2b_uploads_data:/data alpine sh -c "cd /data && tar xzf -" < /home/ubuntu/backups/uploads_YYYYMMDD.tar.gz
+
+# 恢复完成后重新启动并检查健康状态
+docker compose up -d
+curl -s http://127.0.0.1:8000/readyz
 ```
 
 ---
@@ -444,7 +455,8 @@ scp Video/SongdianFactoryVideo.mp4 ubuntu@106.53.220.184:/home/ubuntu/full-stack
 
 ## 十二、无域名部署（仅 IP：106.53.220.184）
 
-如果暂时没有域名，使用 **IP + 路径反代** 模式。改动集中在一处（`.env`），OpenResty 配置简单。
+当前暂无域名，使用 **IP + 路径反代** 模式。需要同时配置根 `.env`、OpenResty 站点以及腾讯云和
+服务器两层防火墙；下面是当前生产环境应采用的完整配置。
 
 ### 12.1 架构差异
 
@@ -560,7 +572,54 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | HTTP 明文 | 无域名无法申请 Let's Encrypt 证书，登录走 HTTP 明文（IP 无法签发可信证书） |
 | 管理后台端口 | 公网入口 **8081**（OpenResty 反代到容器 3001）；容器 3000/3001/8000 仅绑 127.0.0.1 不外露 |
 | 图片域名 | `frontend/next.config.ts` 已包含 `106.53.220.184` 和 `localhost` 的 remotePatterns，IP 模式直接可用 |
-| 切换域名 | 买域名后只需改 `.env` 的 `CORS_ORIGINS` / `NEXT_PUBLIC_API_URL` 并 `docker compose build`，再加 OpenResty 的 443 站点即可 |
+| 切换域名 | 买域名后切换 `.env` 的 CORS、API、站点规范地址和图片主机四项配置，重建前端镜像，再配置 OpenResty HTTPS 站点；详见下一节 |
+
+### 12.7 从 IP 平滑切换到域名（预留方案）
+
+下面以 `www.songdian.tech`（官网）、`api.songdian.tech`（API/上传）和
+`admin.songdian.tech`（后台）为例；如果最终购买其他域名，整体替换示例主机名即可。腾讯云中国大陆
+服务器应先按腾讯云要求完成域名实名认证、备案和解析，再启用正式公网访问。
+
+#### 第一步：解析与 HTTPS
+
+1. 为 `www`、`api`、`admin` 添加指向 `106.53.220.184` 的 A 记录。
+2. 在 1Panel/OpenResty 创建三个 HTTPS 站点并申请证书，反代目标保持不变：
+   - `www` → `http://127.0.0.1:3000`
+   - `api` → `http://127.0.0.1:8000`（同时代理 `/api/`、`/uploads/`）
+   - `admin` → `http://127.0.0.1:3001`
+3. 域名模式统一使用标准 `443`，不再要求用户访问公网 `:8081`；`3000/3001/8000` 仍只绑定回环。
+
+#### 第二步：切换构建变量
+
+根目录 `.env` 改为：
+
+```dotenv
+CORS_ORIGINS=https://www.songdian.tech,https://admin.songdian.tech
+NEXT_PUBLIC_API_URL=https://api.songdian.tech
+NEXT_PUBLIC_SITE_URL=https://www.songdian.tech
+NEXT_PUBLIC_IMAGE_HOST=api.songdian.tech
+```
+
+其中 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 都是构建期变量，
+已由 `docker-compose.yml` 作为 build args 传给 frontend；切换后必须重建两个 Next.js 镜像：
+
+```bash
+docker compose build frontend admin-next
+docker compose up -d frontend admin-next
+```
+
+#### 第三步：验证、回滚与收口
+
+```bash
+curl -I https://www.songdian.tech/
+curl -s https://api.songdian.tech/healthz
+curl -I https://admin.songdian.tech/signin
+```
+
+- 切换初期可以临时把 IP 来源也保留在 `CORS_ORIGINS` 中，待三个域名验证完成后再删除，便于回滚。
+- 确认登录、询盘、图片、sitemap、canonical URL 均已使用 HTTPS 域名后，可将 IP 官网做 301 跳转。
+- 确认后台域名稳定后，关闭腾讯云防火墙和 ufw 的公网 `8081`，减少暴露面；容器端口配置无需修改。
+- 回滚时恢复上一版 `.env` 的四个 IP 配置并重新构建前端即可，PostgreSQL、Redis 和上传卷不受影响。
 
 ---
 
@@ -574,7 +633,7 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | ⚠️ **PG18 卷挂载点** | 卷必须挂 `/var/lib/postgresql`（内部按 major 版本分子目录）。挂旧路径 `/var/lib/postgresql/data` 会报「18+ images require...」启动失败（postgres:18 镜像新约定） |
 | ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
 | 图片自动同步 | backend 启动命令 `cp -rn uploads/. uploads_data/`（`-n` 不覆盖运营上传文件，幂等）：git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷 |
-| 域名变更 | `NEXT_PUBLIC_API_URL` 等是**构建期内联**变量，改域名需 `docker compose build` 重新构建镜像（非仅改 env） |
+| 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env） |
 | 图片域名 | `frontend/next.config.ts` 的 `remotePatterns` 默认含 `api.songdian.tech` + `106.53.220.184` + `localhost`；若 API 域名不同，需同步改该配置并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | 无 HTTPS | 没域名时 OpenResty 用 IP 反代、登录走 HTTP 明文；建议买域名 + Let's Encrypt（1Panel 一键） |
@@ -585,11 +644,11 @@ sudo ufw allow 80/tcp && sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
 | 数据库升级 | 升 PG 大版本时注意迁移 `pg_data` 卷（先备份再升）；Redis 升级注意 `redis_data` 兼容 |
 | 前端 URL 规范映射 | `frontend/lib/generated/canonical-map.ts` 由 `npm run gen:map` 生成并随仓库提交；产品/分类变动后需重新生成+提交，再 `docker compose build`，否则产品 308 重定向用旧映射 |
-| postcss 构建报错 | 若 `next build` 报 `Module not found: Can't resolve 'postcss'`，是 `node_modules/postcss` 被装成空目录所致；`rm -rf node_modules/postcss && npm install` 补全即可（本地 dev/CI 均可能遇到） |
+| postcss 构建报错 | 若 `next build` 报依赖缺失，多为安装中断；执行 `rm -rf node_modules && npm ci` 按 lockfile 完整重装 |
 | Next 16.2 构建 | `next.config.ts` **不要写 `eslint: {}`**（16.2 已移除该键，type check 报错）；`useSearchParams()` 页面必须包 `<Suspense>`，否则静态生成报 CSR bailout |
 | 询盘邮件通知 | SMTP 配置可**在线改**：管理后台 → 设置 →「邮件通知（询盘 SMTP）」分组（`t_setting` 表存储，保存即生效，无需重启）。字段：smtp_host/port/user/password（脱敏 `******`）/发件人/收件人；「测试发送」按钮可校验。旧 `.env` 的 `SMTP_*` 仍兼容（库值非空时优先）。⚠️ **SMTP key 惰性创建**：`GET /admin/settings` 时 `ensure_smtp_settings()` 自动 `get_or_create`——与 `SEED_ON_START` 开关**解耦**（生产 `SEED_ON_START=false` 时 key 也能出现；**勿依赖 run_seed 创建**，否则设置页无 SMTP 面板） |
 | HTTP 询盘兼容 | 官网询盘在 HTTP（非 HTTPS）环境 `crypto.randomUUID()` 不可用——已加 fallback（`inq-时间戳-随机串`），无需处理 |
 
 ---
 
-*最后更新：2026-08-03（云端 IP `106.53.220.184`；询盘默认 API 与响应码修复；前后台全量分页读取；补回 Aerich 8 号兼容迁移；保留现有 PostgreSQL/Redis 数据卷）*
+*最后更新：2026-08-09（腾讯云轻量服务器、暂无域名；公网官网/API 使用 `:80`，管理后台使用 OpenResty `:8081`；Compose 应用端口仅绑定宿主机回环）*

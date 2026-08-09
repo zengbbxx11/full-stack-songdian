@@ -5,7 +5,7 @@
  * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
  */
 "use client";
-import React, { Suspense, useEffect, useState, useCallback, useRef } from "react";
+import React, { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -34,7 +34,6 @@ function ProductFormInner() {
   const copyFrom = params.get("copy_from");
   const isEdit = !!id;
   const isCopy = !!copyFrom;
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [cats, setCats] = useState<ProductCategory[]>([]);
   const [saving, setSaving] = useState(false);
@@ -43,7 +42,7 @@ function ProductFormInner() {
   const [attrs, setAttrs] = useState<AttributeItem[]>([]);
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
+  const [, setLoadingData] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "in_stock", status: "DRAFT", cover_image: "", seo_title: "", seo_description: "" });
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -295,7 +294,7 @@ function ProductFormInner() {
             </div>
 
             {galleries.length === 0 ? (
-              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click "+ 添加图片" to upload.</p>
+              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click &quot;+ 添加图片&quot; to upload.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {galleries.map(g => (

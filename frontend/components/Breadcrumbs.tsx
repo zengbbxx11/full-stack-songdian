@@ -39,7 +39,6 @@ export default function Breadcrumbs({
   };
 
   // Tesla 颜色变体
-  const textColor = variant === "dark" ? "#8E8E8E" : "#D0D1D2";
   const linkColor = variant === "dark" ? "#B0B1B3" : "#393C41";
   const linkHoverColor = variant === "dark" ? "#FFFFFF" : "#171A20";
   const activeColor = variant === "dark" ? "#8E8E8E" : "#5C5E62";

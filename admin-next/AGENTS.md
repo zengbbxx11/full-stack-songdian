@@ -8,6 +8,10 @@
 ## 项目定位
 
 松典科技 B2B 官网的**管理后台**，端口 `3001`，服务 `../backend/` 的 `/api/v1/admin/*`。
+
+当前腾讯云生产环境暂无域名：公网入口为 `http://106.53.220.184:8081/signin`，由 OpenResty
+监听 `8081` 后反代到宿主机回环 `127.0.0.1:3001`。Docker 内 API 代理使用
+`BACKEND_PROXY_URL=http://backend:8000`，不要改成公网 IP。
 Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 风格组件。
 `middleware.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` cookie），接口层另有 RBAC 兜底。
 

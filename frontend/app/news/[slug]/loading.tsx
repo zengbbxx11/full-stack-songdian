@@ -26,12 +26,12 @@ export default function NewsDetailLoading() {
 
       {/* 内容骨架 — 多个段落 */}
       <div className="space-y-3">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {[85, 72, 64, 80, 58, 76, 68, 55].map((width, i) => (
           <div
             key={i}
             className="h-4 rounded animate-pulse bg-[#F4F4F4]"
             style={{
-              width: `${85 - Math.random() * 30}%`,
+              width: `${width}%`,
               animationDelay: `${i * 0.08}s`,
             }}
           />

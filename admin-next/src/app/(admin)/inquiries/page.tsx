@@ -45,7 +45,7 @@ export default function InquiriesPage() {
     "/admin/inquiries?page_size=50",
     (path: string) => apiFetchAllPages<Inquiry>(path)
   );
-  const items = data?.list ?? [];
+  const items = useMemo(() => data?.list ?? [], [data?.list]);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -85,7 +85,7 @@ export default function InquiriesPage() {
   /* ── 列表加载失败 ── */
   useEffect(() => {
     if (error) toast.error(error instanceof Error ? error.message : "加载询盘失败");
-  }, [error]);
+  }, [error, toast]);
 
   /* ── 本地搜索过滤 ── */
   const filtered = useMemo(() => {

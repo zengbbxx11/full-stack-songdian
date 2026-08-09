@@ -4,10 +4,12 @@
 
 ## 当前云端部署
 
-- 公网官网入口：<http://106.53.220.184/>
-- 当前部署无域名，前端公网 API 基地址使用 `http://106.53.220.184`。
+- 公网官网入口：<http://106.53.220.184/>。
+- 公网管理后台：<http://106.53.220.184:8081/signin>（OpenResty `:8081` → admin-next `127.0.0.1:3001`）。
+- 当前部署暂无域名；官网与后台访问 API 时使用 `NEXT_PUBLIC_API_URL=http://106.53.220.184`，由 OpenResty 将 `/api/*`、`/uploads/*` 转发到后端。
 - Docker Compose 内部服务仍使用 `backend:8000`、`postgres:5432`、`redis:6379`，不要把容器间地址改成公网 IP。
 - 生产环境的根目录 `.env` 由 `.env.example` 复制后填写真实密钥；`NEXT_PUBLIC_API_URL` 必须与公网反向代理路径一致。
+- 配置保留域名切换能力：购买并备案域名后，只需切换根 `.env` 的 CORS/API/站点/图片主机变量、配置 HTTPS 反代并重建前端镜像，不需要改容器内服务地址。
 
 ---
 
@@ -21,7 +23,7 @@
 | **官网前端** | Next.js + React + Tailwind CSS + shadcn/ui | Next 16.2 / React 19.2 |
 | **后台管理** | Next.js + React + Tailwind CSS（admin-next） | Next 16.2 / React 19.2 |
 | **迁移引擎** | aerich | ≥0.9 |
-| **包管理** | uv（Python）/ pnpm（Node） | — |
+| **包管理** | uv（Python）/ npm（Node） | — |
 
 ---
 
@@ -49,7 +51,8 @@ full-stack-project/
 │   ├── src/components/        # UI 组件
 │   └── src/layout/            # 布局（侧边栏/顶栏）
 ├── db/                        # 数据库备份（SQL dump + CSV 导出）
-└── docs/                      # 架构设计文档 + Mermaid 图
+├── backend/docs/              # 后端架构设计与 Mermaid 图
+└── frontend/docs/             # 官网集成设计与 Mermaid 图
 ```
 
 ---
@@ -59,7 +62,7 @@ full-stack-project/
 - **Python** ≥ 3.14 + [uv](https://docs.astral.sh/uv/)
 - **PostgreSQL** 16+（本机经 envkit 装在 `C:\ProgramData\envkit\services\postgres\18.4\`，不随系统自启，启动命令见下文）
 - **Redis** 8（可选；未配置时降级为进程内内存实现）
-- **Node.js** ≥ 24 + pnpm（前端 Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 有兼容性问题）
+- **Node.js** ≥ 24 + npm（前端 Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 有兼容性问题）
 
 ---
 
@@ -95,14 +98,17 @@ uv run uvicorn main:app --reload --port 8000
 ```
 
 后端启动后访问：
-- API 文档：<http://localhost:8000/docs>
-- 健康检查：<http://localhost:8000/api/v1/healthz>
+- API 文档（仅开发环境默认开启）：<http://localhost:8000/docs>
+- 存活检查：<http://localhost:8000/healthz>
+- 就绪检查：<http://localhost:8000/readyz>
+
+> 生产环境默认关闭 `/docs`、`/redoc` 和 `/openapi.json`。
 
 ### 3. 官网前端 (Next.js)
 
 ```bash
 cd frontend
-pnpm install
+npm ci
 # 本机启动（必须用 Node 24.18.0，Node 22 与 Turbopack Web Streams 不兼容）：
 "/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000
 ```
@@ -111,12 +117,12 @@ pnpm install
 
 ```bash
 cd admin-next
-pnpm install
+npm ci
 # 本机启动（同上，Node 24）：
 "/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3001
 ```
 
-管理后台登录：`admin / Songdian@2026`（可由 `ADMIN_PASSWORD` 环境变量覆盖）
+管理后台用户名为 `admin`。初始密码取 `ADMIN_PASSWORD`；未配置时种子器会生成一次性随机密码并写入后端启动日志，生产环境不要依赖固定默认密码。
 
 ---
 ## 本机 PostgreSQL 启动
@@ -141,13 +147,15 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | `DATABASE_URL` | PostgreSQL 连接串 | `postgres://postgres:postgres@localhost:5432/songdianB2B` |
 | `REDIS_URL` | Redis 连接串（可选） | 未配时降级内置内存缓存 |
 | `PORT` | 后端监听端口 | 8000 |
-| `ADMIN_PASSWORD` | 种子管理员密码（覆盖硬编码） | `Songdian@2026` |
-| `MEDIA_ROOT` | 上传文件本地磁盘目录 | `backend/uploads` |
+| `ADMIN_PASSWORD` | 种子管理员密码；留空时生成一次性随机密码 | 无固定默认值 |
+| `MEDIA_ROOT` | 上传文件本地磁盘目录 | `uploads`（相对 `backend/`） |
 | `MEDIA_URL` | 上传文件 URL 前缀 | `/uploads` |
 | `STORAGE_BACKEND` | 存储后端（当前仅 `local`） | `local` |
 | `MAX_UPLOAD_MB` | 上传文件大小上限 | 10 |
 
-> **代理说明**：admin-next 和 frontend 均通过 `next.config.ts` 的 `rewrites()` 将 `/api/*` 和 `/uploads/*` 请求代理到后端 `http://localhost:8000`，无需额外配置。
+> **代理说明**：admin-next 通过 `next.config.ts` 的 `rewrites()` 代理 `/api/*` 和 `/uploads/*`；frontend 通过 `NEXT_PUBLIC_API_URL` 直接请求浏览器可达的 API。当前无域名生产环境统一设置为 `http://106.53.220.184`，Docker 内部代理仍使用 `BACKEND_PROXY_URL=http://backend:8000`。
+
+> **后续启用域名**：推荐使用 `www.songdian.tech`（官网）、`api.songdian.tech`（API/上传）和 `admin.songdian.tech`（后台）。域名切换清单见 [`deploy-guide.md`](deploy-guide.md)“从 IP 平滑切换到域名”，当前 IP 配置无需提前删除。
 
 ---
 
@@ -157,9 +165,9 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 
 | 角色 | 用户名 | 密码 | 说明 |
 |---|---|---|---|
-| 管理员 | `admin` | `Songdian@2026` | 种子数据幂等创建（`seed_on_start=True`）；可通过 `ADMIN_PASSWORD` 环境变量覆盖 |
+| 管理员 | `admin` | 取 `ADMIN_PASSWORD`；留空则随机生成 | 仅 `SEED_ON_START=true` 时运行幂等种子逻辑；随机密码见启动日志 |
 
-首次启动时自动种子：admin 账号 + `operator` 角色 + 全套权限码。
+本地后端模板默认启用种子；生产 Compose 模板默认 `SEED_ON_START=false`。只有显式启用时才自动创建 admin 账号和默认角色权限；导入 `db/seed_data.sql` 的部署以数据库内账号为准。
 
 ---
 
@@ -169,8 +177,8 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/api/v1/healthz` | 存活检查 |
-| GET | `/api/v1/readyz` | 就绪检查 |
+| GET | `/healthz` | 存活检查 |
+| GET | `/readyz` | 就绪检查 |
 | GET | `/api/v1/products` | 产品列表（分页，支持 category/keyword/order_by） |
 | GET | `/api/v1/products/{slug}` | 产品详情（含相册/属性/标签） |
 | GET | `/api/v1/news` | 新闻列表 |
@@ -253,12 +261,12 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 - **SWR 渐进式接入**：安装 `swr` (v2)，新增 `SWRProvider` 客户端 Provider 注入全局 `fetcher`；询盘列表 `inquiries` 试点改 `useSWR` 拉取 + `mutate()` 重校，删掉手写 `useEffect+setState` 样板；`apiFetch` 放宽 `body` 允许普通对象，消掉 categories/inquiries 的 `TS2322`（运行时本就 JSON 序列化）。
 - **运维**：记录 `.next/dev` 缓存写冲突（双 next dev 进程抢写导致整组 `(admin)` 页面 500）的速判与三板斧修复（杀冲突进程 → 清缓存 → 单进程重起）。
 
-### 待开发（P1/P2）
+### 后续规划（P1/P2）
 
 | 阶段 | 内容 |
 |---|---|
 | **P1** | 批量上下架/删除（T06）、上传进度 + 裁剪封装（T07） |
-| **P2** | 审计日志页 + 角色/权限管理 UI（T08） |
+| **P2** | 角色/权限管理 UI（审计日志页已完成） |
 
 ---
 
@@ -266,12 +274,12 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 
 | 文档 | 说明 |
 |---|---|
-| `docs/design-admin-ui.md` | 后台管理界面系统设计 + 任务分解 |
-| `docs/design-product-tags.md` | 产品标签恢复设计（**已作废**：依赖的 M6 迁移模块已移除，见该文档文首横幅） |
-| `docs/admin-ui-class-diagram.mermaid` | 后台管理类图 |
-| `docs/admin-ui-sequence-diagram.mermaid` | 后台管理时序图 |
-| `docs/class-diagram-product-tags.mermaid` | 标签恢复类图（基于已移除的 M6 模块，仅供参考） |
-| `docs/sequence-diagram-product-tags.mermaid` | 标签恢复时序图（基于已移除的 M6 模块，仅供参考） |
+| `backend/docs/ARCHITECTURE_PLAN.md` | 后端总体架构计划 |
+| `backend/docs/class-diagram.mermaid` | 后端领域类图 |
+| `backend/docs/sequence-diagram.mermaid` | 后端关键流程时序图 |
+| `frontend/docs/integration-plan.md` | 官网与 FastAPI 集成方案 |
+| `frontend/docs/class-diagram.mermaid` | 官网集成类图 |
+| `frontend/docs/sequence-diagram.mermaid` | 官网集成时序图 |
 
 ---
 
@@ -323,15 +331,15 @@ createdb -U postgres songdianB2B
 psql -U postgres -d songdianB2B < db/songdianB2B_full.sql  # 导入数据
 cd backend && cp .env.example .env && uv sync
 uvicorn main:app --host 0.0.0.0 --port 8000
-cd ../frontend && pnpm install && pnpm build && pnpm start
-cd ../admin-next && pnpm install && pnpm build && pnpm start
+cd ../frontend && npm ci && npm run build && npm run start
+cd ../admin-next && npm ci && npm run build && npm run start
 # 仅视频需单独上传: scp Video/SongdianFactoryVideo.mp4 user@server:frontend/public/Video/
 ```
 
 ### 前端部署
 
-- **官网前端**：`cd frontend && pnpm build` → Node 服务（SSR + ISR 模式）
-- **后台管理**：`cd admin-next && pnpm build` → Node 服务（SSR 模式，含中间件路由守卫）
+- **官网前端**：`cd frontend && npm run build` → Node 服务（SSR + ISR 模式）
+- **后台管理**：`cd admin-next && npm run build` → Node 服务（SSR 模式，含中间件路由守卫）
 
 ---
 
@@ -344,12 +352,12 @@ cd ../admin-next && pnpm install && pnpm build && pnpm start
 - **审计**：所有写操作加 `@audit(action, resource)`
 - **搜索向量**：Tortoise 信号 `post_save` 自动更新 `search_vector`；中文分词依赖 zhparser（缺失时降级 simple）
 - **代码注释**：中文
-- **包管理**：Python → uv；Node → pnpm
+- **包管理**：Python → uv；Node → npm（两个 Next.js 项目均提交 `package-lock.json`）
 
 ### 关键约束（踩坑备忘）
 
 - **Node 版本**：必须用 **Node 24.18.0**（`C:\Program Files\nodejs\node.exe`），Node 22 与 Next.js 16 Turbopack 的 Web Streams 不兼容
-- **启动命令**：不能走 `pnpm dev`（会调 Node 22），须直调：`"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p <port>`
+- **启动命令**：旧 Windows 沙箱若默认 Node 版本不正确，须直调：`"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p <port>`；正常 Node 24 环境可使用 `npm run dev`。
 - **admin-next 必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：若删除，Turbopack 原生 Tailwind 内容扫描漏掉 `.tsx` 中的布局类（flex/grid/fixed/block），整页无样式
 - **admin-next 严禁使用 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 进程启动即崩（exit 1），会导致所有页面 500
 - **middleware matcher**：`src/middleware.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去

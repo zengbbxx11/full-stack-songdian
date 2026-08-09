@@ -46,6 +46,8 @@ npm run dev        # http://localhost:3001
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
+| `BACKEND_PROXY_URL` | `http://localhost:8000` | 服务端 `/api`、`/uploads` rewrite 目标；Compose 中为 `http://backend:8000` |
+| `JWT_SECRET` | — | 服务端路由守卫验签密钥，必须与后端一致，禁止使用 `NEXT_PUBLIC_` 前缀 |
 
 ---
 
@@ -135,9 +137,12 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 
 ## 环境变量
 
-复制 `env.example` 为 `.env.local` 后填写：
+复制 `.env.example` 为 `.env.local` 后填写：
 
 - `NEXT_PUBLIC_API_URL`：后端地址（客户端组件读取，须 `NEXT_PUBLIC_` 前缀）。
+- `BACKEND_PROXY_URL`：Next.js 服务端 rewrite 目标；Docker Compose 内使用 `http://backend:8000`。
+- 当前腾讯云无域名部署的公网后台入口为 `http://106.53.220.184:8081/signin`；`3001` 仅为 admin-next 应用端口和宿主机回环端口。
+- 后续启用域名时，公网入口改为 `https://admin.songdian.tech`、API 改为 `https://api.songdian.tech`；`BACKEND_PROXY_URL=http://backend:8000` 保持不变。
 - `JWT_SECRET`：**服务端**中间件读取，用于校验 `access_token` 的 HS256 签名（2026-07-28 修复，
   此前仅 base64 解码 payload，伪造 cookie 可绕过）。必须与后端 `.env` 的 `JWT_SECRET` **完全一致**，
   **切勿加 `NEXT_PUBLIC_` 前缀**（否则密钥泄露到浏览器）。生产环境必须配置；未配置时降级为仅校验

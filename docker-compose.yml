@@ -5,7 +5,7 @@
 # 仅 1Panel 的 OpenResty 留在 Compose 之外，负责外部反代：
 #  有域名：                     仅 IP（无域名）：
 #   https://www.songdian.tech   → frontend:3000        http://106.53.220.184/        → frontend:3000
-#   https://admin.songdian.tech → admin-next:3001     http://106.53.220.184:3001/   → admin-next:3001
+#   https://admin.songdian.tech → admin-next:3001     http://106.53.220.184:8081/   → OpenResty → admin-next:3001
 #   https://api.songdian.tech   → backend:8000        http://106.53.220.184/api/    → backend:8000
 # OpenResty 以 host 网络模式运行，反代目标写 http://127.0.0.1:8000 / :3000 / :3001
 # （Compose 已把这三个端口发布到宿主机回环）。
@@ -116,6 +116,9 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # 为旧服务器 .env 提供 IP 默认值；配置域名后由 .env 覆盖。
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://106.53.220.184}
+        NEXT_PUBLIC_IMAGE_HOST: ${NEXT_PUBLIC_IMAGE_HOST:-106.53.220.184}
     ports:
       - "127.0.0.1:3000:3000"
     environment:

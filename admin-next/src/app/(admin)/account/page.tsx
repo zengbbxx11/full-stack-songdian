@@ -2,14 +2,12 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { useToast } from "@/context/ToastContext";
 import React, { useState } from "react";
 import useSWR from "swr";
 import { apiFetch, swrFetcher } from "@/lib/api-client";
 import type { AdminUser } from "@/types";
 
 export default function AccountPage() {
-  const toast = useToast();
   const { data: profile, mutate } = useSWR<AdminUser>("/admin/profile", swrFetcher);
 
   // 修改用户名

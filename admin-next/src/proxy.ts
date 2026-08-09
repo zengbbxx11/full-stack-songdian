@@ -39,7 +39,7 @@ async function isTokenValid(token: string | undefined): Promise<boolean> {
 
   // 未配置 JWT_SECRET（仅本地开发）：降级为仅校验 exp 的存在性检查，并告警。
   console.warn(
-    "[middleware] JWT_SECRET 未配置，token 仅做 exp 校验（不安全降级）。" +
+    "[proxy] JWT_SECRET 未配置，token 仅做 exp 校验（不安全降级）。" +
       "生产环境请配置与后端一致的 JWT_SECRET 以启用签名验证。"
   );
   try {
@@ -55,7 +55,7 @@ async function isTokenValid(token: string | undefined): Promise<boolean> {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + "/")

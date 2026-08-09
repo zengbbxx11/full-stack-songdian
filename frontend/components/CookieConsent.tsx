@@ -59,21 +59,23 @@ export default function CookieConsent() {
 
   // 挂载后读取已存同意；无记录则展示横幅（避免 SSR 水合不一致）
   useEffect(() => {
-    setMounted(true);
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ConsentState;
-        if (parsed && parsed.v === CONSENT_VERSION) {
-          setConsent(parsed);
-          setAnalyticsToggle(parsed.analytics);
-          return;
+    queueMicrotask(() => {
+      setMounted(true);
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as ConsentState;
+          if (parsed && parsed.v === CONSENT_VERSION) {
+            setConsent(parsed);
+            setAnalyticsToggle(parsed.analytics);
+            return;
+          }
         }
+      } catch {
+        // 解析失败则视为未同意，展示横幅
       }
-    } catch {
-      // 解析失败则视为未同意，展示横幅
-    }
-    setShow(true);
+      setShow(true);
+    });
   }, []);
 
   // 页脚「Cookie Settings」触发重新打开偏好面板

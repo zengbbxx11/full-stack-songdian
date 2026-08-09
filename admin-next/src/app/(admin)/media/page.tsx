@@ -8,8 +8,10 @@
  * - 删除保护：查引用明细（含产品/新闻名称），弹窗告警后仍可强制删除
  */
 "use client";
+// 媒体库必须展示运行时上传的任意尺寸素材，原生 img 在此比优化代理更合适。
+/* eslint-disable @next/next/no-img-element */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, swrFetcher, API_BASE } from "@/lib/api-client";
@@ -46,7 +48,6 @@ function buildTree(albums: Album[]): TreeAlbum[] {
     if (!byParent.has(pid)) byParent.set(pid, []);
     byParent.get(pid)!.push(a);
   }
-  const sorted = (list: Album[]) => [...list].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
   function walk(parentId: number | null, depth: number): TreeAlbum[] {
     return (byParent.get(parentId) ?? []).sort((a, b) => a.sort_order - b.sort_order || a.id - b.id).map((a) => ({
       ...a, depth, children: walk(a.id, depth + 1),
@@ -152,12 +153,27 @@ export default function MediaPage() {
   const { data: recordsData, isLoading } = useSWR<PaginatedRecords>(recordsKey, swrFetcher);
   const records = recordsData?.list ?? []; const total = recordsData?.total ?? 0; const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [selectedAlbumId, keyword]);
+  const selectAlbum = (albumId: number | null) => {
+    setSelectedAlbumId(albumId);
+    setPage(1);
+    setSelectedIds(new Set());
+  };
+
+  const changeKeyword = (value: string) => {
+    setKeyword(value);
+    setPage(1);
+    setSelectedIds(new Set());
+  };
 
   // 多选
   const allSelected = records.length > 0 && selectedIds.size === records.length;
   const toggleSelectAll = () => setSelectedIds(allSelected ? new Set() : new Set(records.map((r) => r.id)));
-  const toggleSelect = (id: number) => { const n = new Set(selectedIds); n.has(id) ? n.delete(id) : n.add(id); setSelectedIds(n); };
+  const toggleSelect = (id: number) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
   const clearSelection = () => setSelectedIds(new Set());
 
   // 上传
@@ -205,7 +221,7 @@ export default function MediaPage() {
   const copyUrl = (url: string) => { navigator.clipboard.writeText(url); toast.success("Copied!"); };
 
   // 懒加载引用信息（hover 触发，已缓存则直接返回）
-  const fetchUsage = async (recId: number, url: string) => {
+  const fetchUsage = async (recId: number) => {
     if (usageCache.has(recId)) return;
     try {
       const info = await apiFetch<UsageInfo>(`/admin/upload/${recId}/usage`);
@@ -243,11 +259,11 @@ export default function MediaPage() {
           <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="新建相册"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
         </div>
         <ul className="space-y-0.5">
-          <li><button onClick={() => setSelectedAlbumId(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.reduce((s,a)=>s+a.count,0)+uncategorized : 0}</span></button></li>
+          <li><button onClick={() => selectAlbum(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.reduce((s,a)=>s+a.count,0)+uncategorized : 0}</span></button></li>
           {uncategorized > 0 && (
-            <li><button onClick={() => setSelectedAlbumId(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />未分类</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
+            <li><button onClick={() => selectAlbum(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />未分类</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
           )}
-          {tree.map((node) => <AlbumNode key={node.id} album={node} selectedAlbumId={selectedAlbumId} onSelect={setSelectedAlbumId} onEdit={openEditAlbum} onDelete={deleteAlbum} />)}
+          {tree.map((node) => <AlbumNode key={node.id} album={node} selectedAlbumId={selectedAlbumId} onSelect={selectAlbum} onEdit={openEditAlbum} onDelete={deleteAlbum} />)}
         </ul>
       </aside>
 
@@ -257,7 +273,7 @@ export default function MediaPage() {
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx={11} cy={11} r={8}/><path d="m21 21-4.3-4.3" strokeLinecap="round"/></svg>
-            <input type="text" placeholder="搜索..." value={keyword} onChange={(e) => setKeyword(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+            <input type="text" placeholder="搜索..." value={keyword} onChange={(e) => changeKeyword(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
           </div>
           <select value={uploadAlbumId ?? ""} onChange={(e) => setUploadAlbumId(e.target.value ? Number(e.target.value) : null)} className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-2 max-w-[140px]">
             <option value="">无相册</option>
@@ -317,7 +333,7 @@ export default function MediaPage() {
               {records.map((rec) => {
                 const isSelected = selectedIds.has(rec.id);
                 return (
-                  <div key={rec.id} className={`group relative rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${isSelected ? "border-brand-500 bg-brand-50/30 dark:bg-brand-900/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`} onClick={() => toggleSelect(rec.id)} onMouseEnter={() => fetchUsage(rec.id, rec.url)}>
+                  <div key={rec.id} className={`group relative rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${isSelected ? "border-brand-500 bg-brand-50/30 dark:bg-brand-900/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`} onClick={() => toggleSelect(rec.id)} onMouseEnter={() => fetchUsage(rec.id)}>
                     <div className={`absolute top-2 left-2 z-10 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}><input type="checkbox" checked={isSelected} readOnly className="w-4 h-4 rounded border-white bg-white/80 text-brand-500 focus:ring-brand-500 shadow-sm" /></div>
                     <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800"><img src={`${API_BASE}${rec.url}`} alt={rec.title || rec.file_name} className="w-full h-full object-cover" loading="lazy" /></div>
                     <div className="p-2">

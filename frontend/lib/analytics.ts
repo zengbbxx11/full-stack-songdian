@@ -6,11 +6,17 @@
 
 type GtagParams = Record<string, string | number | boolean>;
 
+declare global {
+  interface Window {
+    gtag?: (command: "event", eventName: string, params: GtagParams) => void;
+  }
+}
+
 /**
  * 判断 gtag 是否就绪（用户已同意 Cookie + GA_ID 已配置）。
  */
 function gtagReady(): boolean {
-  return typeof window !== "undefined" && typeof (window as any).gtag === "function";
+  return typeof window !== "undefined" && typeof window.gtag === "function";
 }
 
 /**
@@ -20,7 +26,7 @@ function gtagReady(): boolean {
 export function trackEvent(eventName: string, params?: GtagParams): void {
   if (!gtagReady()) return;
   try {
-    (window as any).gtag("event", eventName, params ?? {});
+    window.gtag?.("event", eventName, params ?? {});
   } catch {
     // GA 挂了不影响页面，静默吞掉
   }

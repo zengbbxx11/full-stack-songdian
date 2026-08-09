@@ -360,6 +360,6 @@ cd ../admin-next && npm ci && npm run build && npm run start
 - **启动命令**：旧 Windows 沙箱若默认 Node 版本不正确，须直调：`"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p <port>`；正常 Node 24 环境可使用 `npm run dev`。
 - **admin-next 必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：若删除，Turbopack 原生 Tailwind 内容扫描漏掉 `.tsx` 中的布局类（flex/grid/fixed/block），整页无样式
 - **admin-next 严禁使用 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 进程启动即崩（exit 1），会导致所有页面 500
-- **middleware matcher**：`src/middleware.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
+- **middleware matcher**：`src/proxy.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
 - **Turbopack `.next/dev` 缓存写冲突**：若后台所有 `(admin)` 页面同时 500、浏览器报 `An unexpected Turbopack error`，多为两个 next dev 进程抢写同一缓存目录。修法：杀掉 3001 占用进程 → `rm -rf admin-next/.next/dev` → 单进程重起（详见 `admin-next/AGENTS.md` 雷区 ⑧，**别误杀 :3000 的 frontend**）
 - **PostgreSQL 症状速判**：后端所有接口返回 `B999001 系统内部错误` → 几乎一定是 PG 没起。先 `netstat -ano | grep :5432` 确认，再用 envkit `pg_ctl` 拉起

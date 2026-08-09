@@ -9,7 +9,6 @@
  */
 
 import { superMeta } from "next-super-meta";
-import Link from "next/link";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";

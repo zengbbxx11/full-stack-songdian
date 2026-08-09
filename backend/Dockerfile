@@ -15,9 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app/backend
 
 # 用 uv 安装生产依赖：先放 pyproject.toml，uv sync 会按需生成/复用 uv.lock（确定性构建）
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 RUN pip install --no-cache-dir uv \
-    && uv sync --no-dev
+    && uv sync --frozen --no-dev
 
 # uv sync 默认创建 .venv 虚拟环境（新版 uv 已移除 --system 参数），
 # 把 .venv/bin 加入 PATH，使 aerich / uvicorn 等命令可直接调用

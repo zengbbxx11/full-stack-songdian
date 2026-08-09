@@ -5,7 +5,9 @@
  * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
  */
 "use client";
-import React, { Suspense, useEffect, useState, useCallback, useRef } from "react";
+// 后台预览使用运行时上传地址；保留原生 img，避免把任意媒体源交给图片优化代理。
+/* eslint-disable @next/next/no-img-element */
+import React, { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -34,7 +36,6 @@ function ProductFormInner() {
   const copyFrom = params.get("copy_from");
   const isEdit = !!id;
   const isCopy = !!copyFrom;
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [cats, setCats] = useState<ProductCategory[]>([]);
   const [saving, setSaving] = useState(false);
@@ -43,7 +44,6 @@ function ProductFormInner() {
   const [attrs, setAttrs] = useState<AttributeItem[]>([]);
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "in_stock", status: "DRAFT", cover_image: "", seo_title: "", seo_description: "" });
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -82,7 +82,6 @@ function ProductFormInner() {
   useEffect(() => {
     const sourceId = id || copyFrom;
     if (!sourceId) return;
-    setLoadingData(true);
     apiFetch<Record<string, unknown>>(`/admin/products/${sourceId}`).then((p) => {
       const title = copyFrom ? `Copy of ${String(p.title || "")}` : String(p.title || "");
       const slug = copyFrom ? "" : String(p.slug || "");
@@ -92,7 +91,7 @@ function ProductFormInner() {
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("加载产品失败：" + msg);
-    }).finally(() => setLoadingData(false));
+    });
   }, [id, copyFrom, toast]);
 
   // 上传图片文件到后端 → 返回 URL
@@ -295,7 +294,7 @@ function ProductFormInner() {
             </div>
 
             {galleries.length === 0 ? (
-              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click "+ 添加图片" to upload.</p>
+              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click &quot;+ 添加图片&quot; to upload.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {galleries.map(g => (

@@ -13,6 +13,7 @@
  */
 
 @import "tailwindcss";
+
 @import "tw-animate-css";
 
 /* ============================================================
@@ -108,7 +109,7 @@
 }
 
 body {
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, -apple-system, sans-serif;
   color: var(--foreground);
   line-height: 1.43;  /* 匹配 Tesla 的 14px/20px 比例 */
   font-size: 14px;     /* Tesla 默认正文字号 */
@@ -260,7 +261,7 @@ html {
     padding: 0.15em 0.4em;
     border-radius: 4px;
     font-size: 0.875em;
-    font-family: var(--font-geist-mono), monospace;
+    font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   }
 
   hr { margin: 2.5em 0; border-color: #EEEEEE; }

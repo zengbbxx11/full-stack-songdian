@@ -17,15 +17,12 @@ interface ProductGalleryProps {
   mainAlt: string;
   /** 相册图片（不含主图） */
   gallery: { id: number; src: string; alt?: string }[];
-  /** 分类标签 */
-  category?: string;
 }
 
 export default function ProductGallery({
   mainImage,
   mainAlt,
   gallery,
-  category,
 }: ProductGalleryProps) {
   // 当前展示的大图地址，默认取主图
   const [selected, setSelected] = useState(mainImage);

@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from common.audit import audit
 from common.config import settings
@@ -19,8 +18,8 @@ from content import services
 from content.models import AdminUser
 from content.schemas import (
     LoginRequest,
+    LoginVO,
     ProfileVO,
-    RefreshRequest,
     RoleCreateRequest,
     RolePermRequest,
     UpdateProfileRequest,
@@ -30,7 +29,16 @@ from content.schemas import (
 
 router = APIRouter(prefix="/api/v1", tags=["content"])
 
-_bearer = HTTPBearer(auto_error=False)
+def _set_session_cookies(response: Response, request: Request, session) -> None:
+    """仅通过同源 HttpOnly Cookie 下发令牌，生产环境强制 HTTPS Cookie。"""
+    secure = settings.app_env.strip().lower() == "production"
+    common = {"httponly": True, "secure": secure, "samesite": "lax", "path": "/"}
+    response.set_cookie(
+        "access_token", session.access_token, max_age=settings.access_token_ttl, **common
+    )
+    response.set_cookie(
+        "refresh_token", session.refresh_token, max_age=settings.refresh_token_ttl, **common
+    )
 
 
 @router.post("/admin/login", summary="后台登录")
@@ -42,32 +50,21 @@ async def login(
 ) -> Result:
     ip = request.scope.get("client_ip", "unknown")
     vo = await services.login(data.username, data.password, ip=ip)
-    # security-audit 认证加固（F-08 相关）：登录同时下发 HttpOnly Cookie（access/refresh），
-    # 浏览器自动随同域请求携带、JS 不可读，降低 XSS 窃取令牌风险（前端仍以 Bearer 为主，Cookie 为纵深防御）。
-    # Secure 按请求协议判定：https（含反向代理下发的 X-Forwarded-Proto）才置 Secure，
-    # 否则 http://localhost 开发环境浏览器会拒绝存储该 Cookie 导致守卫失效。
-    forwarded_proto = request.headers.get("x-forwarded-proto", "")
-    secure = request.url.scheme == "https" or forwarded_proto == "https"
-    response.set_cookie(
-        "access_token", vo.access_token, max_age=settings.access_token_ttl,
-        httponly=True, secure=secure, samesite="lax",
-    )
-    response.set_cookie(
-        "refresh_token", vo.refresh_token, max_age=settings.refresh_token_ttl,
-        httponly=True, secure=secure, samesite="lax",
-    )
-    return Result.ok(vo.model_dump(mode="json"))
+    _set_session_cookies(response, request, vo)
+    return Result.ok(LoginVO(
+        roles=vo.roles, permissions=vo.permissions, expires_at=vo.expires_at
+    ).model_dump(mode="json"))
 
 
 @router.post("/admin/logout", summary="登出")
 async def logout(
     request: Request,
     response: Response,
-    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    _user: AdminUser = Depends(get_current_user),
 ) -> Result:
-    if creds:
-        await services.logout(creds.credentials)
+    # 即使 access 已过期也应清理两枚 Cookie；refresh 仍可用于吊销整族会话。
+    token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
+    if token:
+        await services.logout(token)
     # 清除 HttpOnly Cookie（前端 document.cookie 无法清除 HttpOnly，必须由后端下发过期 Cookie）。
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
@@ -76,14 +73,18 @@ async def logout(
 
 @router.post("/admin/refresh", summary="刷新令牌（无感刷新）")
 @audit(action="auth.refresh", resource="token:refresh")
-async def refresh_token(
-    data: RefreshRequest,
-    request: Request,
-) -> Result:
-    # 该端点不需要 access token；仅需传入合法的 refresh token。
+async def refresh_token(request: Request, response: Response) -> Result:
+    # 该端点不需要 access token；refresh token 仅从 HttpOnly Cookie 读取。
     # @audit 记录刷新动作的成败（操作人此处为匿名，因端点本身不依赖 access 鉴权）。
-    vo = await services.refresh(data.refresh_token)
-    return Result.ok(vo.model_dump(mode="json"))
+    refresh_cookie = request.cookies.get("refresh_token")
+    if not refresh_cookie:
+        from common.exceptions import BizException, ErrorCode
+        raise BizException(ErrorCode.C401001)
+    vo = await services.refresh(refresh_cookie)
+    _set_session_cookies(response, request, vo)
+    return Result.ok(LoginVO(
+        roles=vo.roles, permissions=vo.permissions, expires_at=vo.expires_at
+    ).model_dump(mode="json"))
 
 
 @router.get("/admin/roles", summary="角色列表")

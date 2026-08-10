@@ -1,6 +1,6 @@
 # 松典 B2B 官网重构 · 后端实现计划（ARCHITECTURE_PLAN）
 
-> ✅ **计划已执行完毕（2026-07）**：本文档为设计阶段产物，所有冻结版本（FastAPI 0.139、Tortoise 1.1.7、Python 3.14）均已可用并落地实施。
+> ✅ **计划已执行完毕（2026-07）**：本文档为设计阶段产物，不能作为当前部署、认证、环境变量或依赖版本依据；这些以根目录 [`README.md`](../../README.md) 与 [`deploy-guide.md`](../../deploy-guide.md) 为准。
 > §0 的「版本偏差」已不再适用——当前代码即按冻结版本运行。
 > 实际技术栈与目录结构见根 `README.md` 和 `backend/README.md`。
 > ⚠️ **M6 数据迁移模块（WordPress ETL）已移除（2026-07-27）**：原 `backend/migration/`（wp_adapter/etl/image_sync/backfill 等）、`/api/v1/admin/migration/*` 端点、RBAC 权限 `migration:read`/`migration:run` 已全部删除。WP→PG 主迁移已完成，该模块为一次性工具，日常业务不依赖。**注意区分**：本文档其余处的「迁移」多指 **aerich 数据库 schema 迁移（DDL）**——该项保留，与 M6 无关。

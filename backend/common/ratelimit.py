@@ -15,7 +15,7 @@ from fastapi import Request
 from common.config import settings
 from common.exceptions import BizException, ErrorCode
 from common.logger import get_logger
-from common.redis_client import get_redis
+from common.redis_client import cache_key, get_redis
 
 logger = get_logger(__name__)
 
@@ -43,14 +43,32 @@ class SlidingWindow:
             return True
 
 
-# 全局限流器单例
+# Redis 不可用时的全局限流器单例（仅单进程降级）。
 _global_limiter = SlidingWindow(settings.rate_global_qps)
 
 
 async def global_rate_limit(request: Request) -> None:
-    """全局 QPS 限流依赖（内存滑动窗口）。"""
-    if not await _global_limiter.allow():
-        raise BizException(ErrorCode.C429001)
+    """全局 QPS 限流：Redis 跨 worker 共享，异常时退化为单进程滑动窗口。"""
+    key = cache_key("rl", "global", str(int(time.time())))
+    try:
+        redis = get_redis()
+        count = await redis.incr(key)
+        if count == 1:
+            await redis.expire(key, 2)
+        if count > settings.rate_global_qps:
+            raise BizException(ErrorCode.C429001)
+    except BizException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("全局限流降级内存：%s", exc)
+        if not await _global_limiter.allow():
+            raise BizException(ErrorCode.C429001)
+
+
+async def api_rate_limit(request: Request) -> None:
+    """所有 API 入口共享的全局 + 单 IP 限流。"""
+    await global_rate_limit(request)
+    await ip_rate_limit(request)
 
 
 async def ip_rate_limit(request: Request, limit: int | None = None) -> None:

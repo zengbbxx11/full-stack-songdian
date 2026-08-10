@@ -12,6 +12,8 @@ const backendProxyUrl =
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
+  // 锁定本子项目根目录，避免上级 lockfile 被 Turbopack 误判为 workspace 根。
+  turbopack: { root: __dirname },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${backendProxyUrl}/api/:path*` },
@@ -31,8 +33,6 @@ const nextConfig: NextConfig = {
   // 里的 flex/grid/fixed/block 等布局工具类，整页无样式。复用 postcss.config.mjs
   // （与 frontend 一致）后 Tailwind 内容探测正确，完整 CSS 恢复，且无崩溃。
   //
-  // 不设置 turbopack.root：仅在原生 Tailwind 下影响内容扫描（已弃用该路径），
-  // 现在走 postcss 无需它；保留会触发"多 lockfile 根推断"警告（无害）。
 };
 
 export default nextConfig;

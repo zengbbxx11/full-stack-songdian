@@ -95,6 +95,7 @@ class Settings(BaseSettings):
 
     # ── 种子数据 ──
     seed_on_start: bool = True
+    seed_content_categories: bool = False
     # 初始管理员密码：不再硬编码默认值（security-audit F-04）。
     # 通过环境变量 ADMIN_PASSWORD 注入；若为空，种子将生成一次性随机密码并打印到日志。
     admin_password: str = ""

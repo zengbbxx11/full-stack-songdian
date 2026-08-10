@@ -12,10 +12,14 @@ import re
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
 from common.config import settings
+from common.exceptions import BizException, ErrorCode
 from common.logger import get_logger, new_trace_id, set_trace_id
+from common.ratelimit import api_rate_limit
+from common.result import Result
 
 logger = get_logger(__name__)
 
@@ -73,3 +77,28 @@ class TraceMiddleware(BaseHTTPMiddleware):
         )
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         return response
+
+
+class ApiSecurityMiddleware(BaseHTTPMiddleware):
+    """在路由前执行 API 限流，并拒绝不受信任来源的后台写请求。"""
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        if path.startswith("/api/v1/"):
+            try:
+                await api_rate_limit(request)
+            except BizException as exc:
+                return JSONResponse(
+                    status_code=429,
+                    content=Result.fail(exc.code, exc.msg).model_dump(mode="json"),
+                )
+
+        # 浏览器对跨站 unsafe 请求会携带 Origin；缺失 Origin 保留给同机运维与测试客户端。
+        if path.startswith("/api/v1/admin/") and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            origin = request.headers.get("origin")
+            if origin and origin not in settings.cors_origin_list:
+                return JSONResponse(
+                    status_code=403,
+                    content=Result.fail(ErrorCode.C403001, "不受信任的请求来源").model_dump(mode="json"),
+                )
+        return await call_next(request)

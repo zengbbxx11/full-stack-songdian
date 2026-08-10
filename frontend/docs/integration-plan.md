@@ -4,7 +4,7 @@
 > 说明：本文所有结论均来自**亲读源码**（backend routers/schemas/models、frontend pages/lib），非凭记忆。
 > 后端根：`backend/` ｜ 前端根：`frontend/`（代码在根目录，非 src/）
 
-> ⚠️ **文档状态（2026-07 更新）**：本文是 **WordPress → FastAPI 迁移方案的原始设计稿**，迁移**已完成**。
+> ⚠️ **文档状态（2026-08 更新）**：本文是 **WordPress → FastAPI 迁移方案的原始设计稿**，迁移**已完成**，不得作为当前部署、认证或 CORS 配置依据。
 > `lib/wordpress.ts` 已删除，前端全面改用 `lib/api/*`（products / news / search）对接自研 FastAPI（`:8000`，前缀 `/api/v1`）。
 > 文中「当前数据来自 `lib/wordpress.ts`」「待明确 #1~#7」等为**迁移前状态**，对应问题（列表封面图 `cover_image`、搜索结果页、相邻文章、banner 静态化等）均已落地。下方保留为历史设计记录，最新架构以 `frontend/AGENTS.md`、`backend/AGENTS.md` 及根 `README.md`「前端优化与美化」小节为准。
 

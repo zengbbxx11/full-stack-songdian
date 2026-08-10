@@ -1,6 +1,6 @@
 # 图片资源替换指南 — Songdian Technology
 
-> ⚠️ **历史文档（旧架构）**：本文档描述的是旧架构（WordPress + FileBird）下的图片管理流程。
+> ⚠️ **历史文档（旧架构）**：本文档描述的是旧架构（WordPress + FileBird）下的图片管理流程，不能用于当前上传、部署或图片域名配置。
 > 当前项目已迁移至 **FastAPI 后端**，图片通过后端 `/admin/upload` 上传、经 `rewrites` 代理到前端。
 > 本文档保留供历史参考，当前图片管理请查阅 `admin-next/README.md` 中的媒体管理部分。
 

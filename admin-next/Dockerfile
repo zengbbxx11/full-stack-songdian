@@ -17,11 +17,6 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ARG BACKEND_PROXY_URL=http://backend:8000
 ENV BACKEND_PROXY_URL=$BACKEND_PROXY_URL
 
-# JWT_SECRET：服务端校验令牌所用（与后端一致，非公开变量）。
-# 构建期注入一次以防构建阶段有代码读取；运行期再注入一次保证容器内可用。
-ARG JWT_SECRET
-ENV JWT_SECRET=$JWT_SECRET
-
 # 复制业务源码并构建
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -35,9 +30,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 
-# JWT_SECRET 运行期仍需（服务端校验 token），再次注入
-ARG JWT_SECRET
-ENV JWT_SECRET=$JWT_SECRET
+# JWT_SECRET 仅通过运行期环境变量或 Docker Secret 注入，绝不写入构建层。
 
 # 复制 standalone 最小服务器（含 .next/standalone/server.js）
 COPY --from=builder /app/.next/standalone ./

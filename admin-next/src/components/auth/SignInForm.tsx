@@ -1,8 +1,7 @@
 /*
  * 组件：登录表单（SignInForm）
  * 职责：渲染用户名+密码输入表单。"Sign in" 按钮 POST /api/v1/admin/login，
- * 成功后把 JWT 存入 localStorage 供接口 Bearer 鉴权，并依赖后端下发的 HttpOnly
- * access_token Cookie 供路由守卫校验；跳转 / 进入后台。
+ * 成功后由后端设置 HttpOnly 会话 Cookie，前端不读取或保存 JWT；跳转 / 进入后台。
  */
 "use client";
 import Input from "@/components/form/input/InputField";
@@ -29,13 +28,10 @@ export default function SignInForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        credentials: "same-origin",
       });
       const json = await res.json();
       if (json.code !== "0") throw new Error(json.msg || "登录失败");
-      const token = json.data.access_token as string;
-      // 存入 localStorage 供接口 Bearer 鉴权；路由守卫改用后端下发的 HttpOnly
-      // access_token Cookie（security-audit F-15：JS 不可读，降低 XSS 窃取风险）。
-      localStorage.setItem("admin_token", token);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");

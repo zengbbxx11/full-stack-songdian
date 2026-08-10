@@ -20,7 +20,7 @@ def _admin_headers(client) -> dict:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body.get("code") in (0, "0"), body
-    return {"Authorization": f"Bearer {body['data']['access_token']}"}
+    return {}
 
 
 def _first_prod_cat(client) -> int:

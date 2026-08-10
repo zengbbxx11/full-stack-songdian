@@ -104,15 +104,19 @@ async def upload(
     services.check_upload_limits([file])  # security-audit F-10
     backend = services.get_storage_backend()
     url = await backend.save(file, file.filename or "upload.bin")
-    record = await services.record_upload(
-        url=url,
-        file_name=file.filename or "upload.bin",
-        size=file.size or 0,
-        uploaded_by=current_user.username,
-        album_id=album_id,
-        title=title,
-        categorize_hint=categorize,
-    )
+    try:
+        record = await services.record_upload(
+            url=url,
+            file_name=file.filename or "upload.bin",
+            size=file.size or 0,
+            uploaded_by=current_user.username,
+            album_id=album_id,
+            title=title,
+            categorize_hint=categorize,
+        )
+    except Exception:
+        await services.remove_physical_file(url)
+        raise
     return Result.ok(UploadVO.build(record.url, record.file_name, record.size).model_dump(mode="json"))
 
 
@@ -127,16 +131,30 @@ async def upload_batch(
     services.check_upload_limits(files)  # security-audit F-10
     backend = services.get_storage_backend()
     vos: list[dict] = []
-    for f in files:
-        url = await backend.save(f, f.filename or "upload.bin")
-        record = await services.record_upload(
-            url=url,
-            file_name=f.filename or "upload.bin",
-            size=f.size or 0,
-            uploaded_by=current_user.username,
-            album_id=album_id,
-        )
-        vos.append(UploadVO.build(record.url, record.file_name, record.size).model_dump(mode="json"))
+    saved_urls: list[str] = []
+    records: list[UploadRecord] = []
+    try:
+        for f in files:
+            url = await backend.save(f, f.filename or "upload.bin")
+            saved_urls.append(url)
+            record = await services.record_upload(
+                url=url,
+                file_name=f.filename or "upload.bin",
+                size=f.size or 0,
+                uploaded_by=current_user.username,
+                album_id=album_id,
+            )
+            records.append(record)
+            vos.append(UploadVO.build(record.url, record.file_name, record.size).model_dump(mode="json"))
+    except Exception:
+        for record in records:
+            try:
+                await record.delete()
+            except Exception:
+                pass
+        for url in saved_urls:
+            await services.remove_physical_file(url)
+        raise
     return Result.ok(vos)
 
 

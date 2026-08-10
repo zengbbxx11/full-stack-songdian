@@ -54,6 +54,10 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
 
+# 测试客户端使用 http；生产环境的 Secure Cookie 在 http 场景不会回传。
+_cfg.settings.app_env = "development"
+_cfg.settings.seed_content_categories = False
+
 # 测试不得读取开发者本机 .env 中的真实 SMTP 配置，避免用例发送外部邮件。
 for _smtp_field in (
     "smtp_host",
@@ -103,11 +107,13 @@ def client():
             json={"username": "admin", "password": _cfg.settings.admin_password or "Songdian@2026"},
         )
         if login.status_code == 200 and login.json().get("code") in (0, "0"):
-            token = login.json()["data"]["access_token"]
             c.post(
                 "/api/v1/admin/categories",
-                headers={"Authorization": f"Bearer {token}"},
                 json={"name": "QA Category", "slug": f"qa-category-{_uuid.uuid4().hex[:8]}"},
+            )
+            c.post(
+                "/api/v1/admin/news-categories",
+                json={"name": "QA News Category", "slug": f"qa-news-category-{_uuid.uuid4().hex[:8]}"},
             )
             # 后续用例应从匿名状态开始，不能继承登录接口下发的 Cookie。
             c.cookies.clear()

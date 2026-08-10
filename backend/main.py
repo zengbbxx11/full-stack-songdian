@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -27,7 +27,7 @@ from fastapi.staticfiles import StaticFiles
 from common.config import MEDIA_ROOT, close_db, init_db, settings
 from common.exceptions import register_exception_handlers
 from common.logger import get_logger
-from common.middleware import TraceMiddleware
+from common.middleware import ApiSecurityMiddleware, TraceMiddleware
 from common.redis_client import close_redis, init_redis
 from content.routers import router as content_router
 from inquiry.routers import router as inquiry_router
@@ -95,16 +95,16 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 # TraceMiddleware：给每个请求注入 traceId（用于日志追踪），
 #   解析客户端真实 IP（而不是代理 IP），设置单租户标识
 app.add_middleware(TraceMiddleware)
+app.add_middleware(ApiSecurityMiddleware)
 
 # CORS 跨域：只允许 .env 里配置的前端域名访问 API。
-#   allow_credentials=False 是因为我们用 Bearer Token 鉴权，
-#   不需要浏览器自动带 cookie，更安全。
+#   管理后台使用 HttpOnly Cookie，会话请求只允许明确的可信来源并携带凭据。
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,  # .env 里的 CORS_ORIGINS
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Content-Type"],
 )
 
 # 全局异常处理：把代码中任何未捕获的异常统一转成
@@ -125,6 +125,18 @@ MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 app.mount(settings.media_url, StaticFiles(directory=str(MEDIA_ROOT)), name="uploads")
 
 
+async def _database_is_ready() -> bool:
+    """Return whether the application can execute a minimal database query."""
+    try:
+        from tortoise import connections
+
+        await connections.get("default").execute_query("SELECT 1")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("readyz database probe failed: %s", exc)
+        return False
+
+
 @app.get("/healthz", tags=["system"], summary="存活探针")
 async def healthz() -> dict:
     """存活检查 — 只要 Python 进程还活着就返回 ok。
@@ -133,18 +145,15 @@ async def healthz() -> dict:
 
 
 @app.get("/readyz", tags=["system"], summary="就绪探针（探 DB + Redis）")
-async def readyz() -> dict:
+async def readyz(response: Response) -> dict:
     """就绪检查 — 检查数据库和 Redis 是否可用。
     用于健康检查/编排平台（如 1Panel）判断"是否可以接流量"。
     返回 ready（都正常）或 degraded（部分不可用）。"""
-    db_ok = False
     redis_ok = False
 
     # 试连数据库：执行 SELECT 1 看能不能通
     try:
-        from tortoise import connections
-        await connections.get("default").execute_query("SELECT 1")
-        db_ok = True
+        db_ok = await _database_is_ready()
     except Exception as exc:
         logger.warning("readyz DB 探活失败：%s", exc)
 
@@ -156,6 +165,10 @@ async def readyz() -> dict:
     except Exception:
         redis_ok = False
 
+    # PostgreSQL 是请求处理的必要依赖；不可用时必须让编排器停止导流。
+    # Redis 可降级为进程内实现，因此只在响应中标记 degraded。
+    if not db_ok:
+        response.status_code = 503
     status = "ready" if (db_ok and redis_ok) else "degraded"
     return {"status": status, "db": db_ok, "redis": redis_ok}
 

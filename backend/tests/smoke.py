@@ -6,23 +6,35 @@
 """
 from __future__ import annotations
 
+import atexit
 import os
 import sys
+import tempfile
+import uuid
 
 # 本地无 PG / 无 Redis 环境
 _ROOT = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, os.path.abspath(_ROOT))
 
-if os.path.exists(os.path.join(_ROOT, "test.db")):
-    try:
-        os.remove(os.path.join(_ROOT, "test.db"))
-    except OSError:
-        pass
+_TEST_DB = os.path.join(tempfile.gettempdir(), f"songdian-smoke-{uuid.uuid4().hex}.db")
 
-os.environ["DATABASE_URL"] = f"sqlite://{os.path.join(_ROOT, 'test.db')}"
+
+def _cleanup_test_database() -> None:
+    for suffix in ("", "-wal", "-shm", "-journal"):
+        try:
+            os.remove(_TEST_DB + suffix)
+        except FileNotFoundError:
+            pass
+
+
+atexit.register(_cleanup_test_database)
+
+os.environ["DATABASE_URL"] = f"sqlite://{_TEST_DB}"
 os.environ["REDIS_URL"] = ""
 os.environ["SEED_ON_START"] = "true"
-os.environ["JWT_SECRET"] = "test-secret-for-smoke"
+os.environ["SEED_CONTENT_CATEGORIES"] = "false"
+os.environ["APP_ENV"] = "development"
+os.environ["JWT_SECRET"] = "test-secret-for-smoke-at-least-32-bytes"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -34,7 +46,7 @@ ADMIN = ("admin", "Songdian@2026")
 def _assert_ok(resp, label: str):
     body = resp.json()
     assert body.get("code") in (0, "0"), f"{label} 失败：{body}"
-    print(f"  ✓ {label} (HTTP {resp.status_code})")
+    print(f"  [OK] {label} (HTTP {resp.status_code})")
     return body.get("data")
 
 
@@ -43,7 +55,7 @@ def _assert_probe(resp, label: str):
     assert resp.status_code == 200, f"{label} 失败：HTTP {resp.status_code}"
     body = resp.json()
     assert body.get("status") in ("alive", "ready", "ok"), f"{label} 失败：{body}"
-    print(f"  ✓ {label} (HTTP {resp.status_code}, status={body.get('status')})")
+    print(f"  [OK] {label} (HTTP {resp.status_code}, status={body.get('status')})")
     return body
 
 
@@ -56,9 +68,24 @@ def main() -> None:
 
         # 2) 登录
         login = client.post("/api/v1/admin/login", json={"username": ADMIN[0], "password": ADMIN[1]})
-        data = _assert_ok(login, "admin login")
-        token = data["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
+        _assert_ok(login, "admin login")
+        headers = {}
+        _assert_ok(
+            client.post(
+                "/api/v1/admin/categories",
+                headers=headers,
+                json={"name": "Smoke Product Category", "slug": "smoke-product-category"},
+            ),
+            "create product category",
+        )
+        _assert_ok(
+            client.post(
+                "/api/v1/admin/news-categories",
+                headers=headers,
+                json={"name": "Smoke News Category", "slug": "smoke-news-category"},
+            ),
+            "create news category",
+        )
 
         # 3) 产品分类（种子已注入，取第一个 id）
         cats = _assert_ok(client.get("/api/v1/product-categories"), "list product-categories")
@@ -99,6 +126,7 @@ def main() -> None:
                 "summary": "冒烟测试新闻",
                 "content_html": "<p>news body</p>",
                 "category_id": ncategory_id,
+                "status": "PUBLISHED",
             },
         )
         ndata = _assert_ok(news, "create news")
@@ -143,7 +171,7 @@ def main() -> None:
         # 10) 角色列表（RBAC 读）
         _assert_ok(client.get("/api/v1/admin/roles", headers=headers), "list roles")
 
-    print("\n✅ 冒烟全部通过：建表/种子/登录/产品/新闻/搜索降级/询盘幂等/后台读取 均无报错。")
+    print("\n[OK] 冒烟全部通过：建表/种子/登录/产品/新闻/搜索降级/询盘幂等/后台读取 均无报错。")
 
 
 if __name__ == "__main__":

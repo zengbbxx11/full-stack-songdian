@@ -1,5 +1,17 @@
 # 安全审计发现修复总览（18/18）
 
+> **历史修复记录，不作为当前部署或认证说明。** 本文保留 2026-07 审计过程；其中 Bearer、`localStorage`、双通道认证、按请求协议设置 `Secure`、1Panel 独立 PG/Redis 等表述已经被后续方案取代。当前生产依据为根目录 [README.md](README.md)、[deploy-guide.md](deploy-guide.md) 与代码。
+
+## 当前安全状态（2026-08）
+
+- 管理后台为 **Cookie-only JWT**：登录、刷新、登出都只使用 HttpOnly `access_token` / `refresh_token` Cookie；登录和刷新响应不返回令牌，浏览器代码不读取 JWT，也不发送 Bearer 头。
+- Cookie 使用 `HttpOnly`、`SameSite=Lax`，且在 `APP_ENV=production` 启用 `Secure`；后台 API 从 `admin.zsaki.icu` 的同源 `/api` 代理访问，401 最多刷新并重试一次。
+- 后台写请求会校验允许的 `Origin`；全局 `/api/v1` 限流使用 Redis，Redis 不可用时受控降级到内存限流。
+- 上传路径、符号链接、文件实际格式与扩展名均由后端校验；失败时清理临时文件与孤立记录。
+- 后端容器仅发布到宿主机回环；运行时自动识别 Docker 网桥可信代理。实际生产域名、HTTPS 与端口收口流程见 [部署指南](deploy-guide.md)。
+
+---
+
 > 对象：`full-stack-project`（backend FastAPI / frontend Next.js 16 / admin-next Next.js）
 > 对应审计：`security-audit-skill` run-1（18  findings：1 CRITICAL / 5 HIGH / 7 MEDIUM / 5 LOW）
 > 状态：全部代码层修复完成，后端已重启生效（:8000），`TestClient` 冒烟通过。
@@ -83,4 +95,3 @@ run-1 / run-2 的修复集中在后端。本次在**前端渲染层**补一道�
 
 - `src/context/ToastContext.tsx`：`ToastProvider` 在 `addToast` 这个 `const` 声明**之前**于 `useEffect` 依赖数组中引用它 → TDZ 报错，整页 500；已将 effect 移到声明之后。
 - `src/app/(admin)/categories/page.tsx`：`import Modal from "@/components/ui/modal"`（默认导入），而该模块为**具名导出** `Modal` → 整页 500；已改为 `import { Modal }`。
-

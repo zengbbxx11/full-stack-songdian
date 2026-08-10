@@ -1,7 +1,7 @@
 """依赖注入（Shared Kernel，§3.4 / §3.5 / §7.2）。
 
 设计约束：
-- ``get_current_user``：校验 ``Authorization: Bearer``，缺失/过期/黑名单/禁用 → C401001/C403001。
+- ``get_current_user``：校验 HttpOnly ``access_token`` Cookie，缺失/过期/黑名单/禁用 → C401001/C403001。
 - ``require_permission(code)``：在已登录基础上校验 RBAC 权限码，无权限 → C403001(A050003)。
 - 权限经 Redis 缓存 ``auth:perm:{uid}``（TTL=access_token_ttl），无 Redis 时直查 PG（BD-03 降级）。
 - ``get_settings``：注入全局配置。
@@ -13,7 +13,6 @@ import hmac
 import json
 
 from fastapi import Depends, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from common.config import settings
 from common.exceptions import BizException, ErrorCode
@@ -22,9 +21,6 @@ from common.redis_client import cache_key, get_redis
 
 # 避免循环依赖：直接引用模型，不引用 content.services
 from content.models import AdminUser, RolePermission
-
-_bearer = HTTPBearer(auto_error=False)
-
 
 async def get_settings():
     """注入全局 Settings。"""
@@ -37,13 +33,9 @@ def _client_ip(request: Request) -> str:
 
 async def get_current_user(
     request: Request,
-    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> AdminUser:
-    """解析并校验 JWT，返回当前管理员。失败抛 BizException。"""
-    token = creds.credentials if creds else None
-    # security-audit F-15：兼容 HttpOnly Cookie 下发方式，优先 Bearer，缺失时回退 Cookie。
-    if not token:
-        token = request.cookies.get("access_token")
+    """解析并校验 HttpOnly access Cookie，返回当前管理员。"""
+    token = request.cookies.get("access_token")
     if not token:
         raise BizException(ErrorCode.C401001)
     try:

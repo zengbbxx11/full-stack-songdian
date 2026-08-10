@@ -71,7 +71,7 @@ cp .env.example .env
 #   - REDIS_URL 留空                  （自动降级进程内内存字典）
 #   - JWT_SECRET 建议显式设置：       openssl rand -base64 48
 
-# 启动（SEED_ON_START=true 时自动幂等写入种子）
+# 启动（SEED_ON_START=true 时仅幂等写入角色、权限和管理员）
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -224,8 +224,9 @@ uv run python -m seed.seed_data
 
 **生产（腾讯云轻量服务器 + Docker Compose + 1Panel OpenResty）**
 
-当前生产服务器公网 IP 为 `106.53.220.184`，暂无域名。PostgreSQL、Redis、backend、frontend、
-admin-next 均由根目录 `docker-compose.yml` 编排；仅 1Panel OpenResty 位于 Compose 外负责公网反代。
+生产域名为 `www.zsaki.icu`（官网）、`api.zsaki.icu`（API）和 `admin.zsaki.icu`（后台），根域
+`zsaki.icu` 重定向至 `www`。PostgreSQL、Redis、backend、frontend、admin-next 均由根目录
+`docker-compose.yml` 编排；仅 1Panel OpenResty 位于 Compose 外负责公网反代。
 完整步骤以根目录 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 > **生产必须显式设置 `JWT_SECRET`**（≥32 字节随机值），未设置或仍为占位值时应用会拒绝启动。
@@ -245,9 +246,9 @@ admin-next 均由根目录 `docker-compose.yml` 编排；仅 1Panel OpenResty �
 - 审计日志 `order_by` 增加字段白名单；
 - 搜索分页（LIMIT/OFFSET + COUNT）下沉到数据库。
 
-2026-07-28 安全审计加固（认证 + 迁移 + 后台回归）：登录同时下发 HttpOnly
-`access_token`/`refresh_token` Cookie（XSS 纵深防御，`Secure` 按请求协议判定，不再强制依赖
-`APP_ENV`）；`t_*_category.sort_order` 改为 double precision、`t_news.status` 默认 `DRAFT`、清理
+2026-08 安全审计加固（认证 + 迁移 + 后台回归）：登录和刷新仅通过 HttpOnly
+`access_token`/`refresh_token` Cookie 签发或轮换（响应体不返回令牌；生产环境 `Secure`，`SameSite=Lax`，
+以 `APP_ENV=production` 决定）；`t_*_category.sort_order` 改为 double precision、`t_news.status` 默认 `DRAFT`、清理
 WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两处致全站 500 的回归
 （`ToastContext` TDZ、`categories` 页 Modal 具名导入）。详见
 [`SECURITY-REMEDIATION.md`](../SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。

@@ -17,6 +17,7 @@ import os
 import re
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Protocol
 
 from fastapi import UploadFile
@@ -31,15 +32,28 @@ logger = logging.getLogger(__name__)
 # 扩展名白名单（小写，含点）
 ALLOWED_EXT: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
 
-# 图片魔数（magic bytes）：文件头前 N 字节 → MIME 类型，用于防扩展名伪造
+# 图片魔数（magic bytes）：文件头前 N 字节 → MIME 类型，用于防扩展名伪造。
 _IMAGE_MAGIC: dict[bytes, str] = {
     b"\xff\xd8\xff": "image/jpeg",          # JPEG: FF D8 FF
     b"\x89PNG\r\n\x1a\n": "image/png",      # PNG: 89 50 4E 47 0D 0A 1A 0A
-    b"RIFF": "image/webp",                  # WEBP: RIFF....WEBP（先匹配 RIFF 容器）
     b"GIF87a": "image/gif",                 # GIF87a
     b"GIF89a": "image/gif",                 # GIF89a
 }
 _ALLOWED_MIMES: frozenset[str] = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif"})
+_EXTENSION_MIMES: dict[str, str] = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".gif": "image/gif",
+}
+
+
+def _detect_image_mime(content: bytes) -> str | None:
+    """从真实文件头识别图片格式；RIFF 容器必须同时声明 WEBP。"""
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp"
+    for magic, expected_mime in _IMAGE_MAGIC.items():
+        if content.startswith(magic):
+            return expected_mime
+    return None
 
 
 def _validate_image_content(content: bytes, filename: str) -> str:
@@ -50,16 +64,17 @@ def _validate_image_content(content: bytes, filename: str) -> str:
     任一步失败即抛 BizException C400001。
     """
     # 第一步：mimetypes 类型推断
+    ext = os.path.splitext(filename or "")[1].lower()
+    expected_mime = _EXTENSION_MIMES.get(ext)
     mime, _ = mimetypes.guess_type(filename)
-    if mime not in _ALLOWED_MIMES:
+    if expected_mime is None or mime not in _ALLOWED_MIMES or mime != expected_mime:
         raise BizException(ErrorCode.C400001, f"不支持的文件类型：{mime or '未知'}")
 
-    # 第二步：魔数校验（取文件头最多 8 字节匹配已知签名词典）
-    header = content[:8]
-    for magic, expected_mime in _IMAGE_MAGIC.items():
-        if header.startswith(magic):
-            return expected_mime
-    raise BizException(ErrorCode.C400001, "文件内容与扩展名不匹配，疑似伪造")
+    # 第二步：文件魔数必须与扩展名对应的格式完全一致。
+    detected_mime = _detect_image_mime(content)
+    if detected_mime != expected_mime:
+        raise BizException(ErrorCode.C400001, "文件内容与扩展名不匹配，疑似伪造")
+    return detected_mime
 
 
 class StorageBackend(Protocol):
@@ -296,22 +311,38 @@ async def delete_upload_record(record_id: int, force: bool = False) -> dict:
             data={"usage": usage_info["count"], "items": usage_info["items"], "conflict": True},
         )
     # 删除磁盘文件（best-effort）
-    await _remove_physical_file(rec.url)
+    await remove_physical_file(rec.url)
     await rec.delete()
     return {"usage": usage_info["count"]}
 
 
-async def _remove_physical_file(url: str) -> None:
-    """根据相对 URL 删除本地磁盘文件（best-effort，缺失不报错）。"""
-    if not url or not url.startswith(settings.media_url):
-        return
-    rel = url[len(settings.media_url):].lstrip("/")
+def _safe_media_path(url: str) -> Path | None:
+    """将媒体 URL 安全映射到本地文件，拒绝穿越、目录和符号链接。"""
+    prefix = f"{settings.media_url.rstrip('/')}/"
+    if not url or not url.startswith(prefix):
+        return None
+    rel = url[len(prefix):]
     if not rel:
-        return
-    path = MEDIA_ROOT / rel
+        return None
+    root = MEDIA_ROOT.resolve()
+    candidate = MEDIA_ROOT / rel
     try:
-        if path.exists():
-            path.unlink()
+        resolved = candidate.resolve(strict=False)
+        resolved.relative_to(root)
+    except (OSError, ValueError):
+        return None
+    if candidate.is_symlink() or not resolved.is_file():
+        return None
+    return resolved
+
+
+async def remove_physical_file(url: str) -> None:
+    """根据受验证的媒体 URL 删除本地文件（best-effort，缺失不报错）。"""
+    path = _safe_media_path(url)
+    if path is None:
+        return
+    try:
+        path.unlink()
     except Exception as exc:  # noqa: BLE001
         logger.warning("删除上传文件失败（忽略）：%s -> %s", path, exc)
 
@@ -417,12 +448,9 @@ async def sync_missing_uploads() -> dict:
         file_name = url.rsplit("/", 1)[-1] if "/" in url else url
         # 尝试从磁盘获取文件大小（best-effort）
         size = 0
-        if url.startswith(settings.media_url):
-            rel = url[len(settings.media_url):].lstrip("/")
-            if rel:
-                path = MEDIA_ROOT / rel
-                if path.exists():
-                    size = path.stat().st_size
+        path = _safe_media_path(url)
+        if path is not None:
+            size = path.stat().st_size
         await UploadRecord.create(url=url, file_name=file_name, size=size, uploaded_by="sync")
         synced += 1
 

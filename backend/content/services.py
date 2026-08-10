@@ -26,7 +26,7 @@ from content.models import AdminUser, AuditLog, Role, RolePermission
 from content.permissions import ALL_PERMISSIONS
 from content.schemas import (
     AuditPageVO,
-    LoginVO,
+    IssuedSession,
     ProfileVO,
     RoleCreateRequest,
     RolePermRequest,
@@ -56,7 +56,7 @@ async def _clear_user_perm_cache(user: AdminUser) -> None:
         pass
 
 
-async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
+async def login(username: str, password: str, ip: str = "unknown") -> IssuedSession:
     """用户登录 — 完整流程
 
     ① 根据用户名查数据库 t_admin_user 表
@@ -67,7 +67,7 @@ async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
     ⑤ 密码错误 → 失败次数 +1，满了 5 次 → 锁定 15 分钟
     ⑥ 密码正确 → 清空失败计数，签发两个 JWT：
        access_token（2h） + refresh_token（7d），共享一个令牌族 ID
-    返回 LoginVO（含 token、角色、权限列表）
+    返回仅供路由写入 HttpOnly Cookie 的 IssuedSession。
     """
     # ① 查用户
     user = await AdminUser.get_or_none(username=username)
@@ -124,7 +124,7 @@ async def login(username: str, password: str, ip: str = "unknown") -> LoginVO:
     refresh = create_refresh_token(user.id, user.username, fid=fid)
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
 
-    return LoginVO(
+    return IssuedSession(
         access_token=access, refresh_token=refresh, roles=roles,
         permissions=perms, expires_at=expires_at,
     )
@@ -150,7 +150,7 @@ async def logout(token: str) -> None:
         await revoke_token(jti, settings.access_token_ttl)
 
 
-async def refresh(refresh_token: str) -> LoginVO:
+async def refresh(refresh_token: str) -> IssuedSession:
     """无感刷新 — 用 refresh_token 换一对新�� token
 
     前端在 access_token 快过期时调用这个接口。
@@ -190,7 +190,7 @@ async def refresh(refresh_token: str) -> LoginVO:
     if old_fid:
         await revoke_family(old_fid)  # 旧 refresh 立刻作废，只能刷一次
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
-    return LoginVO(
+    return IssuedSession(
         access_token=access, refresh_token=new_refresh, roles=roles,
         permissions=perms, expires_at=expires_at,
     )

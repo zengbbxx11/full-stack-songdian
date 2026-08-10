@@ -4,12 +4,12 @@
 
 ## 当前云端部署
 
-- 公网官网入口：<http://106.53.220.184/>。
-- 公网管理后台：<http://106.53.220.184:8081/signin>（OpenResty `:8081` → admin-next `127.0.0.1:3001`）。
-- 当前部署暂无域名；官网与后台访问 API 时使用 `NEXT_PUBLIC_API_URL=http://106.53.220.184`，由 OpenResty 将 `/api/*`、`/uploads/*` 转发到后端。
+- 公网官网入口：<https://www.zsaki.icu/>。
+- 公网管理后台：<https://admin.zsaki.icu/signin>。
+- API 与上传入口：<https://api.zsaki.icu/>；管理后台使用 HTTPS Secure Cookie，不支持 IP/HTTP 登录。
 - Docker Compose 内部服务仍使用 `backend:8000`、`postgres:5432`、`redis:6379`，不要把容器间地址改成公网 IP。
 - 生产环境的根目录 `.env` 由 `.env.example` 复制后填写真实密钥；`NEXT_PUBLIC_API_URL` 必须与公网反向代理路径一致。
-- 配置保留域名切换能力：购买并备案域名后，只需切换根 `.env` 的 CORS/API/站点/图片主机变量、配置 HTTPS 反代并重建前端镜像，不需要改容器内服务地址。
+- 域名变更时，更新根 `.env` 的 CORS/API/站点/图片主机变量、配置 HTTPS 反代并重建前端镜像；不需要改容器内服务地址。
 
 ---
 
@@ -20,8 +20,8 @@
 | **后端** | FastAPI + Tortoise ORM + asyncpg | Python ≥3.14 / FastAPI 0.139 / Tortoise 1.1.7 |
 | **数据库** | PostgreSQL（全文检索 zhparser/降级 simple） | 16+（本机 envkit 18.4） |
 | **缓存** | Redis（降级进程内内存实现） | 8 |
-| **官网前端** | Next.js + React + Tailwind CSS + shadcn/ui | Next 16.2 / React 19.2 |
-| **后台管理** | Next.js + React + Tailwind CSS（admin-next） | Next 16.2 / React 19.2 |
+| **官网前端** | Next.js + React + Tailwind CSS + shadcn/ui | Next 16.3 / React 19.2 |
+| **后台管理** | Next.js + React + Tailwind CSS（admin-next） | Next 16.3 / React 19.2 |
 | **迁移引擎** | aerich | ≥0.9 |
 | **包管理** | uv（Python）/ npm（Node） | — |
 
@@ -50,7 +50,7 @@ full-stack-project/
 │   ├── src/app/(admin)/       # App Router 管理页面
 │   ├── src/components/        # UI 组件
 │   └── src/layout/            # 布局（侧边栏/顶栏）
-├── db/                        # 数据库备份（SQL dump + CSV 导出）
+├── db/                        # 仅本地开发快照（SQL + CSV，禁止导入生产）
 ├── backend/docs/              # 后端架构设计与 Mermaid 图
 └── frontend/docs/             # 官网集成设计与 Mermaid 图
 ```
@@ -84,14 +84,12 @@ cd backend
 uv sync
 uv sync --extra dev          # 开发环境需额外安装 pytest/ruff
 
-# 数据库迁移
-aerich init -t config.TORTOISE_ORM  # 首次
-aerich migrate --name init          # 生成迁移
-aerich upgrade                      # 执行迁移
-
-# 若新增了模型（如 UploadRecord），额外生成迁移
-aerich migrate --name add_uploads
+# 应用已有迁移链（开发数据库或新库）
 aerich upgrade
+
+# 仅在你修改模型并需要新增迁移时执行：
+# aerich migrate --name <change-name>
+# aerich upgrade
 
 # 启动开发服务器
 uv run uvicorn main:app --reload --port 8000
@@ -153,9 +151,9 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | `STORAGE_BACKEND` | 存储后端（当前仅 `local`） | `local` |
 | `MAX_UPLOAD_MB` | 上传文件大小上限 | 10 |
 
-> **代理说明**：admin-next 通过 `next.config.ts` 的 `rewrites()` 代理 `/api/*` 和 `/uploads/*`；frontend 通过 `NEXT_PUBLIC_API_URL` 直接请求浏览器可达的 API。当前无域名生产环境统一设置为 `http://106.53.220.184`，Docker 内部代理仍使用 `BACKEND_PROXY_URL=http://backend:8000`。
+> **代理说明**：admin-next 通过 `next.config.ts` 的 `rewrites()` 代理 `/api/*` 和 `/uploads/*`；frontend 通过 `NEXT_PUBLIC_API_URL` 直接请求浏览器可达的 API。Docker 内部代理始终使用 `BACKEND_PROXY_URL=http://backend:8000`，不要改为公网域名或 IP。
 
-> **后续启用域名**：推荐使用 `www.songdian.tech`（官网）、`api.songdian.tech`（API/上传）和 `admin.songdian.tech`（后台）。域名切换清单见 [`deploy-guide.md`](deploy-guide.md)“从 IP 平滑切换到域名”，当前 IP 配置无需提前删除。
+> **生产域名**：`zsaki.icu` 仅做 HTTPS 301 至 `www.zsaki.icu`；官网、API、后台分别使用 `www.zsaki.icu`、`api.zsaki.icu`、`admin.zsaki.icu`。完整上线清单见 [`deploy-guide.md`](deploy-guide.md)。
 
 ---
 
@@ -167,7 +165,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 |---|---|---|---|
 | 管理员 | `admin` | 取 `ADMIN_PASSWORD`；留空则随机生成 | 仅 `SEED_ON_START=true` 时运行幂等种子逻辑；随机密码见启动日志 |
 
-本地后端模板默认启用种子；生产 Compose 模板默认 `SEED_ON_START=false`。只有显式启用时才自动创建 admin 账号和默认角色权限；导入 `db/seed_data.sql` 的部署以数据库内账号为准。
+本地后端模板默认启用最小种子；生产 Compose 模板默认 `SEED_ON_START=false`。只有显式启用时才创建 admin 账号和默认角色权限，且不会新增、删除或覆盖产品、新闻及其分类。`db/` 下的 SQL/CSV 快照仅限本地调试，禁止用于生产部署。
 
 ---
 
@@ -194,8 +192,8 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
 | POST | `/api/v1/admin/login` | — | 登录（限流） |
-| POST | `/api/v1/admin/logout` | — | 登出（需 token） |
-| POST | `/api/v1/admin/refresh` | — | 无感刷新令牌（令牌族轮换） |
+| POST | `/api/v1/admin/logout` | — | 从 HttpOnly Cookie 读取令牌族并吊销，同时清除 Cookie |
+| POST | `/api/v1/admin/refresh` | — | 从 refresh Cookie 无感轮换会话；请求和响应均不传回令牌 |
 | GET/POST/PUT/DELETE | `/api/v1/admin/products{/:id}` | `product:*` | 产品 CRUD（含 sort_order） |
 | POST | `/api/v1/admin/products/{id}/gallery` | `product:update` | 添加相册图 |
 | POST | `/api/v1/admin/products/{id}/attributes` | `product:update` | 添加规格属性 |
@@ -323,17 +321,14 @@ pytest tests/test_admin_phase1.py -v
 
 详细步骤见 [`deploy-guide.md`](deploy-guide.md)，核心流程：
 
-仓库已包含全部代码+图片+数据库备份，克隆即用：
+仓库包含代码、开发素材与本地调试快照；生产环境只使用迁移和最小种子：
 
 ```bash
 git clone https://github.com/zengbbxx11/full-stack-songdian.git && cd full-stack-songdian
-createdb -U postgres songdianB2B
-psql -U postgres -d songdianB2B < db/songdianB2B_full.sql  # 导入数据
-cd backend && cp .env.example .env && uv sync
-uvicorn main:app --host 0.0.0.0 --port 8000
-cd ../frontend && npm ci && npm run build && npm run start
-cd ../admin-next && npm ci && npm run build && npm run start
-# 仅视频需单独上传: scp Video/SongdianFactoryVideo.mp4 user@server:frontend/public/Video/
+cp .env.example .env
+# 设置强密码、JWT_SECRET、HTTPS 域名；首次部署临时设 SEED_ON_START=true
+docker compose up -d --build
+# 验证管理员可登录后，将 SEED_ON_START 改回 false 并重新部署
 ```
 
 ### 前端部署

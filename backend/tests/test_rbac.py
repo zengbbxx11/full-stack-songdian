@@ -19,6 +19,7 @@ from httpx import ASGITransport
 from common.config import close_db, init_db
 from common.password import hash_password
 from content.models import AdminUser, Role
+from news.models import NewsCategory
 from product.models import ProductCategory
 from main import app
 from seed.seed_data import run_seed
@@ -30,7 +31,7 @@ def _admin_headers(client) -> dict:
     resp = client.post("/api/v1/admin/login", json={"username": ADMIN[0], "password": ADMIN[1]})
     body = resp.json()
     assert body.get("code") in (0, "0"), body
-    return {"Authorization": f"Bearer {body['data']['access_token']}"}
+    return {}
 
 
 def test_roles_list_create_and_bind(client):
@@ -70,6 +71,8 @@ def test_low_permission_role_forbidden_but_allowed():
     async def _run():
         await init_db()
         await run_seed()
+        assert await ProductCategory.all().count() == 0
+        assert await NewsCategory.all().count() == 0
         await ProductCategory.create(name="QA Category", slug=f"qa-category-{uuid.uuid4().hex[:8]}")
         op = await Role.get_or_none(code="operator")
         assert op is not None, "种子应含 operator 角色"
@@ -87,11 +90,8 @@ def test_low_permission_role_forbidden_but_allowed():
             lr = await ac.post("/api/v1/admin/login", json={"username": uname, "password": "Qa@pass123"})
             lbody = lr.json()
             assert lbody["code"] in (0, "0"), lbody
-            token = lbody["data"]["access_token"]
-            headers = {"Authorization": f"Bearer {token}"}
-
             # operator 无 role:read → 访问角色列表应 403 C403001
-            r1 = await ac.get("/api/v1/admin/roles", headers=headers)
+            r1 = await ac.get("/api/v1/admin/roles")
             assert r1.status_code == 403, r1.text
             assert r1.json()["code"] == "C403001", r1.json()
 
@@ -101,7 +101,7 @@ def test_low_permission_role_forbidden_but_allowed():
             # slug 必须匹配 ^[a-z0-9-]+$（不可含下划线），否则触发校验
             slug = "qa-op-prod-" + uuid.uuid4().hex[:8]
             r2 = await ac.post(
-                "/api/v1/admin/products", headers=headers,
+                "/api/v1/admin/products",
                 json={
                     "title": "Op Product", "slug": slug, "summary": "s",
                     "content_html": "<p>x</p>", "category_id": cid, "status": "PUBLISHED",

@@ -195,12 +195,12 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称（SEO） | `Songdian Technology...` |
 | `SMTP_HOST` | SMTP 服务器（询盘邮件） | （可选） |
 | `SMTP_PORT` | SMTP 端口 | `587` |
-| `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的后端主机（不含协议） | `106.53.220.184` |
+| `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的后端主机（不含协议） | `api.zsaki.icu` |
 
 > SMTP 已迁移到 FastAPI 后端和管理后台“系统设置”；frontend 不配置 SMTP 口令。
 | `INQUIRY_EMAIL_TO` | 接收询盘通知的邮箱 | （可选） |
 
-> ⚠️ SMTP 四项不填则仅保存到 `data/inquiries.json`，不发邮件。
+> ⚠️ SMTP 未配置时，询盘仍保存到 PostgreSQL，但不会发送邮件；frontend 不使用或保存 SMTP 口令。
 
 ---
 
@@ -281,3 +281,13 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 
 - **询盘提交 randomUUID 兼容**：`components/form/InquiryForm.tsx` 的 `crypto.randomUUID()` 在 HTTP（非 HTTPS，如 IP 直连）环境不存在（非安全上下文）——已加 fallback：可用则 `randomUUID()`，否则 `inq-${Date.now()}-${Math.random()...}`。勿改回直接调用。
 - **首页预渲染兜底**：`app/page.tsx` 的 `NewsSection` 对 `getPosts()` 加 `.catch(() => ({ posts: [], pagination: null }))`——`docker compose build` 时后端未启动不会因预渲染 404 失败（降级空数据，运行时正常拉取）。新增首页数据区块时**必须**带同类兜底，否则生产构建会挂。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

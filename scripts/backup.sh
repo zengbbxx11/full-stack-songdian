@@ -8,9 +8,9 @@
 set -euo pipefail
 
 # ── 配置（按实际路径修改） ──────────────────────────────────────────────
-COMPOSE_DIR="/home/ubuntu/full-stack-songdian"
-BACKUP_DIR="/home/ubuntu/backups"
-RETENTION_DAYS=7
+COMPOSE_DIR="${COMPOSE_DIR:-/home/ubuntu/full-stack-songdian}"
+BACKUP_DIR="${BACKUP_DIR:-/home/ubuntu/backups}"
+RETENTION_DAYS="${RETENTION_DAYS:-7}"
 
 # Compose 项目名（与 docker-compose.yml 的 name: 保持一致）
 COMPOSE_PROJECT="songdian-b2b"
@@ -48,33 +48,39 @@ log "========== 备份开始 =========="
 # 1. PostgreSQL 全量备份（pg_dump + gzip）
 # ────────────────────────────────────────────────────────────────────────
 PG_FILE="$BACKUP_DIR/db_${DATE}.sql.gz"
+PG_TMP=$(mktemp "$BACKUP_DIR/.db_${DATE}.XXXXXX")
 
 log "→ PostgreSQL 备份：$PG_FILE"
-if docker compose exec -T postgres pg_dump -U "$PG_USER" -d "$PG_DB" 2>/tmp/pg_dump_err.log | gzip > "$PG_FILE"; then
+if docker compose exec -T postgres pg_dump -U "$PG_USER" -d "$PG_DB" 2>/tmp/pg_dump_err.log | gzip > "$PG_TMP" && gzip -t "$PG_TMP"; then
+    mv "$PG_TMP" "$PG_FILE"
     PG_SIZE=$(du -h "$PG_FILE" | cut -f1)
     log "  ✓ PostgreSQL 备份完成 ($PG_SIZE)"
 else
     PG_ERR=$(cat /tmp/pg_dump_err.log 2>/dev/null || true)
     log "  ✗ PostgreSQL 备份失败：${PG_ERR:-未知错误}"
-    rm -f "$PG_FILE"
+    rm -f "$PG_TMP"
+    die "PostgreSQL 备份失败"
 fi
 
 # ────────────────────────────────────────────────────────────────────────
 # 2. 上传文件备份（挂载 uploads_data 卷 → tar.gz）
 # ────────────────────────────────────────────────────────────────────────
 UPLOADS_FILE="$BACKUP_DIR/uploads_${DATE}.tar.gz"
+UPLOADS_TMP=$(mktemp "$BACKUP_DIR/.uploads_${DATE}.XXXXXX")
 
 log "→ uploads 备份：$UPLOADS_FILE"
 if docker run --rm \
     -v "${COMPOSE_PROJECT}_uploads_data:/data:ro" \
     alpine:latest \
-    tar czf - -C /data . 2>/tmp/uploads_err.log > "$UPLOADS_FILE"; then
+    tar czf - -C /data . 2>/tmp/uploads_err.log > "$UPLOADS_TMP" && tar tzf "$UPLOADS_TMP" >/dev/null; then
+    mv "$UPLOADS_TMP" "$UPLOADS_FILE"
     UPLOADS_SIZE=$(du -h "$UPLOADS_FILE" | cut -f1)
     log "  ✓ uploads 备份完成 ($UPLOADS_SIZE)"
 else
     UPLOADS_ERR=$(cat /tmp/uploads_err.log 2>/dev/null || true)
     log "  ✗ uploads 备份失败：${UPLOADS_ERR:-未知错误}"
-    rm -f "$UPLOADS_FILE"
+    rm -f "$UPLOADS_TMP"
+    die "uploads 备份失败"
 fi
 
 # ────────────────────────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ def _admin_headers(client) -> dict:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body.get("code") in (0, "0"), body
-    return {"Authorization": f"Bearer {body['data']['access_token']}"}
+    return {}
 
 
 def test_admin_endpoint_requires_token_C401001(client):
@@ -35,13 +35,15 @@ def test_login_wrong_password_A050002(client):
     assert r.json()["code"] == "A050002", r.json()
 
 
-def test_login_success_token_and_claims(client):
+def test_login_success_sets_httponly_cookie_and_claims(client):
     r = client.post("/api/v1/admin/login", json={"username": ADMIN[0], "password": ADMIN[1]})
     body = r.json()
     assert body["code"] in (0, "0"), body
     d = body["data"]
-    assert d["access_token"]
-    assert d["refresh_token"]
+    assert "access_token" not in d
+    assert "refresh_token" not in d
+    assert client.cookies.get("access_token")
+    assert client.cookies.get("refresh_token")
     assert "admin" in d["roles"]
     assert "product:create" in d["permissions"]
 
@@ -51,6 +53,41 @@ def test_protected_endpoint_with_valid_token(client):
     r = client.get("/api/v1/admin/roles", headers=h)
     assert r.status_code == 200
     assert r.json()["code"] in (0, "0"), r.json()
+
+
+def test_refresh_rotates_cookie_pair_and_logout_revokes_session(client):
+    _admin_headers(client)
+    old_access = client.cookies.get("access_token")
+    old_refresh = client.cookies.get("refresh_token")
+
+    refreshed = client.post("/api/v1/admin/refresh")
+    assert refreshed.status_code == 200, refreshed.text
+    assert refreshed.json()["code"] in (0, "0"), refreshed.json()
+    assert "access_token" not in refreshed.json()["data"]
+    assert client.cookies.get("access_token") != old_access
+    assert client.cookies.get("refresh_token") != old_refresh
+
+    logged_out = client.post("/api/v1/admin/logout")
+    assert logged_out.status_code == 200, logged_out.text
+    assert client.get("/api/v1/admin/profile").status_code == 401
+
+
+def test_admin_write_rejects_untrusted_browser_origin(client):
+    r = client.post(
+        "/api/v1/admin/login",
+        headers={"Origin": "https://attacker.example"},
+        json={"username": ADMIN[0], "password": ADMIN[1]},
+    )
+    assert r.status_code == 403, r.text
+    assert r.json()["code"] == "C403001", r.json()
+
+
+def test_admin_settings_are_initialized_lazily(client):
+    h = _admin_headers(client)
+    r = client.get("/api/v1/admin/settings", headers=h)
+    assert r.status_code == 200, r.text
+    data = r.json()["data"]
+    assert {"ga_id", "google_verification", "smtp_host", "smtp_password"} <= set(data)
 
 
 def test_account_lock_after_five_failures(client):

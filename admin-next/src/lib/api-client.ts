@@ -2,17 +2,11 @@
  * 统一 API 客户端层（issue #5）。
  *
  * 所有后台页面通过本模块访问后端 /api/v1 接口，统一处理：
- * - 鉴权令牌：从 localStorage 读取（单一来源），并随请求附带 Bearer。
+ * - 鉴权令牌：仅由浏览器自动携带的 HttpOnly Cookie 提供，JavaScript 不接触 JWT。
  * - 路径前缀：自动补齐 /api/v1（传入 /admin/xxx 或 /products 均可）。
  * - 响应信封：后端统一返回 { code, msg, data }，code !== "0" 视为业务错误并抛出 ApiError。
- * - 401 处理：清除本地令牌并跳转 /signin（仅浏览器端、且当前不在登录页时）。
- *
- * 注意：HttpOnly 的 `access_token` Cookie 由后端 Set-Cookie 下发，前端无法（也不应）用
- * document.cookie 写入/读取；localStorage 中的令牌仅用于接口 Bearer 鉴权（见 issue #3）。
+ * - 401 处理：调用 Cookie 刷新接口一次；失败后跳转 /signin。
  */
-
-/** 令牌在 localStorage 中的键名（与后端 JWT 约定一致）。 */
-export const TOKEN_KEY = "admin_token";
 
 /** 后端 API 基础地址（用于拼接上传文件的完整 URL）。 */
 export const API_BASE =
@@ -46,30 +40,6 @@ export class ApiError extends Error {
 }
 
 /**
- * 读取当前登录令牌（单一来源）。SSR 环境下返回 null。
- */
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-/**
- * 保存令牌到 localStorage（登录成功后调用）。
- */
-export function setToken(token: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-/**
- * 清除本地令牌（退出登录 / 401 时调用）。HttpOnly Cookie 由后端 /logout 清除。
- */
-export function clearToken(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-/**
  * 将相对路径解析为完整 API 路径（自动补齐 /api/v1 前缀；已带前缀或绝对 URL 则原样返回）。
  */
 function resolveUrl(path: string): string {
@@ -98,8 +68,6 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: ApiFetchOptions = {}
 ): Promise<T> {
-  const token = getToken();
-
   // 自动序列化普通对象 body 为 JSON。
   let body: BodyInit | null | undefined = options.body as BodyInit | null | undefined;
   const headers = new Headers(options.headers);
@@ -108,15 +76,25 @@ export async function apiFetch<T = unknown>(
     if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   }
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  const request = () => fetch(resolveUrl(path), {
+    ...options, body, headers, credentials: "same-origin",
+  });
+  let res = await request();
+
+  // access Cookie 过期时仅刷新一次，避免循环；刷新令牌本身只存在于 HttpOnly Cookie。
+  const isSessionEndpoint = path.includes("/admin/refresh") || path.includes("/admin/logout");
+  if (res.status === 401 && !isSessionEndpoint) {
+    const refresh = await fetch(`${API_PREFIX}/admin/refresh`, {
+      method: "POST", headers: { Accept: "application/json" }, credentials: "same-origin",
+    });
+    if (refresh.ok) {
+      const refreshPayload = await refresh.json().catch(() => null);
+      if (refreshPayload?.code === "0" || refreshPayload?.code === 0) res = await request();
+    }
   }
 
-  const res = await fetch(resolveUrl(path), { ...options, body, headers });
-
-  // 401：令牌失效/未登录 —— 清理本地令牌并跳登录页（登录页自身不跳转，便于展示错误）。
+  // 401：刷新失败或仍未登录，跳回登录页（登录页自身不跳转，便于展示错误）。
   if (res.status === 401) {
-    clearToken();
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/signin")) {
       window.location.href = "/signin";
     }
@@ -185,7 +163,7 @@ export async function apiFetchAllPages<T>(
 /**
  * SWR 默认 fetcher（见 issue #23 渐进式接入）。
  *
- * 直接复用 `apiFetch` 的鉴权（Bearer）、信封解包与 401 跳转逻辑，
+ * 直接复用 `apiFetch` 的 Cookie 会话、信封解包与 401 跳转逻辑，
  * 各页面可用 `useSWR<DataType>(key, swrFetcher)` 拿到已解包的业务数据，
  * 无需在每个页面重复编写 fetch + try/catch + toast 样板。
  */

@@ -46,13 +46,18 @@ _SMTP_DEFAULTS = [
     ("inquiry_email_to", "", "收件人地址", "询盘通知发给谁（可逗号分隔多个）"),
 ]
 
+_GENERAL_DEFAULTS = [
+    ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
+    ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
+]
 
-async def ensure_smtp_settings() -> None:
-    """幂等创建 SMTP 配置 key（get_or_create，已存在跳过）。
 
-    独立于 SEED_ON_START：无论种子开关如何，管理后台设置页都能看到「邮件通知」面板。
+async def ensure_admin_settings() -> None:
+    """惰性初始化后台可编辑的系统设置，且不覆盖已有值。
+
+    独立于 SEED_ON_START：生产最小种子不写业务或配置数据，但设置页始终可用。
     """
-    for key, value, label, desc in _SMTP_DEFAULTS:
+    for key, value, label, desc in [*_GENERAL_DEFAULTS, *_SMTP_DEFAULTS]:
         await Setting.get_or_create(key=key, defaults={"value": value, "label": label, "description": desc})
 
 
@@ -95,8 +100,7 @@ async def list_settings(
     供管理后台设置页初始加载使用，无需额外 RBAC 权限（仅需登录）。
     smtp_password 脱敏：非空时返回 ******，避免授权码回显到前端。
     """
-    # 惰性创建 SMTP key（不依赖 SEED_ON_START）
-    await ensure_smtp_settings()
+    await ensure_admin_settings()
     rows = await Setting.all()
     data = {r.key: {"value": r.value, "label": r.label, "description": r.description} for r in rows}
     if data.get("smtp_password", {}).get("value"):

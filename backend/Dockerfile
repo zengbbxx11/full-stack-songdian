@@ -31,5 +31,6 @@ EXPOSE 8000
 
 # 启动：多 worker 提升并发
 # --proxy-headers 信任前端代理(OpenResty)透传的 X-Forwarded-*
-# --forwarded-allow-ips 限定仅宿主机反代(127.0.0.1)的转发头被信任，避免 IP 伪造
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 --workers 4"]
+# 可信代理地址由 scripts/start.sh 在容器运行时读取：可显式传 TRUSTED_PROXIES，
+# 否则自动识别 Docker 网桥网关，避免将宿主机 OpenResty 错当成 127.0.0.1。
+CMD ["sh", "./scripts/start.sh"]

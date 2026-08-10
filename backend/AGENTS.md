@@ -27,7 +27,7 @@ cd backend
 
 - 文档页：`/docs`（仅非 production 环境开启，由 `OPENAPI_DOCS_ENABLED` / `APP_ENV` 控制）
 - 存活/就绪探针：`/healthz`、`/readyz`
-- 数据库 `songdianB2B`，超级用户 `postgres/postgres`；`.env` 设 `SEED_ON_START=true` 启动写入种子（admin 账号、角色、分类，幂等）
+- 本地数据库可使用 `songdianB2B`；生产数据库由 Compose 的 `PG_*` 环境变量创建。`.env` 设 `SEED_ON_START=true` 时仅幂等创建 admin、角色和权限；`SEED_CONTENT_CATEGORIES=true` 才会额外写入演示分类，生产始终保持 `false`。
 
 ---
 
@@ -134,6 +134,6 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **用户管理**：`content/services.py` 新增 `list_users` / `create_user`（统一 admin 角色）/ `delete_user`（admin 账号受保护）/ `reset_password`。路由 `GET/POST/DELETE /admin/users` + `PUT .../reset-password`。
 - **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页+搜索）。
 - **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
-- **SMTP 后台配置（2026-08-01）**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点；seed 幂等预置 6 个 SMTP key。改配置无需重启后端。⚠️ **惰性创建**：`ensure_smtp_settings()` 在 `GET /admin/settings` 时 `get_or_create` SMTP key，**不依赖 `SEED_ON_START`**（生产 `false` 时也能出现，勿改回依赖 run_seed）。
-- **迁移**：`migrations/models/9_*_add_seo_and_crm_fields.py` 为合并迁移（SEO + CRM 列变更）。⚠️ **无迁移 8**（功能并入 9）；迁移 9 已改为**幂等**（`ADD IF NOT EXISTS` / `DROP IF EXISTS` / DO 块加 FK），全新库与本地已手动迁移库都能跑。生产首次部署由 backend `command` 的 `aerich upgrade` 自动执行。
-- ⚠️ **生产数据导入**：本地库经历过多轮手动 ALTER，aerich 迁移链建的表**缺列**（`sort_order`/`seo_title` 不在迁移里）。生产首次导入**必须用完整 `db/seed_data.sql`**（DROP SCHEMA → \i 完整 seed → 禁外键），勿「aerich 建表 + 只导 data」。seed 更新：本地开发库重新 pg_dump 后提交（含新列）。
+- **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA 与站点验证配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
+- **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT，并收敛为单一 `fk_t_inquiry_assigned_user` 外键。生产由 backend `command` 的 `aerich upgrade` 自动执行。
+- ⚠️ **生产初始化**：生产只运行迁移和最小种子（角色、权限、首个管理员）。`db/seed_data.sql`、完整 SQL 和 CSV 是本地开发快照，含业务数据与密码哈希，禁止导入生产。

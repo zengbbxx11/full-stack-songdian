@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { apiFetch, clearToken } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 
 export default function UserDropdown() {
   const router = useRouter();
@@ -60,7 +60,6 @@ export default function UserDropdown() {
           onClick={async (e) => {
             e.preventDefault();
             try { await apiFetch("/admin/logout", { method: "POST" }); } catch { /* ignore */ }
-            clearToken();
             router.push("/signin");
           }}
           className="flex items-center gap-2 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"

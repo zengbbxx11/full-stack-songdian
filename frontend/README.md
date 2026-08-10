@@ -10,13 +10,13 @@
 
 | 层 | 技术 |
 |----|------|
-| 框架 | Next.js 16.2.10（App Router，默认 Turbopack）+ React 19.2.4 |
+| 框架 | Next.js 16.3.0（App Router，默认 Turbopack）+ React 19.2.4 |
 | 语言 | TypeScript 5（`strict: true`） |
 | 样式 | Tailwind CSS v4（`@tailwindcss/postcss`）+ shadcn/ui 组件库 |
 | 后端 | 项目自有 FastAPI REST API（`backend/`，端口 8000） |
 | 数据迁移 | 旧 WordPress 数据经一次性 ETL 迁至 PostgreSQL（`backend/migration/` 模块已随 M6 移除），前端仅消费 FastAPI |
 | 表单 | react-hook-form + Zod（客户端校验 + 服务端 action 提交） |
-| 邮件 | nodemailer SMTP（询盘通知，可选配置） |
+| 询盘通知 | FastAPI 后端 SMTP（管理后台「系统设置」配置；未配置仍持久化询盘） |
 | 动画 | framer-motion（`components/motion/*`） |
 | 图标 | lucide-react（`^1.23.0`） |
 | HTML 消毒 | `sanitize-html`（服务端白名单过滤，`lib/html-cleaner.ts`） |
@@ -63,7 +63,7 @@ npm run start
 |------|--------|------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | 站点规范地址 |
-| `NEXT_PUBLIC_IMAGE_HOST` | `106.53.220.184` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
+| `NEXT_PUBLIC_IMAGE_HOST` | `api.zsaki.icu` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
 | `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | — | 站点描述（SEO） |
 | `NEXT_PUBLIC_ISR_REVALIDATE` | `60` | ISR 缓存时间（秒） |
@@ -75,12 +75,9 @@ Contact 页直接调用 FastAPI `POST /api/v1/inquiries`；后端将询盘保存
 “系统设置”中的 SMTP 配置发送通知。`backend/.env` 中的 `SMTP_*` / `INQUIRY_EMAIL_*` 仅作为后端
 兜底，官网前端无需配置 SMTP，也不再把生产询盘保存到 `data/inquiries.json`。
 
-当前腾讯云无域名部署使用 `NEXT_PUBLIC_API_URL=http://106.53.220.184`；修改任何
-`NEXT_PUBLIC_*` 构建变量后必须重新执行 `docker compose build frontend`。
-
-后续启用域名时，将 API、SEO 规范地址和图片主机分别切换为 `https://api.songdian.tech`、
-`https://www.songdian.tech`、`api.songdian.tech` 即可；这些值已作为 Docker build args 注入，
-不需要修改应用代码。
+生产环境将 API、SEO 规范地址和图片主机分别设置为 `https://api.zsaki.icu`、
+`https://www.zsaki.icu`、`api.zsaki.icu`。修改任何 `NEXT_PUBLIC_*` 构建变量后必须重新执行
+`docker compose build frontend`；这些值已作为 Docker build args 注入，不需要修改应用代码。
 
 ---
 
@@ -284,8 +281,8 @@ frontend/
 ## 已知注意事项
 
 - **沙箱环境**：`npm run dev` 可能因 fork 限制失败，改用 `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000`
-- **Node 24 必须**：Next.js 16.2 Turbopack 的 `next/image` 远程优化在 Node 22 下有 Web Streams 兼容性 bug（`controller[kState].transformAlgorithm is not a function`），导致 ```Jest worker``` 错误，必须用 Node ≥24
-- **`next build` 在受限沙箱会被 safe-delete 防护拦死**，请用 dev server 验证
+- **本项目本地统一使用 Node 24.18.0**：可避免当前 Windows/Turbopack 环境中的兼容性问题；生产镜像按 Dockerfile 固定环境构建。
+- **构建验证**：常规环境使用 `npm run build`；若本地开发服务正在占用 `.next`，先停止该服务或在 CI/容器中构建，避免争用构建目录。
 - **Leaflet 走按需加载**：`ContactMap` 经 `ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 包裹，仅联系页加载，不进首屏 bundle
 - **产品 URL 规范化用 `proxy.ts`（边缘中间件），不是页面 `redirect()`**：本环境 Next.js 16 + Turbopack 下，App Router 页面组件里的 `redirect()` / `permanentRedirect()` 不会发出真实 3xx（被渲染期吞掉）；产品地址的 308 重定向改由根目录 `proxy.ts`（替代已弃用的 `middleware.ts`）基于 `lib/generated/canonical-map.ts` 在边缘层完成。改 URL 结构时务必走 `proxy.ts`，勿改回页面级 `redirect()`。
 - **`npm run gen:map` 是 `next build` 的前置依赖**：`proxy.ts` 静态导入 `lib/generated/canonical-map.ts`；该文件由 `scripts/gen-canonical-map.mjs` 依据后端产品数据生成（未 gitignore，已提交当前快照）。构建 / 部署前若产品或分类有变动，需重新生成并提交，否则 308 重定向会用过期映射。

@@ -1,7 +1,7 @@
 """内容管理域 DTO/VO（M5，§3.2.M5.3）。
 
 设计约束：字段与 §3.2.M5.3 / §4.2 DDL 对齐。
-- LoginVO：access_token / refresh_token / roles / permissions。
+- LoginVO：登录会话的公开信息（令牌仅通过 HttpOnly Cookie 下发）。
 - RoleVO：含权限码列表。
 """
 from __future__ import annotations
@@ -17,18 +17,17 @@ class LoginRequest(BaseModel):
 
 
 class LoginVO(BaseModel):
-    access_token: str
-    refresh_token: str
     roles: list[str] = []
     permissions: list[str] = []
-    # access token 过期的 epoch 秒级时间戳；前端据此计算剩余有效期并触发无感刷新。
+    # access token 过期的 epoch 秒级时间戳；前端可据此预先刷新会话。
     expires_at: int = 0
 
 
-class RefreshRequest(BaseModel):
-    """刷新令牌请求（T01：无感刷新）。"""
+class IssuedSession(LoginVO):
+    """仅供服务层与路由层交接的令牌对，绝不作为 API 响应序列化。"""
 
-    refresh_token: str = Field(..., min_length=1, description="登录时签发的 refresh token")
+    access_token: str
+    refresh_token: str
 
 
 class RoleCreateRequest(BaseModel):

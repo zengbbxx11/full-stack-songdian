@@ -9,11 +9,11 @@
 
 松典科技 B2B 官网的**管理后台**，端口 `3001`，服务 `../backend/` 的 `/api/v1/admin/*`。
 
-当前腾讯云生产环境暂无域名：公网入口为 `http://106.53.220.184:8081/signin`，由 OpenResty
-监听 `8081` 后反代到宿主机回环 `127.0.0.1:3001`。Docker 内 API 代理使用
+生产环境后台必须使用已备案域名和 HTTPS；Secure HttpOnly 会话 Cookie 不支持 IP/HTTP 登录。
+Docker 内 API 代理使用
 `BACKEND_PROXY_URL=http://backend:8000`，不要改成公网 IP。
 Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 风格组件。
-`proxy.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` cookie），接口层另有 RBAC 兜底。
+`proxy.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` Cookie），接口层另有 RBAC 兜底。
 
 ---
 
@@ -35,10 +35,10 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | 框架 | Next.js 16 + React 19 + TypeScript（strict） |
 | 样式 | Tailwind CSS v4 + `@tailwindcss/postcss` + `@tailwindcss/forms` |
 | UI | 内置 `components/ui/`（shadcn 风格）+ lucide-react 图标 |
-| 图表 | apexcharts / react-apexcharts、@fullcalendar/*、swiper |
+| 图表 | apexcharts / react-apexcharts、@fullcalendar/* |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
 | 数据获取 | SWR (v2) + 全局 `SWRProvider`（封装 `apiFetch`，详见 `lib/api-client.ts`） |
-| 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` cookie） |
+| 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` Cookie） |
 
 ---
 
@@ -106,7 +106,7 @@ admin-next/src/
 `proxy.ts` 现使用 `jose` 校验 `access_token` 的 HS256 **签名**（不再仅 base64 解码 `exp`）。
 要求：
 
-- `admin-next` 必须配置与后端一致的 `JWT_SECRET`（服务端变量，`env.example` 有模板）；
+- `admin-next` 必须在**运行期**配置与后端一致的 `JWT_SECRET`；禁止以 Docker build arg 注入；
 - 未配置 `JWT_SECRET` 时降级为仅校验 `exp` 并告警（仅本地开发，不安全）；
 - 仍需保持 matcher 排除 `/api` 与 `/uploads`（见雷区 ④），否则登录被拦截。
 
@@ -129,3 +129,13 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **审计日志**：`audit-logs/page.tsx` 新增审计日志表格页——时间/用户/操作/资源/结果/IP，分页+搜索。侧边栏新增入口。
 - **动态头部**：`UserDropdown.tsx` 改为从 `/admin/profile` 动态读取用户名，显示真实 username + 首字母头像（不再硬编码"管理员"/"A"）。
 - **询盘国家标记**：`inquiries/page.tsx` 跟进对话框新增 Country 输入框，保存时写入数据库（纯后台标记，客户表单不需要国家字段）。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

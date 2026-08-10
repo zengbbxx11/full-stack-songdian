@@ -17,7 +17,6 @@ from common.config import settings
 from common.logger import get_logger
 from common.password import hash_password, verify_password
 from content.models import AdminUser, Role, RolePermission
-from common.settings_model import Setting
 from content.permissions import (
     DEFAULT_ROLE_PERMISSIONS,
     ROLE_ADMIN,
@@ -115,31 +114,16 @@ async def _seed_categories() -> None:
         )
 
 
-async def _seed_settings() -> None:
-    """幂等写入默认系统设置——仅包含需要在线修改的外部服务配置。"""
-    defaults = [
-        ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
-        ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
-        # ── SMTP 询盘邮件通知（管理后台可改，保存即生效，无需重启）──
-        ("smtp_host", "", "SMTP 服务器", "如 smtp.qq.com（留空 = 询盘仅落库，不发邮件）"),
-        ("smtp_port", "587", "SMTP 端口", "常用 587（STARTTLS）或 465"),
-        ("smtp_user", "", "SMTP 账号", "如 3932182720@qq.com"),
-        ("smtp_password", "", "SMTP 授权码", "QQ 邮箱授权码（非登录密码）；显示为 ******，留空不修改"),
-        ("inquiry_email_from", "", "发件人地址", "与 SMTP 账号一致"),
-        ("inquiry_email_to", "", "收件人地址", "询盘通知发给谁（可逗号分隔多个）"),
-    ]
-    for key, value, label, desc in defaults:
-        await Setting.get_or_create(key=key, defaults={"value": value, "label": label, "description": desc})
-
-
 async def run_seed() -> None:
-    """幂等写入全部种子数据。可在 lifespan 或 ``python -m seed.seed_data`` 调用。"""
+    """写入生产最小种子；绝不修改已有产品、新闻或其分类。"""
     role_ids = await _seed_roles()
     await _seed_admin(role_ids)
-    await _seed_categories()
-    await _seed_settings()
-    logger.info("种子数据写入完成（幂等）：产品分类 %d / 新闻分类 %d / 角色 %d / 管理员 %s",
-                len(PRODUCT_CATEGORIES), len(NEWS_CATEGORIES), len(role_ids), ADMIN_USERNAME)
+    if settings.seed_content_categories:
+        await _seed_categories()
+    logger.info(
+        "最小种子写入完成（幂等）：角色 %d / 管理员 %s / 内容分类 %s",
+        len(role_ids), ADMIN_USERNAME, "已显式启用" if settings.seed_content_categories else "未写入",
+    )
 
 
 if __name__ == "__main__":

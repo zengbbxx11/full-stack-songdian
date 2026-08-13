@@ -30,3 +30,5 @@ ruff_out.txt
 
 # Next.js build cache
 .next/
+# Local runtime logs
+runtime-logs/

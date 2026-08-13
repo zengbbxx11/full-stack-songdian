@@ -3128,3 +3128,10 @@ INFO:     127.0.0.1:14553 - "GET /api/v1/products?page=1&page_size=1&category_id
 INFO:     127.0.0.1:14555 - "GET /api/v1/products?page=1&page_size=1&category_id=3&status=PUBLISHED HTTP/1.1" 200 OK
 INFO:     127.0.0.1:14554 - "GET /api/v1/products?page=1&page_size=1&category_id=6&status=PUBLISHED HTTP/1.1" 200 OK
 INFO:     127.0.0.1:14550 - "GET /api/v1/news?page=1&page_size=3&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14656 - "GET /api/v1/product-categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14659 - "GET /api/v1/products?page=1&page_size=1&category_id=2&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14658 - "GET /api/v1/products?page=1&page_size=1&category_id=5&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14662 - "GET /api/v1/products?page=1&page_size=1&category_id=3&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14661 - "GET /api/v1/products?page=1&page_size=1&category_id=6&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14660 - "GET /api/v1/products?page=1&page_size=1&category_id=1&status=PUBLISHED HTTP/1.1" 200 OK
+INFO:     127.0.0.1:14657 - "GET /api/v1/news?page=1&page_size=3&status=PUBLISHED HTTP/1.1" 200 OK

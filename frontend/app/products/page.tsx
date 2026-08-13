@@ -15,6 +15,7 @@ import { getProducts, getProductCategories } from "@/lib/api/products";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
+import { ArrowRight, SlidersHorizontal } from "lucide-react";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string }> }): Promise<Metadata> {
   const sp = await searchParams;
@@ -23,14 +24,14 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const cat = slug ? cats.find((c) => c.slug.toLowerCase() === slug.toLowerCase()) : undefined;
   if (!cat) {
     return superMeta({
-      title: "Camera Products",
-      description: "Explore our full range of OEM / ODM digital cameras — action cameras, mirrorless cameras, point-and-shoot cameras, and more.",
+      title: "Digital Camera Products for OEM & ODM",
+      description: "Explore OEM and ODM digital cameras manufactured by Songdian Technology, a digital camera factory specializing in camera development and manufacturing.",
       url: "/products",
     });
   }
   return superMeta({
-    title: `${cat.name} — Camera Products`,
-    description: `Browse our ${cat.name.toLowerCase()} — OEM / ODM digital cameras manufactured by Songdian Technology.`,
+    title: `${cat.name} Cameras for OEM & ODM`,
+    description: `Browse ${cat.name.toLowerCase()} cameras manufactured by Songdian Technology, an OEM/ODM digital camera factory.`,
     url: `/products?category=${cat.slug}`,
   });
 }
@@ -90,17 +91,54 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <>
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="border-b border-white/10 bg-[#111316] py-3">
+        <div className="site-container">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
       </section>
 
-      <section className="py-6 md:py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          {/* 产品分类筛选 — 等宽网格 + 半透明药丸 */}
+      <section className="bg-[#111316] pb-7 pt-4 text-white md:pb-8 md:pt-5">
+        <div className="site-container grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="section-eyebrow">Product Portfolio</p>
+            <h1 className="mt-2.5 text-[clamp(2.35rem,4vw,3.5rem)] font-semibold leading-[1] tracking-[-0.045em]">
+              {matchedCategory?.name || "Camera Products"}
+            </h1>
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/62 md:text-base">
+              Explore our current camera portfolio for OEM and ODM projects. Select a category to narrow the collection.
+            </p>
+          </div>
+          <div className="border-l border-white/15 pl-5 lg:mb-1">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-white/45">Available products</p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums">{pagination?.total ?? products.length}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#f5f6f7] pb-16 pt-8 md:pb-20 md:pt-10">
+        <div className="site-container">
+          {/* 产品分类筛选 */}
           {categories.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
+            <div className="mb-10 overflow-hidden rounded-3xl border border-black/[0.07] bg-white shadow-[0_18px_50px_rgba(17,19,22,0.06)]">
+              <div className="border-b border-black/[0.06] bg-gradient-to-r from-[#fafafa] to-white px-5 py-4 md:px-6">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d4343e]/10 text-[#d4343e]">
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#171A20]">Browse by category</p>
+                    <p className="text-sm text-[#777b81]">Choose a camera type to refine the collection</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2.5 overflow-x-auto px-5 py-5 [scrollbar-width:thin] md:flex-wrap md:overflow-visible md:px-6">
+                <Link
+                  href="/products"
+                  aria-current={!categorySlug ? "page" : undefined}
+                  className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 ${!categorySlug ? "border-[#171A20] bg-[#171A20] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
+                >
+                  All Products
+                </Link>
               {categories.map((cat) => {
                 const isActive = !!categorySlug && categorySlug.toLowerCase() === cat.slug.toLowerCase();
                 return (
@@ -108,15 +146,16 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-300
+                    className={`flex min-h-11 shrink-0 items-center justify-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300
                       ${isActive
-                        ? "border-[#d4343e] text-[#d4343e] bg-[#d4343e]/10"
-                        : "border-[#EEEEEE] text-[#393C41] hover:border-[#d4343e] hover:text-[#d4343e] hover:bg-[#d4343e]/5"}`}
+                        ? "border-[#d4343e] bg-[#d4343e] text-white shadow-[0_8px_20px_rgba(212,52,62,0.22)]"
+                        : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
                   >
                     {cat.name}
                   </Link>
                 );
               })}
+              </div>
             </div>
           )}
 
@@ -134,9 +173,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </div>
           ) : products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {products.map((product, i) => (
-                  <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+                {products.map((product) => (
+                  <div key={product.id}>
                     <ProductCard product={product} />
                   </div>
                 ))}
@@ -147,30 +186,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage > 1 && (
                     <Link
                       href={`/products?page=${currentPage - 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors bg-[#F4F4F4] hover:bg-[#EEEEEE] inline-block w-[90px] text-center"
-                      style={{
-                        color: "#393C41",
-                        borderRadius: "4px",
-                        transitionDuration: "0.33s",
-                      }}
+                      className="inline-flex min-h-11 items-center rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[#393C41] transition-colors hover:border-[#d4343e]/40 hover:text-[#d4343e]"
                     >
                       Previous
                     </Link>
                   )}
-                  <span className="px-4 py-2.5 text-sm" style={{ color: "#5C5E62" }}>
+                  <span className="px-3 py-2.5 text-[15px] font-medium" style={{ color: "#5C5E62" }}>
                     Page {currentPage} / {pagination.totalPages}
                   </span>
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/products?page=${currentPage + 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors bg-[#F4F4F4] hover:bg-[#EEEEEE] inline-block w-[90px] text-center"
-                      style={{
-                        color: "#393C41",
-                        borderRadius: "4px",
-                        transitionDuration: "0.33s",
-                      }}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[#393C41] transition-colors hover:border-[#d4343e]/40 hover:text-[#d4343e]"
                     >
-                      Next
+                      Next <ArrowRight className="h-4 w-4" />
                     </Link>
                   )}
                 </nav>

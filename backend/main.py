@@ -149,6 +149,7 @@ async def readyz(response: Response) -> dict:
     """就绪检查 — 检查数据库和 Redis 是否可用。
     用于健康检查/编排平台（如 1Panel）判断"是否可以接流量"。
     返回 ready（都正常）或 degraded（部分不可用）。"""
+    db_ok = False
     redis_ok = False
 
     # 试连数据库：执行 SELECT 1 看能不能通
@@ -159,15 +160,14 @@ async def readyz(response: Response) -> dict:
 
     # 试连 Redis：执行 PING 看能不能通
     try:
-        from common.redis_client import get_redis
+        from common.redis_client import get_redis, redis_is_distributed
         await get_redis().ping()
-        redis_ok = True
+        redis_ok = redis_is_distributed()
     except Exception:
         redis_ok = False
 
-    # PostgreSQL 是请求处理的必要依赖；不可用时必须让编排器停止导流。
-    # Redis 可降级为进程内实现，因此只在响应中标记 degraded。
-    if not db_ok:
+    # PostgreSQL 始终必要；生产可通过 redis_required 把真实 Redis 也纳入就绪门槛。
+    if not db_ok or (settings.redis_required and not redis_ok):
         response.status_code = 503
     status = "ready" if (db_ok and redis_ok) else "degraded"
     return {"status": status, "db": db_ok, "redis": redis_ok}

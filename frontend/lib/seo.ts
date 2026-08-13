@@ -75,11 +75,23 @@ export function generateBreadcrumbs(
 export function organizationSchema(): StructuredData {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": "Manufacturer",
+    "@id": `${SITE_URL}/#manufacturer`,
     name: COMPANY.name,
+    legalName: COMPANY.fullName,
     url: SITE_URL,
-    description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "",
-    logo: MEDIA.logo,
+    description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || COMPANY.description,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}${MEDIA.logo}`,
+    },
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "CN",
+      addressRegion: "Guangdong",
+      addressLocality: COMPANY.contact.city,
+      streetAddress: COMPANY.contact.address,
+    },
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "sales",
@@ -213,6 +225,11 @@ export function productSchema(params: {
       "@type": "Brand",
       name: COMPANY.name,
     },
+    manufacturer: {
+      "@type": "Manufacturer",
+      "@id": `${SITE_URL}/#manufacturer`,
+      name: COMPANY.name,
+    },
     offers: {
       "@type": "Offer",
       availability: "https://schema.org/InStock",
@@ -254,20 +271,5 @@ export function faqSchema(faqs: { question: string; answer: string }[]): Structu
  * @returns 符合 https://schema.org/Manufacturer 的 {@link StructuredData} 对象
  */
 export function localBusinessSchema(): StructuredData {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Manufacturer",
-    name: COMPANY.name,
-    url: SITE_URL,
-    description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "",
-    telephone: COMPANY.contact.phone,
-    email: COMPANY.contact.email,
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "CN",
-      addressRegion: "Guangdong",
-      addressLocality: "Foshan",
-      streetAddress: "Room 801, Building 17, Tongde Intelligent Manufacturing Park, No. 9 Guizhou Avenue East, Shangjiashi Community, Ronggui Subdistrict, Shunde District, Foshan, Guangdong",
-    },
-  };
+  return organizationSchema();
 }

@@ -365,3 +365,6 @@ classDiagram
     ProductPageVO ..> ProductSummary : map
     NewsPageVO ..> PostSummary : map
 ```
+## 当前代码对照（2026-08-13）
+
+本文保留为前端与 FastAPI 对接的历史设计记录。产品、新闻、询盘和分类对接已经落地；当前询盘还包含国家、产品来源、落地页、来源页和 UTM 归因，后台通知由独立接口提供。原文中的“下轮/可选询盘提交”任务已完成，不应当作待办。以 [`CURRENT_IMPLEMENTATION.md`](../../CURRENT_IMPLEMENTATION.md)、`frontend/README.md` 和实际 `frontend/lib/api/` 代码为准。

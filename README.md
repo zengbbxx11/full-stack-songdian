@@ -1,5 +1,7 @@
 # Songdian B2B — 工厂外贸官网
 
+> 当前实现说明（2026-08-13）：生产发布以 GitHub Actions 构建的 GHCR 不可变镜像、独立 Aerich 迁移和健康检查为准。`db/` 中的生产数据与媒体快照不作为生产部署输入。
+
 基于 FastAPI + Next.js 的 Songdian 工厂 B2B 外贸全栈系统，展示型官网前端（产品目录 + 询盘）与 Next.js 管理后台分离部署。
 
 ## 当前云端部署
@@ -18,8 +20,8 @@
 | 层 | 技术 | 版本 |
 |---|---|---|
 | **后端** | FastAPI + Tortoise ORM + asyncpg | Python ≥3.14 / FastAPI 0.139 / Tortoise 1.1.7 |
-| **数据库** | PostgreSQL（全文检索 zhparser/降级 simple） | 16+（本机 envkit 18.4） |
-| **缓存** | Redis（降级进程内内存实现） | 8 |
+| **数据库** | PostgreSQL（全文检索无 zhparser 时降级 simple） | 18.4（生产 Compose 使用 18 线） |
+| **缓存** | Redis（生产强依赖；本地可降级进程内内存实现） | 8.8.1 |
 | **官网前端** | Next.js + React + Tailwind CSS + shadcn/ui | Next 16.3 / React 19.2 |
 | **后台管理** | Next.js + React + Tailwind CSS（admin-next） | Next 16.3 / React 19.2 |
 | **迁移引擎** | aerich | ≥0.9 |
@@ -60,8 +62,8 @@ full-stack-project/
 ## 环境要求
 
 - **Python** ≥ 3.14 + [uv](https://docs.astral.sh/uv/)
-- **PostgreSQL** 16+（本机经 envkit 装在 `C:\ProgramData\envkit\services\postgres\18.4\`，不随系统自启，启动命令见下文）
-- **Redis** 8（可选；未配置时降级为进程内内存实现）
+- **PostgreSQL** 18.4（本机经 envkit 安装，不随系统自启，启动命令见下文）
+- **Redis** 8（本地未配置时可降级；生产 Compose 通过 `REDIS_REQUIRED=true` 强制真实 Redis）
 - **Node.js** ≥ 24 + npm（前端 Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 有兼容性问题）
 
 ---
@@ -144,6 +146,9 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL 连接串 | `postgres://postgres:postgres@localhost:5432/songdianB2B` |
 | `REDIS_URL` | Redis 连接串（可选） | 未配时降级内置内存缓存 |
+| `REDIS_REQUIRED` | 是否要求真实 Redis；生产必须启用 | `false`（Compose 固定为 `true`） |
+| `NEXT_REVALIDATE_URL` | 后台内容变更后通知官网清理 ISR 缓存的内部地址 | 空 |
+| `REVALIDATE_SECRET` | 后端与官网共享的按需刷新密钥 | 空 |
 | `PORT` | 后端监听端口 | 8000 |
 | `ADMIN_PASSWORD` | 种子管理员密码；留空时生成一次性随机密码 | 无固定默认值 |
 | `MEDIA_ROOT` | 上传文件本地磁盘目录 | `uploads`（相对 `backend/`） |
@@ -151,7 +156,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | `STORAGE_BACKEND` | 存储后端（当前仅 `local`） | `local` |
 | `MAX_UPLOAD_MB` | 上传文件大小上限 | 10 |
 
-> **代理说明**：admin-next 通过 `next.config.ts` 的 `rewrites()` 代理 `/api/*` 和 `/uploads/*`；frontend 通过 `NEXT_PUBLIC_API_URL` 直接请求浏览器可达的 API。Docker 内部代理始终使用 `BACKEND_PROXY_URL=http://backend:8000`，不要改为公网域名或 IP。
+> **代理说明**：admin-next 通过 `next.config.ts` 的 `rewrites()` 代理 `/api/*` 和 `/uploads/*`；frontend 的浏览器资源使用 `NEXT_PUBLIC_API_URL`，服务端数据请求在 Docker 内使用 `INTERNAL_API_URL=http://backend:8000`。后台发布产品或新闻后，后端会通过带密钥的内部接口清除对应 Redis 与 Next.js ISR 缓存。
 
 > **生产域名**：`zsaki.icu` 仅做 HTTPS 301 至 `www.zsaki.icu`；官网、API、后台分别使用 `www.zsaki.icu`、`api.zsaki.icu`、`admin.zsaki.icu`。完整上线清单见 [`deploy-guide.md`](deploy-guide.md)。
 
@@ -272,10 +277,10 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 
 | 文档 | 说明 |
 |---|---|
-| `backend/docs/ARCHITECTURE_PLAN.md` | 后端总体架构计划 |
+| `docs/archive/ARCHITECTURE_PLAN.md` | 后端历史架构计划（归档，仅供追溯） |
 | `backend/docs/class-diagram.mermaid` | 后端领域类图 |
 | `backend/docs/sequence-diagram.mermaid` | 后端关键流程时序图 |
-| `frontend/docs/integration-plan.md` | 官网与 FastAPI 集成方案 |
+| `docs/archive/integration-plan.md` | 官网与 FastAPI 历史集成方案（归档，仅供追溯） |
 | `frontend/docs/class-diagram.mermaid` | 官网集成类图 |
 | `frontend/docs/sequence-diagram.mermaid` | 官网集成时序图 |
 
@@ -319,7 +324,17 @@ pytest tests/test_admin_phase1.py -v
 
 ### 一键部署（Ubuntu + 1Panel，推荐）
 
-详细步骤见 [`deploy-guide.md`](deploy-guide.md)，核心流程：
+详细步骤见 [`deploy-guide.md`](deploy-guide.md)。推荐由 GitHub CI 构建带 commit/tag 的 GHCR 镜像，再使用手动生产部署工作流执行备份、独立迁移、健康检查和应用镜像回滚；服务器不再现场构建。
+
+本地首次启动或需要升级数据库结构时，迁移需显式执行：
+
+```bash
+docker compose up -d postgres redis
+docker compose --profile tools run --rm migrate
+docker compose up -d backend frontend admin-next
+```
+
+旧的源码现场构建方式仅供本地调试，生产不要使用：
 
 仓库包含代码、开发素材与本地调试快照；生产环境只使用迁移和最小种子：
 
@@ -327,7 +342,9 @@ pytest tests/test_admin_phase1.py -v
 git clone https://github.com/zengbbxx11/full-stack-songdian.git && cd full-stack-songdian
 cp .env.example .env
 # 设置强密码、JWT_SECRET、HTTPS 域名；首次部署临时设 SEED_ON_START=true
-docker compose up -d --build
+docker compose build
+docker compose --profile tools run --rm migrate
+docker compose up -d
 # 验证管理员可登录后，将 SEED_ON_START 改回 false 并重新部署
 ```
 
@@ -358,3 +375,15 @@ docker compose up -d --build
 - **middleware matcher**：`src/proxy.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
 - **Turbopack `.next/dev` 缓存写冲突**：若后台所有 `(admin)` 页面同时 500、浏览器报 `An unexpected Turbopack error`，多为两个 next dev 进程抢写同一缓存目录。修法：杀掉 3001 占用进程 → `rm -rf admin-next/.next/dev` → 单进程重起（详见 `admin-next/AGENTS.md` 雷区 ⑧，**别误杀 :3000 的 frontend**）
 - **PostgreSQL 症状速判**：后端所有接口返回 `B999001 系统内部错误` → 几乎一定是 PG 没起。先 `netstat -ano | grep :5432` 确认，再用 envkit `pg_ctl` 拉起
+## 当前实现补充（2026-08-13）
+
+完整现状请先阅读 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md)。本轮代码与文档同步的关键点如下：
+
+- 生产发布使用 GitHub Actions 构建的 GHCR 不可变镜像，并通过独立 `migrate` profile 执行 Aerich 迁移；生产服务器不现场构建。
+- 生产 Redis 为强依赖，`REDIS_REQUIRED=true`；只有本地开发允许内存降级，`/readyz` 会报告降级状态。
+- 产品、新闻、分类写入会清理列表、详情及旧 slug 缓存；询盘增加国家、产品来源、落地页、来源页和 UTM 归因字段。
+- 后台通知已覆盖新询盘、超时未跟进和 SMTP 失败，并支持按用户已读状态。
+- 官网保留首页与 About 页工厂视频、浅色黑红页脚、统一圆角、压缩后的产品 Hero、胶囊面包屑和全宽询盘底栏。
+- SEO 结构化数据将 Songdian Technology 标识为 digital camera manufacturer / OEM/ODM camera factory，并统一 Manufacturer `@id`。
+
+生产数据库数据和运行时上传媒体不作为 Git 或镜像构建输入；静态工厂视频是当前前端源码资产，会随前端镜像发布。相关备份与恢复按 [`deploy-guide.md`](./deploy-guide.md) 执行。

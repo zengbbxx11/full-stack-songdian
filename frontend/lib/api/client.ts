@@ -15,6 +15,13 @@
 // 后端基础 URL；构建期由 .env.local 的 NEXT_PUBLIC_API_URL 注入，缺省回退到本地 8000。
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Server Components 在 Docker 内直连 backend，避免经公网域名/OpenResty绕行；
+// 浏览器端仍使用可公开访问的 NEXT_PUBLIC_API_URL。
+const FETCH_API_BASE =
+  typeof window === "undefined"
+    ? process.env.INTERNAL_API_URL || API_BASE
+    : API_BASE;
+
 /**
  * 把后端返回的相对路径（/uploads/...）补全为后端绝对 URL，
  * 便于 next/image 跨域优化。已为绝对 URL 则原样返回。
@@ -45,7 +52,7 @@ export async function apiFetch<T>(
   params?: Record<string, string | number | undefined | null>,
   options?: { revalidate?: number | false; tags?: string[] },
 ): Promise<T> {
-  const url = new URL(`${API_BASE}${path}`);
+  const url = new URL(`${FETCH_API_BASE}${path}`);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== "") {

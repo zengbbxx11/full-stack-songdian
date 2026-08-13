@@ -16,7 +16,7 @@ import { generateBreadcrumbs, faqSchema, safeJsonLd } from "@/lib/seo";
 import { FAQS } from "@/lib/content-data";
 
 export const metadata = await superMeta({
-  title: "FAQ",
+  title: "Camera OEM & ODM FAQ",
   description:
     "Answers to common questions about our camera manufacturing solutions — factory capabilities, certifications, quality control, lead times, customization, and after-sales support.",
   url: "/solutions/faq",

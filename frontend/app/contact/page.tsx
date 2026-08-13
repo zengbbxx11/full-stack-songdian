@@ -22,7 +22,7 @@ import { wgs84ToGcj02 } from "@/lib/coord-transform";
 import { MapPin, Navigation } from "lucide-react";
 
 export const metadata = await superMeta({
-  title: "Contact Us",
+  title: "Contact Songdian Sales",
   description: `Get in touch with ${COMPANY.name}. Request a quote for OEM/ODM camera manufacturing — our team responds within 24 hours.`,
   url: "/contact",
 });
@@ -54,15 +54,23 @@ export default async function ContactPage() {
       />
 
       {/* 首屏 Hero —— 仅含面包屑 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="border-b border-white/10 bg-[#111316] py-5">
+        <div className="site-container">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
       </section>
 
+      <section className="bg-[#111316] pb-10 pt-6 text-white md:pb-12 md:pt-8">
+        <div className="site-container max-w-4xl">
+          <p className="section-eyebrow">Start a conversation</p>
+          <h1 className="mt-3 text-[clamp(2.55rem,4.5vw,4rem)] font-semibold leading-[1] tracking-[-0.05em]">Tell us what you want to build.</h1>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/62 md:text-[17px]">Share your requirements with our team and request an OEM or ODM project quote.</p>
+        </div>
+      </section>
+
       {/* 主内容区 */}
-      <section className="py-12 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="section-shell bg-[#f5f6f7]">
+        <div className="site-container">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16">
 
             {/* 左栏 */}
@@ -124,8 +132,8 @@ export default async function ContactPage() {
       </section>
 
       {/* 地图（Leaflet + Esri 卫星影像，零 key、国内外可访问） */}
-      <section className="py-4 bg-gray-50 border-t border-[#EEEEEE]">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="bg-white py-10 md:py-14">
+        <div className="site-container min-w-0">
           {/* 地图上方：在地图中查看 / 导航（AMap / Google） */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-sm text-gray-500">View / Navigate:</span>
@@ -168,8 +176,7 @@ export default async function ContactPage() {
           </div>
 
           <div
-            className="aspect-[21/9] min-h-[280px] overflow-hidden bg-gray-200 border border-[#D0D1D2]"
-            style={{ borderRadius: "12px" }}
+            className="h-[280px] w-full min-w-0 overflow-hidden rounded-2xl border border-[#D0D1D2] bg-gray-200 md:h-auto md:aspect-[21/9]"
           >
             <ContactMap
               lat={COMPANY.contact.lat}

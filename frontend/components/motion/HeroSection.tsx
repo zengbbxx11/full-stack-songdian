@@ -37,7 +37,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
   const TRANSITION = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
-    <section className="relative overflow-hidden min-h-screen flex items-center">
+    <section className="relative overflow-hidden flex min-h-[720px] items-center md:min-h-[760px] lg:min-h-[calc(100svh-4rem)]">
       <Image
         src={bannerUrl || MEDIA.heroBanner}
         alt="Songdian SMT production line — precision camera manufacturing"
@@ -48,11 +48,12 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
       />
 
       {/* 渐变蒙层 — 底部最深、顶部最浅：文字区清晰可读，同时保留图片上部细节 */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/25" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,9,12,0.9)_0%,rgba(7,9,12,0.66)_48%,rgba(7,9,12,0.18)_100%)]" />
+      <div className="absolute inset-0 opacity-20 tech-grid" aria-hidden="true" />
 
       {/* Hero 内容 — 左侧对齐，更大气 */}
       <motion.div
-        className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 py-32 md:py-40 w-full"
+        className="site-container relative z-10 py-28 md:py-36"
         initial="hidden"
         animate="visible"
         variants={{
@@ -61,12 +62,12 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           },
         }}
       >
-        <div className="max-w-3xl">
+        <div className="max-w-[820px]">
         {/* 行业徽章 — 描边 + 毛玻璃，更精致 */}
         <motion.span
           variants={itemVariants}
           transition={TRANSITION}
-          className="inline-block rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm mb-8"
+          className="mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[#d4343e] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
         >
           {HERO.badge}
         </motion.span>
@@ -75,7 +76,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         <motion.h1
           variants={itemVariants}
           transition={TRANSITION}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-white tracking-tight leading-[1.05] mb-6"
+          className="mb-7 text-[clamp(3rem,7.3vw,6.8rem)] font-semibold leading-[0.94] tracking-[-0.065em] text-white"
         >
           {HERO.title}
         </motion.h1>
@@ -84,7 +85,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         <motion.p
           variants={itemVariants}
           transition={TRANSITION}
-          className="text-lg md:text-xl text-white/80 font-normal leading-relaxed mb-10 max-w-2xl"
+          className="mb-10 max-w-2xl text-base font-normal leading-relaxed text-white/72 md:text-xl"
         >
           {HERO.subtitle}
         </motion.p>
@@ -99,7 +100,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           <InteractiveHoverButton
             onClick={() => router.push(HERO.cta.primary.href)}
             fill="bg-[#d4343e]"
-            className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[48px] px-10 text-[16px]"
+            className="h-12 border-[#d4343e] bg-white px-8 text-[15px] text-[#171A20] hover:text-white"
           >
             {HERO.cta.primary.label}
           </InteractiveHoverButton>
@@ -107,8 +108,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           {/* 副按钮 — 幽灵描边，与主按钮形成层次对比 */}
           <Link
             href={HERO.cta.secondary.href}
-            className="inline-flex items-center justify-center px-8 h-[48px] text-[16px] font-semibold text-white rounded border border-white/60 bg-white/5 hover:bg-white/10 hover:border-[#d4343e] hover:text-[#d4343e] transition-colors duration-[330ms]"
-            style={{ borderRadius: "4px" }}
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/35 bg-white/5 px-8 text-[15px] font-semibold text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[#171A20]"
           >
             {HERO.cta.secondary.label}
           </Link>

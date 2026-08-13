@@ -1,0 +1,63 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_version:
+        description: "Image tag produced by CI (full commit SHA or release tag)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.image_version }}
+      - name: Configure SSH
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PROD_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$PROD_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Upload versioned deployment manifests
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PATH: ${{ secrets.PROD_PATH }}
+        run: |
+          ssh "$PROD_USER@$PROD_HOST" "mkdir -p '$PROD_PATH/scripts'"
+          scp docker-compose.yml "$PROD_USER@$PROD_HOST:$PROD_PATH/"
+          scp scripts/backup.sh scripts/deploy.sh scripts/smoke-deploy.sh "$PROD_USER@$PROD_HOST:$PROD_PATH/scripts/"
+      - name: Deploy requested image version
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PATH: ${{ secrets.PROD_PATH }}
+          IMAGE_VERSION: ${{ inputs.image_version }}
+          IMAGE_REGISTRY: ghcr.io/${{ github.repository }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          if [[ ! "$IMAGE_VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+            echo "Invalid image version" >&2
+            exit 2
+          fi
+          if [[ ! "$GHCR_USERNAME" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "Invalid GHCR username" >&2
+            exit 2
+          fi
+          printf '%s' "$GHCR_TOKEN" | ssh "$PROD_USER@$PROD_HOST" "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
+          ssh "$PROD_USER@$PROD_HOST" "cd '$PROD_PATH' && chmod +x scripts/*.sh && IMAGE_REGISTRY='$IMAGE_REGISTRY' bash scripts/deploy.sh '$IMAGE_VERSION'"

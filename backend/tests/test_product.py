@@ -96,6 +96,27 @@ def test_product_detail_cache_hit_no_error(client):
     assert second["data"]["id"] == first["data"]["id"]
 
 
+def test_product_write_invalidates_list_and_old_slug_caches(client):
+    """创建/改 slug 后列表立即更新，旧详情缓存不可继续命中。"""
+    h = _admin_headers(client)
+    before = client.get("/api/v1/products", params={"page": 1, "page_size": 50}).json()["data"]
+
+    old_slug = f"qa-invalidate-{uuid.uuid4().hex[:8]}"
+    created = _create(client, h, old_slug, title="QA Invalidation Product").json()["data"]
+    after = client.get("/api/v1/products", params={"page": 1, "page_size": 50}).json()["data"]
+    assert after["total"] == before["total"] + 1
+
+    # 先填充详情缓存，再修改 slug。
+    assert client.get(f"/api/v1/products/{old_slug}").json()["code"] in (0, "0")
+    new_slug = f"{old_slug}-new"
+    updated = client.put(
+        f"/api/v1/admin/products/{created['id']}", headers=h, json={"slug": new_slug}
+    ).json()
+    assert updated["code"] in (0, "0"), updated
+    assert client.get(f"/api/v1/products/{old_slug}").json()["code"] == "A010001"
+    assert client.get(f"/api/v1/products/{new_slug}").json()["code"] in (0, "0")
+
+
 def test_create_product_requires_login(client):
     slug = f"qa-auth-{uuid.uuid4().hex[:8]}"
     r = client.post(

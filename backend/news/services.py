@@ -15,6 +15,7 @@ from common.enums import NewsStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
 from common.redis_client import cache_key, get_redis
+from common.revalidation import revalidate_frontend
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from news.models import News, NewsCategory
@@ -55,6 +56,22 @@ async def _cache_del_detail(slug: str) -> None:
         await get_redis().delete(cache_key("news", "detail", slug))
     except Exception:  # noqa: BLE001
         pass
+
+
+async def _invalidate_news_content(*slugs: str, categories: bool = False) -> None:
+    redis = get_redis()
+    try:
+        await redis.delete_prefix(cache_key("news", "list", ""))
+        for slug in {value for value in slugs if value}:
+            await _cache_del_detail(slug)
+    except Exception:  # noqa: BLE001
+        pass
+
+    unique_slugs = {value for value in slugs if value}
+    tags = ["news", *(f"news:{slug}" for slug in unique_slugs)]
+    if categories:
+        tags.append("news-categories")
+    await revalidate_frontend(tags=tags, paths=["/", "/news", "/sitemap.xml"])
 
 
 async def list_categories() -> list[NewsCategoryVO]:
@@ -157,7 +174,7 @@ async def create_news(
     async with in_transaction():
         news = await News.create(**create_kwargs)
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
-    await _cache_del_detail(data.slug)
+    await _invalidate_news_content(data.slug)
     return await get_news_detail_admin(data.slug)
 
 
@@ -167,6 +184,7 @@ async def update_news(
     news = await News.get_or_none(id=news_id, deleted=0)
     if news is None:
         raise BizException(ErrorCode.A020001)
+    old_slug = news.slug
     if data.category_id is not None and await NewsCategory.get_or_none(id=data.category_id, deleted=0) is None:
         raise BizException(ErrorCode.A020001, "新闻分类不存在")
     if data.slug is not None and data.slug != news.slug:
@@ -193,7 +211,7 @@ async def update_news(
     news.updated_by = operator or None
     await news.save()
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
-    await _cache_del_detail(news.slug)
+    await _invalidate_news_content(old_slug, news.slug)
     return await get_news_detail_admin(news.slug)
 
 
@@ -204,7 +222,7 @@ async def delete_news(news_id: int, operator: str = "") -> None:
     news.deleted = 1
     news.updated_by = operator or None
     await news.save()
-    await _cache_del_detail(news.slug)
+    await _invalidate_news_content(news.slug)
 
 
 # ───────────────── 新闻分类写/排序（T02）─────────────────
@@ -233,6 +251,7 @@ async def create_news_category(data: NewsCategoryCreate, operator: str = "") -> 
         raise BizException(ErrorCode.A020001, "分类别名重复")
     sort_order = data.sort_order if data.sort_order is not None else await _next_news_category_sort_order()
     cat = await NewsCategory.create(name=data.name, slug=data.slug, sort_order=sort_order)
+    await _invalidate_news_content(categories=True)
     return NewsCategoryVO.from_model(cat)
 
 
@@ -248,6 +267,7 @@ async def update_news_category(news_category_id: int, data: NewsCategoryUpdate, 
         if val is not None:
             setattr(cat, field, val)
     await cat.save()
+    await _invalidate_news_content(categories=True)
     return NewsCategoryVO.from_model(cat)
 
 
@@ -258,6 +278,7 @@ async def delete_news_category(news_category_id: int, operator: str = "") -> Non
         raise BizException(ErrorCode.A020001, "分类不存在")
     cat.deleted = 1
     await cat.save()
+    await _invalidate_news_content(categories=True)
 
 
 async def reorder_news_category(ids: list[int]) -> None:
@@ -268,6 +289,7 @@ async def reorder_news_category(ids: list[int]) -> None:
     async with in_transaction():
         for idx, cid in enumerate(ids):
             await NewsCategory.filter(id=cid, deleted=0).update(sort_order=idx)
+    await _invalidate_news_content(categories=True)
 
 
 # ───────────────── 后台按 ID 详情（T04）─────────────────

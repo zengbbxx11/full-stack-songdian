@@ -61,6 +61,17 @@ def test_news_detail(client):
     assert body["data"]["slug"] == slug
 
 
+def test_news_write_invalidates_list_cache(client):
+    """后台发布新闻后，公开列表不等待 TTL 即可看到新记录。"""
+    h = _admin_headers(client)
+    before = client.get("/api/v1/news", params={"page": 1, "page_size": 50}).json()["data"]
+    slug = f"qa-news-invalidate-{uuid.uuid4().hex[:8]}"
+    created = _create(client, h, slug, "<p>fresh</p>", title="Fresh News")
+    assert created.json()["code"] in (0, "0")
+    after = client.get("/api/v1/news", params={"page": 1, "page_size": 50}).json()["data"]
+    assert after["total"] == before["total"] + 1
+
+
 def test_news_html_cleaning_xss(client):
     """提交的 content_html 含 <script>，落库/返回必须被清洗（无 script 标签）。"""
     h = _admin_headers(client)

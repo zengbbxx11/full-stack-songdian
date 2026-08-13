@@ -64,3 +64,18 @@ class AuditLog(Model):
 
     class Meta:
         table = "t_audit_log"
+
+
+class NotificationReadState(Model):
+    """Per-user read marker for dynamically generated business notifications."""
+
+    id = fields.BigIntField(primary_key=True)
+    user = fields.ForeignKeyField(
+        "models.AdminUser", related_name="notification_reads", on_delete=fields.CASCADE
+    )
+    notification_key = fields.CharField(max_length=255)
+    read_time = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "t_notification_read_state"
+        unique_together = (("user", "notification_key"),)

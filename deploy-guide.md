@@ -6,6 +6,25 @@
 > 登录用户：`ubuntu`（家目录 `/home/ubuntu`）
 > 项目根目录：`/home/ubuntu/full-stack-songdian`（即 `~`）
 > 仓库：`https://github.com/zengbbxx11/full-stack-songdian`
+
+## 推荐发布方式：CI 构建版本镜像
+
+仓库现在提供两条 GitHub Actions 工作流：
+
+- `.github/workflows/ci.yml`：在提交和 PR 上运行后端测试、前后台 lint/build、Compose 校验；main 分支和 `v*` 标签通过后，将 backend、frontend、admin 三个不可变版本镜像推送到 GHCR。
+- `.github/workflows/deploy.yml`：手动输入完整 commit SHA 或 release tag，上传部署清单并在服务器执行备份、独立迁移、指定版本切换和健康检查。应用健康检查失败时回退到上一个已成功版本；数据库迁移不会自动降级，破坏性迁移必须采用向后兼容的分阶段策略。
+
+首次使用前，在 GitHub `production` Environment 配置以下 Secrets：
+
+| Secret | 用途 |
+|---|---|
+| `PROD_HOST` / `PROD_USER` / `PROD_PATH` | 生产服务器、SSH 用户和项目目录 |
+| `PROD_SSH_KEY` / `PROD_KNOWN_HOSTS` | SSH 私钥和固定服务器主机指纹 |
+| `GHCR_USERNAME` / `GHCR_TOKEN` | 服务器拉取私有 GHCR 镜像；Token 只需 packages:read |
+
+服务器的 `.env` 继续只保存在生产机，不上传 GitHub。首次自动发布前应先运行一次 `scripts/backup.sh` 并做恢复演练。
+
+生产发布入口：GitHub Actions → `Deploy production` → Run workflow → 输入本次完整 commit SHA。不要在服务器执行 `docker compose build`。
 > **数据保护**：Git 仓库只包含代码和少量随镜像发布的静态资源；线上 PostgreSQL、运营上传文件、产品和新闻数据位于 Docker 命名卷，绝不会随 `git clone` 或 `git pull` 获取。已有服务器必须先备份，严禁删除 `pg_data`、`uploads_data` 或导入 `db/` 下的开发快照。
 
 ---
@@ -100,6 +119,7 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 |------|------|
 | `PG_USER` / `PG_PASSWORD` / `PG_DB` | Compose 内 postgres 服务初始化所用（首次建库生效；后续改此处不影响已建库） |
 | `JWT_SECRET` | ≥32 字节随机值；**backend 与 admin-next 共用同一值**（admin 用它服务端校验令牌） |
+| `REVALIDATE_SECRET` | ≥32 字节的另一组随机值；backend 与 frontend 共用，用于后台发布后安全清除官网 ISR 缓存 |
 | `ADMIN_PASSWORD` | 初始管理员密码（仅在 `SEED_ON_START=true` 由应用种子器使用时生效） |
 | `SEED_ON_START` | 首次部署临时设 `true`，仅初始化角色、权限和 admin；验证后改回 `false` |
 | `SEED_CONTENT_CATEGORIES` | 生产保持 `false`；设为 `true` 才额外写入演示分类，绝不删除或覆盖现有产品、新闻及分类 |
@@ -137,23 +157,19 @@ cd /home/ubuntu/full-stack-songdian
 # 确保有 .env（含 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL 等）
 test -f .env || { echo "ERROR: .env missing!"; exit 1; }
 
-# 构建全部镜像（首次约 5-10 分钟，含前端/后端 npm install + next build）
+# 本地首次部署可构建；正式生产优先使用 GitHub Actions 构建的 GHCR 镜像
 docker compose build
 ```
 
 ### 5.2 启动（按健康依赖顺序自动编排）
 
 ```bash
-# 前台启动看日志（首次推荐，确认 aerich 建表成功）
-docker compose up
+# 先启动数据服务，再显式迁移；迁移失败时不要启动新应用版本
+docker compose up -d postgres redis
+docker compose --profile tools run --rm migrate
 
-# 看到以下关键日志后 Ctrl+C，改后台运行：
-# ✓ backend  | ... aerich upgrade ... Success
-# ✓ backend  | Uvicorn running on http://0.0.0.0:8000
-# ✓ frontend | Ready in XXs
-
-# 后台运行
-docker compose up -d
+# 迁移成功后启动应用
+docker compose up -d backend frontend admin-next
 ```
 
 ### 5.3 逐服务验证
@@ -168,7 +184,7 @@ curl -s http://127.0.0.1:8000/healthz
 
 # 3) 后端就绪（含 DB + Redis 探测）
 curl -s http://127.0.0.1:8000/readyz
-# → {"status":"ready","database":"connected","redis":"connected"}
+# → {"status":"ready","db":true,"redis":true}
 
 # 4) 产品列表（确认表已建好；已有服务器应仍返回原有业务数据）
 curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | python3 -m json.tool | head -5
@@ -212,11 +228,12 @@ curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/users/list"
 |------|------|------|
 | 1 | postgres | 初始化，`pg_isready` 健康检查通过 |
 | 2 | redis | 初始化，`redis-cli PING` 健康检查通过 |
-| 3 | backend | 依赖 postgres+redis 均健康 → `aerich upgrade`（自动建表含 SEO/CRM 全量列）→ `uvicorn` |
-| 4 | frontend | 依赖 backend `/readyz` 探活 → `next start -p 3000` |
-| 5 | admin-next | 依赖 backend `/readyz` 探活 → `next start -p 3001` |
+| 3 | migrate | 依赖 postgres+redis 均健康，作为一次性发布步骤显式运行 `aerich upgrade` |
+| 4 | backend | 迁移成功后启动 `uvicorn`；应用启动过程不再隐式修改数据库 |
+| 5 | frontend | 依赖 backend `/readyz` 探活 → `next start -p 3000` |
+| 6 | admin-next | 依赖 backend `/readyz` 探活 → `next start -p 3001` |
 
-**关键：aerich upgrade 自动执行**——backend 会先执行迁移、同步镜像内置资源到 `uploads_data`（不覆盖已有运营文件），再通过 `scripts/start.sh` 启动 Uvicorn。迁移 10 会把询盘负责人字段收敛为一个 BIGINT 外键。已有生产库只执行正常的 `docker compose up -d`，不要删除 `pg_data` 或重置 schema。
+**关键：aerich upgrade 独立执行**——发布脚本先备份，再通过 `docker compose --profile tools run --rm migrate` 运行迁移；只有迁移成功才切换应用镜像。backend 启动时只同步内置资源并启动 Uvicorn。不要删除 `pg_data` 或重置 schema。
 
 ---
 
@@ -232,8 +249,11 @@ cd /home/ubuntu/full-stack-songdian
 # 1) .env 设置强随机 ADMIN_PASSWORD，并暂时开启最小种子
 SEED_ON_START=true
 
-# 2) 启动；backend 会自动执行 aerich upgrade 和 run_seed
-docker compose up -d --build
+# 2) 构建并显式迁移，然后启动应用
+docker compose build
+docker compose up -d postgres redis
+docker compose --profile tools run --rm migrate
+docker compose up -d backend frontend admin-next
 
 # 3) 确认管理员可登录后，关闭一次性种子并重启 backend
 #    编辑 .env：SEED_ON_START=false
@@ -298,7 +318,8 @@ sudo ufw enable
 | 检查项 | 命令 | 预期结果 |
 |--------|------|----------|
 | 五容器运行 | `docker compose ps` | 全部 Up/healthy，无 restarting |
-| backend 日志 | `docker compose logs backend --tail 20` | `aerich upgrade ... Success` + `Uvicorn running` |
+| 迁移命令 | `docker compose --profile tools run --rm migrate` | `aerich upgrade` 成功退出 |
+| backend 日志 | `docker compose logs backend --tail 20` | `Uvicorn running` 且无循环重启 |
 | 磁盘空间 | `df -h /` | 可用 >20%（容器镜像约 2-3GB） |
 
 ### 9.2 API 层（服务器内部）
@@ -306,7 +327,7 @@ sudo ufw enable
 | 检查项 | 命令 | 预期结果 |
 |--------|------|----------|
 | 后端存活 | `curl -s http://127.0.0.1:8000/healthz` | `{"status":"alive"}` |
-| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | DB 正常返回 200；DB 异常返回 503，Redis 异常标记为 `degraded` |
+| 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | 生产要求 DB 与真实 Redis 均正常；任一异常返回 503，本地内存缓存模式显示 `degraded` |
 | 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
 | SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
 | 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera"` | 返回匹配产品 |
@@ -342,16 +363,12 @@ sudo ufw enable
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# ── 日常更新流程（保留生产数据） ──
-# 改代码后本地 push，服务器上：
-BACKUP_DIR=/home/ubuntu/backups bash scripts/backup.sh  # 失败即停止
-git pull --ff-only                                      # 仅快进拉取代码
-docker compose build                                    # 前端需 next build
-docker compose up -d                                    # 不删除命名卷
-docker compose ps
+# ── 日常更新流程（推荐） ──
+# 在 GitHub Actions 的 Deploy production 工作流中输入本次完整 commit SHA。
+# 工作流调用 scripts/deploy.sh，自动执行备份、独立迁移、指定镜像切换、冒烟和应用回滚。
 
-# 仅更新后端（改了 Python 代码，~30s）
-docker compose up -d --build backend
+# 服务器只做只读状态检查
+docker compose ps
 
 # 仅更新上游配置（改了 .env 但没改代码）
 docker compose up -d        # 重新注入环境变量
@@ -437,7 +454,7 @@ git add frontend/public/Video/SongdianFactoryVideo.mp4
 git commit -m "assets: update factory video"
 ```
 
-> 由于前端在容器内以 `next start` 运行，替换仓库中的视频后必须执行 `docker compose build frontend && docker compose up -d frontend` 才会发布到镜像；也可改用对象存储/CDN 外链。
+> 由于前端在容器内以 `next start` 运行，替换视频后需提交代码并由 CI 构建新的 frontend 版本镜像，再通过生产部署工作流发布；也可改用对象存储/CDN 外链。
 
 ---
 
@@ -468,11 +485,10 @@ NEXT_PUBLIC_IMAGE_HOST=api.zsaki.icu
 ```
 
 其中 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 都是构建期变量，
-已由 `docker-compose.yml` 作为 build args 传给 frontend；切换后必须重建两个 Next.js 镜像：
+这些变量由 CI 作为 build args 传给 Next.js 镜像；切换后需重新运行 CI 并部署新版本：
 
 ```bash
-docker compose build frontend admin-next
-docker compose up -d frontend admin-next
+# 推送代码后等待 CI 生成新版本镜像，再运行 Deploy production 工作流
 ```
 
 #### 第三步：验证、回滚与收口
@@ -519,3 +535,14 @@ curl -I https://admin.zsaki.icu/signin
 ---
 
 *最后更新：2026-08-10（生产后台要求 HTTPS 域名；Compose 应用端口仅绑定宿主机回环）*
+## 本轮实现补充（2026-08-13）
+
+部署前请以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md) 为现状索引：
+
+- CI 构建并推送 GHCR 镜像后，生产按完整 commit SHA/tag 发布；不要在服务器执行现场 `docker compose build` 作为正式发布流程。
+- 迁移通过 `docker compose --profile tools run --rm migrate` 单独执行，再启动应用容器；应用启动不会隐式迁移。
+- `/readyz` 同时检查数据库和真实 Redis。生产 Redis 不可用时应停止发布并恢复 Redis，不要把内存降级视为生产可用状态。
+- 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。
+- 生产数据库和运行时上传媒体不由 Git checkout 或镜像构建覆盖；工厂展示视频属于前端静态源码资产，会随前端镜像发布。备份和恢复必须针对 PostgreSQL/上传媒体卷单独执行。
+
+本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-11` 取代；11 号迁移包含询盘归因字段和通知已读状态表。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。

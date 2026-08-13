@@ -26,7 +26,7 @@ const CertificateGallery = dynamic(() => import("@/components/CertificateGallery
 });
 
 export const metadata = await superMeta({
-  title: "About Us",
+  title: "About Songdian Camera Manufacturing",
   description: `Learn about ${COMPANY.name} — a leading OEM/ODM digital camera manufacturer with 20+ years of experience, serving brands in 60+ countries worldwide.`,
   url: "/about",
 });
@@ -47,7 +47,7 @@ export default function AboutPage() {
       </section>
 
       {/* 区块 2+3 —— 品牌故事 + 数据统计（合并） */}
-      <section className="py-16 md:py-24 bg-white">
+      <section id="factory-tour" className="scroll-mt-24 py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
             {/* 左栏 —— 品牌故事 */}

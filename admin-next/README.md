@@ -147,3 +147,13 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
   此前仅 base64 解码 payload，伪造 cookie 可绕过）。必须与后端 `.env` 的 `JWT_SECRET` **完全一致**，
   **切勿加 `NEXT_PUBLIC_` 前缀**（否则密钥泄露到浏览器）。生产环境必须配置；未配置时降级为仅校验
   `exp` 并输出告警（仅本地开发）。
+## 当前实现补充（2026-08-13）
+
+当前后台实现以 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准：
+
+- 通知下拉框通过 `/api/v1/admin/notifications` 每 30 秒轮询，支持新询盘、超时未跟进和 SMTP 失败，并可逐条或全部标记已读。
+- 询盘页保留桌面表格，小屏切换为可操作卡片；支持国家、来源产品、落地页和 UTM 归因查看/筛选。
+- 后台仍使用 Cookie-only 认证；细粒度销售/编辑 RBAC 尚未作为本轮新增能力，不应在文档中描述为已完成。
+- 生产后台使用指定 GHCR 镜像，构建和迁移步骤见根目录 `deploy-guide.md`。
+
+目录树中旧的“通知铃铛（空状态）”描述已失效：当前 `NotificationDropdown` 已接入通知 API、30 秒轮询、未读徽标和已读操作。

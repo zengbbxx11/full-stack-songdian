@@ -54,10 +54,11 @@ export async function generateMetadata({
   if (!product) return { title: "Product Not Found" };
   // canonical 始终以产品真实主分类为准，避免 URL 分类段拼写偏差导致标签错乱
   const canonical = productPath(product);
-  const plainDesc = stripHtml(product.shortDescription || "").slice(0, 160);
+  const plainDesc = stripHtml(product.shortDescription || "");
   // SEO 标题 & 描述：优先使用后端 seo_* 字段（运营精修），空则回退 title/shortDescription
   const seoTitle = product.seoTitle || product.name;
-  const seoDesc = product.seoDescription || plainDesc || `OEM/ODM ${product.name} — ${COMPANY.name}`;
+  const factoryDescription = `${product.name}, manufactured by ${COMPANY.name}, an OEM/ODM digital camera factory.${plainDesc ? ` ${plainDesc}` : ""}`;
+  const seoDesc = product.seoDescription || factoryDescription.slice(0, 160).trim();
   return {
     title: seoTitle,
     description: seoDesc,
@@ -220,16 +221,16 @@ export default async function ProductDetailPage({
         <ProductViewTracker productName={product.name} productSlug={product.slug} />
 
         {/* 面包屑导航 */}
-        <section className="py-5" style={{ backgroundColor: "#171A20" }}>
-          <div className="max-w-7xl mx-auto px-6">
+        <section className="border-b border-white/10 bg-[#111316] py-5">
+          <div className="site-container">
             <Breadcrumbs items={breadcrumbs} variant="dark" />
           </div>
         </section>
 
         {/* 产品概览 */}
-        <section className="py-10 md:py-14 bg-white">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14">
+        <section className="section-shell bg-white">
+          <div className="site-container">
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
 
               {/* 左栏：产品图集 */}
               <div>
@@ -259,9 +260,9 @@ export default async function ProductDetailPage({
               </div>
 
               {/* 右栏：产品信息 */}
-              <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Product Model</p>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight leading-tight mb-5">
+              <div className="lg:sticky lg:top-28 lg:self-start">
+                <p className="section-eyebrow mb-4">Product Model</p>
+                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.055em] text-[#111316]">
                   {product.name}
                 </h1>
 
@@ -285,9 +286,9 @@ export default async function ProductDetailPage({
                 {/* 行动号召按钮 */}
                 <div className="flex flex-wrap gap-3 mb-8">
                   <CtaButton
-                    href="/contact"
+                    href={`/contact?product=${encodeURIComponent(product.slug)}`}
                     ctaLabel="Product Detail - Send Inquiry"
-                    className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[42px] px-8 text-[14px]"
+                    className="h-12 border-[#d4343e] bg-white px-8 text-[14px] text-[#171A20] hover:text-white"
                   >
                     Send Inquiry
                   </CtaButton>
@@ -300,11 +301,11 @@ export default async function ProductDetailPage({
                 </div>
 
                 {/* OEM/ODM 说明 */}
-                <div className="flex items-center gap-2.5 p-4 rounded-xl border" style={{ backgroundColor: "#EFF3FF", borderColor: "#C5D5F8" }}>
-                  <svg className="w-5 h-5 shrink-0" style={{ color: "#3E6AE1" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2.5 rounded-xl border border-[#d4343e]/15 bg-[#d4343e]/5 p-4">
+                  <svg className="w-5 h-5 shrink-0 text-[#d4343e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm" style={{ color: "#3561CC" }}>
+                  <span className="text-sm text-[#393C41]">
                     Available for OEM/ODM — wholesale pricing upon request
                   </span>
                 </div>
@@ -315,20 +316,21 @@ export default async function ProductDetailPage({
 
         {/* 规格参数 */}
         {specs.length > 0 && (
-          <section className="py-12 md:py-16" style={{ backgroundColor: "#F4F4F4" }}>
-            <div className="max-w-5xl mx-auto px-6">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Specifications</h2>
-              <div className="bg-white overflow-hidden border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+          <section className="section-shell bg-[#f5f6f7]">
+            <div className="site-container max-w-5xl">
+              <p className="section-eyebrow">Technical overview</p>
+              <h2 className="section-title mb-10 mt-4">Specifications</h2>
+              <div className="overflow-x-auto rounded-2xl border border-black/8 bg-white">
                 <table className="w-full">
                   <tbody>
                     {specs.map((spec, i) => (
                       <tr key={i} className="border-b border-[#EEEEEE] last:border-0">
                         {spec.label ? (
                           <>
-                            <td className="w-[35%] px-6 py-3.5 text-sm font-medium text-gray-500 bg-gray-50/50 border-r border-[#EEEEEE]">
+                            <th scope="row" className="w-[35%] min-w-32 border-r border-[#EEEEEE] bg-gray-50/50 px-4 py-3.5 text-left text-sm font-medium text-gray-500 md:px-6">
                               {spec.label}
-                            </td>
-                            <td className="px-6 py-3.5 text-sm text-gray-900">{spec.value}</td>
+                            </th>
+                            <td className="min-w-48 px-4 py-3.5 text-sm text-gray-900 md:px-6">{spec.value}</td>
                           </>
                         ) : (
                           <td colSpan={2} className="px-6 py-3.5 text-sm text-gray-900">{spec.value}</td>
@@ -344,9 +346,10 @@ export default async function ProductDetailPage({
 
         {/* 产品亮点 */}
         {hasContent && (
-          <section className="py-14 md:py-20 bg-white">
-            <div className="max-w-5xl mx-auto px-6">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Product Highlights</h2>
+          <section className="section-shell bg-white">
+            <div className="site-container max-w-5xl">
+              <p className="section-eyebrow">Product overview</p>
+              <h2 className="section-title mb-10 mt-4">Product Highlights</h2>
               <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(product.description) }} />
             </div>
           </section>

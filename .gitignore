@@ -26,7 +26,7 @@ frontend/public/Video/
 # Temp diagnostics
 diag*.txt
 ruff_out.txt
+.deploy/
 
 # Next.js build cache
 .next/
-

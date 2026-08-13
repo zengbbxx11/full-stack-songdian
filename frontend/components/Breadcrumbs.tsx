@@ -1,7 +1,5 @@
-"use client";
-
-// 客户端组件：通过内联 onMouseEnter/onMouseLeave 事件处理器实现 hover 颜色切换
 import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
 import type { BreadcrumbItem } from "@/lib/types";
 import { safeJsonLd } from "@/lib/seo";
 
@@ -38,10 +36,7 @@ export default function Breadcrumbs({
     })),
   };
 
-  // Tesla 颜色变体
-  const linkColor = variant === "dark" ? "#B0B1B3" : "#393C41";
-  const linkHoverColor = variant === "dark" ? "#FFFFFF" : "#171A20";
-  const activeColor = variant === "dark" ? "#8E8E8E" : "#5C5E62";
+  const isDark = variant === "dark";
 
   return (
     <>
@@ -51,45 +46,38 @@ export default function Breadcrumbs({
       />
       <nav
         aria-label="Breadcrumb"
-        className="flex items-center gap-1.5 text-[13px] flex-wrap"
+        className={`inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border px-2 py-1.5 text-sm shadow-sm backdrop-blur-sm ${
+          isDark
+            ? "border-white/10 bg-white/[0.06] text-white/65"
+            : "border-black/[0.08] bg-white/90 text-[#5C5E62]"
+        }`}
       >
         {items.map((item, i) => (
-          <span key={item.href || item.label} className="flex items-center gap-2">
+          <span
+            key={item.href || item.label}
+            className={`flex min-w-0 items-center gap-1 ${i === items.length - 1 ? "overflow-hidden" : "shrink-0"}`}
+          >
             {i > 0 && (
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                style={{ color: variant === "dark" ? "#8E8E8E" : "#D0D1D2" }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              <ChevronRight className={`h-3.5 w-3.5 shrink-0 ${isDark ? "text-white/25" : "text-black/25"}`} />
             )}
 
             {item.href ? (
               <Link
                 href={item.href}
-                style={{
-                  color: linkColor,
-                  transition: "color 0.33s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = linkHoverColor;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = linkColor;
-                }}
+                aria-label={i === 0 ? "Home" : undefined}
+                className={`inline-flex h-7 items-center rounded-full px-2 font-medium transition-colors ${
+                  isDark
+                    ? "hover:bg-white/10 hover:text-white"
+                    : "hover:bg-[#f5f6f7] hover:text-[#d4343e]"
+                }`}
               >
-                {item.label}
+                {i === 0 ? <Home className="h-3.5 w-3.5" aria-hidden="true" /> : item.label}
               </Link>
             ) : (
-              <span style={{ color: activeColor, fontWeight: 500 }}>
+              <span
+                aria-current="page"
+                className={`truncate rounded-full px-2 py-1 font-semibold ${isDark ? "bg-white/10 text-white" : "bg-[#f5f6f7] text-[#171A20]"}`}
+              >
                 {item.label}
               </span>
             )}

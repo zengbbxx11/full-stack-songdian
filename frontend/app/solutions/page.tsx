@@ -15,7 +15,7 @@ import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY, SOLUTIONS, SOLUTIONS_HERO } from "@/lib/content-data";
 
 export const metadata = await superMeta({
-  title: "Solutions",
+  title: "OEM & ODM Camera Solutions",
   description: `Tailored camera manufacturing solutions from a China-based factory. OEM, ODM, and SONGDIAN brand distribution — high-quality cameras engineered and built to your needs. ${COMPANY.name}.`,
   url: "/solutions",
 });
@@ -47,18 +47,18 @@ export default function SolutionsPage() {
           }}
         />
         {/* 面包屑（沿用全站深色首屏规范） */}
-        <div className="relative max-w-7xl mx-auto px-6 pt-10">
+        <div className="relative max-w-7xl mx-auto px-6 pt-5">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
         {/* 核心主张 */}
-        <div className="relative max-w-4xl mx-auto px-6 pb-16 md:pb-24 text-center">
+        <div className="relative max-w-4xl mx-auto px-6 pb-12 pt-4 text-center md:pb-14 md:pt-2">
           <p
             className="text-xs font-semibold uppercase tracking-[0.22em] mb-4"
             style={{ color: "#d4343e" }}
           >
             {hero.eyebrow}
           </p>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white leading-tight">
+          <h1 className="text-[2.35rem] font-bold leading-[1.08] tracking-[-0.035em] text-white md:text-5xl">
             {hero.title}
           </h1>
           <p

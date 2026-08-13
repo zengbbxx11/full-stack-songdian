@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
     name: "账号",
     path: "/account",
   },
-  { icon: <UserCircleIcon />, name: "Users", path: "/users" },
+  { icon: <UserCircleIcon />, name: "用户管理", path: "/users" },
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

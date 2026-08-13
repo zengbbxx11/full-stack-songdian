@@ -13,13 +13,13 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from common.enums import InquiryStatus, SmtpStatus
 from common.exceptions import BizException, ErrorCode
 from common.idempotency import acquire_idempotency
 from common.result import PageRequest
-from content.models import AdminUser
+from content.models import AdminUser, NotificationReadState
 from inquiry.models import Inquiry
 from inquiry.schemas import (
     FollowNoteRequest,
@@ -30,6 +30,7 @@ from inquiry.schemas import (
     InquiryVO,
 )
 from inquiry.smtp_mailer import send_inquiry_mail
+from tortoise.expressions import Q
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _MAX_MESSAGE = 2000
@@ -65,6 +66,10 @@ async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
         name=data.name, email=data.email, phone=data.phone, company=data.company,
         country=data.country, product_interest=data.product_interest,
         message=data.message, source_page=data.source_page,
+        landing_page=data.landing_page, source_product=data.source_product,
+        referrer=data.referrer, utm_source=data.utm_source,
+        utm_medium=data.utm_medium, utm_campaign=data.utm_campaign,
+        utm_term=data.utm_term, utm_content=data.utm_content,
         biz_req_no=data.biz_req_no, status=InquiryStatus.NEW.value,
         smtp_status=SmtpStatus.PENDING.value, smtp_retry=0,
     )
@@ -73,7 +78,10 @@ async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
     extra = {
         "company": data.company or "", "country": data.country or "",
         "phone": data.phone or "", "product_interest": data.product_interest or "",
-        "source_page": data.source_page or "",
+        "source_page": data.source_page or "", "landing_page": data.landing_page or "",
+        "source_product": data.source_product or "", "referrer": data.referrer or "",
+        "utm_source": data.utm_source or "", "utm_medium": data.utm_medium or "",
+        "utm_campaign": data.utm_campaign or "",
     }
     smtp_status = await send_inquiry_mail(data.name, data.email, data.message, extra=extra)
     inquiry.smtp_status = smtp_status.value
@@ -84,11 +92,21 @@ async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
 
 
 async def list_inquiries(
-    req: PageRequest, status: str | None = None
+    req: PageRequest,
+    status: str | None = None,
+    country: str | None = None,
+    source_product: str | None = None,
+    utm_source: str | None = None,
 ) -> tuple[list[InquiryVO], int]:
     q = Inquiry.all()
     if status is not None:
         q = q.filter(status=status)
+    if country:
+        q = q.filter(country__icontains=country.strip())
+    if source_product:
+        q = q.filter(source_product__icontains=source_product.strip())
+    if utm_source:
+        q = q.filter(utm_source__icontains=utm_source.strip())
     total = await q.count()
     # Inquiry 模型无 sort_order 字段（那是 product/category 拖拽排序用的），
     # 必须约束为真实存在的字段，否则 Tortoise order_by 抛 FieldError → 500。
@@ -198,3 +216,82 @@ async def _append_follow_note(inquiry_id: int, note: str, username: str) -> None
            WHERE id = $2""",
         [f"[{json.dumps(entry)}]", inquiry_id],
     )
+
+
+async def list_notifications(user: AdminUser) -> dict:
+    """Build business notifications from current inquiry state."""
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(hours=24)
+    notifications: list[dict] = []
+
+    new_rows = await Inquiry.filter(status=InquiryStatus.NEW.value).order_by("-created_time").limit(50)
+    for row in new_rows:
+        notifications.append({
+            "key": f"inquiry:new:{row.id}",
+            "type": "NEW_INQUIRY",
+            "title": "新询盘",
+            "message": f"{row.name} 提交了新的询盘",
+            "inquiry_id": row.id,
+            "created_time": row.created_time,
+        })
+
+    active_statuses = [
+        InquiryStatus.NEW.value,
+        InquiryStatus.CONTACTING.value,
+        InquiryStatus.QUOTED.value,
+    ]
+    overdue_rows = await Inquiry.filter(status__in=active_statuses).filter(
+        Q(last_contact_time__isnull=True, created_time__lte=cutoff)
+        | Q(last_contact_time__lte=cutoff)
+    ).order_by("-created_time").limit(50)
+    for row in overdue_rows:
+        last_activity = row.last_contact_time or row.created_time
+        activity_epoch = int(last_activity.timestamp()) if last_activity else 0
+        notifications.append({
+            "key": f"inquiry:overdue:{row.id}:{activity_epoch}",
+            "type": "FOLLOW_UP_OVERDUE",
+            "title": "询盘超过 24 小时未跟进",
+            "message": f"{row.name} 的询盘需要跟进",
+            "inquiry_id": row.id,
+            "created_time": last_activity,
+        })
+
+    smtp_rows = await Inquiry.filter(smtp_status__in=["FAILED", "ERROR"]).order_by(
+        "-updated_time"
+    ).limit(50)
+    for row in smtp_rows:
+        notifications.append({
+            "key": f"inquiry:smtp:{row.id}:{row.smtp_retry or 0}",
+            "type": "SMTP_FAILED",
+            "title": "询盘邮件发送失败",
+            "message": f"{row.name} 的询盘通知邮件未发送成功",
+            "inquiry_id": row.id,
+            "created_time": row.updated_time or row.created_time,
+        })
+
+    notifications.sort(
+        key=lambda item: item["created_time"] or datetime.min.replace(tzinfo=UTC), reverse=True
+    )
+    notifications = notifications[:100]
+    read_keys = set(await NotificationReadState.filter(user_id=user.id).values_list(
+        "notification_key", flat=True
+    ))
+    for item in notifications:
+        item["read"] = item["key"] in read_keys
+        if item["created_time"] is not None:
+            item["created_time"] = item["created_time"].isoformat()
+    return {
+        "list": notifications,
+        "unread_count": sum(1 for item in notifications if not item["read"]),
+    }
+
+
+async def mark_notifications_read(
+    user: AdminUser, notification_keys: list[str], mark_all: bool = False
+) -> dict:
+    if mark_all:
+        current = await list_notifications(user)
+        notification_keys = [item["key"] for item in current["list"]]
+    for key in notification_keys:
+        await NotificationReadState.get_or_create(user_id=user.id, notification_key=key)
+    return await list_notifications(user)

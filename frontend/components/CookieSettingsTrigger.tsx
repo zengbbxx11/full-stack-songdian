@@ -11,7 +11,7 @@ export default function CookieSettingsTrigger() {
       type="button"
       onClick={() => window.dispatchEvent(new CustomEvent("cookie-settings:open"))}
       className={cn(
-        "rounded text-[14px] text-[#767676] transition-colors duration-[330ms] hover:text-[#171A20] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        "rounded-md text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       )}
     >
       Cookie Settings

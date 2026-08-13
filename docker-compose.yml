@@ -60,6 +60,7 @@ services:
 
   # ───────────────────────── 后端 API ─────────────────────────
   backend:
+    image: ${BACKEND_IMAGE:-songdian-backend:local}
     build:
       context: ./backend
     ports:
@@ -69,6 +70,7 @@ services:
       # 注意：Tortoise-ORM 认 postgres://（asyncpg），不认 postgresql:// 前缀
       DATABASE_URL: postgres://${PG_USER}:${PG_PASSWORD}@postgres:5432/${PG_DB}
       REDIS_URL: redis://redis:6379/0
+      REDIS_REQUIRED: "true"
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALG: HS256
       APP_ENV: production
@@ -77,6 +79,8 @@ services:
       # 留空时启动脚本自动识别 Docker 网桥网关；如网络拓扑不同可在 .env 显式覆盖。
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       SECURITY_FAIL_CLOSED: "true"
+      NEXT_REVALIDATE_URL: http://frontend:3000/api/revalidate
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       SEED_ON_START: ${SEED_ON_START:-false}
       SEED_CONTENT_CATEGORIES: ${SEED_CONTENT_CATEGORIES:-false}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
@@ -97,10 +101,9 @@ services:
       # 上传文件数据卷：挂到独立数据目录 uploads_data/（与代码模块 uploads/ 分离，
       # 否则卷会遮住镜像里的 uploads/models.py 等代码 → Module not found）
       - uploads_data:/app/backend/uploads_data
-    # 启动前：aerich 升级建表（幂等）→ 同步内置图片到数据卷（cp -n 不覆盖已有）→ 起 uvicorn
+    # 迁移由 migrate 一次性服务显式执行；这里只同步内置图片并启动 uvicorn。
     command: >
-      sh -c "aerich upgrade &&
-      mkdir -p uploads_data && (cp -rn uploads/. uploads_data/ 2>/dev/null || true) &&
+      sh -c "mkdir -p uploads_data && (cp -rn uploads/. uploads_data/ 2>/dev/null || true) &&
       exec sh ./scripts/start.sh"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/readyz'); sys.exit(0)"]
@@ -113,7 +116,28 @@ services:
       - app-net
 
   # ───────────────────────── 企业官网 ─────────────────────────
+  migrate:
+    image: ${BACKEND_IMAGE:-songdian-backend:local}
+    build:
+      context: ./backend
+    profiles: ["tools"]
+    environment:
+      DATABASE_URL: postgres://${PG_USER}:${PG_PASSWORD}@postgres:5432/${PG_DB}
+      REDIS_URL: redis://redis:6379/0
+      REDIS_REQUIRED: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      APP_ENV: production
+    command: ["aerich", "upgrade"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+
   frontend:
+    image: ${FRONTEND_IMAGE:-songdian-frontend:local}
     build:
       context: ./frontend
       args:
@@ -124,6 +148,8 @@ services:
       - "127.0.0.1:3000:3000"
     environment:
       PORT: "3000"
+      INTERNAL_API_URL: http://backend:8000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     depends_on:
       backend:
         condition: service_healthy
@@ -139,6 +165,7 @@ services:
 
   # ───────────────────────── 管理后台 ─────────────────────────
   admin-next:
+    image: ${ADMIN_IMAGE:-songdian-admin:local}
     build:
       context: ./admin-next
       args:

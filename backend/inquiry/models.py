@@ -21,6 +21,14 @@ class Inquiry(Model):
     product_interest = fields.CharField(max_length=200, null=True)
     message = fields.CharField(max_length=2000)
     source_page = fields.CharField(max_length=500, null=True)
+    landing_page = fields.CharField(max_length=1000, null=True)
+    source_product = fields.CharField(max_length=200, null=True)
+    referrer = fields.CharField(max_length=1000, null=True)
+    utm_source = fields.CharField(max_length=200, null=True)
+    utm_medium = fields.CharField(max_length=200, null=True)
+    utm_campaign = fields.CharField(max_length=200, null=True)
+    utm_term = fields.CharField(max_length=200, null=True)
+    utm_content = fields.CharField(max_length=200, null=True)
     biz_req_no = fields.CharField(max_length=100, unique=True)  # 幂等键兜底
     status = fields.CharField(max_length=30, default="NEW")  # NEW/CONTACTING/QUOTED/DEAL/LOST
     smtp_status = fields.CharField(max_length=30, default="PENDING")  # PENDING/SENT/FAILED/ERROR

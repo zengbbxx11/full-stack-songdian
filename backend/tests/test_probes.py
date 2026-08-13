@@ -29,6 +29,16 @@ def test_readyz_plain_status_dict(client):
     assert body.get("status") in ("ready", "degraded"), body
     assert isinstance(body.get("db"), bool), body
     assert isinstance(body.get("redis"), bool), body
-    # 本环境下 DB 探活成功；内存降级 Redis 的 ping 成功 → redis=True
+    # DB 探活成功；内存缓存不是分布式 Redis，因此就绪探针应明确降级。
     assert body.get("db") is True, f"DB 应探活成功：{body}"
-    assert body.get("redis") is True, f"内存降级 Redis ping 成功：{body}"
+    assert body.get("redis") is False, f"内存缓存不应冒充生产 Redis：{body}"
+    assert body.get("status") == "degraded", body
+
+
+def test_readyz_fails_closed_when_redis_is_required(client, monkeypatch):
+    from common.config import settings
+
+    monkeypatch.setattr(settings, "redis_required", True)
+    response = client.get("/readyz")
+    assert response.status_code == 503
+    assert response.json()["redis"] is False

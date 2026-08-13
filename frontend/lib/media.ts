@@ -26,8 +26,8 @@ export const MEDIA = {
   /** 首页 Hero Banner */
   heroBanner: "/banner/banner.webp",
 
-  /** 社交媒体分享预览图（1200×630），使用 Logo 作为默认 OG 图 */
-  ogImage: "/logo.png",
+  /** 社交媒体分享预览图；复用已核实的 1920×800 工厂实景横幅。 */
+  ogImage: "/banner/banner.webp",
 
   /** 工厂宣传视频 */
   factoryVideo: "/Video/SongdianFactoryVideo.mp4",

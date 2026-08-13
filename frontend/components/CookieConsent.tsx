@@ -89,6 +89,13 @@ export default function CookieConsent() {
     return () => window.removeEventListener("cookie-settings:open", onOpen);
   }, [consent]);
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("cookie-consent:visibility", { detail: show }));
+    return () => {
+      window.dispatchEvent(new CustomEvent("cookie-consent:visibility", { detail: false }));
+    };
+  }, [show]);
+
   function persist(analytics: boolean) {
     const next: ConsentState = {
       necessary: true,

@@ -594,3 +594,6 @@ TENANT_ID=songdian
 统一返回 `Result{code,msg,msgI18n,data,traceId,timestamp}`；分页 `PageRequest/PageResponse`；错误码 A/B/C；幂等 `X-Idempotency-Key`+Redis SETNX 24h；限流三层；JWT 2h/refresh 7d；审计 AOP；乐观锁 `version`（更新类用 `id+version`）；单租户 `tenantId=songdian` 常量。
 
 > 本计划为「按设计落地」的收敛产物，**不引入任何设计外的新抽象/新依赖**。工程师严格按 §1 文件树、§2 任务顺序、§3 模型、§5 公共约定实现即可。
+## 当前代码对照（2026-08-13）
+
+本文是历史架构规划和偏差记录，不替代当前实现。当前缓存失效、生产 Redis 策略、询盘归因、通知已读状态、独立迁移和 GHCR 发布流程请参阅 [`CURRENT_IMPLEMENTATION.md`](../../CURRENT_IMPLEMENTATION.md) 与 [`deploy-guide.md`](../../deploy-guide.md)。

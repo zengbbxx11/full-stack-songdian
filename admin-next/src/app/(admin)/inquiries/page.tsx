@@ -37,6 +37,14 @@ const NEXT_STATUS: Record<InquiryStatus, InquiryStatus[]> = {
   LOST: [],
 };
 
+const STATUS_LABEL: Record<InquiryStatus, string> = {
+  NEW: "新询盘",
+  CONTACTING: "联系中",
+  QUOTED: "已报价",
+  DEAL: "已成交",
+  LOST: "已丢单",
+};
+
 export default function InquiriesPage() {
   const toast = useToast();
 
@@ -47,6 +55,9 @@ export default function InquiriesPage() {
   );
   const items = useMemo(() => data?.list ?? [], [data?.list]);
   const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
+  const [utmFilter, setUtmFilter] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   /* ── 管理员列表（分配下拉） ── */
@@ -89,15 +100,22 @@ export default function InquiriesPage() {
 
   /* ── 本地搜索过滤 ── */
   const filtered = useMemo(() => {
-    if (!search.trim()) return items;
     const q = search.toLowerCase();
-    return items.filter((i) =>
-      i.name.toLowerCase().includes(q) ||
-      i.email.toLowerCase().includes(q) ||
-      (i.company?.toLowerCase().includes(q) ?? false) ||
-      i.message.toLowerCase().includes(q)
-    );
-  }, [search, items]);
+    return items.filter((i) => {
+      const matchesSearch = !q ||
+        i.name.toLowerCase().includes(q) ||
+        i.email.toLowerCase().includes(q) ||
+        (i.company?.toLowerCase().includes(q) ?? false) ||
+        i.message.toLowerCase().includes(q);
+      const matchesCountry = !countryFilter ||
+        (i.country?.toLowerCase().includes(countryFilter.toLowerCase()) ?? false);
+      const matchesProduct = !productFilter ||
+        (i.source_product?.toLowerCase().includes(productFilter.toLowerCase()) ?? false);
+      const matchesUtm = !utmFilter ||
+        (i.utm_source?.toLowerCase().includes(utmFilter.toLowerCase()) ?? false);
+      return matchesSearch && matchesCountry && matchesProduct && matchesUtm;
+    });
+  }, [search, countryFilter, productFilter, utmFilter, items]);
 
   /* ── 操作：打开回复/状态对话框 ── */
   async function openReply(i: Inquiry) {
@@ -226,23 +244,86 @@ export default function InquiriesPage() {
       </div>
 
       {/* 搜索框 */}
-      <div className="mb-4">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索姓名、邮箱、公司或留言..."
-          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-500 lg:w-96"
+          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder:text-gray-500"
         />
+        <input value={countryFilter} onChange={(event) => setCountryFilter(event.target.value)} placeholder="按国家筛选" className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300" />
+        <input value={productFilter} onChange={(event) => setProductFilter(event.target.value)} placeholder="按来源产品筛选" className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300" />
+        <input value={utmFilter} onChange={(event) => setUtmFilter(event.target.value)} placeholder="按 UTM 来源筛选" className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300" />
+      </div>
+
+      {/* 手机端卡片：操作保持完整可见，避免横向表格隐藏负责人和状态。 */}
+      <div className="space-y-3 md:hidden">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-48 animate-pulse rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]" />
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">
+            {search ? "无匹配询盘" : "暂无询盘"}
+          </div>
+        ) : filtered.map((i) => (
+          <article id={`inquiry-${i.id}`} key={i.id} className="scroll-mt-24 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-800 dark:text-white/90">{i.name}</h3>
+                <p className="mt-0.5 break-all text-xs text-gray-500">{i.email}</p>
+                {i.company && <p className="mt-0.5 text-xs text-gray-400">{i.company}</p>}
+              </div>
+              <span className={`shrink-0 rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[i.status]}`}>
+                {STATUS_LABEL[i.status]}
+              </span>
+            </div>
+
+            <button onClick={() => setExpandedId(expandedId === i.id ? null : i.id)} className="mt-4 block w-full text-left">
+              <p className={`text-sm leading-relaxed text-gray-600 dark:text-gray-300 ${expandedId === i.id ? "" : "line-clamp-3"}`}>{i.message}</p>
+              {i.message.length > 90 && <span className="mt-1 inline-block text-xs text-brand-500">{expandedId === i.id ? "收起" : "展开全部"}</span>}
+            </button>
+
+            <div className="mt-3 rounded-xl bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-800/70 dark:text-gray-400">
+              <p>国家：{i.country || "未知"}</p>
+              <p className="mt-1">来源产品：{i.source_product || "未记录"}</p>
+              <p className="mt-1">UTM：{i.utm_source || "直接访问 / 未记录"}</p>
+              {i.utm_campaign && <p className="mt-1">活动：{i.utm_campaign}</p>}
+              {i.landing_page && <p className="mt-1 break-all">落地页：{i.landing_page}</p>}
+              {i.referrer && <p className="mt-1 break-all">引荐：{i.referrer}</p>}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-gray-100 pt-3 text-xs dark:border-gray-800">
+              <button onClick={() => setAssignTarget(i)} className="rounded-lg bg-gray-50 px-3 py-2 text-left text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                负责人：{i.assigned_user_name || "未分配"}
+              </button>
+              <button onClick={() => { setTagTarget(i); setTagInput((i.tags || []).join(", ")); }} className="rounded-lg bg-gray-50 px-3 py-2 text-left text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                标签：{i.tags?.length ? i.tags.join("、") : "无"}
+              </button>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={() => openReply(i)} className="rounded-lg bg-brand-500 px-3 py-2 text-xs font-medium text-white hover:bg-brand-600">跟进记录</button>
+              {NEXT_STATUS[i.status].map((nextStatus) => (
+                <button key={nextStatus} onClick={() => setStatusConfirm({ open: true, target: i, next: nextStatus })} className={`rounded-lg border px-3 py-2 text-xs font-medium ${nextStatus === "LOST" ? "border-red-200 text-red-500" : "border-green-200 text-green-700"}`}>
+                  转为{STATUS_LABEL[nextStatus]}
+                </button>
+              ))}
+              <button onClick={() => setDeleteConfirm({ open: true, target: i })} className="ml-auto rounded-lg px-2 py-2 text-xs text-red-400">删除</button>
+            </div>
+          </article>
+        ))}
       </div>
 
       {/* 表格 */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div className="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">姓名</th>
               <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">邮箱</th>
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">来源</th>
               <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">留言</th>
               <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">负责人</th>
               <th className="px-3 py-3 text-left text-xs font-medium uppercase text-gray-500">标签</th>
@@ -254,7 +335,7 @@ export default function InquiriesPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <td key={j} className="px-3 py-3">
                       <div className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" style={{ width: "60%" }} />
                     </td>
@@ -263,15 +344,20 @@ export default function InquiriesPage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
                   {search ? "无匹配询盘" : "暂无询盘"}
                 </td>
               </tr>
             ) : (
               filtered.map((i) => (
-                <tr key={i.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr id={`inquiry-${i.id}`} key={i.id} className="scroll-mt-24 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="px-3 py-3 font-medium text-gray-800 dark:text-white/90">{i.name}</td>
                   <td className="px-3 py-3 text-gray-500 text-xs">{i.email}</td>
+                  <td className="px-3 py-3 text-xs text-gray-500">
+                    <div>{i.country || "未知国家"}</div>
+                    <div className="mt-1 text-gray-400">{i.source_product || i.product_interest || "未记录产品"}</div>
+                    <div className="mt-1 text-gray-400">{i.utm_source ? `UTM: ${i.utm_source}` : "直接访问 / 未记录"}</div>
+                  </td>
                   <td className="px-3 py-3 text-gray-500 max-w-[240px]">
                     <button
                       onClick={() => setExpandedId(expandedId === i.id ? null : i.id)}
@@ -295,6 +381,13 @@ export default function InquiriesPage() {
                             <div className="mt-0.5">{fn.note}</div>
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {expandedId === i.id && (
+                      <div className="mt-2 rounded-lg bg-gray-50 p-2 text-xs leading-5 text-gray-500 dark:bg-gray-800">
+                        <div>落地页：{i.landing_page || "未记录"}</div>
+                        <div>引荐：{i.referrer || "未记录"}</div>
+                        <div>UTM 活动：{i.utm_campaign || "未记录"}</div>
                       </div>
                     )}
                   </td>
@@ -328,7 +421,7 @@ export default function InquiriesPage() {
                   {/* 状态徽章 */}
                   <td className="px-3 py-3">
                     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[i.status]}`}>
-                      {i.status}
+                      {STATUS_LABEL[i.status]}
                     </span>
                   </td>
                   {/* 操作按钮 */}

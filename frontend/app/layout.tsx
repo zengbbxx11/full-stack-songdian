@@ -42,6 +42,7 @@ import Footer from "@/components/Footer";
 import FloatingInquiry from "@/components/FloatingInquiry";
 import NavigationProgress from "@/components/NavigationProgress";
 import CookieConsent from "@/components/CookieConsent";
+import AttributionTracker from "@/components/AttributionTracker";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
@@ -114,7 +115,7 @@ export const metadata: Metadata = {
     siteName: COMPANY.name,
     title: `${COMPANY.name} — ${COMPANY.tagline}`,
     description: COMPANY.description,
-    images: [{ url: MEDIA.ogImage, width: 1200, height: 630 }],
+    images: [{ url: MEDIA.ogImage, width: 1920, height: 800 }],
   },
 
   // Twitter Card — used by X / Twitter for link previews
@@ -122,7 +123,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${COMPANY.name} — ${COMPANY.tagline}`,
     description: COMPANY.description,
-    images: [{ url: MEDIA.ogImage, width: 1200, height: 630 }],
+    images: [{ url: MEDIA.ogImage, width: 1920, height: 800 }],
   },
 
   // Robots: allow all indexing and crawling by both generic + Google crawlers
@@ -193,7 +194,7 @@ export default function RootLayout({
     >
       <head>
         {/* JSON-LD 结构化数据 —— 注入供 Google 富媒体结果使用 */}
-        {/* Organization 架构：名称、Logo、URL、sameAs 社交档案 */}
+        {/* Manufacturer 架构：统一声明 Songdian Technology 相机制造商实体 */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(orgSchema) }}
@@ -218,6 +219,7 @@ export default function RootLayout({
 
         {/* 顶部路由切换进度条 — 点击链接瞬间触发 */}
         <NavigationProgress />
+        <AttributionTracker />
 
         {/* 站点级导航页头 */}
         <Header />
@@ -227,7 +229,7 @@ export default function RootLayout({
           - flex-1 将页脚推至底部署短页面
           - pt-14 匹配 Tesla 风格固定页头高度（h-14 = 56px）
         */}
-        <main id="main" className="flex-1 pt-14 pb-14">{children}</main>
+        <main id="main" className="flex-1 pt-16 pb-16">{children}</main>
 
         {/* 站点级页脚：公司信息、链接与版权 */}
         <Footer />

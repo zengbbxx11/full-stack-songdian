@@ -42,15 +42,15 @@ export default function ProductGallery({
   ].filter((img) => !brokenIds.has(img.id));
 
   return (
-    <div className="flex gap-3 md:gap-4">
+    <div className="flex flex-col-reverse gap-3 sm:flex-row md:gap-4">
       {/* 左侧缩略图列 */}
-      <div className="flex flex-col gap-2 w-16 md:w-20 shrink-0">
+      <div className="flex w-full shrink-0 flex-row gap-2 overflow-x-auto sm:w-16 sm:flex-col md:w-20">
         {thumbs.map((img) => (
           <button
             key={img.id}
             // 点击缩略图切换右侧大图
             onClick={() => setSelected(img.src)}
-            className={`relative aspect-square overflow-hidden bg-gray-50 border-2 transition-colors cursor-pointer ${
+            className={`relative h-16 w-16 shrink-0 overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer md:h-20 md:w-20 ${
               selected === img.src
                 ? "border-[#d4343e]"
                 : "border-[#EEEEEE] hover:border-gray-400"
@@ -62,7 +62,7 @@ export default function ProductGallery({
               alt={img.alt || mainAlt}
               fill
               sizes="80px"
-              className="object-cover"
+              className="object-contain p-1"
               onError={() => markBroken(img.id)}
             />
           </button>
@@ -70,10 +70,9 @@ export default function ProductGallery({
       </div>
 
       {/* 右侧大图 */}
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div
-          className="relative aspect-square overflow-hidden bg-gray-50 border border-[#EEEEEE]"
-          style={{ borderRadius: "12px" }}
+          className="relative aspect-square overflow-hidden rounded-2xl border border-black/8 bg-[#f2f3f4]"
         >
           {mainImgError ? (
             <div className="absolute inset-0 flex items-center justify-center text-gray-300">
@@ -87,7 +86,7 @@ export default function ProductGallery({
               alt={mainAlt}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="object-contain p-4 md:p-8"
               priority
               onError={() => setMainImgError(true)}
             />

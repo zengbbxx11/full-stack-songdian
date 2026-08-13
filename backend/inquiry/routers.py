@@ -22,9 +22,27 @@ from inquiry.schemas import (
     InquiryAssignRequest,
     InquiryStatusRequest,
     InquirySubmitRequest,
+    NotificationReadRequest,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["inquiry"])
+
+
+@router.get("/admin/notifications", summary="后台业务通知")
+async def list_notifications(
+    current_user: AdminUser = Depends(require_permission("inquiry:read")),
+) -> Result:
+    return Result.ok(await services.list_notifications(current_user))
+
+
+@router.post("/admin/notifications/read", summary="标记后台通知为已读")
+async def mark_notifications_read(
+    data: NotificationReadRequest,
+    current_user: AdminUser = Depends(require_permission("inquiry:read")),
+) -> Result:
+    return Result.ok(await services.mark_notifications_read(
+        current_user, data.notification_keys, data.mark_all
+    ))
 
 
 @router.post("/inquiries", summary="提交询盘")
@@ -41,9 +59,14 @@ async def submit(
 async def list_inquiries(
     req: PageRequest = Depends(),
     status: str | None = Query(default=None),
+    country: str | None = Query(default=None, max_length=100),
+    source_product: str | None = Query(default=None, max_length=200),
+    utm_source: str | None = Query(default=None, max_length=200),
     _user: AdminUser = Depends(require_permission("inquiry:read")),
 ) -> Result:
-    items, total = await services.list_inquiries(req, status)
+    items, total = await services.list_inquiries(
+        req, status, country=country, source_product=source_product, utm_source=utm_source
+    )
     return Result.ok(
         PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump()
     )

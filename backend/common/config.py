@@ -42,8 +42,14 @@ class Settings(BaseSettings):
         "common.settings_model",
     ]
 
-    # ── Redis（未配置或连不上 → 内存降级，绝不阻断启动）──
+    # ── Redis（开发默认允许内存降级；生产 Compose 强制要求真实 Redis）──
     redis_url: str = ""
+    # 生产环境设为 true：Redis 不可用时拒绝启动，避免多 worker 的安全状态不一致。
+    redis_required: bool = False
+
+    # 后台写入产品/新闻后调用官网内部路由，清除 Next.js ISR 数据缓存。
+    next_revalidate_url: str = ""
+    revalidate_secret: str = ""
 
     # ── JWT ──
     # 生产环境必须通过环境变量 JWT_SECRET 注入 ≥32 字节随机值（见 model_post_init 启动守卫）。

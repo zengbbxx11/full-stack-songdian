@@ -91,6 +91,14 @@ export interface Inquiry {
   product_interest: string | null;
   message: string;
   source_page: string | null;
+  landing_page: string | null;
+  source_product: string | null;
+  referrer: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
   biz_req_no: string;
   status: InquiryStatus;
   smtp_status: string;

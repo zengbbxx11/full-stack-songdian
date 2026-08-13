@@ -50,13 +50,13 @@
   --color-popover-foreground: var(--popover-foreground);
 
   /* 圆角系统 — 4px 是默认，更大的仅用于图片卡片 */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 4px;
-  --radius-xl: 12px;
-  --radius-2xl: 12px;
-  --radius-3xl: 12px;
-  --radius-4xl: 12px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 28px;
 
   /* 字体 */
   --font-sans: var(--font-geist-sans);
@@ -70,9 +70,9 @@
 
 :root {
   /* ——— 品牌色 ——— */
-  --accent: #3E6AE1;           /* Electric Blue — 唯一色，仅用于 CTA */
-  --accent-hover: #3561CC;     /* 10% 加深的 Electric Blue */
-  --brand-red: #d4343e;         /* 品牌红 — 呼应 Logo 中 GD 的红色，导航激活态 */
+  --accent: #d4343e;
+  --accent-hover: #b91c1c;
+  --brand-red: #d4343e;
 
   /* ——— 文字 ——— */
   --foreground: #171A20;       /* Carbon Dark — 标题和主导航文字 */
@@ -85,7 +85,7 @@
   --popover-foreground: #171A20;
 
   /* ——— shadcn token ——— */
-  --primary: #3E6AE1;
+  --primary: #d4343e;
   --primary-foreground: #FFFFFF;
   --secondary: #F4F4F4;       /* Light Ash */
   --secondary-foreground: #171A20;
@@ -95,7 +95,11 @@
   --destructive: #DC2626;
   --border: #EEEEEE;           /* Cloud Gray — 极淡分割线 */
   --input: #EEEEEE;
-  --ring: #3E6AE1;
+  --ring: #d4343e;
+  --surface-soft: #f5f6f7;
+  --surface-dark: #111316;
+  --border-strong: #d9dcdf;
+  --content-max: 1280px;
 }
 
 /* ============================================================
@@ -115,6 +119,45 @@ body {
   font-size: 14px;     /* Tesla 默认正文字号 */
   font-weight: 400;
   background: var(--background);
+  overflow-x: clip;
+}
+
+.site-container {
+  width: min(100% - 2rem, var(--content-max));
+  margin-inline: auto;
+}
+
+.section-shell {
+  padding-block: clamp(4.5rem, 8vw, 8rem);
+}
+
+.section-eyebrow {
+  color: var(--brand-red);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.section-title {
+  color: #111316;
+  font-size: clamp(2rem, 4vw, 3.75rem);
+  font-weight: 560;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+.section-copy {
+  color: #60646b;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.7;
+}
+
+.tech-grid {
+  background-image:
+    linear-gradient(to right, rgb(17 19 22 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(17 19 22 / 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 /* 平滑滚动 + 锚点跳转预留固定页头高度（配合 skip-link 与页内锚点） */

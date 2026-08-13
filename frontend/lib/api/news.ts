@@ -24,7 +24,11 @@ export const NEWS_PER_PAGE = 9;
 
 /** 获取新闻分类列表。 */
 export async function getNewsCategories(): Promise<WCProductCategory[]> {
-  const data = await apiFetch<CategoryDTO[]>("/api/v1/news-categories");
+  const data = await apiFetch<CategoryDTO[]>(
+    "/api/v1/news-categories",
+    undefined,
+    { tags: ["news-categories"] },
+  );
   return data.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
 }
 
@@ -39,14 +43,18 @@ export async function getPosts(params?: {
 }): Promise<{ posts: PostSummary[]; pagination: PageMeta | null }> {
   const page = params?.page || 1;
   const perPage = params?.perPage || NEWS_PER_PAGE;
-  const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
-    page,
-    page_size: perPage,
-    category_id: params?.categoryId ?? undefined,
-    keyword: params?.search || undefined,
-    status: "PUBLISHED",
-    ...(params?.sort ? { order_by: params.sort } : {}),
-  });
+  const data = await apiFetch<PageDTO<NewsPageDTO>>(
+    "/api/v1/news",
+    {
+      page,
+      page_size: perPage,
+      category_id: params?.categoryId ?? undefined,
+      keyword: params?.search || undefined,
+      status: "PUBLISHED",
+      ...(params?.sort ? { order_by: params.sort } : {}),
+    },
+    { tags: ["news"] },
+  );
   const posts = data.list.map(toPostSummary);
   const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
   return { posts, pagination: { total: data.total, totalPages } };
@@ -55,7 +63,11 @@ export async function getPosts(params?: {
 /** 按 slug 获取单篇文章详情；未找到或出错返回 null。 */
 export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
   try {
-    const data = await apiFetch<NewsDetailDTO>(`/api/v1/news/${encodeURIComponent(slug)}`);
+    const data = await apiFetch<NewsDetailDTO>(
+      `/api/v1/news/${encodeURIComponent(slug)}`,
+      undefined,
+      { tags: ["news", `news:${slug}`] },
+    );
     return toPostDetail(data);
   } catch {
     return null;
@@ -69,11 +81,15 @@ export async function getAllPostSlugs(): Promise<string[]> {
     let page = 1;
     let total = 0;
     do {
-      const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
-        page,
-        page_size: 50,
-        status: "PUBLISHED",
-      });
+      const data = await apiFetch<PageDTO<NewsPageDTO>>(
+        "/api/v1/news",
+        {
+          page,
+          page_size: 50,
+          status: "PUBLISHED",
+        },
+        { tags: ["news"] },
+      );
       list.push(...data.list);
       total = data.total;
       page += 1;
@@ -98,11 +114,15 @@ export async function getAdjacentPosts(slug: string): Promise<{
     let page = 1;
     let total = 0;
     do {
-      const data = await apiFetch<PageDTO<NewsPageDTO>>("/api/v1/news", {
-        page,
-        page_size: 50,
-        status: "PUBLISHED",
-      });
+      const data = await apiFetch<PageDTO<NewsPageDTO>>(
+        "/api/v1/news",
+        {
+          page,
+          page_size: 50,
+          status: "PUBLISHED",
+        },
+        { tags: ["news"] },
+      );
       list.push(...data.list);
       total = data.total;
       page += 1;

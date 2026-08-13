@@ -36,20 +36,17 @@ function Counter({ value, format }: { value: number; format?: boolean }) {
     });
   }, [spring, format, prefersReducedMotion]);
 
-  // 减少动态时直接渲染终值；否则渲染 0（由 count-up 覆盖）
-  if (prefersReducedMotion) {
-    return <span ref={ref}>{format ? value.toLocaleString("en-US") : value}</span>;
-  }
-  return <span ref={ref}>0</span>;
+  // SSR 始终输出真实值；动画增强只在客户端进入视口后覆盖文本。
+  return <span ref={ref}>{format ? value.toLocaleString("en-US") : value}</span>;
 }
 
 export default function StatsBand() {
   return (
-    <section className="bg-[#171A20] py-16 md:py-20" aria-label="Company at a glance">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="bg-[#111316] py-16 md:py-20" aria-label="Company at a glance">
+      <div className="site-container">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
           {ABOUT.stats.map((s) => (
-            <div key={s.label} className="text-center">
+            <div key={s.label} className="border-l border-white/12 pl-4 text-left md:pl-6">
               <dd className="text-4xl md:text-5xl font-semibold tracking-tight text-white tabular-nums">
                 <Counter value={s.value} format={s.format} />
                 {s.suffix}

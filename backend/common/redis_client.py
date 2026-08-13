@@ -52,6 +52,8 @@ class RedisLike:
 
     async def ttl(self, key: str) -> int: ...
 
+    async def delete_prefix(self, prefix: str) -> int: ...
+
 
 class MemoryBackend(RedisLike):
     """进程内内存降级实现（无 Redis 时使用）。
@@ -151,6 +153,14 @@ class MemoryBackend(RedisLike):
             remaining = int(exp - self._now())
             return max(remaining, -2)
 
+    async def delete_prefix(self, prefix: str) -> int:
+        async with self._lock:
+            keys = [key for key in self._store if key.startswith(prefix)]
+            for key in keys:
+                self._store.pop(key, None)
+                self._expire_at.pop(key, None)
+            return len(keys)
+
 
 class RealRedisBackend(RedisLike):
     """真实 Redis 后端（redis.asyncio）。任意异常透明抛出，由上层降级处理。"""
@@ -187,6 +197,18 @@ class RealRedisBackend(RedisLike):
     async def ttl(self, key: str) -> int:
         return int(await self._client.ttl(key))
 
+    async def delete_prefix(self, prefix: str) -> int:
+        count = 0
+        batch: list[str] = []
+        async for key in self._client.scan_iter(match=f"{prefix}*", count=200):
+            batch.append(str(key))
+            if len(batch) >= 200:
+                count += int(await self._client.delete(*batch))
+                batch.clear()
+        if batch:
+            count += int(await self._client.delete(*batch))
+        return count
+
 
 # 模块级单例
 _redis: RedisLike | None = None
@@ -199,6 +221,8 @@ async def init_redis() -> RedisLike:
         return _redis
 
     if not settings.redis_url:
+        if settings.redis_required:
+            raise RuntimeError("REDIS_REQUIRED=true，但未配置 REDIS_URL")
         logger.warning("REDIS_URL 未配置，Redis 降级为进程内内存实现（BD-03 降级）")
         _redis = MemoryBackend()
         return _redis
@@ -218,6 +242,12 @@ async def init_redis() -> RedisLike:
         _redis = RealRedisBackend(client)
         logger.info("Redis 连接成功：%s", _redis_host_masked())
     except Exception as exc:  # noqa: BLE001 - 任何异常都降级
+        if settings.redis_required:
+            try:
+                await client.aclose()
+            except Exception:  # noqa: BLE001
+                pass
+            raise RuntimeError("Redis 为生产必需依赖，但当前不可用") from exc
         logger.warning("Redis 连接失败（%s），降级为内存实现", exc)
         _redis = MemoryBackend()
     return _redis
@@ -241,6 +271,11 @@ def get_redis() -> RedisLike:
         # 未调用 init_redis 时的安全兜底（如单测未显式初始化）
         _redis = MemoryBackend()
     return _redis
+
+
+def redis_is_distributed() -> bool:
+    """当前是否连接真实 Redis，而不是单进程内存降级后端。"""
+    return isinstance(_redis, RealRedisBackend)
 
 
 async def close_redis() -> None:

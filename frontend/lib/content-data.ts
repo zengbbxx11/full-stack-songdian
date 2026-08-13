@@ -19,7 +19,7 @@ export const COMPANY = {
   tagline: "Digital Camera OEM/ODM Manufacturer",
   /** SEO meta 描述和简介段落 */
   description:
-    "A leading OEM/ODM digital camera manufacturer with 20 years of industry expertise. 30+ new products annually, 10 million units annual output, and 500+ patents — serving global brands across 60+ countries.",
+    "Songdian Technology is a digital camera manufacturer and OEM/ODM camera factory with 20 years of expertise in camera development and manufacturing.",
   /** 公司成立年份（集团母公司深圳 Sonida 创立于 2006 年） */
   founded: 2006,
   /** 员工数量 */

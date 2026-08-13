@@ -286,3 +286,19 @@ frontend/
 - **产品 URL 规范化用 `proxy.ts`（边缘中间件），不是页面 `redirect()`**：本环境 Next.js 16 + Turbopack 下，App Router 页面组件里的 `redirect()` / `permanentRedirect()` 不会发出真实 3xx（被渲染期吞掉）；产品地址的 308 重定向改由根目录 `proxy.ts`（替代已弃用的 `middleware.ts`）基于 `lib/generated/canonical-map.ts` 在边缘层完成。改 URL 结构时务必走 `proxy.ts`，勿改回页面级 `redirect()`。
 - **`npm run gen:map` 是 `next build` 的前置依赖**：`proxy.ts` 静态导入 `lib/generated/canonical-map.ts`；该文件由 `scripts/gen-canonical-map.mjs` 依据后端产品数据生成（未 gitignore，已提交当前快照）。构建 / 部署前若产品或分类有变动，需重新生成并提交，否则 308 重定向会用过期映射。
 - **`Module not found: Can't resolve 'postcss'` 构建报错**：多因 `node_modules/postcss` 被装成空目录（npm 只检查目录存在、不检查内容，部分安装被中断后跳过还原）。修复：`rm -rf node_modules/postcss && npm install` 重新补全即可。
+## 当前实现补充（2026-08-13）
+
+当前实现以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准：
+
+- 首页和 About 页面均展示 `public/Video/SongdianFactoryVideo.mp4`；视频不参与首屏关键请求，移动端使用响应式容器。
+- 产品内页 Hero、面包屑和分类筛选栏已压缩并使用统一圆角；导航文字和触摸区域已放大，390px 视口不应横向溢出。
+- 全站浮动询盘为全宽底部栏，Cookie 同意横幅显示时自动避让；联系页不重复显示该浮层。
+- SEO 页面标题、描述和 JSON-LD 明确 Songdian Technology 是 digital camera manufacturer / OEM/ODM camera factory；组织类型为 `Manufacturer`。
+- 官网询盘会提交国家、产品 slug、落地页、来源页和 UTM 归因字段。产品详情的 CTA 使用 `?product=<slug>` 预填来源产品。
+- `BACKEND_PROXY_URL` 用于 Next.js 服务端到 Compose 内部 API 的访问；浏览器公开 API 仍使用 `NEXT_PUBLIC_API_URL`。
+
+### 与旧版段落的更正
+
+- 设计规范中的旧版 `4px / 12px` 圆角、Tesla 蓝色 CTA 和 14px 导航仅是历史参考；当前代码以 `frontend/app/globals.css` 的品牌红/中性灰 token 和 6/10/12/16/20/24/28px 圆角层级为准。
+- SEO JSON-LD 当前包含 `Manufacturer`（统一 `@id`），不是仅使用 `Organization`/`LocalBusiness` 的旧清单。
+- 部署文档中的服务器现场构建命令只用于本地或首次诊断；正式生产发布使用 GHCR 版本镜像和独立迁移。

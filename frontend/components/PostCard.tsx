@@ -34,18 +34,17 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
   return (
     <Link
       href={`/news/${post.slug}`}
-      className="group flex flex-col h-full bg-white overflow-hidden border border-[#EEEEEE] hover:border-[#3E6AE1] hover:shadow-sm transition-all"
-      style={{ borderRadius: "12px", transitionDuration: "0.3s" }}
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)]"
     >
       {/* 图片区域 */}
-      <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
         {post.featuredImage ? (
           <SafeImage
             src={post.featuredImage}
             alt={post.featuredImageAlt}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-all brightness-[1.06] group-hover:brightness-[1.12]"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
           />
@@ -54,7 +53,7 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
         )}
 
         {post.categories.length > 0 && (
-          <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-xs font-medium text-gray-700 border border-gray-200/50">
+          <span className="absolute left-3 top-3 rounded-lg border-l-2 border-[#d4343e] bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 backdrop-blur-sm">
             {post.categories[0].name}
           </span>
         )}
@@ -62,7 +61,7 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
 
       {/* 内容区域 */}
       <div className="flex flex-1 flex-col p-4 md:p-5">
-        <h3 className="text-base md:text-lg font-semibold text-gray-900 group-hover:text-[#3E6AE1] line-clamp-2 leading-snug mb-2 transition-colors" style={{ transitionDuration: "0.3s" }}>
+        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-[#d4343e] md:text-xl">
           {post.title}
         </h3>
 

@@ -158,14 +158,14 @@ export default function InstantSearch({ className }: { className?: string }) {
             placeholder="Search products"
             aria-label="Search products"
             autoComplete="off"
-            className="h-8 w-44 rounded-md border border-gray-200 bg-white pl-8 pr-2.5 text-xs text-[#171A20] outline-none transition-colors placeholder:text-[#8E8E8E] focus:border-[#3E6AE1]"
+            className="h-10 w-full rounded-xl border border-transparent bg-[#f2f3f5] pl-8 pr-3 text-xs text-[#171A20] outline-none transition-all placeholder:text-[#777b81] hover:bg-[#eceef1] focus:border-[#d4343e] focus:bg-white focus:shadow-[0_0_0_3px_rgba(212,52,62,0.10)] md:w-48"
           />
         </div>
       </form>
 
       {/* 下拉浮层 */}
       {showDropdown && (
-        <div className="absolute left-0 top-full z-[60] mt-1.5 min-w-48 w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-[#EEEEEE] bg-white shadow-[0_8px_28px_rgba(0,0,0,0.10)]">
+        <div className="absolute left-0 top-full z-[60] mt-2 min-w-48 w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-black/8 bg-white p-1.5 shadow-[0_18px_45px_rgba(17,19,22,0.14)]">
           {/* 加载态 */}
           {loading && (
             <div className="py-1" aria-hidden="true">
@@ -209,7 +209,7 @@ export default function InstantSearch({ className }: { className?: string }) {
                       href={item.url}
                       onClick={() => setOpen(false)}
                       onMouseEnter={() => setActiveIndex(i)}
-                      className={`flex items-center gap-3 px-3 py-2 transition-colors ${
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
                         isActive ? "bg-[#F4F4F4]" : "hover:bg-[#F4F4F4]"
                       }`}
                     >

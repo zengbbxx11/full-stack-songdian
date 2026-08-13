@@ -99,15 +99,15 @@ export default function Header() {
     <>
       {/* ====================== 顶部导航栏 ====================== */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all bg-white ${
-          scrolled ? "backdrop-blur-xl border-b border-[#EEEEEE]" : ""
+        className={`fixed top-0 left-0 right-0 z-50 transition-all ${
+          scrolled ? "bg-white/92 backdrop-blur-xl border-b border-black/8" : "bg-white"
         }`}
         style={{
           transitionDuration: "0.33s",
           transitionProperty: "background-color, backdrop-filter",
         }}
       >
-        <div className="relative max-w-7xl mx-auto px-6 h-14 flex items-center">
+        <div className="site-container relative h-16 flex items-center">
           {/* Logo */}
           <div className="flex-1 flex items-center">
             <Link href="/" className="flex items-center shrink-0">
@@ -116,7 +116,7 @@ export default function Header() {
                 alt="Songdian Technology"
                 width={128}
                 height={32}
-                className="h-8 w-auto"
+                className="h-7 w-auto"
                 priority
                 unoptimized
               />
@@ -149,11 +149,11 @@ export default function Header() {
                 >
                   <Link
                     href={item.href}
-                    className="inline-flex items-center px-3 py-2 text-[16px] font-medium rounded text-[#171A20] hover:text-[#d4343e] transition-colors duration-[330ms]"
+                    className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[#171A20] hover:bg-[#f7f7f8] hover:text-[#d4343e] transition-colors duration-[330ms]"
                     style={
                       isActive
-                        ? { fontSize: "16px", fontWeight: 500, color: COLORS.brandRed, borderRadius: "4px" }
-                        : { fontSize: "16px", fontWeight: 500, borderRadius: "4px" }
+                        ? { fontWeight: 600, color: COLORS.brandRed, borderRadius: "4px" }
+                        : { fontWeight: 500, borderRadius: "4px" }
                     }
                     aria-haspopup={hasDropdown ? "true" : undefined}
                     aria-expanded={hasDropdown ? activeDropdown === item.label : undefined}
@@ -207,9 +207,7 @@ export default function Header() {
             <InteractiveHoverButton
               onClick={() => router.push("/contact")}
               fill="bg-[#d4343e]"
-              className={`hidden md:inline-flex border-[#d4343e] bg-white text-[#171A20] h-[40px] px-5 text-[14px] transition-[box-shadow] duration-300 ${
-                scrolled ? "shadow-[0_2px_16px_rgba(212,52,62,0.45)]" : "shadow-sm"
-              }`}
+              className="hidden md:inline-flex border-[#d4343e] bg-white text-[#171A20] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
             >
               Request Quote
             </InteractiveHoverButton>
@@ -248,7 +246,7 @@ export default function Header() {
 
       {/* ====================== 移动端菜单 — 在 <header> 外部，避免 backdrop-filter 劫持 fixed 定位 ====================== */}
       <div
-        className={`md:hidden fixed inset-0 top-14 bg-white z-40 transition-all overflow-y-auto ${
+        className={`md:hidden fixed inset-0 top-16 bg-white z-40 transition-all overflow-y-auto ${
           mobileOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
         }`}
         style={{ transitionDuration: "0.33s" }}

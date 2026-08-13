@@ -47,14 +47,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const tags = product.tags || [];
 
   return (
-    <div
-      className="group h-full flex flex-col bg-white overflow-hidden border border-[#EEEEEE] hover:border-[#d4343e] hover:shadow-lg transition-all"
-      style={{ borderRadius: "12px", transitionDuration: "0.3s" }}
-    >
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)]">
       {/* 图片区域 */}
       <Link
         href={productPath(product)}
-        className="block relative aspect-square shrink-0 bg-gray-50 overflow-hidden"
+        className="relative block aspect-[4/3] shrink-0 overflow-hidden bg-[#f2f3f4] md:aspect-square"
       >
         {product.image ? (
           <SafeImage
@@ -62,7 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.imageAlt || product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform group-hover:scale-[1.03]"
+            className="object-contain p-3 transition-transform group-hover:scale-[1.04]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
           />
@@ -72,9 +69,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       </Link>
 
       {/* 信息区域 */}
-      <div className="flex flex-col flex-1 p-3 md:p-4">
+      <div className="flex flex-1 flex-col p-4 md:p-5">
         <Link href={productPath(product)} className="flex-1">
-          <h3 className="text-[15px] md:text-[17px] font-bold text-gray-900 group-hover:text-[#d4343e] line-clamp-2 leading-snug transition-colors" style={{ transitionDuration: "0.3s" }}>
+          {product.categories[0] && <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8e94]">{product.categories[0].name}</p>}
+          <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-[-0.02em] text-[#171A20] transition-colors duration-300 group-hover:text-[#d4343e] md:text-[18px]">
             {product.name}
           </h3>
           {/* 产品标签 —— 最多展示 4 个，沿用 Tesla 设计语言（Light Ash 底 / Pewter 字、无阴影） */}
@@ -91,12 +89,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         <Link
           href={productPath(product)}
           aria-label={`View details of ${product.name}`}
-          className="mt-3 inline-flex items-center gap-1 text-xs md:text-sm font-medium text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e]"
+          className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e]"
         >
           <span>View Details</span>
           <ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
         </Link>
       </div>
-    </div>
+    </article>
   );
 }

@@ -10,7 +10,7 @@
  *   - @/lib/utils 的 cn()（shadcn 标准类名合并）
  */
 
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InteractiveHoverButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -27,23 +27,22 @@ export function InteractiveHoverButton({
   return (
     <button
       className={cn(
-        "group bg-background relative w-auto cursor-pointer overflow-hidden rounded-lg border p-2 px-6 text-center font-semibold",
+        "group bg-background relative w-auto cursor-pointer overflow-hidden rounded-xl border p-2 px-6 text-center font-semibold",
         className
       )}
       {...props}
     >
-      {/* 默认态：圆点 + 文字 */}
-      <div className="flex items-center justify-center gap-2">
-        <div className={cn(fill, "h-2 w-2 rounded-full transition-all duration-300 group-hover:scale-[100.8]")} />
-        <span className="inline-block transition-all duration-300 group-hover:translate-x-12 group-hover:opacity-0">
-          {children}
-        </span>
-      </div>
-      {/* hover 态：文字 + 箭头（绝对定位覆盖） */}
-      <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover:-translate-x-5 group-hover:opacity-100">
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
         <span>{children}</span>
-        <ArrowRight />
-      </div>
+        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          fill,
+          "absolute inset-0 origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100"
+        )}
+      />
     </button>
   );
 }

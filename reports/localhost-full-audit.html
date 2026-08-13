@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Songdian 官网完整 SEO 审核报告</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#202226;font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}header{background:#111316;color:#fff;padding:36px max(24px,calc((100% - 900px)/2))}header p{margin:6px 0;color:#aeb2b8}main{max-width:900px;margin:auto;padding:28px 24px 60px}.score{font-size:34px;font-weight:750;color:#fff}.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:uppercase}.pass{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.info{background:#dbeafe;color:#1e40af}section{margin:0 0 20px;border:1px solid #e1e3e6;background:#fff}h2{margin:0;padding:14px 18px;border-bottom:1px solid #eceef0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#d4343e}.body{padding:18px}table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #eceef0;text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:#74787e}tr:last-child td{border:0}.finding{margin:12px 0;padding:14px;border-left:3px solid #d4343e;background:#fafafa}.finding strong{display:block;margin-bottom:5px}.priority li{margin:9px 0}.muted{color:#656a71}code{background:#f0f1f2;padding:2px 5px}a{color:#b4232d}@media(max-width:640px){header{padding:28px 20px}main{padding:20px 12px}table{font-size:13px}}
+  </style>
+</head>
+<body>
+<header>
+  <span class="badge info">Advanced Full SEO Audit</span>
+  <h1>Songdian Technology 官网首页</h1>
+  <div class="score">92 / 100</div>
+  <p>目标关键词：digital camera OEM/ODM manufacturer</p>
+  <p>审核地址：http://localhost:3000/ · 生成日期：2026-08-13</p>
+</header>
+<main>
+  <section><h2>执行摘要</h2><div class="body">首页在技术 SEO、抓取、结构化数据、社交标签、语义标题和图片替代文本方面状态良好。此次已把标题与描述压缩到更适合搜索结果的长度，并将分享图从 300×75 Logo 改为项目现有 1920×800 工厂实景横幅。仍需业务方确认后补充 Terms of Service；Core Web Vitals 与 GSC 数据需上线后采集。</div></section>
+  <section><h2>站点检查</h2><div class="body"><table><thead><tr><th>项目</th><th>状态</th><th>证据</th></tr></thead><tbody>
+    <tr><td>robots.txt</td><td><span class="badge pass">通过</span></td><td>200，允许抓取并声明 sitemap。</td></tr>
+    <tr><td>sitemap.xml</td><td><span class="badge pass">通过</span></td><td>200，包含首页、信任页、产品和新闻 URL。</td></tr>
+    <tr><td>404</td><td><span class="badge pass">通过</span></td><td>不存在路径返回真实 HTTP 404，无软 404。</td></tr>
+    <tr><td>Canonical</td><td><span class="badge pass">通过</span></td><td>首页有自引用 canonical；生产值由 NEXT_PUBLIC_SITE_URL 注入。</td></tr>
+    <tr><td>信任页面</td><td><span class="badge pass">通过</span></td><td>About、Contact、Privacy Policy 均为 200 且页脚可达。</td></tr>
+    <tr><td>Terms of Service</td><td><span class="badge warn">待确认</span></td><td>当前没有服务条款页。法律文本不得自动杜撰，需法务或业务方确认后发布。</td></tr>
+  </tbody></table></div></section>
+  <section><h2>页面检查</h2><div class="body"><table><thead><tr><th>项目</th><th>状态</th><th>证据</th></tr></thead><tbody>
+    <tr><td>Title / Description</td><td><span class="badge pass">已优化</span></td><td>标题改为 “OEM/ODM Digital Camera Manufacturer &amp; Factory”；描述压缩为 144 字符且只使用现有事实。</td></tr>
+    <tr><td>H1 / 标题层级</td><td><span class="badge pass">通过</span></td><td>唯一 H1；6 个 H2 构成清晰内容结构。</td></tr>
+    <tr><td>图片 Alt</td><td><span class="badge pass">通过</span></td><td>实测 26 张图片，0 张缺失 alt。</td></tr>
+    <tr><td>正文与内链</td><td><span class="badge pass">通过</span></td><td>约 499 词，产品、解决方案、新闻、关于、联系等核心内链完整。</td></tr>
+    <tr><td>JSON-LD</td><td><span class="badge pass">通过</span></td><td>检测到 Organization 与 WebSite schema。</td></tr>
+    <tr><td>Open Graph</td><td><span class="badge pass">已优化</span></td><td>title、description、image、type、url 齐全；分享图为现有 1920×800 工厂横幅。</td></tr>
+    <tr><td>Twitter Card</td><td><span class="badge pass">通过</span></td><td>summary_large_image，标题、描述、图片齐全。</td></tr>
+  </tbody></table></div></section>
+  <section><h2>详细发现</h2><div class="body">
+    <div class="finding"><strong>抓取与索引基础完整</strong><b>证据：</b>robots、sitemap、canonical、真实 404 与 index/follow 全部存在。<br><b>影响：</b>搜索引擎可稳定发现并归一化页面。<br><b>建议：</b>部署后使用正式 HTTPS 域名再次核对 sitemap 与 canonical。</div>
+    <div class="finding"><strong>社交分享图已纠正</strong><b>证据：</b>旧图仅 300×75；现在复用 1920×800 工厂实景图。<br><b>影响：</b>LinkedIn、Facebook 与 X 分享更可能生成清晰大图卡片。<br><b>建议：</b>后续可基于已核实素材设计专用 1200×630 品牌图。</div>
+    <div class="finding"><strong>法律信任页面仍有一项缺口</strong><b>证据：</b><code>/terms</code> 返回 404。<br><b>影响：</b>对国际 B2B 客户的条款透明度略弱。<br><b>建议：</b>由法务确认适用主体、责任限制、知识产权和争议解决后再创建页面并加入页脚。</div>
+  </div></section>
+  <section><h2>优先动作</h2><div class="body"><ol class="priority">
+    <li>部署后用正式域名复查 canonical、robots 与 sitemap。<span class="badge pass">低成本 / 高影响</span></li>
+    <li>提交 Google Search Console 并观察索引覆盖与查询词。<span class="badge info">低成本 / 高影响</span></li>
+    <li>由法务确认并发布 Terms of Service。<span class="badge warn">中成本 / 中影响</span></li>
+    <li>累积真实产品参数后逐品优化 Product schema 与长尾 SEO 文案。<span class="badge info">中成本 / 高影响</span></li>
+    <li>上线后采集 Core Web Vitals，重点观察 LCP 工厂横幅和移动端 INP。<span class="badge info">中成本 / 高影响</span></li>
+  </ol></div></section>
+  <section><h2>限制</h2><div class="body muted">本报告结合本地真实渲染、源码与生产构建结果；未包含 Google Search Console、真实用户 Core Web Vitals、CDN 缓存命中率、服务器访问日志或竞争对手基准。公司和产品事实仅来自现有项目数据，未使用外部未经确认信息。</div></section>
+</main>
+</body>
+</html>

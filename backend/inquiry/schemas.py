@@ -23,6 +23,14 @@ class InquirySubmitRequest(BaseModel):
     product_interest: str | None = Field(default=None, max_length=200)
     message: str | None = Field(default=None)  # 必填/空白/超长校验下沉 service → A040002
     source_page: str | None = Field(default=None, max_length=500)
+    landing_page: str | None = Field(default=None, max_length=1000)
+    source_product: str | None = Field(default=None, max_length=200)
+    referrer: str | None = Field(default=None, max_length=1000)
+    utm_source: str | None = Field(default=None, max_length=200)
+    utm_medium: str | None = Field(default=None, max_length=200)
+    utm_campaign: str | None = Field(default=None, max_length=200)
+    utm_term: str | None = Field(default=None, max_length=200)
+    utm_content: str | None = Field(default=None, max_length=200)
     biz_req_no: str = Field(..., max_length=100)
 
 
@@ -50,6 +58,16 @@ class FollowNoteRequest(BaseModel):
     note: str = Field(..., max_length=2000, description="跟进内容")
 
 
+class NotificationReadRequest(BaseModel):
+    notification_keys: list[str] = Field(default_factory=list, max_length=100)
+    mark_all: bool = False
+
+    @field_validator("notification_keys")
+    @classmethod
+    def _notification_keys(cls, values: list[str]) -> list[str]:
+        return list(dict.fromkeys(v for v in values if v and len(v) <= 255))
+
+
 class InquiryVO(BaseModel):
     id: int
     name: str
@@ -60,6 +78,14 @@ class InquiryVO(BaseModel):
     product_interest: str | None = None
     message: str
     source_page: str | None = None
+    landing_page: str | None = None
+    source_product: str | None = None
+    referrer: str | None = None
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_term: str | None = None
+    utm_content: str | None = None
     biz_req_no: str
     status: str = InquiryStatus.NEW.value
     smtp_status: str = SmtpStatus.PENDING.value
@@ -78,7 +104,11 @@ class InquiryVO(BaseModel):
         return cls(
             id=m.id, name=m.name, email=m.email, phone=m.phone, company=m.company,
             country=m.country, product_interest=m.product_interest, message=m.message,
-            source_page=m.source_page, biz_req_no=m.biz_req_no, status=m.status,
+            source_page=m.source_page, landing_page=m.landing_page,
+            source_product=m.source_product, referrer=m.referrer,
+            utm_source=m.utm_source, utm_medium=m.utm_medium,
+            utm_campaign=m.utm_campaign, utm_term=m.utm_term,
+            utm_content=m.utm_content, biz_req_no=m.biz_req_no, status=m.status,
             smtp_status=m.smtp_status, smtp_retry=m.smtp_retry,
             assigned_user_id=getattr(m, "assigned_user_id", None),
             assigned_user_name=getattr(getattr(m, "assigned_user", None), "username", None),

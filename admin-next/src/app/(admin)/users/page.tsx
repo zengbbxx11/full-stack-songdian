@@ -58,7 +58,7 @@ export default function UsersPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Users</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">用户管理</h2>
         <button onClick={() => setCreateOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">+ New</button>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">

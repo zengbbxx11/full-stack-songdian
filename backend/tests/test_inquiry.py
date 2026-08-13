@@ -14,7 +14,10 @@ A040001 / A040002（HTTP 200 业务码）。本文件按**设计契约**断言�
 """
 from __future__ import annotations
 
+import sqlite3
 import uuid
+
+from common.config import settings
 
 
 def _base(email: str, message: str, biz: str, **extra) -> dict:
@@ -39,6 +42,78 @@ def test_submit_inquiry_success(client):
     assert d["status"] == "NEW"
     # 无 SMTP 配置 → 仅持久化，保持 PENDING（BD-02/MOCK）
     assert d["smtp_status"] == "PENDING", d
+
+
+def test_inquiry_attribution_filters_and_notifications(client):
+    biz = f"qa-inq-source-{uuid.uuid4().hex[:8]}"
+    payload = _base(
+        "buyer@example.com",
+        "Please quote this camera project",
+        biz,
+        country="Germany",
+        product_interest="compact-digital-cameras",
+        source_page="/contact?product=dc312x",
+        landing_page="/products/compact-camera/dc312x?utm_source=linkedin",
+        source_product="dc312x",
+        referrer="https://www.linkedin.com/",
+        utm_source="linkedin",
+        utm_medium="paid-social",
+        utm_campaign="summer-camera",
+    )
+    submitted = client.post("/api/v1/inquiries", json=payload).json()
+    assert submitted["code"] in (0, "0"), submitted
+    inquiry = submitted["data"]
+    assert inquiry["country"] == "Germany"
+    assert inquiry["source_product"] == "dc312x"
+    assert inquiry["utm_source"] == "linkedin"
+    assert inquiry["landing_page"].startswith("/products/")
+
+    login = client.post(
+        "/api/v1/admin/login",
+        json={"username": "admin", "password": "Songdian@2026"},
+    )
+    assert login.json()["code"] in (0, "0")
+
+    db_path = settings.database_url.removeprefix("sqlite://")
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """UPDATE t_inquiry
+               SET created_time = datetime('now', '-2 days'),
+                   smtp_status = 'FAILED', smtp_retry = 1
+               WHERE id = ?""",
+            (inquiry["id"],),
+        )
+        connection.commit()
+
+    filtered = client.get(
+        "/api/v1/admin/inquiries",
+        params={"country": "germ", "source_product": "312", "utm_source": "link"},
+    ).json()
+    assert filtered["code"] in (0, "0"), filtered
+    assert [item["id"] for item in filtered["data"]["list"]] == [inquiry["id"]]
+
+    notifications = client.get("/api/v1/admin/notifications").json()
+    assert notifications["code"] in (0, "0"), notifications
+    inquiry_notices = [
+        item for item in notifications["data"]["list"]
+        if item["inquiry_id"] == inquiry["id"]
+    ]
+    assert {item["type"] for item in inquiry_notices} == {
+        "NEW_INQUIRY", "FOLLOW_UP_OVERDUE", "SMTP_FAILED"
+    }
+    notice = next(
+        item for item in inquiry_notices
+        if item["key"] == f"inquiry:new:{inquiry['id']}"
+    )
+    assert notice["read"] is False
+
+    marked = client.post(
+        "/api/v1/admin/notifications/read",
+        json={"notification_keys": [notice["key"]]},
+    ).json()
+    assert marked["code"] in (0, "0"), marked
+    updated = next(item for item in marked["data"]["list"] if item["key"] == notice["key"])
+    assert updated["read"] is True
 
 
 def test_submit_inquiry_idempotent(client):

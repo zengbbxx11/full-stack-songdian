@@ -29,7 +29,7 @@ import AnimatedSection from "@/components/motion/AnimatedSection";
 import ExhibitionMarquee from "@/components/ExhibitionMarquee";
 import StatsBand from "@/components/StatsBand";
 import { getExhibitions } from "@/lib/exhibitions";
-import { ShieldCheck, ArrowRight, Camera, Award, Zap, Factory, Lightbulb, Globe, Package, type LucideIcon } from "lucide-react";
+import { ShieldCheck, ArrowRight, Camera, Award, Zap, Factory, Lightbulb, Globe, Package, Play, type LucideIcon } from "lucide-react";
 import { superMeta } from "next-super-meta";
 import { STRENGTHS, COMPANY, GLOBAL_ODM, TRUST_CERTS, CATEGORY_SHOWCASE } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
@@ -41,7 +41,7 @@ const STRENGTH_ICONS: Record<string, LucideIcon> = {
 };
 
 export const metadata = await superMeta({
-  title: `${COMPANY.tagline} — OEM / ODM Digital Camera Factory`,
+  title: "OEM/ODM Digital Camera Manufacturer & Factory",
   description: COMPANY.description,
   url: "/",
 });
@@ -82,25 +82,24 @@ async function ProductCategoriesSection() {
 
   return (
     <AnimatedSection>
-    <section className="py-16 md:py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-end justify-between mb-12">
+    <section className="section-shell bg-[#f5f6f7]">
+      <div className="site-container">
+        <div className="mb-12 flex items-end justify-between md:mb-16">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#5C5E62" }}>Product Categories</span>
-            <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "#171A20" }}>Cameras We Manufacture</h2>
+            <span className="section-eyebrow">Product Categories</span>
+            <h2 className="section-title mt-4">Cameras We Manufacture</h2>
           </div>
           <Link href="/products" className="hidden md:inline-flex items-center text-sm font-medium transition-colors hover:text-[#d4343e]" style={{ color: "#393C41", transitionDuration: "0.33s" }}>
             View All <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:flex lg:h-[460px] lg:gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:h-[520px] lg:gap-3">
           {categoryCards.map(({ category, meta, product }, i) => (
             <Link
               key={category.id}
               href={`/products?category=${category.slug}`}
-              className="group relative block overflow-hidden bg-[#171A20] aspect-[3/4] animate-fade-in-up transition-[flex-grow] duration-500 ease-out lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.7]"
-              style={{ animationDelay: `${i * 80}ms`, borderRadius: "12px" }}
+              className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[#171A20] transition-[flex-grow] duration-500 ease-out sm:aspect-[3/4] lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.5]"
               aria-label={`${meta.name} — view products`}
             >
               {product?.image ? (
@@ -116,13 +115,13 @@ async function ProductCategoriesSection() {
                   <Camera className="w-12 h-12" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5 text-white md:p-6">
                 <div className="flex items-baseline gap-2">
                   <span className="text-base font-bold tabular-nums" style={{ color: "#d4343e" }} aria-hidden="true">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="text-lg font-semibold leading-snug">{meta.name}</h3>
+                  <h3 className="text-xl font-semibold leading-snug tracking-[-0.03em]">{meta.name}</h3>
                 </div>
                 <div className="overflow-hidden max-h-0 opacity-0 transition-all duration-500 ease-out group-hover:delay-500 group-hover:max-h-28 group-hover:opacity-100">
                   <p className="mt-2 text-[12px] leading-snug text-white/80 line-clamp-2">{meta.description}</p>
@@ -271,14 +270,13 @@ export default function HomePage() {
       </Suspense>
 
       {/* ═══ 静态区块：信任条 — 零 API，首帧即出 ═══ */}
-      <section className="py-6 border-b" style={{ borderColor: "#EEEEEE", backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <ul className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
+      <section className="border-b border-black/8 bg-white py-5">
+        <div className="site-container">
+          <ul className="flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-10 lg:overflow-visible lg:pb-0">
             {TRUST_CERTS.map((cert) => (
               <li
                 key={cert.code}
-                className="flex items-center justify-center gap-1.5 rounded-lg border bg-white px-3 py-2 transition-colors"
-                style={{ borderColor: "#E5E7EB" }}
+                className="flex shrink-0 items-center justify-center gap-1.5 border-r border-black/8 px-4 py-2 last:border-r-0 lg:px-2"
                 title={cert.full}
               >
                 <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: "#d4343e" }} aria-hidden="true" />
@@ -296,23 +294,22 @@ export default function HomePage() {
 
       {/* ═══ 静态区块：核心优势 — 零 API ═══ */}
       <AnimatedSection>
-      <section className="py-16 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#5C5E62" }}>Why Choose Us</span>
-            <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "#171A20" }}>Manufacturing Excellence</h2>
+      <section className="section-shell bg-white">
+        <div className="site-container">
+          <div className="mb-14 max-w-3xl md:mb-16">
+            <span className="section-eyebrow">Why Choose Us</span>
+            <h2 className="section-title mt-4">Manufacturing Excellence</h2>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {STRENGTHS.map((item, i) => {
+            {STRENGTHS.map((item) => {
               const Icon = STRENGTH_ICONS[item.icon] ?? ShieldCheck;
               return (
                 <div
                   key={item.title}
-                  className="group relative flex flex-col p-7 border border-[#EEEEEE] bg-white rounded-xl transition-colors duration-300 hover:border-[#d4343e] animate-fade-in-up"
-                  style={{ animationDelay: `${i * 90}ms` }}
+                  className="group relative flex flex-col rounded-2xl border border-black/8 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#d4343e]/40 hover:shadow-[0_18px_45px_rgba(17,19,22,0.08)]"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#d4343e]/10 text-[#d4343e] transition-colors duration-300 group-hover:bg-[#d4343e] group-hover:text-white">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#d4343e]/8 text-[#d4343e] transition-colors duration-300 group-hover:bg-[#d4343e] group-hover:text-white">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
                   <h3 className="mt-5 text-[17px] font-semibold tracking-tight text-[#171A20]">{item.title}</h3>
@@ -320,6 +317,15 @@ export default function HomePage() {
                 </div>
               );
             })}
+          </div>
+          <div className="mt-10 flex justify-start md:mt-12">
+            <Link
+              href="/about#factory-tour"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-[#f5f6f7] px-5 text-sm font-semibold text-[#171A20] transition-colors hover:border-[#d4343e] hover:text-[#d4343e]"
+            >
+              <Play className="h-4 w-4 fill-current" aria-hidden="true" />
+              Watch Factory Tour
+            </Link>
           </div>
         </div>
       </section>
@@ -330,8 +336,8 @@ export default function HomePage() {
 
       {/* ═══ 静态区块：全球 ODM 合作伙伴 ═══ */}
       <AnimatedSection>
-      <section className="py-16 md:py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="section-shell bg-[#f5f6f7]">
+        <div className="site-container">
           <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
             {GLOBAL_ODM.eyebrow}
           </p>
@@ -343,7 +349,7 @@ export default function HomePage() {
             <p className="text-base font-medium mt-1" style={{ color: "#5C5E62" }}>{GLOBAL_ODM.taglineSecondary}</p>
           </div>
 
-          <div className="relative overflow-hidden border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+          <div className="relative overflow-hidden rounded-2xl border border-[#EEEEEE]">
             <Image
               src={MEDIA.globalOdmPartners}
               alt="Global ODM partner and export network map"
@@ -360,7 +366,7 @@ export default function HomePage() {
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {GLOBAL_ODM.brands.map((brand) => (
-              <span key={brand} className="text-[13px] font-medium px-3 py-1 bg-white border border-[#EEEEEE]" style={{ borderRadius: "6px", color: "#393C41" }}>
+              <span key={brand} className="rounded-lg border border-[#EEEEEE] bg-white px-3 py-1 text-[13px] font-medium text-[#393C41]">
                 {brand}
               </span>
             ))}

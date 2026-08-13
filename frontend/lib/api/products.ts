@@ -31,7 +31,11 @@ export const PRODUCTS_PER_PAGE = 12;
 
 /** 获取产品分类列表（用于筛选按钮与面包屑）。 */
 export async function getProductCategories(): Promise<WCProductCategory[]> {
-  const data = await apiFetch<CategoryDTO[]>("/api/v1/product-categories");
+  const data = await apiFetch<CategoryDTO[]>(
+    "/api/v1/product-categories",
+    undefined,
+    { tags: ["product-categories"] },
+  );
   return data.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
 }
 
@@ -46,14 +50,18 @@ export async function getProducts(params?: {
 }): Promise<{ products: ProductSummary[]; pagination: PageMeta | null }> {
   const page = params?.page || 1;
   const perPage = params?.perPage || PRODUCTS_PER_PAGE;
-  const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", {
-    page,
-    page_size: perPage,
-    category_id: params?.category ?? undefined,
-    keyword: params?.search || undefined,
-    status: "PUBLISHED",
-    ...(params?.sort ? { order_by: params.sort } : {}),
-  });
+  const data = await apiFetch<PageDTO<ProductPageDTO>>(
+    "/api/v1/products",
+    {
+      page,
+      page_size: perPage,
+      category_id: params?.category ?? undefined,
+      keyword: params?.search || undefined,
+      status: "PUBLISHED",
+      ...(params?.sort ? { order_by: params.sort } : {}),
+    },
+    { tags: ["products"] },
+  );
   const products = data.list.map(toProductSummary);
   const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
   return { products, pagination: { total: data.total, totalPages } };
@@ -64,6 +72,8 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   try {
     const data = await apiFetch<ProductDetailDTO>(
       `/api/v1/products/${encodeURIComponent(slug)}`,
+      undefined,
+      { tags: ["products", `product:${slug}`] },
     );
     return toProductDetail(data);
   } catch {
@@ -86,11 +96,15 @@ export async function getAllProductSlugEntries(): Promise<ProductSlugEntry[]> {
     let page = 1;
     let total = 0;
     do {
-      const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", {
-        page,
-        page_size: 50,
-        status: "PUBLISHED",
-      });
+      const data = await apiFetch<PageDTO<ProductPageDTO>>(
+        "/api/v1/products",
+        {
+          page,
+          page_size: 50,
+          status: "PUBLISHED",
+        },
+        { tags: ["products"] },
+      );
       list.push(...data.list);
       total = data.total;
       page += 1;

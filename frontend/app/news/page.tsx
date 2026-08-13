@@ -16,7 +16,7 @@ import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 
 export const metadata = await superMeta({
-  title: "News & Insights",
+  title: "Camera Manufacturing News & Insights",
   description: `Industry insights, product announcements, and camera manufacturing expertise from ${COMPANY.name}. Stay informed on the latest from Songdian Technology.`,
   url: "/news",
 });

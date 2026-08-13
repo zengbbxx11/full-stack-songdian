@@ -252,3 +252,17 @@ uv run python -m seed.seed_data
 WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两处致全站 500 的回归
 （`ToastContext` TDZ、`categories` 页 Modal 具名导入）。详见
 [`SECURITY-REMEDIATION.md`](../SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。
+## 当前实现补充（2026-08-13）
+
+当前运行方式以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准：
+
+- 生产使用 PostgreSQL 18 线和 Redis 8.8.1；生产 Redis 必须真实可用（`REDIS_REQUIRED=true`），本地 SQLite/开发环境才允许进程内内存降级。
+- 产品、新闻、分类的列表与详情缓存会在写入后失效，slug 变更会清理旧 slug；`/readyz` 会区分真实 Redis 与降级缓存。
+- `inquiry` 已支持 `country`、`region`、`landing_page`、`source_product`、`referrer` 和 `utm_*` 归因字段；后台可按来源产品、国家和 UTM 查询。
+- `content` 中的 `NotificationReadState` 支持后台新询盘、超时未跟进、SMTP 失败通知的用户级已读状态。
+- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前新增字段/表见 `backend/migrations/models/11_20260813090000_add_inquiry_attribution.py`。
+
+### 与旧版段落的更正
+
+- “Redis 可选、未配置即视为正常”的旧说明仅适用于本地开发；生产必须配置真实 Redis，并由 `REDIS_REQUIRED=true` 阻止误部署。
+- SQLite + 内存 Redis 章节是本地测试路径，不是生产架构；生产数据库为 PostgreSQL 18。

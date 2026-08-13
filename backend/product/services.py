@@ -18,6 +18,7 @@ from common.enums import ProductStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
 from common.redis_client import cache_key, get_redis
+from common.revalidation import revalidate_frontend
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from product.models import (
@@ -70,6 +71,25 @@ async def _cache_del_detail(slug: str) -> None:
         await get_redis().delete(cache_key("product", "detail", slug))
     except Exception:  # noqa: BLE001
         pass
+
+
+async def _invalidate_product_content(*slugs: str, categories: bool = False) -> None:
+    """Clear every API and ISR cache affected by a product mutation."""
+    redis = get_redis()
+    try:
+        await redis.delete_prefix(cache_key("product", "list", ""))
+        if categories:
+            await redis.delete(cache_key("product", "categories"))
+        for slug in {value for value in slugs if value}:
+            await _cache_del_detail(slug)
+    except Exception:  # noqa: BLE001
+        pass
+
+    unique_slugs = {value for value in slugs if value}
+    tags = ["products", *(f"product:{slug}" for slug in unique_slugs)]
+    if categories:
+        tags.append("product-categories")
+    await revalidate_frontend(tags=tags, paths=["/", "/products", "/sitemap.xml"])
 
 
 async def list_categories() -> list[CategoryVO]:
@@ -183,7 +203,7 @@ async def create_product(
             created_by=operator or None, updated_by=operator or None,
         )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
-    await _cache_del_detail(data.slug)
+    await _invalidate_product_content(data.slug)
     return await get_product_detail_admin(data.slug)
 
 
@@ -193,6 +213,7 @@ async def update_product(
     product = await Product.get_or_none(id=product_id, deleted=0)
     if product is None:
         raise BizException(ErrorCode.A010001)
+    old_slug = product.slug
     if data.category_id is not None and await ProductCategory.get_or_none(id=data.category_id, deleted=0) is None:
         raise BizException(ErrorCode.A010001, "产品分类不存在")
     if data.slug is not None and data.slug != product.slug:
@@ -219,7 +240,7 @@ async def update_product(
     product.updated_by = operator or None
     await product.save()
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
-    await _cache_del_detail(product.slug)
+    await _invalidate_product_content(old_slug, product.slug)
     return await get_product_detail_admin(product.slug)
 
 
@@ -230,7 +251,7 @@ async def delete_product(product_id: int, operator: str = "") -> None:
     product.deleted = 1
     product.updated_by = operator or None
     await product.save()
-    await _cache_del_detail(product.slug)
+    await _invalidate_product_content(product.slug)
 
 
 async def add_gallery(product_id: int, data: GalleryCreateRequest) -> GalleryVO:
@@ -240,7 +261,7 @@ async def add_gallery(product_id: int, data: GalleryCreateRequest) -> GalleryVO:
     g = await ProductGallery.create(
         product_id=product_id, image_url=data.image_url, alt=data.alt, sort_order=data.sort_order
     )
-    await _cache_del_detail(product.slug)
+    await _invalidate_product_content(product.slug)
     return GalleryVO.from_model(g)
 
 
@@ -253,7 +274,7 @@ async def delete_gallery(product_id: int, gallery_id: int) -> None:
     slug = product.slug if product else None
     await g.delete()
     if slug:
-        await _cache_del_detail(slug)
+        await _invalidate_product_content(slug)
 
 
 async def add_attribute(product_id: int, data: AttributeCreateRequest) -> AttributeVO:
@@ -263,7 +284,7 @@ async def add_attribute(product_id: int, data: AttributeCreateRequest) -> Attrib
     a = await ProductAttribute.create(
         product_id=product_id, name=data.name, slug=data.slug, value=data.value
     )
-    await _cache_del_detail(product.slug)
+    await _invalidate_product_content(product.slug)
     return AttributeVO.from_model(a)
 
 
@@ -276,7 +297,7 @@ async def delete_attribute(product_id: int, attr_id: int) -> None:
     slug = product.slug if product else None
     await a.delete()
     if slug:
-        await _cache_del_detail(slug)
+        await _invalidate_product_content(slug)
 
 
 # ───────────────── 分类写/排序（T02）─────────────────
@@ -317,6 +338,7 @@ async def create_category(data: CategoryCreate, operator: str = "") -> CategoryV
         raise BizException(ErrorCode.A010001, "分类别名重复")
     sort_order = data.sort_order if data.sort_order is not None else await _next_category_sort_order()
     cat = await ProductCategory.create(name=data.name, slug=data.slug, sort_order=sort_order)
+    await _invalidate_product_content(categories=True)
     return CategoryVO.from_model(cat)
 
 
@@ -332,6 +354,7 @@ async def update_category(category_id: int, data: CategoryUpdate, operator: str 
         if val is not None:
             setattr(cat, field, val)
     await cat.save()
+    await _invalidate_product_content(categories=True)
     return CategoryVO.from_model(cat)
 
 
@@ -342,6 +365,7 @@ async def delete_category(category_id: int, operator: str = "") -> None:
         raise BizException(ErrorCode.A010001, "分类不存在")
     cat.deleted = 1
     await cat.save()
+    await _invalidate_product_content(categories=True)
 
 
 async def reorder_category(ids: list[int]) -> None:
@@ -352,6 +376,7 @@ async def reorder_category(ids: list[int]) -> None:
     async with in_transaction():
         for idx, cid in enumerate(ids):
             await ProductCategory.filter(id=cid, deleted=0).update(sort_order=idx)
+    await _invalidate_product_content(categories=True)
 
 
 # ───────────────── 后台按 ID 详情（T04）─────────────────

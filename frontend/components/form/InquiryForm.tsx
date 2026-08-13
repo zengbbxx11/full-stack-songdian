@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/api/client";
 import { Loader2, Clock, BadgeCheck, Globe, Check } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { readFirstAttribution, trackedPagePath } from "@/components/AttributionTracker";
 
 const cameraCategories = [
   { label: "Compact Cameras", value: "compact-digital-cameras" },
@@ -42,6 +43,7 @@ const inquirySchema = z.object({
   message: z.string().min(10, "Please describe your needs (at least 10 characters)"),
   phone: z.string().optional(),
   company: z.string().optional(),
+  country: z.string().max(100, "Country / region is too long").optional(),
   quantity: z.string().optional(),
 });
 
@@ -79,6 +81,7 @@ export default function InquiryForm() {
       message: "",
       phone: "",
       company: "",
+      country: "",
       quantity: "",
     },
   });
@@ -90,6 +93,10 @@ export default function InquiryForm() {
       // 生成业务单号：优先 crypto.randomUUID（HTTPS/localhost 才可用），
       // HTTP（如 IP 直连）下 fallback 到时间戳+随机串，避免 randomUUID is not a function
       const bizReqNo = createInquiryRequestId();
+      const attribution = readFirstAttribution();
+      const sourceProduct = (
+        new URLSearchParams(window.location.search).get("product") || ""
+      ).slice(0, 200);
       const body: Record<string, string | null> = {
         name: values.fullName,
         email: values.email,
@@ -99,8 +106,16 @@ export default function InquiryForm() {
           : values.message,
         phone: values.phone || null,
         company: values.company || null,
-        source_page:
-          typeof window !== "undefined" ? window.location.pathname : "/",
+        country: values.country || null,
+        source_page: trackedPagePath(500),
+        landing_page: attribution?.landing_page || null,
+        source_product: sourceProduct || null,
+        referrer: attribution?.referrer || null,
+        utm_source: attribution?.utm_source || null,
+        utm_medium: attribution?.utm_medium || null,
+        utm_campaign: attribution?.utm_campaign || null,
+        utm_term: attribution?.utm_term || null,
+        utm_content: attribution?.utm_content || null,
         biz_req_no: bizReqNo,
       };
 
@@ -277,6 +292,13 @@ export default function InquiryForm() {
                     error={errors.company}
                   />
                 </div>
+                <FormField
+                  label="Country / Region"
+                  type="text"
+                  placeholder="e.g. Germany"
+                  registration={register("country")}
+                  error={errors.country}
+                />
                 <FormField
                   label="Estimated Order Quantity"
                   type="text"

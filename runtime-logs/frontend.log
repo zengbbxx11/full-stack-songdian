@@ -776,3 +776,4 @@
  GET / 200 in 93ms (next.js: 4ms, application-code: 90ms)
  GET /products/compact-camera/dc417x 200 in 103ms (next.js: 3ms, proxy.ts: 3ms, generate-params: 4ms, application-code: 93ms)
  GET / 200 in 114ms (next.js: 1.8ms, application-code: 113ms)
+ GET /products/compact-camera/dc417x 200 in 90ms (next.js: 4ms, proxy.ts: 2ms, generate-params: 4ms, application-code: 80ms)

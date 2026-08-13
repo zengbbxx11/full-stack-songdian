@@ -257,11 +257,14 @@ async def update_profile(user: AdminUser, data: UpdateProfileRequest) -> Profile
     - 修改用户名须检查唯一性。
     """
     # 修改用户名
-    if data.username is not None and data.username != user.username:
-        existing = await AdminUser.get_or_none(username=data.username)
+    username = data.username.strip() if data.username is not None else None
+    if data.username is not None and not username:
+        raise BizException(ErrorCode.C400001, "用户名不能为空")
+    if username is not None and username != user.username:
+        existing = await AdminUser.get_or_none(username=username)
         if existing is not None:
             raise BizException(ErrorCode.A010002, "用户名已存在")
-        user.username = data.username
+        user.username = username
 
     # 修改密码
     if data.new_password is not None:

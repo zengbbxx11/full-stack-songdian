@@ -42,9 +42,9 @@ class RolePermRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     """修改当前登录用户信息。至少提供一个字段。"""
-    username: str | None = Field(default=None, max_length=64)
+    username: str | None = Field(default=None, min_length=1, max_length=64)
     current_password: str | None = Field(default=None, min_length=1, max_length=128)
-    new_password: str | None = Field(default=None, min_length=1, max_length=128)
+    new_password: str | None = Field(default=None, min_length=6, max_length=128)
 
 
 class ProfileVO(BaseModel):

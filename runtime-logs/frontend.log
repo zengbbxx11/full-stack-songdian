@@ -1,0 +1,24 @@
+▲ Next.js 16.3.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.64.1:3000
+- Environments: .env.local
+✓ Ready in 418ms
+✓ Running next.config.ts took 37ms
+- Experiments (use with caution):
+  · optimizePackageImports
+
+ GET / 200 in 992ms (next.js: 564ms, application-code: 428ms)
+ GET / 200 in 105ms (next.js: 2ms, application-code: 103ms)
+ GET / 200 in 121ms (next.js: 8ms, application-code: 114ms)
+ GET /products 200 in 471ms (next.js: 347ms, proxy.ts: 46ms, application-code: 78ms)
+ GET /products?category=mirrorless-camera 200 in 41ms (next.js: 4ms, proxy.ts: 4ms, application-code: 33ms)
+ GET /products?category=compact-camera 200 in 46ms (next.js: 4ms, proxy.ts: 4ms, application-code: 38ms)
+ GET /products 200 in 45ms (next.js: 2ms, proxy.ts: 12ms, application-code: 31ms)
+ GET /products?category=action-camera 200 in 42ms (next.js: 3ms, proxy.ts: 4ms, application-code: 36ms)
+ GET /products?category=compact-camera 200 in 47ms (next.js: 3ms, proxy.ts: 4ms, application-code: 39ms)
+ GET /products?category=video-camera 200 in 47ms (next.js: 3ms, proxy.ts: 3ms, application-code: 41ms)
+ GET /products?category=kids-camera 200 in 39ms (next.js: 3ms, proxy.ts: 3ms, application-code: 34ms)
+ GET /products?category=lens 200 in 44ms (next.js: 2ms, proxy.ts: 4ms, application-code: 37ms)
+ GET /about 200 in 337ms (next.js: 303ms, application-code: 34ms)
+ GET /news 200 in 194ms (next.js: 138ms, application-code: 56ms)
+ GET /contact 200 in 71ms (next.js: 26ms, application-code: 45ms)

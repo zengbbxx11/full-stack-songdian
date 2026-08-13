@@ -62,10 +62,16 @@ export async function apiFetch<T>(
       ? ({ cache: "no-store" } as const)
       : ({ next: { revalidate, ...(options?.tags ? { tags: options.tags } : {}) } } as const);
 
-  const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
-    ...cacheInit,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      ...cacheInit,
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Backend API unreachable: ${path} (${reason})`, { cause: error });
+  }
 
   if (!res.ok) {
     throw new Error(`后端接口请求失败：${res.status} ${path}`);

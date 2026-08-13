@@ -96,6 +96,8 @@ export async function apiFetch<T = unknown>(
   // 401：刷新失败或仍未登录，跳回登录页（登录页自身不跳转，便于展示错误）。
   if (res.status === 401) {
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/signin")) {
+      // A hard navigation intentionally clears protected-page client state after refresh failure.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/signin";
     }
     let message = "登录已过期，请重新登录";

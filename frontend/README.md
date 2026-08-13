@@ -140,7 +140,6 @@ frontend/
 │  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
 │  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
 │  ├─ content-data.ts           # 全站可编辑文案
-│  ├─ inquiry-service.ts        # 旧询盘 Server Action（未被当前生产表单引用，待清理）
 │  ├─ seo.ts                    # 结构化数据：organization / breadcrumb / article / product / faq
 │  ├─ media.ts                  # 图片资源映射
 │  ├─ site-config.ts            # 页脚链接等静态配置

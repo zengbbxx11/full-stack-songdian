@@ -119,7 +119,6 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `lib/api/news.ts` | 新闻数据访问层 |
 | `lib/api/search.ts` | 全文搜索数据访问层 |
 | `components/form/InquiryForm.tsx` | 当前询盘表单：提交 FastAPI，由后端落 PostgreSQL 并发送 SMTP 通知 |
-| `lib/inquiry-service.ts` | 旧版文件持久化 Server Action，当前页面未引用，勿作为生产链路 |
 | `lib/seo.ts` | JSON-LD 结构化数据生成器 |
 | `lib/html-cleaner.ts` | 富文本 HTML 清洗器（去内联样式/容器）+ `sanitize-html` 白名单消毒（堵存储型 XSS），新闻/产品详情 `dangerouslySetInnerHTML` 必经此层 |
 | `lib/site-config.ts` | 页脚链接等静态配置 |

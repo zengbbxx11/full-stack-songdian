@@ -8,14 +8,17 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AnimatedSection from "@/components/motion/AnimatedSection";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
 import { trackEvent } from "@/lib/analytics";
 
 export default function HomeCtaSection() {
+  const router = useRouter();
+
   function handleInquiryClick() {
     trackEvent("cta_click", { cta_label: "Home - Send an Inquiry", destination: "/contact" });
-    window.location.href = "/contact";
+    router.push("/contact");
   }
 
   return (

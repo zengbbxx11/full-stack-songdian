@@ -55,6 +55,37 @@ def test_protected_endpoint_with_valid_token(client):
     assert r.json()["code"] in (0, "0"), r.json()
 
 
+def test_profile_can_update_username(client):
+    _admin_headers(client)
+    updated = client.put("/api/v1/admin/profile", json={"username": "  account-owner  "})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["data"]["username"] == "account-owner"
+
+    profile = client.get("/api/v1/admin/profile")
+    assert profile.status_code == 200, profile.text
+    assert profile.json()["data"]["username"] == "account-owner"
+
+
+def test_profile_password_update_checks_current_password(client):
+    _admin_headers(client)
+    rejected = client.put(
+        "/api/v1/admin/profile",
+        json={"current_password": "incorrect", "new_password": "NewStrongPassword1"},
+    )
+    assert rejected.status_code == 200, rejected.text
+    assert rejected.json()["code"] != "0"
+
+
+def test_profile_rejects_password_shorter_than_ui_minimum(client):
+    _admin_headers(client)
+    rejected = client.put(
+        "/api/v1/admin/profile",
+        json={"current_password": ADMIN[1], "new_password": "short"},
+    )
+    assert rejected.status_code == 400, rejected.text
+    assert rejected.json()["code"] == "C400001"
+
+
 def test_refresh_rotates_cookie_pair_and_logout_revokes_session(client):
     _admin_headers(client)
     old_access = client.cookies.get("access_token")

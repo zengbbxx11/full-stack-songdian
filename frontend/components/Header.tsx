@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MEDIA } from "@/lib/media";
 import InstantSearch from "@/components/InstantSearch";
 import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
@@ -48,6 +48,7 @@ const COLORS = {
 } as const;
 
 export default function Header() {
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -204,7 +205,7 @@ export default function Header() {
           <div className="flex-1 flex items-center justify-end gap-3">
             <InstantSearch className="hidden md:block" />
             <InteractiveHoverButton
-              onClick={() => { window.location.href = "/contact"; }}
+              onClick={() => router.push("/contact")}
               fill="bg-[#d4343e]"
               className={`hidden md:inline-flex border-[#d4343e] bg-white text-[#171A20] h-[40px] px-5 text-[14px] transition-[box-shadow] duration-300 ${
                 scrolled ? "shadow-[0_2px_16px_rgba(212,52,62,0.45)]" : "shadow-sm"
@@ -291,7 +292,7 @@ export default function Header() {
 
           <div className="pt-5 mt-3" style={{ borderTop: "1px solid #EEEEEE" }}>
             <InteractiveHoverButton
-              onClick={() => { setMobileOpen(false); window.location.href = "/contact"; }}
+              onClick={() => { setMobileOpen(false); router.push("/contact"); }}
               fill="bg-[#d4343e]"
               className="block w-full border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-6 text-[15px]"
             >

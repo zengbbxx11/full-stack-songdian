@@ -246,4 +246,4 @@ async def close_db() -> None:
 if __name__ == "__main__":
     # 便捷：``python -m common.config`` 可单独建表（SQLite）
     run_async(init_db())
-    print("Tortoise initialized with modules:", settings.tortoise_modules)
+    logger.info("Tortoise initialized with modules: %s", settings.tortoise_modules)

@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { HERO } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
@@ -20,6 +21,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ bannerUrl }: HeroSectionProps) {
+  const router = useRouter();
   // useReducedMotion：读取系统“减少动态效果”偏好，据此关闭错位与循环动画。
   const prefersReducedMotion = useReducedMotion();
 
@@ -95,7 +97,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         >
           {/* 主按钮 — 交互式悬停按钮（白底+红点，hover 时红点放大填满、白字滑入） */}
           <InteractiveHoverButton
-            onClick={() => window.location.href = HERO.cta.primary.href}
+            onClick={() => router.push(HERO.cta.primary.href)}
             fill="bg-[#d4343e]"
             className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[48px] px-10 text-[16px]"
           >

@@ -41,3 +41,4 @@ extend-exclude = [".venv", ".idea"]
 asyncio_mode = "auto"
 pythonpath = ["."]
 testpaths = ["tests"]
+addopts = ["-p", "no:cacheprovider"]

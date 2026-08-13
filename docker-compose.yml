@@ -22,7 +22,7 @@ name: songdian-b2b
 services:
   # ───────────────────────── 数据库 PostgreSQL（官方镜像，不自定义扩展） ─────────────────────────
   postgres:
-    image: postgres:18-bookworm
+    image: postgres:18.4-bookworm
     environment:
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
@@ -45,7 +45,7 @@ services:
 
   # ───────────────────────── 缓存/限流 Redis ─────────────────────────
   redis:
-    image: redis:8-alpine
+    image: redis:8.8.1-alpine
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data

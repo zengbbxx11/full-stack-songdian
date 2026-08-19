@@ -271,6 +271,45 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | **P1** | 批量上下架/删除（T06）、上传进度 + 裁剪封装（T07） |
 | **P2** | 角色/权限管理 UI（审计日志页已完成） |
 
+### 内容发布工作流（2026-08-19）
+
+- 产品与新闻支持草稿、定时发布和立即发布；定时内容在到期前不会进入公开 API、搜索或 sitemap。
+- 编辑页提供 15 分钟短期签名预览和核心字段版本历史，恢复旧版本会继续保留完整审计链。
+- 官网正式页面的视觉与内容结构保持不变；草稿只在独立、禁止索引的 `/preview/[token]` 页面展示。
+- `frontend` 提供 `npm run test:e2e` 和 `npm run lighthouse`，CI 保存失败时的 Playwright 诊断与 Lighthouse 报告。
+
+### 当前部署与运行边界（2026-08-19）
+
+- 最新数据库迁移为 `backend/migrations/models/12_20260819090000_add_content_revision_and_scheduling.py`。已有 PostgreSQL 环境只运行 `aerich upgrade`，不得删除 `pg_data`、重建 schema 或用 `db/` 快照覆盖生产库。
+- 本地开发中，官网与后台访问 `http://127.0.0.1:8000`；Compose 中官网服务端和后台代理通过 `http://backend:8000` 访问 API，浏览器公开地址仍为 `https://api.zsaki.icu`。
+- `NEXT_PUBLIC_API_URL` 是构建期公开地址；`INTERNAL_API_URL` 与 `BACKEND_PROXY_URL` 是服务端内部地址。各项目的 `.env.local` 仅用于本机，已从 Git 和 Docker 构建上下文排除。
+- 后台 `/uploads/...` 图片保持同源，由 Next.js rewrite 转发到后端；组件不要拼接 localhost 或公网 API 域名。
+- 官网产品详情只把 HTTP 404 / `A010001` 作为真实不存在；网络故障、限流和服务端错误显示“暂不可用”，不会错误显示 `Product Not Found`。
+- 产品图片继续使用 `object-contain` 保证主体不裁切，但卡片、主图和缩略图已移除多余大内边距，不改变官网整体视觉内容。
+
+### 发布前验证
+
+```bash
+# backend
+cd backend
+ruff check .
+pytest tests -q
+
+# frontend
+cd ../frontend
+npm run lint
+npm run verify:seo
+npm run build
+npm run test:e2e
+
+# admin-next
+cd ../admin-next
+npm run lint
+npm run build
+```
+
+正式部署以 CI 通过的完整 commit SHA/tag 和 GHCR 镜像为准。提交必须同时包含新增源码、迁移、测试和文档；数据库迁移不会随应用镜像回滚自动反向执行。
+
 ---
 
 ## 设计文档

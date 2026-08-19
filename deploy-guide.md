@@ -521,7 +521,7 @@ curl -I https://admin.zsaki.icu/signin
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | HTTPS | 管理后台必须配置域名和 Let’s Encrypt 证书；生产 Secure Cookie 不支持 IP/HTTP 登录 |
 | 数据导入 | 新环境见「六、生产初始化」：只运行迁移和最小种子；开发 SQL/CSV 快照禁止导入生产 |
-| 迁移链说明 | aerich 迁移 0-10；10 号迁移收敛历史重复外键。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
+| 迁移链说明 | aerich 迁移 0-12；10 号迁移收敛历史重复外键，11 号迁移增加询盘归因与通知已读状态，12 号迁移增加内容状态、发布时间与版本记录。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
 | 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
 | 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
@@ -545,4 +545,30 @@ curl -I https://admin.zsaki.icu/signin
 - 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。
 - 生产数据库和运行时上传媒体不由 Git checkout 或镜像构建覆盖；工厂展示视频属于前端静态源码资产，会随前端镜像发布。备份和恢复必须针对 PostgreSQL/上传媒体卷单独执行。
 
-本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-11` 取代；11 号迁移包含询盘归因字段和通知已读状态表。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
+本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-12` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
+
+## 2026-08-19 内容工作流发布补充
+
+### 构建与运行时地址
+
+| 服务 | 变量 | 本地开发 | Compose / 生产 |
+|---|---|---|---|
+| 官网浏览器 | `NEXT_PUBLIC_API_URL` | `http://127.0.0.1:8000` | `https://api.zsaki.icu` |
+| 官网服务端 | `INTERNAL_API_URL` | `http://127.0.0.1:8000` | `http://backend:8000` |
+| 管理后台代理 | `BACKEND_PROXY_URL` | `http://127.0.0.1:8000` | `http://backend:8000` |
+
+`NEXT_PUBLIC_API_URL` 会进入前端构建产物，修改后必须重建镜像；另外两个变量只用于服务端内部访问。`.env.local` 不得复制进镜像或提交到 Git。后台媒体应使用同源 `/uploads/...`，由 rewrite 转发到后端。
+
+### 新增生产参数
+
+- `PREVIEW_TOKEN_TTL=900`：草稿预览令牌默认 15 分钟有效。
+- `SCHEDULED_PUBLISH_INTERVAL=30`：调度器默认每 30 秒发布到期产品/新闻。
+- `NEXT_REVALIDATE_URL=http://frontend:3000/api/revalidate` 与 `REVALIDATE_SECRET`：内容发布、恢复或到期发布后用于清理官网 ISR；URL 应只指向内部可信地址，密钥由 backend 与 frontend 共享。
+
+### 上线顺序与检查
+
+1. 确认发布 commit 包含迁移 12、`backend/content_revision/`、后台工作流组件、官网预览路由及其测试，避免只提交已跟踪文件造成残缺镜像。
+2. 备份 PostgreSQL 和 `uploads_data`，启动 PostgreSQL/Redis，再通过独立 `migrate` profile 运行一次 `aerich upgrade`。
+3. 切换 backend、frontend、admin-next 镜像，确认 `/healthz`、`/readyz`、官网产品详情、后台登录与 `/uploads/...` 图片均正常。
+4. 创建草稿并验证短期预览，再创建数分钟后的定时内容，确认到期前不公开、到期后进入公开 API 且官网缓存刷新。
+5. 应用启动失败可回退到上一组镜像；数据库迁移不会自动降级。若必须执行数据库回退，应先恢复上线前备份并评估新版本写入的数据。

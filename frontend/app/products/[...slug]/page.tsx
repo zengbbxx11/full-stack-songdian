@@ -19,6 +19,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getProductBySlug, getAllProductSlugEntries, getProducts } from "@/lib/api/products";
+import { ApiError } from "@/lib/api/client";
 import { productPath } from "@/lib/product-url";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
@@ -50,7 +51,17 @@ export async function generateMetadata({
   const { slug: segments } = await params;
   // 取最后一段作为产品 slug（兼容 1 段旧地址与 2 段规范地址）
   const productSlug = segments[segments.length - 1];
-  const product = await getProductBySlug(productSlug);
+  let product;
+  try {
+    product = await getProductBySlug(productSlug);
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    // 元数据失败不应抢先终止正文；页面会渲染可重试的服务不可用状态。
+    return {
+      title: "Product Temporarily Unavailable",
+      robots: { index: false, follow: false },
+    };
+  }
   if (!product) return { title: "Product Not Found" };
   // canonical 始终以产品真实主分类为准，避免 URL 分类段拼写偏差导致标签错乱
   const canonical = productPath(product);
@@ -146,6 +157,30 @@ function RelatedProductsSkeleton() {
   );
 }
 
+function ProductUnavailable({ retryHref }: { retryHref: string }) {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4F4F4]">
+        <svg className="h-8 w-8 text-[#8E8E8E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+      </div>
+      <h1 className="mb-3 text-2xl font-bold text-[#171A20]">Product information is temporarily unavailable</h1>
+      <p className="mb-8 max-w-md text-sm text-[#5C5E62]">
+        We could not load this product right now. Please try again in a moment.
+      </p>
+      <div className="flex gap-3">
+        <a href={retryHref} className="inline-flex h-[42px] items-center rounded bg-[#3E6AE1] px-6 text-sm font-medium text-white transition-colors hover:bg-[#3561CC]">
+          Try again
+        </a>
+        <Link href="/products" className="inline-flex h-[42px] items-center rounded border border-[#D0D1D2] px-6 text-sm font-medium text-[#393C41] transition-colors hover:bg-[#F4F4F4]">
+          Browse Products
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({
   params,
 }: {
@@ -164,18 +199,17 @@ export default async function ProductDetailPage({
   // 规范地址 /products/{category}/{slug}（两段）
   if (segments.length === 2) {
     const [category, productSlug] = segments;
-    const product = await getProductBySlug(productSlug);
-
-    if (!product) {
-      return (
-        <div className="max-w-7xl mx-auto px-6 py-24 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-          <Link href="/products" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-            &larr; Back to Products
-          </Link>
-        </div>
-      );
+    let product;
+    try {
+      product = await getProductBySlug(productSlug);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return <ProductUnavailable retryHref={`/products/${segments.join("/")}`} />;
+      }
+      throw error;
     }
+
+    if (!product) notFound();
 
     // 主分类（用于面包屑 + 返回按钮）
     const primaryCategory = product.categories[0];

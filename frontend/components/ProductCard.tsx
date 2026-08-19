@@ -59,7 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.imageAlt || product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-contain p-3 transition-transform group-hover:scale-[1.04]"
+            className="object-contain transition-transform group-hover:scale-[1.04]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
           />

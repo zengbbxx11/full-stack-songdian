@@ -21,6 +21,7 @@ class BaseEnum(str, Enum):  # noqa: UP042  -- 设计为 str 枚举：值直接�
 
 class ProductStatus(BaseEnum):
     DRAFT = "DRAFT"
+    SCHEDULED = "SCHEDULED"
     PUBLISHED = "PUBLISHED"
 
 
@@ -31,6 +32,7 @@ class StockStatus(BaseEnum):
 
 class NewsStatus(BaseEnum):
     DRAFT = "DRAFT"
+    SCHEDULED = "SCHEDULED"
     PUBLISHED = "PUBLISHED"
 
 

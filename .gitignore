@@ -30,5 +30,8 @@ ruff_out.txt
 
 # Next.js build cache
 .next/
+playwright-report/
+test-results/
+.lighthouseci/
 # Local runtime logs
 runtime-logs/

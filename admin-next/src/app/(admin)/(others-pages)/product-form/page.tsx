@@ -15,8 +15,9 @@ import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
-import { apiFetch, API_BASE } from "@/lib/api-client";
+import { apiFetch, resolveMediaUrl } from "@/lib/api-client";
 import type { ProductCategory, Paginated } from "@/types";
+import ContentWorkflowPanel from "@/components/content/ContentWorkflowPanel";
 
 interface GalleryItem { id: number; image_url: string; alt: string | null; sort_order: number; }
 interface AttributeItem { id: number; name: string; slug: string; value: string; }
@@ -44,12 +45,13 @@ function ProductFormInner() {
   const [attrs, setAttrs] = useState<AttributeItem[]>([]);
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "in_stock", status: "DRAFT", cover_image: "", seo_title: "", seo_description: "" });
+  const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmCallback, setConfirmCallback] = useState<(() => Promise<void>) | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   function openConfirm(title: string, message: string, cb: () => Promise<void>) {
     setConfirmTitle(title);
@@ -85,14 +87,15 @@ function ProductFormInner() {
     apiFetch<Record<string, unknown>>(`/admin/products/${sourceId}`).then((p) => {
       const title = copyFrom ? `Copy of ${String(p.title || "")}` : String(p.title || "");
       const slug = copyFrom ? "" : String(p.slug || "");
-      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: p.category_id ? String(p.category_id) : "", stock_status: String(p.stock_status || "in_stock"), status: "DRAFT", cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
+      const category = p.category as { id?: number } | undefined;
+      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: category?.id ? String(category.id) : "", stock_status: String(p.stock_status || "instock"), status: copyFrom ? "DRAFT" : String(p.status || "DRAFT"), published_at: copyFrom || !p.published_at ? "" : String(p.published_at).substring(0, 16), cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
     }).catch((err: unknown) => {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("加载产品失败：" + msg);
     });
-  }, [id, copyFrom, toast]);
+  }, [id, copyFrom, toast, reloadKey]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File, productSlug?: string): Promise<string> {
@@ -103,7 +106,7 @@ function ProductFormInner() {
       method: "POST",
       body: formData,
     });
-    return `${API_BASE}${result.url}`;
+    return result.url;
   }
 
   // 添加画廊图
@@ -116,7 +119,7 @@ function ProductFormInner() {
         const url = await uploadImage(files[i], form.slug);
         const newG = await apiFetch<GalleryItem>(`/admin/products/${id}/gallery`, {
           method: "POST",
-          body: { image_url: url.replace(API_BASE, ""), alt: files[i].name, sort_order: galleries.length + i },
+          body: { image_url: url, alt: files[i].name, sort_order: galleries.length + i },
         });
         setGalleries(prev => [...prev, { id: newG.id, image_url: newG.image_url, alt: newG.alt, sort_order: newG.sort_order }]);
       }
@@ -159,7 +162,7 @@ function ProductFormInner() {
     const file = e.target.files?.[0]; if (!file) return;
     try {
       const url = await uploadImage(file, form.slug);
-      setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") }));
+      setForm(prev => ({ ...prev, cover_image: url }));
     } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
     e.target.value = "";
   }
@@ -167,7 +170,8 @@ function ProductFormInner() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     try {
-      const payload = { ...form, category_id: form.category_id ? Number(form.category_id) : null };
+      const payload: Record<string, unknown> = { ...form, category_id: form.category_id ? Number(form.category_id) : null };
+      if (!payload.published_at) delete payload.published_at;
       if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/products", { method: "POST", body: payload });
       router.push("/products");
@@ -223,14 +227,18 @@ function ProductFormInner() {
             <div>
               <Label>Stock</Label>
               <select value={form.stock_status} onChange={e => setForm({...form, stock_status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="in_stock">有货</option><option value="out_of_stock">缺货</option>
+                <option value="instock">有货</option><option value="outofstock">缺货</option>
               </select>
             </div>
             <div>
               <Label>Status</Label>
               <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="DRAFT">草稿</option><option value="PUBLISHED">已发布</option>
+                <option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option>
               </select>
+            </div>
+            <div>
+              <Label>发布时间</Label>
+              <Input type="datetime-local" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} />
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
@@ -266,7 +274,7 @@ function ProductFormInner() {
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
           <div className="flex items-start gap-4">
             {form.cover_image ? (
-              <img src={`${API_BASE}${form.cover_image}`} className="w-32 h-32 object-cover rounded-lg border" alt="Cover" />
+              <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-32 object-cover rounded-lg border" alt="Cover" />
             ) : (
               <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>
             )}
@@ -299,7 +307,7 @@ function ProductFormInner() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {galleries.map(g => (
                   <div key={g.id} className="group relative bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <img src={`${API_BASE}${g.image_url}`} alt={g.alt || ""} className="w-full aspect-square object-cover" />
+                    <img src={resolveMediaUrl(g.image_url)} alt={g.alt || ""} className="w-full aspect-square object-cover" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                       <button
                         type="button"
@@ -351,6 +359,8 @@ function ProductFormInner() {
             </div>
           </div>
         )}
+
+        {isEdit && id && <ContentWorkflowPanel resource="products" id={id} onRestored={() => setReloadKey((value) => value + 1)} />}
 
         {/* 操作栏 */}
         <div className="flex justify-between">

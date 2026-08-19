@@ -1,61 +1,58 @@
 sequenceDiagram
     autonumber
-    %% ── 创建产品（M1）──
     participant A as 管理后台
-    participant M as M1 产品服务
+    participant API as FastAPI
+    participant DB as PostgreSQL
     participant R as Redis
-    participant P as PostgreSQL
-    A->>M: POST /api/v1/admin/products (X-Idempotency-Key)
-    M->>M: 校验 slug 唯一 + 幂等键(SETNX 24h)
-    alt slug 已存在
-        M-->>A: 409 A010002
-    else 校验通过
-        M->>P: INSERT t_product (事务)
-        M->>P: update_search_vector('zh', title+summary+content_html)
-        M->>R: DEL product:detail:{slug}
-        M-->>A: 200 ProductVO
-    end
+    participant F as 官网 Next.js
 
-    %% ── 联合搜索（M3，含降级 BD-01）──
-    participant W as 官网前端
-    W->>M: GET /api/v1/search?q=xxx
-    M->>R: GET search:q:{hash}:{type}:{page}
-    alt 命中缓存
-        R-->>M: 缓存结果
-    else 未命中
-        M->>P: SELECT ... WHERE search_vector @@ plainto_tsquery('zh', q) ORDER BY ts_rank
-        alt 索引慢/超时/SQLite
-            M->>P: 降级 LIKE title（BD-01）
+    rect rgb(245, 247, 250)
+        Note over A,API: Cookie-only 管理员登录
+        A->>API: POST /api/v1/admin/login {username,password}
+        API->>DB: 校验用户、密码与锁定状态
+        alt 登录成功
+            API-->>A: 200 + Set-Cookie(access_token, refresh_token)
+        else 登录失败
+            API-->>A: 401 统一错误信封
         end
-        M->>R: SET search:q:... TTL 60s
     end
-    M-->>W: 200 SearchPageVO (took_ms)
 
-    %% ── 提交询盘（M4，含 SMTP/幂等）──
-    participant S as SMTP
-    A->>M: POST /api/v1/inquiries (biz_req_no)
-    M->>R: SETNX inquiry:idem:{biz_req_no} 24h
-    alt 重复提交
-        M-->>A: 200 返回首次结果
-    else 首次
-        M->>P: INSERT t_inquiry (smtp_status=PENDING)
-        M->>S: SMTP 发信(smtp.qq.com)
-        alt 发信失败/未配置
-            M->>P: UPDATE smtp_status=FAILED/PENDING
-        else 成功
-            M->>P: UPDATE smtp_status=SENT
+    rect rgb(255, 248, 245)
+        Note over A,F: 编辑、版本快照与缓存失效
+        A->>API: PUT /api/v1/admin/products/{id}
+        API->>DB: 事务更新 Product
+        API->>DB: INSERT ContentRevision(version, snapshot, created_by)
+        API->>R: 删除列表、详情、旧 slug 与搜索缓存
+        API->>F: POST /api/revalidate（内部密钥）
+        API-->>A: 更新后的产品与工作流状态
+
+        A->>API: POST /api/v1/admin/products/{id}/revisions/{revision_id}/restore
+        API->>DB: 保存恢复前快照并恢复目标版本
+        API->>R: 再次失效相关缓存
+        API->>F: POST /api/revalidate
+        API-->>A: 恢复结果与新版本号
+    end
+
+    rect rgb(245, 252, 247)
+        Note over A,F: 短期草稿预览
+        A->>API: POST /api/v1/admin/products/{id}/preview-token
+        API-->>A: 15 分钟签名 token + preview URL
+        A->>F: GET /preview/{token}
+        F->>API: GET /api/v1/preview/{token}
+        API->>API: 验签、校验过期时间与资源类型
+        API->>DB: 读取草稿/定时内容
+        API-->>F: no-store 预览数据
+        F-->>A: noindex 预览页面
+    end
+
+    rect rgb(247, 246, 255)
+        Note over API,F: 定时发布循环
+        loop 每 SCHEDULED_PUBLISH_INTERVAL（默认 30 秒）
+            API->>DB: 查询 status=SCHEDULED 且 published_at<=now
+            alt 存在到期内容
+                API->>DB: 批量切换为 PUBLISHED
+                API->>R: 失效产品/新闻/搜索缓存
+                API->>F: POST /api/revalidate
+            end
         end
-        M-->>A: 200 InquiryVO
-    end
-
-    %% ── 后台登录（M5，JWT+权限缓存+审计）──
-    participant C as M5 内容服务
-    A->>C: POST /api/v1/admin/login
-    C->>P: 校验 username + bcrypt(password)
-    alt 失败
-        C-->>A: 401 A050002（或锁定）
-    else 成功
-        C->>C: 签发 JWT(access 2h, refresh 7d)
-        C->>R: 缓存 auth:perm:{uid} TTL 2h
-        C-->>A: 200 LoginVO
     end

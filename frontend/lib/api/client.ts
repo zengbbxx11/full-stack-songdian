@@ -22,6 +22,29 @@ const FETCH_API_BASE =
     ? process.env.INTERNAL_API_URL || API_BASE
     : API_BASE;
 
+/** 可判别的后端 API 错误，供领域数据层区分“资源不存在”和服务故障。 */
+export class ApiError extends Error {
+  readonly status: number | null;
+  readonly code: string | null;
+  readonly path: string;
+
+  constructor(
+    message: string,
+    options: {
+      path: string;
+      status?: number | null;
+      code?: string | number | null;
+      cause?: unknown;
+    },
+  ) {
+    super(message, { cause: options.cause });
+    this.name = "ApiError";
+    this.status = options.status ?? null;
+    this.code = options.code == null ? null : String(options.code);
+    this.path = options.path;
+  }
+}
+
 /**
  * 把后端返回的相对路径（/uploads/...）补全为后端绝对 URL，
  * 便于 next/image 跨域优化。已为绝对 URL 则原样返回。
@@ -77,18 +100,40 @@ export async function apiFetch<T>(
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Backend API unreachable: ${path} (${reason})`, { cause: error });
+    throw new ApiError(`Backend API unreachable: ${path} (${reason})`, {
+      path,
+      cause: error,
+    });
+  }
+
+  let json: { code?: string | number; msg?: string; data?: T };
+  try {
+    json = (await res.json()) as { code?: string | number; msg?: string; data?: T };
+  } catch (error) {
+    throw new ApiError(
+      res.ok
+        ? `后端接口响应不是合法 JSON：${path}`
+        : `后端接口请求失败：${res.status} ${path}`,
+      { path, status: res.status, cause: error },
+    );
   }
 
   if (!res.ok) {
-    throw new Error(`后端接口请求失败：${res.status} ${path}`);
+    throw new ApiError(json.msg || `后端接口请求失败：${res.status} ${path}`, {
+      path,
+      status: res.status,
+      code: json.code,
+    });
   }
 
-  const json = (await res.json()) as { code: string; msg: string; data: T };
-  if (json.code !== "0") {
-    throw new Error(`后端接口返回错误：${json.code} ${json.msg}`);
+  if (json.code !== "0" && json.code !== 0) {
+    throw new ApiError(json.msg || `后端接口返回错误：${String(json.code)}`, {
+      path,
+      status: res.status,
+      code: json.code,
+    });
   }
-  return json.data;
+  return json.data as T;
 }
 
 // ───────────────────────── 后端原始 DTO 类型 ─────────────────────────

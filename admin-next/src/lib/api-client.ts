@@ -8,9 +8,12 @@
  * - 401 处理：调用 Cookie 刷新接口一次；失败后跳转 /signin。
  */
 
-/** 后端 API 基础地址（用于拼接上传文件的完整 URL）。 */
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/** 将媒体地址解析为后台同源 URL；完整外部地址保持不变。 */
+export function resolveMediaUrl(path?: string | null): string {
+  if (!path) return "";
+  if (/^(?:https?:)?\/\//i.test(path) || /^(?:data|blob):/i.test(path)) return path;
+  return path.startsWith("/") ? path : `/${path}`;
+}
 
 export interface PaginatedData<T> {
   list: T[];

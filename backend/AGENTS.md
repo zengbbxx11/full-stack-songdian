@@ -2,6 +2,8 @@
 
 > AGENTS.md — 新会话快速上手指南。聚焦「启动命令 + 模块结构 + 雷区踩坑 + 常用修改路径」。
 
+> 2026-08-19 更新：最新迁移为 12；`content_revision/` 负责产品/新闻版本、恢复和签名预览，lifespan 调度器负责到期发布。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
+
 ---
 
 ## 项目定位
@@ -135,5 +137,5 @@ P0 级审计修复（详见 `../audit_verification_report.md`）：
 - **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页+搜索）。
 - **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
 - **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA 与站点验证配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
-- **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT，并收敛为单一 `fk_t_inquiry_assigned_user` 外键。生产由 backend `command` 的 `aerich upgrade` 自动执行。
+- **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT 并收敛历史外键，迁移 11 增加询盘归因与通知已读状态，迁移 12 增加内容状态、发布时间和版本表。生产由独立 Compose `migrate` profile 显式执行 `aerich upgrade`，backend 应用容器不自动迁移。
 - ⚠️ **生产初始化**：生产只运行迁移和最小种子（角色、权限、首个管理员）。`db/seed_data.sql`、完整 SQL 和 CSV 是本地开发快照，含业务数据与密码哈希，禁止导入生产。

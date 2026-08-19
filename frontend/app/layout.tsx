@@ -43,6 +43,7 @@ import FloatingInquiry from "@/components/FloatingInquiry";
 import NavigationProgress from "@/components/NavigationProgress";
 import CookieConsent from "@/components/CookieConsent";
 import AttributionTracker from "@/components/AttributionTracker";
+import WebVitalsReporter from "@/components/WebVitalsReporter";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
@@ -220,6 +221,7 @@ export default function RootLayout({
         {/* 顶部路由切换进度条 — 点击链接瞬间触发 */}
         <NavigationProgress />
         <AttributionTracker />
+        <WebVitalsReporter />
 
         {/* 站点级导航页头 */}
         <Header />

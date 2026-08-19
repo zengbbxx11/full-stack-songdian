@@ -40,6 +40,7 @@ class Settings(BaseSettings):
         "content.models",
         "uploads.models",
         "common.settings_model",
+        "content_revision.models",
     ]
 
     # ── Redis（开发默认允许内存降级；生产 Compose 强制要求真实 Redis）──
@@ -50,6 +51,8 @@ class Settings(BaseSettings):
     # 后台写入产品/新闻后调用官网内部路由，清除 Next.js ISR 数据缓存。
     next_revalidate_url: str = ""
     revalidate_secret: str = ""
+    preview_token_ttl: int = 900
+    scheduled_publish_interval: int = 30
 
     # ── JWT ──
     # 生产环境必须通过环境变量 JWT_SECRET 注入 ≥32 字节随机值（见 model_post_init 启动守卫）。

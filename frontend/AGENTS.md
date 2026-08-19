@@ -2,6 +2,8 @@
 
 > AGENTS.md — 新会话快速上手指南。所有关键信息集中在这里，避免每次从头探索。
 
+> 2026-08-19 更新：`lib/api/client.ts` 已使用结构化 `ApiError`；产品详情只把 HTTP 404 / `A010001` 当作不存在，服务故障进入可重试错误页。`/preview/[token]` 为 `no-store` / `noindex` 签名预览。产品图保持 `object-contain` 且不得恢复大内边距。生产由 Compose/GHCR 部署。
+
 ---
 
 ## 项目定位
@@ -42,9 +44,9 @@ npm run dev → http://localhost:3000
 > ⚠️ 本机沙箱 `npm run dev` 可能 fork 失败（EAGAIN），改用：
 > `node_modules/next/dist/bin/next dev -p 3000`
 
-### 服务器启动（PM2）
+### 生产启动
 
-PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
+正式环境拉取 CI 构建的 GHCR 镜像，由根目录 Docker Compose 运行 `next start -p 3000`，再由 1Panel OpenResty 反向代理；不在服务器现场使用 PM2 构建或保活源码。
 
 ---
 
@@ -192,14 +194,10 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4 测量 ID；仅用户接受「分析」Cookie 后才加载，未配置则零追踪 | （可选） |
 | `NEXT_PUBLIC_SITE_URL` | 前端站点地址 | `http://localhost:3000` |
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称（SEO） | `Songdian Technology...` |
-| `SMTP_HOST` | SMTP 服务器（询盘邮件） | （可选） |
-| `SMTP_PORT` | SMTP 端口 | `587` |
 | `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的后端主机（不含协议） | `api.zsaki.icu` |
 
 > SMTP 已迁移到 FastAPI 后端和管理后台“系统设置”；frontend 不配置 SMTP 口令。
-| `INQUIRY_EMAIL_TO` | 接收询盘通知的邮箱 | （可选） |
-
-> ⚠️ SMTP 未配置时，询盘仍保存到 PostgreSQL，但不会发送邮件；frontend 不使用或保存 SMTP 口令。
+> SMTP 主机、端口、口令和询盘收件地址由后端/管理后台“系统设置”维护。未配置时询盘仍保存到 PostgreSQL；frontend 不使用或保存任何 SMTP 配置。
 
 ---
 
@@ -234,7 +232,7 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | 改导航 | `components/Header.tsx` NAV_LINKS |
 | 改配色 | `globals.css` CSS 变量 |
 | 改询盘表单 | `components/form/InquiryForm.tsx` |
-| 改询盘收件邮箱 | `.env.local` → `INQUIRY_EMAIL_TO` |
+| 改询盘收件邮箱 | 管理后台“系统设置”中的询盘 SMTP 配置 |
 | 添加重定向 | `next.config.ts` → `redirects()` |
 | 新闻详情样式乱 | 历史富文本 HTML 遗留，由 `html-cleaner.ts` 自动清洗（去内联样式）+ `sanitize-html` 白名单消毒 |
 
@@ -245,9 +243,9 @@ PM2 保活，端口 3000，通过 1Panel OpenResty 反向代理到 80 端口。
 | 项目 | 值 |
 |------|-----|
 | 服务器 | 腾讯云 + 1Panel Linux 面板 |
-| 前端 | PM2 保活，端口 3000 |
-| 后端 | FastAPI，端口 8000，uvicorn |
-| 管理后台 | PM2 保活或静态导出 |
+| 前端 | GHCR 镜像 + Docker Compose，容器端口 3000 |
+| 后端 | GHCR 镜像 + Docker Compose，Uvicorn 端口 8000 |
+| 管理后台 | GHCR 镜像 + Docker Compose，容器端口 3001 |
 | 反向代理 | 1Panel OpenResty |
 | 部署文档 | `deploy-guide.md` |
 

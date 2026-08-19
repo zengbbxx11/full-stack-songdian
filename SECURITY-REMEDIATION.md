@@ -1,6 +1,6 @@
 # 安全审计发现修复总览（18/18）
 
-> **历史修复记录，不作为当前部署或认证说明。** 本文保留 2026-07 审计过程；其中 Bearer、`localStorage`、双通道认证、按请求协议设置 `Secure`、1Panel 独立 PG/Redis 等表述已经被后续方案取代。当前生产依据为根目录 [README.md](README.md)、[deploy-guide.md](deploy-guide.md) 与代码。
+> **历史修复记录，不作为当前部署或认证说明。** 本文保留 2026-07 审计过程；其中 Bearer、`localStorage`、双通道认证、按请求协议设置 `Secure`、1Panel 独立 PG/Redis 等表述已经被后续方案取代。当前生产依据为根目录 [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md)、[README.md](README.md)、[deploy-guide.md](deploy-guide.md) 与代码。
 
 ## 当前安全状态（2026-08）
 

@@ -1,5 +1,7 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
+> 当前状态（2026-08-19）：最新迁移为 `12_20260819090000_add_content_revision_and_scheduling.py`。产品和新闻现支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史；部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
 
@@ -260,9 +262,17 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 产品、新闻、分类的列表与详情缓存会在写入后失效，slug 变更会清理旧 slug；`/readyz` 会区分真实 Redis 与降级缓存。
 - `inquiry` 已支持 `country`、`region`、`landing_page`、`source_product`、`referrer` 和 `utm_*` 归因字段；后台可按来源产品、国家和 UTM 查询。
 - `content` 中的 `NotificationReadState` 支持后台新询盘、超时未跟进、SMTP 失败通知的用户级已读状态。
-- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前新增字段/表见 `backend/migrations/models/11_20260813090000_add_inquiry_attribution.py`。
+- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新结构见 `backend/migrations/models/12_20260819090000_add_content_revision_and_scheduling.py`，并保留 11 号迁移的询盘归因与通知已读状态。
 
 ### 与旧版段落的更正
 
 - “Redis 可选、未配置即视为正常”的旧说明仅适用于本地开发；生产必须配置真实 Redis，并由 `REDIS_REQUIRED=true` 阻止误部署。
 - SQLite + 内存 Redis 章节是本地测试路径，不是生产架构；生产数据库为 PostgreSQL 18。
+
+## 内容版本与定时发布（2026-08-19）
+
+- `content_revision/` 提供统一版本记录、列表、恢复与预览令牌能力；产品和新闻核心字段每次有效写入都会生成版本快照。
+- 管理端写入 `SCHEDULED` 时必须提供未来的 `published_at`；调度器按 `SCHEDULED_PUBLISH_INTERVAL`（默认 30 秒）扫描到期记录并切换为 `PUBLISHED`。
+- 草稿和未到期内容不会进入公开列表、详情、搜索或 sitemap。预览令牌由服务端签名，默认 `PREVIEW_TOKEN_TTL=900`，预览响应不缓存且禁止索引。
+- 内容发布、恢复和调度发布都会失效 Redis 列表/详情缓存，并触发官网 ISR revalidation。
+- 生产迁移由 Compose 的独立 `migrate` profile 执行；backend 应用容器启动命令不隐式运行 Aerich。

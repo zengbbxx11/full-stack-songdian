@@ -1,6 +1,6 @@
 # Songdian 官网视觉与交互规范
 
-> 当前版本：2026-08-13。本文以 `frontend/` 当前代码为准，名称保留是为了兼容既有引用；“Tesla”只表示克制、产品优先的设计灵感，不代表复制 Tesla 品牌、字体或内容。
+> 当前版本：2026-08-19。本文以 `frontend/` 当前代码为准，名称保留是为了兼容既有引用；“Tesla”只表示克制、产品优先的设计灵感，不代表复制 Tesla 品牌、字体或内容。
 >
 > 系统部署、SEO、缓存、API 和发布流程请以 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 与根目录 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
@@ -111,6 +111,7 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 ## 6. 图片与视频
 
 - 产品图片使用 `ProductGallery` 和统一的 `object-fit` 规则，图片容器保持稳定比例，避免布局跳动。
+- 产品卡片、详情主图和缩略图统一使用 `object-contain`，确保相机主体完整；容器只保留必要的极小安全边距，不得恢复大块 padding，也不得改用 `object-cover` 裁切产品。
 - 工厂视频组件为 `components/FactoryVideo.tsx`，点击后才播放，使用 `preload="metadata"`、`playsInline` 和 `controls`。
 - 当前视频资产为 `frontend/public/Video/SongdianFactoryVideo.mp4`，首页与 About 页面均可展示。它是静态前端源码资产，不等同于生产运行时上传媒体。
 - 视频、图片和地图都必须在 390px 视口下检查，不得造成横向滚动。

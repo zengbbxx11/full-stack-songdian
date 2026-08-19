@@ -73,6 +73,9 @@ const nextConfig: NextConfig = {
   // Tree-shaking 优化大包
   experimental: {
     optimizePackageImports: ["framer-motion", "lucide-react"],
+    // 本地/生产构建共用公开 API 限流；串行预渲染可复用数据缓存并避免突发 429。
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 100,
   },
 
   // 旧路由永久重定向（SEO + 书签兼容）

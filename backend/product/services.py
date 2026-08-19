@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+from datetime import UTC, datetime
 
 from tortoise.functions import Max
 from tortoise.transactions import in_transaction
@@ -21,6 +22,7 @@ from common.redis_client import cache_key, get_redis
 from common.revalidation import revalidate_frontend
 from common.result import PageRequest
 from common.search_vector import update_search_vector
+from content_revision import services as revision_services
 from product.models import (
     Product,
     ProductAttribute,
@@ -49,6 +51,19 @@ CAT_TTL = 1800        # 分类 30 分钟
 # sort_order 允许范围（security-audit F-18）：拒绝 NaN/非有限/极端值
 SORT_ORDER_MIN = -1_000_000.0
 SORT_ORDER_MAX = 1_000_000.0
+
+
+def _publishing_values(status: str, published_at: datetime | None, can_publish: bool) -> tuple[str, datetime | None]:
+    if status in {ProductStatus.PUBLISHED.value, ProductStatus.SCHEDULED.value} and not can_publish:
+        return ProductStatus.DRAFT.value, None
+    now = datetime.now(UTC)
+    if status == ProductStatus.SCHEDULED.value:
+        if published_at is None or published_at <= now:
+            raise BizException(ErrorCode.A010001, "定时发布时间必须晚于当前时间")
+        return status, published_at
+    if status == ProductStatus.PUBLISHED.value:
+        return status, published_at or now
+    return status, None
 
 
 async def _cache_get_detail(slug: str) -> dict | None:
@@ -185,9 +200,7 @@ async def create_product(
     if await Product.get_or_none(slug=data.slug, deleted=0) is not None:
         raise BizException(ErrorCode.A010002)
     # security-audit F-11：无发布权限时，禁止直接置为 PUBLISHED（降级为 DRAFT）。
-    status = data.status
-    if status == ProductStatus.PUBLISHED.value and not can_publish:
-        status = ProductStatus.DRAFT.value
+    status, published_at = _publishing_values(data.status, data.published_at, can_publish)
     cleaned = clean_html(data.content_html)
     # security-audit F-01：标题/摘要作为纯文本清洗，杜绝内嵌 HTML/脚本。
     # 创建包事务保证原子性；注意 update_search_vector 使用原生 execute_query，
@@ -199,10 +212,12 @@ async def create_product(
             summary=clean_text(data.summary),
             content_html=cleaned,
             category_id=data.category_id, sku=data.sku, price=data.price, currency=data.currency,
-            stock_status=data.stock_status, status=status, tags=data.tags,
+            stock_status=data.stock_status, status=status, published_at=published_at,
+            cover_image=data.cover_image, tags=data.tags,
             created_by=operator or None, updated_by=operator or None,
         )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
+    await revision_services.record_revision(product, "product", "CREATE", operator)
     await _invalidate_product_content(data.slug)
     return await get_product_detail_admin(data.slug)
 
@@ -225,21 +240,26 @@ async def update_product(
             raise BizException(ErrorCode.A010001, "sort_order 必须为有限数值")
         if data.sort_order < SORT_ORDER_MIN or data.sort_order > SORT_ORDER_MAX:
             raise BizException(ErrorCode.A010001, "sort_order 超出允许范围")
-    for field in ["title", "summary", "slug", "category_id", "sku", "price", "currency", "stock_status", "status", "tags", "sort_order"]:
+    requested_status = data.status or product.status
+    requested_time = data.published_at if data.published_at is not None else product.published_at
+    normalized_status, normalized_time = _publishing_values(requested_status, requested_time, can_publish)
+    for field in ["title", "summary", "slug", "category_id", "sku", "price", "currency", "stock_status", "cover_image", "tags", "sort_order"]:
         val = getattr(data, field)
         if val is not None:
             # security-audit F-01：标题/摘要作为纯文本清洗。
             if field in ("title", "summary"):
                 val = clean_text(val)
-            # security-audit F-11：无发布权限时禁止改为 PUBLISHED。
-            if field == "status" and val == ProductStatus.PUBLISHED.value and not can_publish:
-                val = ProductStatus.DRAFT.value
             setattr(product, field, val)
+    if data.status is not None or data.published_at is not None:
+        product.status = normalized_status
+        product.published_at = normalized_time
     if data.content_html is not None:
         product.content_html = clean_html(data.content_html)
     product.updated_by = operator or None
     await product.save()
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
+    change_type = "SCHEDULE" if product.status == ProductStatus.SCHEDULED.value else "UPDATE"
+    await revision_services.record_revision(product, "product", change_type, operator)
     await _invalidate_product_content(old_slug, product.slug)
     return await get_product_detail_admin(product.slug)
 
@@ -390,3 +410,59 @@ async def get_product_by_id(product_id: int) -> ProductDetailVO:
     return ProductDetailVO.from_model(
         product, galleries=product.galleries, attributes=product.attributes
     )
+
+
+async def list_product_revisions(product_id: int) -> list[dict]:
+    if await Product.get_or_none(id=product_id) is None:
+        raise BizException(ErrorCode.A010001)
+    return await revision_services.list_revisions("product", product_id)
+
+
+async def restore_product_revision(product_id: int, revision_id: int, operator: str) -> ProductDetailVO:
+    product = await Product.get_or_none(id=product_id, deleted=0)
+    if product is None:
+        raise BizException(ErrorCode.A010001)
+    revision = await revision_services.get_revision("product", product_id, revision_id)
+    old_slug = product.slug
+    snapshot = revision.snapshot
+    category_id = snapshot.get("category_id")
+    if category_id and await ProductCategory.get_or_none(id=category_id, deleted=0) is None:
+        raise BizException(ErrorCode.A010001, "历史版本关联的产品分类不存在")
+    for field in revision_services.PRODUCT_FIELDS:
+        if field in snapshot:
+            value = snapshot[field]
+            if field == "published_at" and value:
+                value = datetime.fromisoformat(value)
+            setattr(product, field, value)
+    product.updated_by = operator or None
+    await product.save()
+    await update_search_vector("t_product", product.id, "title", "summary", "content_html")
+    await revision_services.record_revision(product, "product", "RESTORE", operator)
+    await _invalidate_product_content(old_slug, product.slug)
+    return await get_product_detail_admin(product.slug)
+
+
+async def get_product_preview(product_id: int) -> ProductDetailVO:
+    product = await Product.get_or_none(id=product_id, deleted=0)
+    if product is None:
+        raise BizException(ErrorCode.A010001)
+    await product.fetch_related("category", "galleries", "attributes")
+    return ProductDetailVO.from_model(product, product.galleries, product.attributes)
+
+
+async def publish_due_products() -> int:
+    now = datetime.now(UTC)
+    due = await Product.filter(
+        deleted=0, status=ProductStatus.SCHEDULED.value, published_at__lte=now
+    ).values_list("id", "slug")
+    published = 0
+    for product_id, slug in due:
+        changed = await Product.filter(
+            id=product_id, status=ProductStatus.SCHEDULED.value
+        ).update(status=ProductStatus.PUBLISHED.value)
+        if changed:
+            product = await Product.get(id=product_id)
+            await revision_services.record_revision(product, "product", "PUBLISH", "scheduler")
+            await _invalidate_product_content(slug)
+            published += 1
+    return published

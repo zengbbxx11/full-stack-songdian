@@ -14,6 +14,7 @@ from common.idempotency import acquire_idempotency, idempotency_key_dependency
 from common.result import PageRequest, PageResponse, Result
 from content.models import AdminUser
 from content.permissions import NEWS_PUBLISH
+from content_revision.services import create_preview_token
 from news import services
 from news.schemas import (
     NewsCategoryCreate,
@@ -100,6 +101,35 @@ async def get_news_admin(
     # 绕过软删过滤，admin 可读取/编辑已软删项。
     vo = await services.get_news_by_id(news_id)
     return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.get("/admin/news/{news_id}/revisions", summary="新闻版本历史")
+async def list_news_revisions(
+    news_id: int,
+    _user: AdminUser = Depends(require_permission("news:read")),
+) -> Result:
+    return Result.ok(await services.list_news_revisions(news_id))
+
+
+@router.post("/admin/news/{news_id}/revisions/{revision_id}/restore", summary="恢复新闻版本")
+@audit(action="news.revision.restore", resource="news:{news_id}")
+async def restore_news_revision(
+    news_id: int,
+    revision_id: int,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("news:update")),
+) -> Result:
+    vo = await services.restore_news_revision(news_id, revision_id, current_user.username)
+    return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.post("/admin/news/{news_id}/preview-token", summary="签发新闻草稿预览令牌")
+async def create_news_preview_token(
+    news_id: int,
+    _user: AdminUser = Depends(require_permission("news:read")),
+) -> Result:
+    await services.get_news_preview(news_id)
+    return Result.ok({"token": create_preview_token("news", news_id), "expires_in": 900})
 
 
 # ─────────────── 后台新闻分类写/排序（T02）───────────────

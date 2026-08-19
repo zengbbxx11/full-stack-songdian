@@ -1,22 +1,25 @@
 classDiagram
-    class ProductCategory { BigInt id; String name; String slug; Int sort_order }
-    class Product { BigInt id; String slug; String title; Text content_html; FK category; Decimal price; String stock_status; String status; TSVector search_vector }
+    class ProductCategory { BigInt id; String name; String slug; Float sort_order }
+    class Product { BigInt id; String slug; String title; Text content_html; FK category; String status; DateTime published_at; String cover_image; JSON tags; TSVector search_vector }
     class ProductGallery { BigInt id; FK product; String image_url; Int sort_order }
     class ProductAttribute { BigInt id; FK product; String name; String slug; String value }
-    class NewsCategory { BigInt id; String name; String slug; Int sort_order }
-    class News { BigInt id; String slug; String title; Text content_html; FK category; String author; String status; TSVector search_vector }
-    class Inquiry { BigInt id; String name; String email; String biz_req_no; String status; String smtp_status; Int smtp_retry }
-    class AdminUser { BigInt id; String username; String password_hash; FK role; String status; Int login_fail }
+    class NewsCategory { BigInt id; String name; String slug; Float sort_order }
+    class News { BigInt id; String slug; String title; Text content_html; FK category; String status; DateTime published_at; String cover_image; TSVector search_vector }
+    class ContentRevision { BigInt id; String resource_type; BigInt resource_id; Int version; String change_type; JSON snapshot; String created_by; DateTime created_time }
+    class Inquiry { BigInt id; String name; String email; String status; String country; String source_product; String landing_page; String referrer; JSON tags; JSON follow_notes }
+    class NotificationReadState { BigInt id; FK user; String notification_key; DateTime read_at }
+    class AdminUser { BigInt id; String username; String password_hash; FK role; String status }
     class Role { BigInt id; String name; String code }
     class RolePermission { BigInt id; FK role; String permission_code }
     class AuditLog { BigInt id; BigInt user_id; String action; String resource; String result }
-    class MigrationBatch { BigInt id; String batch_no; String status; Int total; Int processed; Int failed }
-    class MigrationRecord { BigInt id; FK batch; String entity_type; String source_id; BigInt target_id; String status }
+    class UploadRecord { BigInt id; String url; String file_name; BigInt size; String mime_type }
 
-    Product "1" --> "1" ProductCategory
+    Product "1" --> "0..1" ProductCategory
     Product "1" --> "0..*" ProductGallery
     Product "1" --> "0..*" ProductAttribute
-    News "1" --> "1" NewsCategory
+    News "1" --> "0..1" NewsCategory
+    Product "1" ..> "0..*" ContentRevision : resource_type=products
+    News "1" ..> "0..*" ContentRevision : resource_type=news
     AdminUser "1" --> "1" Role
     Role "1" --> "0..*" RolePermission
-    MigrationBatch "1" --> "0..*" MigrationRecord
+    AdminUser "1" --> "0..*" NotificationReadState

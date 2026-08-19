@@ -38,6 +38,7 @@ class Product(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
     currency = fields.CharField(max_length=10, default="CNY")
     stock_status = fields.CharField(max_length=20, default="instock")  # instock/outofstock
     status = fields.CharField(max_length=30, default="DRAFT")  # DRAFT/PUBLISHED
+    published_at = fields.DatetimeField(null=True)
     cover_image = fields.CharField(max_length=500, null=True)  # 产品主图（封面），迁移自 WP featured_media
     # tags: 标签名字符串数组，如 ["OEM", "4K", "Waterproof"]；PG 下为 JSONB，SQLite 降级为 TEXT
     tags = fields.JSONField(null=True, default=list)
@@ -52,6 +53,7 @@ class Product(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
 
     class Meta:
         table = "t_product"
+        indexes = (("status", "published_at"),)
 
 
 class ProductGallery(Model):

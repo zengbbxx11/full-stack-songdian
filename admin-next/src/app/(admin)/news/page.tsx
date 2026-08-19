@@ -182,7 +182,7 @@ export default function NewsPage() {
                   </svg>
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-white/90">{n.title}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${n.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{n.status === "PUBLISHED" ? "已发布" : n.status === "DRAFT" ? "草稿" : n.status}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${n.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : n.status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{n.status === "PUBLISHED" ? "已发布" : n.status === "SCHEDULED" ? "定时发布" : n.status === "DRAFT" ? "草稿" : n.status}</span></td>
                 <td className="px-4 py-3 text-gray-500">{n.published_at || n.created_time || "-"}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">

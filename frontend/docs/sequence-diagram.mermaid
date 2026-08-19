@@ -1,21 +1,45 @@
 sequenceDiagram
-    participant U as 用户浏览器
-    participant P as products/page.tsx (Server Component)
-    participant A as lib/api/products.ts
-    participant C as lib/api/client.ts
-    participant B as FastAPI :8000
-    U->>P: GET /products?page=1&category=mirrorless
-    P->>A: getProductCategories()
-    A->>C: apiFetch('/api/v1/product-categories')
-    C->>B: GET /api/v1/product-categories
-    B-->>C: Result{data:[CategoryVO...]}
-    C-->>A: [CategoryVO]
-    A-->>P: WCProductCategory[] (slug->id 解析)
-    P->>A: getProducts({page:1, categoryId, perPage:12})
-    A->>C: apiFetch('/api/v1/products?page=1&category_id=X&page_size=12')
-    C->>B: GET /api/v1/products...
-    B-->>C: Result{data:{list:[ProductPageVO],total,page,page_size}}
-    C-->>A: PageResponse
-    A->>A: 映射 ProductPageVO -> ProductSummary
-    A-->>P: {products:ProductSummary[], pagination:{total,totalPages}}
-    P-->>U: HTML (ISR revalidate=60)
+    autonumber
+    participant U as 浏览器
+    participant P as 产品详情 Server Component
+    participant C as apiFetch / ApiError
+    participant B as FastAPI
+
+    U->>P: GET /products/{category}/{slug}
+    P->>C: getProductBySlug(slug)
+    C->>B: GET /api/v1/products/{slug}
+    alt 请求成功
+        B-->>C: Result{code:"0",data:ProductDetail}
+        C-->>P: ProductDetail
+        P-->>U: 产品 HTML（ISR）
+    else 真实不存在
+        B-->>C: HTTP 404 或 code=A010001
+        C-->>P: ApiError(status/code/path)
+        P->>P: notFound()
+        P-->>U: 标准 404 + noindex
+    else 网络、429、5xx 或非法响应
+        B--xC: 暂时不可用
+        C-->>P: ApiError(status/code/path/cause)
+        P-->>U: ProductUnavailable + Retry
+    end
+
+    participant A as 管理后台
+    participant V as /preview/[token]
+    A->>U: 打开短期预览 URL
+    U->>V: GET /preview/{signed-token}
+    V->>B: GET /api/v1/preview/{token} (no-store)
+    alt token 有效
+        B-->>V: 草稿产品/新闻数据
+        V-->>U: noindex 预览页面
+    else token 过期或无效
+        B-->>V: 401/404
+        V-->>U: 预览不可用提示
+    end
+
+    participant R as WebVitalsReporter
+    U->>R: 页面性能指标生成
+    alt 已接受 Analytics 且配置 GA4
+        R->>R: 上报 LCP/CLS/INP/FCP/TTFB
+    else 未同意或未配置
+        R-->>U: 不发送分析数据
+    end

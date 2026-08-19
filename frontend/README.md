@@ -1,5 +1,7 @@
 # Songdian Technology — B2B 外贸官网（Next.js + FastAPI）
 
+> 当前状态（2026-08-19）：官网已支持签名草稿预览、结构化 API 错误与 Web Vitals 上报；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+
 松典科技（广东）有限公司面向全球 OEM / ODM 数码相机采购商的 B2B 展示型官网。前端为 **Next.js（App Router）**，通过项目自有 FastAPI 后端获取产品/新闻/分类数据，支持 ISR 增量静态再生 + Streaming SSR。
 
 > 定位：面向全球 OEM / ODM 数码相机采购商。设计语言为「Tesla 极简」——靠 border 分隔、克制圆角；语义双色信号：🔴 品牌红 `#d4343e` = 转化型 CTA（询盘 / 报价 / 联系），🔵 Electric Blue `#3E6AE1` = 工具 / 功能按钮（搜索 / 筛选）。转化型 CTA 允许极淡投影以增强可点击感。
@@ -241,7 +243,7 @@ frontend/
 | 导航菜单项 | `components/Header.tsx` 中的 `NAV_LINKS` |
 | 配色 | `app/globals.css` 的 CSS 变量 |
 | 页脚链接 | `lib/site-config.ts` |
-| 询盘收件邮箱 | `.env.local` 的 `INQUIRY_EMAIL_TO` |
+| 询盘收件邮箱 / SMTP | 管理后台“系统设置”；frontend 不保存邮件凭据 |
 | 展会图片 | `public/Exhibitions/` 目录增删文件 |
 
 ---
@@ -295,10 +297,19 @@ frontend/
 - 全站浮动询盘为全宽底部栏，Cookie 同意横幅显示时自动避让；联系页不重复显示该浮层。
 - SEO 页面标题、描述和 JSON-LD 明确 Songdian Technology 是 digital camera manufacturer / OEM/ODM camera factory；组织类型为 `Manufacturer`。
 - 官网询盘会提交国家、产品 slug、落地页、来源页和 UTM 归因字段。产品详情的 CTA 使用 `?product=<slug>` 预填来源产品。
-- `BACKEND_PROXY_URL` 用于 Next.js 服务端到 Compose 内部 API 的访问；浏览器公开 API 仍使用 `NEXT_PUBLIC_API_URL`。
+- `INTERNAL_API_URL` 用于 Next.js 服务端到 Compose 内部 API 的访问；浏览器公开 API 仍使用 `NEXT_PUBLIC_API_URL`。
 
 ### 与旧版段落的更正
 
 - 设计规范中的旧版 `4px / 12px` 圆角、Tesla 蓝色 CTA 和 14px 导航仅是历史参考；当前代码以 `frontend/app/globals.css` 的品牌红/中性灰 token 和 6/10/12/16/20/24/28px 圆角层级为准。
 - SEO JSON-LD 当前包含 `Manufacturer`（统一 `@id`），不是仅使用 `Organization`/`LocalBusiness` 的旧清单。
 - 部署文档中的服务器现场构建命令只用于本地或首次诊断；正式生产发布使用 GHCR 版本镜像和独立迁移。
+
+## 当前数据访问与质量边界（2026-08-19）
+
+- 服务端优先使用 `INTERNAL_API_URL`；浏览器公开地址使用 `NEXT_PUBLIC_API_URL`。Compose 中前者为 `http://backend:8000`，后者为 `https://api.zsaki.icu`。
+- `lib/api/client.ts` 的 `ApiError` 保留 HTTP `status`、业务 `code`、请求 `path` 和原始 `cause`。产品详情仅把 HTTP 404 或 `A010001` 交给 `notFound()`；网络、429、5xx 和非法响应交给产品级错误边界显示可重试状态。
+- `/preview/[token]` 是后台签名预览入口，使用 `no-store` 并输出 `noindex`；它不会改变正式产品/新闻页面的结构或视觉内容。
+- 产品卡片与图库使用 `object-contain`，但图片容器不再添加大块 padding；不得改成 `object-cover` 裁掉产品主体。
+- `next.config.ts` 限制静态生成并发，避免批量产品预渲染触发后端按 IP 限流。
+- Web Vitals 仅在用户接受 Analytics 且配置 GA4 后上报；常规验证依次运行 `npm run lint`、`npm run verify:seo`、`npm run build`，关键链路运行 `npm run test:e2e`，性能预算运行 `npm run lighthouse`。

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+from datetime import UTC, datetime
 
 from tortoise.functions import Max
 from tortoise.transactions import in_transaction
@@ -18,6 +19,7 @@ from common.redis_client import cache_key, get_redis
 from common.revalidation import revalidate_frontend
 from common.result import PageRequest
 from common.search_vector import update_search_vector
+from content_revision import services as revision_services
 from news.models import News, NewsCategory
 from news.schemas import (
     NewsCategoryCreate,
@@ -34,6 +36,19 @@ SORT_ORDER_MIN = -1_000_000.0
 SORT_ORDER_MAX = 1_000_000.0
 
 DETAIL_TTL = 300
+
+
+def _publishing_values(status: str, published_at: datetime | None, can_publish: bool) -> tuple[str, datetime | None]:
+    if status in {NewsStatus.PUBLISHED.value, NewsStatus.SCHEDULED.value} and not can_publish:
+        return NewsStatus.DRAFT.value, published_at
+    now = datetime.now(UTC)
+    if status == NewsStatus.SCHEDULED.value:
+        if published_at is None or published_at <= now:
+            raise BizException(ErrorCode.A020001, "定时发布时间必须晚于当前时间")
+        return status, published_at
+    if status == NewsStatus.PUBLISHED.value:
+        return status, published_at or now
+    return status, published_at
 
 
 async def _cache_get_detail(slug: str) -> dict | None:
@@ -150,9 +165,7 @@ async def create_news(
     if await News.get_or_none(slug=data.slug, deleted=0) is not None:
         raise BizException(ErrorCode.A020002)
     # security-audit F-11：无发布权限时，禁止直接置为 PUBLISHED（降级为 DRAFT）。
-    status = data.status
-    if status == NewsStatus.PUBLISHED.value and not can_publish:
-        status = NewsStatus.DRAFT.value
+    status, published_at = _publishing_values(data.status, data.published_at, can_publish)
     cleaned = clean_html(data.content_html)
     # security-audit F-01：标题/摘要/作者作为纯文本清洗，杜绝内嵌 HTML/脚本。
     create_kwargs = dict(
@@ -167,13 +180,14 @@ async def create_news(
     )
     # published_at 为 nullable=False + auto_now_add；未显式提供时省略，
     # 交由 ORM 自动填充创建时间（草稿/发布均给合理默认值）。
-    if data.published_at is not None:
-        create_kwargs["published_at"] = data.published_at
+    if published_at is not None:
+        create_kwargs["published_at"] = published_at
     # 创建包事务保证原子性；注意 update_search_vector 使用原生 execute_query，
     # 不能置于 in_transaction() 内（asyncpg 会重置连接），故放在事务提交之后。
     async with in_transaction():
         news = await News.create(**create_kwargs)
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
+    await revision_services.record_revision(news, "news", "CREATE", operator)
     await _invalidate_news_content(data.slug)
     return await get_news_detail_admin(data.slug)
 
@@ -196,21 +210,26 @@ async def update_news(
             raise BizException(ErrorCode.A020001, "sort_order 必须为有限数值")
         if data.sort_order < SORT_ORDER_MIN or data.sort_order > SORT_ORDER_MAX:
             raise BizException(ErrorCode.A020001, "sort_order 超出允许范围")
-    for field in ["title", "summary", "slug", "category_id", "author", "published_at", "status", "sort_order"]:
+    requested_status = data.status or news.status
+    requested_time = data.published_at if data.published_at is not None else news.published_at
+    normalized_status, normalized_time = _publishing_values(requested_status, requested_time, can_publish)
+    for field in ["title", "summary", "slug", "category_id", "author", "sort_order"]:
         val = getattr(data, field)
         if val is not None:
             # security-audit F-01：标题/摘要/作者作为纯文本清洗。
             if field in ("title", "summary", "author"):
                 val = clean_text(val)
-            # security-audit F-11：无发布权限时禁止改为 PUBLISHED。
-            if field == "status" and val == NewsStatus.PUBLISHED.value and not can_publish:
-                val = NewsStatus.DRAFT.value
             setattr(news, field, val)
+    if data.status is not None or data.published_at is not None:
+        news.status = normalized_status
+        news.published_at = normalized_time
     if data.content_html is not None:
         news.content_html = clean_html(data.content_html)
     news.updated_by = operator or None
     await news.save()
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
+    change_type = "SCHEDULE" if news.status == NewsStatus.SCHEDULED.value else "UPDATE"
+    await revision_services.record_revision(news, "news", change_type, operator)
     await _invalidate_news_content(old_slug, news.slug)
     return await get_news_detail_admin(news.slug)
 
@@ -301,3 +320,59 @@ async def get_news_by_id(news_id: int) -> NewsDetailVO:
         raise BizException(ErrorCode.A020001)
     await news.fetch_related("category")
     return NewsDetailVO.from_model(news)
+
+
+async def list_news_revisions(news_id: int) -> list[dict]:
+    if await News.get_or_none(id=news_id) is None:
+        raise BizException(ErrorCode.A020001)
+    return await revision_services.list_revisions("news", news_id)
+
+
+async def restore_news_revision(news_id: int, revision_id: int, operator: str) -> NewsDetailVO:
+    news = await News.get_or_none(id=news_id, deleted=0)
+    if news is None:
+        raise BizException(ErrorCode.A020001)
+    revision = await revision_services.get_revision("news", news_id, revision_id)
+    old_slug = news.slug
+    snapshot = revision.snapshot
+    category_id = snapshot.get("category_id")
+    if category_id and await NewsCategory.get_or_none(id=category_id, deleted=0) is None:
+        raise BizException(ErrorCode.A020001, "历史版本关联的新闻分类不存在")
+    for field in revision_services.NEWS_FIELDS:
+        if field in snapshot:
+            value = snapshot[field]
+            if field == "published_at" and value:
+                value = datetime.fromisoformat(value)
+            setattr(news, field, value)
+    news.updated_by = operator or None
+    await news.save()
+    await update_search_vector("t_news", news.id, "title", "summary", "content_html")
+    await revision_services.record_revision(news, "news", "RESTORE", operator)
+    await _invalidate_news_content(old_slug, news.slug)
+    return await get_news_detail_admin(news.slug)
+
+
+async def get_news_preview(news_id: int) -> NewsDetailVO:
+    news = await News.get_or_none(id=news_id, deleted=0)
+    if news is None:
+        raise BizException(ErrorCode.A020001)
+    await news.fetch_related("category")
+    return NewsDetailVO.from_model(news)
+
+
+async def publish_due_news() -> int:
+    now = datetime.now(UTC)
+    due = await News.filter(
+        deleted=0, status=NewsStatus.SCHEDULED.value, published_at__lte=now
+    ).values_list("id", "slug")
+    published = 0
+    for news_id, slug in due:
+        changed = await News.filter(
+            id=news_id, status=NewsStatus.SCHEDULED.value
+        ).update(status=NewsStatus.PUBLISHED.value)
+        if changed:
+            news = await News.get(id=news_id)
+            await revision_services.record_revision(news, "news", "PUBLISH", "scheduler")
+            await _invalidate_news_content(slug)
+            published += 1
+    return published

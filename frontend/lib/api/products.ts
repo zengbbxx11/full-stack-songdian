@@ -14,8 +14,10 @@ import type {
   WCProductImage,
   WCAttribute,
 } from "@/lib/types";
+import { cache } from "react";
 import {
   apiFetch,
+  ApiError,
   toAbsoluteUrl,
   type CategoryDTO,
   type ProductPageDTO,
@@ -67,8 +69,8 @@ export async function getProducts(params?: {
   return { products, pagination: { total: data.total, totalPages } };
 }
 
-/** 按 slug 获取单个产品详情；未找到或出错返回 null。 */
-export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
+/** 按 slug 获取产品详情；仅真实不存在时返回 null，其余 API 故障继续抛出。 */
+export const getProductBySlug = cache(async (slug: string): Promise<ProductDetail | null> => {
   try {
     const data = await apiFetch<ProductDetailDTO>(
       `/api/v1/products/${encodeURIComponent(slug)}`,
@@ -76,10 +78,13 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       { tags: ["products", `product:${slug}`] },
     );
     return toProductDetail(data);
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.code === "A010001")) {
+      return null;
+    }
+    throw error;
   }
-}
+});
 
 /** 产品 slug 条目（含主分类 slug），用于 SSG 预渲染与 sitemap 生成嵌套 URL。 */
 export interface ProductSlugEntry {

@@ -14,7 +14,7 @@
 import React, { useCallback, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, swrFetcher, API_BASE } from "@/lib/api-client";
+import { apiFetch, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { Modal } from "@/components/ui/modal";
 import { FolderIcon, PlusIcon, TrashBinIcon } from "@/icons";
@@ -335,7 +335,7 @@ export default function MediaPage() {
                 return (
                   <div key={rec.id} className={`group relative rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${isSelected ? "border-brand-500 bg-brand-50/30 dark:bg-brand-900/10" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`} onClick={() => toggleSelect(rec.id)} onMouseEnter={() => fetchUsage(rec.id)}>
                     <div className={`absolute top-2 left-2 z-10 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}><input type="checkbox" checked={isSelected} readOnly className="w-4 h-4 rounded border-white bg-white/80 text-brand-500 focus:ring-brand-500 shadow-sm" /></div>
-                    <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800"><img src={`${API_BASE}${rec.url}`} alt={rec.title || rec.file_name} className="w-full h-full object-cover" loading="lazy" /></div>
+                    <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800"><img src={resolveMediaUrl(rec.url)} alt={rec.title || rec.file_name} className="w-full h-full object-cover" loading="lazy" /></div>
                     <div className="p-2">
                       <p className="text-xs text-gray-700 dark:text-gray-300 truncate mb-0.5">{rec.title || rec.file_name}</p>
                       <p className="text-[10px] text-gray-400 mb-1.5">{formatSize(rec.size)}</p>
@@ -349,7 +349,7 @@ export default function MediaPage() {
                         </div>
                       ) : null}
                       <div className="flex gap-1">
-                        <button onClick={(e) => { e.stopPropagation(); copyUrl(`${API_BASE}${rec.url}`); }} className="flex-1 text-[11px] py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">复制</button>
+                        <button onClick={(e) => { e.stopPropagation(); copyUrl(resolveMediaUrl(rec.url)); }} className="flex-1 text-[11px] py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">复制</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(rec); }} className="text-[11px] py-1 px-2 rounded bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"><TrashBinIcon className="w-3 h-3" /></button>
                       </div>
                     </div>

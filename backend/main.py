@@ -17,6 +17,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
@@ -35,6 +36,7 @@ from news.routers import router as news_router
 from product.routers import router as product_router
 from search.routers import router as search_router
 from uploads.routers import router as upload_router
+from content_revision.routers import router as preview_router
 from common.settings_router import router as settings_router
 
 logger = get_logger(__name__)
@@ -64,10 +66,26 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             logger.warning("种子数据写入失败（忽略，可手动执行）：%s", exc)
 
+    from content_revision.services import scheduled_publish_loop
+    from news.services import publish_due_news
+    from product.services import publish_due_products
+
+    async def publish_due_content() -> None:
+        await publish_due_products()
+        await publish_due_news()
+
+    scheduler_stop = asyncio.Event()
+    scheduler_task = asyncio.create_task(
+        scheduled_publish_loop(publish_due_content, scheduler_stop),
+        name="scheduled-content-publisher",
+    )
+
     # yield 之后是关闭阶段
     yield
 
     # ── 关闭阶段 ──
+    scheduler_stop.set()
+    await scheduler_task
     await close_db()
     await close_redis()
 
@@ -119,6 +137,7 @@ app.include_router(inquiry_router)    # /api/v1/inquiries（询盘表单）
 app.include_router(content_router)    # /api/v1/admin/login（登录/角色/权限）
 app.include_router(upload_router)     # /api/v1/admin/upload（图片上传）
 app.include_router(settings_router)   # /api/v1/admin/settings（系统设置）
+app.include_router(preview_router)    # /api/v1/preview/{token}（短期签名草稿预览）
 
 # ── 静态文件服务：让前端能通过 /uploads/xxx.jpg 访问后端存的产品/新闻图片 ──
 MEDIA_ROOT.mkdir(parents=True, exist_ok=True)

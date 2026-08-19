@@ -15,8 +15,9 @@ import Button from "@/components/ui/button/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, API_BASE } from "@/lib/api-client";
+import { apiFetch, resolveMediaUrl } from "@/lib/api-client";
 import type { NewsItem } from "@/types";
+import ContentWorkflowPanel from "@/components/content/ContentWorkflowPanel";
 
 export default function NewsFormPage() {
   return (
@@ -36,6 +37,7 @@ function NewsFormInner() {
   const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "" });
   const toast = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -45,7 +47,7 @@ function NewsFormInner() {
       const msg: string = err instanceof Error ? err.message : "Unknown error";
       toast.error("加载文章失败：" + msg);
     });
-  }, [id, toast]);
+  }, [id, toast, reloadKey]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File, newsSlug?: string): Promise<string> {
@@ -56,12 +58,12 @@ function NewsFormInner() {
       method: "POST",
       body: formData,
     });
-    return `${API_BASE}${result.url}`;
+    return result.url;
   }
 
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
-    try { const url = await uploadImage(file, form.slug); setForm(prev => ({ ...prev, cover_image: url.replace(API_BASE, "") })); }
+    try { const url = await uploadImage(file, form.slug); setForm(prev => ({ ...prev, cover_image: url })); }
     catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
     e.target.value = "";
   }
@@ -99,7 +101,7 @@ function NewsFormInner() {
             <div><Label>标题 *</Label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="文章标题" /></div>
             <div><Label>别名 *</Label><Input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} placeholder="文章别名" /></div>
             <div><Label>作者</Label><Input value={form.author} onChange={e => setForm({...form, author: e.target.value})} placeholder="作者名称" /></div>
-            <div><Label>状态</Label><select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">草稿</option><option value="PUBLISHED">已发布</option></select></div>
+            <div><Label>状态</Label><select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option></select></div>
             <div><Label>发布时间</Label><Input type="datetime-local" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
@@ -110,13 +112,15 @@ function NewsFormInner() {
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
           <div className="flex items-start gap-4">
-            {form.cover_image ? <img src={`${API_BASE}${form.cover_image}`} className="w-32 h-20 object-cover rounded-lg border" alt="Cover" /> : <div className="w-32 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>}
+            {form.cover_image ? <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-20 object-cover rounded-lg border" alt="Cover" /> : <div className="w-32 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>}
             <div className="flex-1 space-y-3">
               <Input value={form.cover_image} onChange={e => setForm({...form, cover_image: e.target.value})} placeholder="/uploads/news/x/cover.webp" />
               <label className="inline-flex items-center px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">上传图片<input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" /></label>
             </div>
           </div>
         </div>
+
+        {isEdit && id && <ContentWorkflowPanel resource="news" id={id} onRestored={() => setReloadKey((value) => value + 1)} />}
 
         <div className="flex justify-between">
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除"}</Button>}</div>

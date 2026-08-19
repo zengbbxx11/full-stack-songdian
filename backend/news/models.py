@@ -40,3 +40,4 @@ class News(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
 
     class Meta:
         table = "t_news"
+        indexes = (("status", "published_at"),)

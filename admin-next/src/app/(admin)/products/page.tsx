@@ -10,7 +10,7 @@ import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, apiFetchAllPages, swrFetcher, API_BASE } from "@/lib/api-client";
+import { apiFetch, apiFetchAllPages, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
 import type { Product, ProductCategory, Paginated } from "@/types";
 
 export default function ProductsPage() {
@@ -248,12 +248,12 @@ export default function ProductsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    {p.cover_image ? <img src={`${API_BASE}${p.cover_image}`} className="w-10 h-10 rounded object-cover" alt="" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
+                    {p.cover_image ? <img src={resolveMediaUrl(p.cover_image)} className="w-10 h-10 rounded object-cover" alt="" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
                     <span className="font-medium text-gray-800 dark:text-white/90">{p.title}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.category?.name || "-"}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : p.status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "SCHEDULED" ? "定时发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
                 <td className="px-4 py-3">
                   <button onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${p.seo_title ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"}`}>

@@ -1,5 +1,7 @@
 # Songdian B2B — 工厂外贸官网（管理后台）
 
+> 当前状态（2026-08-19）：产品与新闻编辑已接入草稿、定时/立即发布、版本历史、恢复和 15 分钟短期预览。当前部署与迁移说明以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+
 松典科技 B2B 平台的管理后台，基于 **Next.js 16 + React 19 + Tailwind CSS v4**，通过项目自有 **FastAPI 后端** 提供数据服务。用于管理产品、新闻、分类、询盘和媒体资源。
 
 > 基于 [TailAdmin Next.js](https://github.com/TailAdmin/free-nextjs-admin-dashboard) 模板二次开发，已移除演示数据和无用组件。
@@ -45,7 +47,7 @@ npm run dev        # http://localhost:3001
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | `BACKEND_PROXY_URL` 未设置时的代理兼容回退；页面请求仍走同源 `/api`、`/uploads` |
 | `BACKEND_PROXY_URL` | `http://localhost:8000` | 服务端 `/api`、`/uploads` rewrite 目标；Compose 中为 `http://backend:8000` |
 | `JWT_SECRET` | — | 服务端路由守卫验签密钥，必须与后端一致，禁止使用 `NEXT_PUBLIC_` 前缀 |
 
@@ -139,7 +141,7 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 
 复制 `.env.example` 为 `.env.local` 后填写：
 
-- `NEXT_PUBLIC_API_URL`：后端地址（客户端组件读取，须 `NEXT_PUBLIC_` 前缀）。
+- `NEXT_PUBLIC_API_URL`：`BACKEND_PROXY_URL` 未设置时的兼容回退；后台客户端组件仍只请求同源 `/api`、`/uploads`。
 - `BACKEND_PROXY_URL`：Next.js 服务端 rewrite 目标；Docker Compose 内使用 `http://backend:8000`。
 - 生产公网后台入口为 `https://admin.zsaki.icu/signin`；`3001` 仅为 admin-next 应用端口和宿主机回环端口，禁止向公网开放。
 - API 域名为 `https://api.zsaki.icu`；`BACKEND_PROXY_URL=http://backend:8000` 在 Compose 中保持不变。
@@ -157,3 +159,11 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 生产后台使用指定 GHCR 镜像，构建和迁移步骤见根目录 `deploy-guide.md`。
 
 目录树中旧的“通知铃铛（空状态）”描述已失效：当前 `NotificationDropdown` 已接入通知 API、30 秒轮询、未读徽标和已读操作。
+
+## 当前媒体与内容工作流约定（2026-08-19）
+
+- 认证始终为 Cookie-only：登录/刷新响应体不包含 JWT，客户端不读取或持久化访问令牌。
+- `resolveMediaUrl()` 对 `/uploads/...` 保持同源，Next.js rewrite 再根据 `BACKEND_PROXY_URL` 转发；外部绝对 URL 原样使用。组件不得拼接 `NEXT_PUBLIC_API_URL` 或 `localhost:8000`。
+- 产品、新闻列表展示当前状态和计划发布时间；编辑页的 `ContentWorkflowPanel` 负责状态选择、时间校验、版本查看/恢复与预览入口。
+- 草稿预览会打开官网 `/preview/[token]`，令牌短期有效且不可用于正式公开 URL；恢复历史版本后应刷新编辑数据与版本列表。
+- 本地启动端口应使用 `npm run dev -- -p 3001`；若脚本未透传参数，可用 `npx next dev -p 3001`。`npm run dev -- -p 3001` 不应被写成 `npm run dev -- 3001`，后者会被 Next.js 解释为项目目录。

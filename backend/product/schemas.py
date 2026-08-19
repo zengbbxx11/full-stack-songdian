@@ -29,6 +29,8 @@ class ProductCreateRequest(BaseModel):
     currency: str = "CNY"
     stock_status: str = StockStatus.INSTOCK.value
     status: str = ProductStatus.DRAFT.value
+    published_at: datetime | None = None
+    cover_image: str | None = Field(default=None, max_length=500)
     # tags：标签名数组，如 ["OEM", "4K", "Waterproof"]；缺省空数组（T04）。
     tags: list[str] = []
     # SEO 字段（可选，空则回退系统默认值）
@@ -46,7 +48,7 @@ class ProductCreateRequest(BaseModel):
     @classmethod
     def _status(cls, v: str) -> str:
         if v not in ProductStatus.values():
-            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+            raise ValueError("status 必须为 DRAFT/SCHEDULED/PUBLISHED")
         return v
 
     @field_validator("stock_status")
@@ -68,6 +70,8 @@ class ProductUpdateRequest(BaseModel):
     currency: str | None = None
     stock_status: str | None = None
     status: str | None = None
+    published_at: datetime | None = None
+    cover_image: str | None = Field(default=None, max_length=500)
     sort_order: float | None = None
     # tags：编辑时整体覆盖（T04）。缺省空数组。
     tags: list[str] = []
@@ -87,7 +91,7 @@ class ProductUpdateRequest(BaseModel):
     @classmethod
     def _status(cls, v: str | None) -> str | None:
         if v is not None and v not in ProductStatus.values():
-            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+            raise ValueError("status 必须为 DRAFT/SCHEDULED/PUBLISHED")
         return v
 
     @field_validator("stock_status")
@@ -181,6 +185,7 @@ class ProductPageVO(BaseModel):
     currency: str = "CNY"
     stock_status: str = "instock"
     status: str = "DRAFT"
+    published_at: datetime | None = None
     category: CategoryVO | None = None
     created_time: datetime | None = None
     updated_time: datetime | None = None
@@ -199,6 +204,7 @@ class ProductPageVO(BaseModel):
             id=m.id, slug=m.slug, title=m.title, summary=m.summary, sku=m.sku,
             price=m.price, currency=m.currency, stock_status=m.stock_status,
             status=m.status, category=cat,
+            published_at=getattr(m, "published_at", None),
             created_time=m.created_time, updated_time=m.updated_time,
             cover_image=m.cover_image,
             sort_order=m.sort_order,

@@ -36,7 +36,7 @@ class NewsCreateRequest(BaseModel):
     @classmethod
     def _status(cls, v: str) -> str:
         if v not in NewsStatus.values():
-            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+            raise ValueError("status 必须为 DRAFT/SCHEDULED/PUBLISHED")
         return v
 
 
@@ -64,7 +64,7 @@ class NewsUpdateRequest(BaseModel):
     @classmethod
     def _status(cls, v: str | None) -> str | None:
         if v is not None and v not in NewsStatus.values():
-            raise ValueError("status 必须为 DRAFT/PUBLISHED")
+            raise ValueError("status 必须为 DRAFT/SCHEDULED/PUBLISHED")
         return v
 
 

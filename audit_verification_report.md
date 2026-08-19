@@ -1,6 +1,6 @@
 # Songdian B2B 审计清单对比核实报告
 
-> **历史核实报告（2026-07），不作为当前部署依据。** 认证、依赖版本、域名与 Compose 架构已在后续安全修复中变更；请以根目录 [README.md](README.md) 和 [deploy-guide.md](deploy-guide.md) 为准。
+> **历史核实报告（2026-07），不作为当前部署依据。** 认证、依赖版本、域名与 Compose 架构已在后续安全修复中变更；请以根目录 [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md)、[README.md](README.md) 和 [deploy-guide.md](deploy-guide.md) 为准。
 
 > 对比基准：`C:\Users\Administrator\Desktop\Front-end project\full-stack-project`（规范仓库）
 > 核实日期：2026-07-30

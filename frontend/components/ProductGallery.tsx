@@ -62,7 +62,7 @@ export default function ProductGallery({
               alt={img.alt || mainAlt}
               fill
               sizes="80px"
-              className="object-contain p-1"
+              className="object-contain p-0.5"
               onError={() => markBroken(img.id)}
             />
           </button>
@@ -86,7 +86,7 @@ export default function ProductGallery({
               alt={mainAlt}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-contain p-4 md:p-8"
+              className="object-contain"
               priority
               onError={() => setMainImgError(true)}
             />

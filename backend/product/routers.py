@@ -15,6 +15,7 @@ from common.idempotency import acquire_idempotency, idempotency_key_dependency
 from common.result import PageRequest, PageResponse, Result
 from content.models import AdminUser
 from content.permissions import PRODUCT_PUBLISH
+from content_revision.services import create_preview_token
 from product import services
 from product.schemas import (
     AttributeCreateRequest,
@@ -165,6 +166,35 @@ async def get_product_admin(
     # 绕过软删过滤，admin 可读取/编辑已软删项（含 tags/galleries/attributes）。
     vo = await services.get_product_by_id(product_id)
     return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.get("/admin/products/{product_id}/revisions", summary="产品版本历史")
+async def list_product_revisions(
+    product_id: int,
+    _user: AdminUser = Depends(require_permission("product:read")),
+) -> Result:
+    return Result.ok(await services.list_product_revisions(product_id))
+
+
+@router.post("/admin/products/{product_id}/revisions/{revision_id}/restore", summary="恢复产品版本")
+@audit(action="product.revision.restore", resource="product:{product_id}")
+async def restore_product_revision(
+    product_id: int,
+    revision_id: int,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("product:update")),
+) -> Result:
+    vo = await services.restore_product_revision(product_id, revision_id, current_user.username)
+    return Result.ok(vo.model_dump(mode="json"))
+
+
+@router.post("/admin/products/{product_id}/preview-token", summary="签发产品草稿预览令牌")
+async def create_product_preview_token(
+    product_id: int,
+    _user: AdminUser = Depends(require_permission("product:read")),
+) -> Result:
+    await services.get_product_preview(product_id)
+    return Result.ok({"token": create_preview_token("product", product_id), "expires_in": 900})
 
 
 # ─────────────── 后台分类写/排序（T02）───────────────

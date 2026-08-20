@@ -56,12 +56,12 @@ export default function FloatingInquiry() {
       role="region"
       aria-label="Quick inquiry"
     >
-      <div className="site-container flex h-full items-center justify-between gap-3">
-        <span className="truncate text-[14px] font-medium text-[#171A20] sm:text-[15px]">
+      <div className="flex h-full w-full items-center justify-between gap-4 px-4 sm:gap-6 sm:px-6 lg:px-8">
+        <span className="min-w-0 truncate text-[14px] font-medium text-[#171A20] sm:text-[15px]">
           Discuss your camera project
         </span>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
           href="/contact"
           className="inline-flex h-9 items-center rounded-lg bg-[#d4343e] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#b91c1c] sm:px-6"

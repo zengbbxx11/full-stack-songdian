@@ -88,6 +88,12 @@ export default function NavigationProgress() {
     if (prevPath.current === pathname) return;
 
     prevPath.current = pathname;
+
+    // 全局页面切换回到顶部；带 hash 的页内链接交给浏览器保留锚点定位。
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+
     clearTimers();
 
     setProgress(100);

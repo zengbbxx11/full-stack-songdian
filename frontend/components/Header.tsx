@@ -95,6 +95,12 @@ export default function Header() {
     }
   };
 
+  const resetScrollForNavigation = () => {
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  };
+
   return (
     <>
       {/* ====================== 顶部导航栏 ====================== */}
@@ -149,6 +155,7 @@ export default function Header() {
                 >
                   <Link
                     href={item.href}
+                    onClickCapture={resetScrollForNavigation}
                     className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[#171A20] hover:bg-[#f7f7f8] hover:text-[#d4343e] transition-colors duration-[330ms]"
                     style={
                       isActive
@@ -188,6 +195,7 @@ export default function Header() {
                         <Link
                           key={child.label}
                           href={child.href}
+                          onClickCapture={resetScrollForNavigation}
                           className="flex items-center px-4 py-2.5 mx-1 text-[15px] rounded-md hover:bg-gray-50 text-[#171A20] hover:text-[#d4343e] transition-colors duration-[150ms]"
                           style={{ fontSize: "15px", fontWeight: 400 }}
                         >
@@ -261,6 +269,7 @@ export default function Header() {
               <Link
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
+                onClickCapture={resetScrollForNavigation}
                 className="block px-4 py-3 text-[16px] font-medium rounded text-[#171A20] hover:text-[#d4343e] transition-colors duration-[330ms]"
                 style={{ fontSize: "16px", fontWeight: 500, borderRadius: "4px" }}
               >
@@ -273,6 +282,7 @@ export default function Header() {
                       key={child.label}
                       href={child.href}
                       onClick={() => setMobileOpen(false)}
+                      onClickCapture={resetScrollForNavigation}
                       className="block px-3 py-2 text-[15px] font-normal rounded text-[#171A20] hover:text-[#d4343e] transition-colors duration-[330ms]"
                       style={{ fontSize: "15px", fontWeight: 400, borderRadius: "4px" }}
                     >

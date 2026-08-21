@@ -90,8 +90,15 @@ export default function NavigationProgress() {
     prevPath.current = pathname;
 
     // 全局页面切换回到顶部；带 hash 的页内链接交给浏览器保留锚点定位。
+    let scrollFrame: number | undefined;
     if (!window.location.hash) {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      // Next.js 的路由滚动处理可能在当前 effect 后执行，再补一帧覆盖旧位置。
+      scrollFrame = window.requestAnimationFrame(() => {
+        if (!window.location.hash) {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        }
+      });
     }
 
     clearTimers();
@@ -102,7 +109,10 @@ export default function NavigationProgress() {
       setProgress(0);
     }, 350);
 
-    return clearTimers;
+    return () => {
+      if (scrollFrame !== undefined) window.cancelAnimationFrame(scrollFrame);
+      clearTimers();
+    };
   }, [pathname]);
 
   if (!visible) return null;

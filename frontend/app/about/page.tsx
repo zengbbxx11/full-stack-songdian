@@ -19,10 +19,10 @@ import { COMPANY, ABOUT } from "@/lib/content-data";
 
 // 懒加载非首屏重型客户端组件 —— 减少 About 页初始 JS 体积
 const HorizontalTimeline = dynamic(() => import("@/components/HorizontalTimeline"), {
-  loading: () => <div className="h-32 animate-pulse rounded-xl bg-gray-100" />,
+  loading: () => <div className="skeleton h-32 rounded-xl" />,
 });
 const CertificateGallery = dynamic(() => import("@/components/CertificateGallery"), {
-  loading: () => <div className="h-48 animate-pulse rounded-xl bg-gray-100" />,
+  loading: () => <div className="skeleton h-48 rounded-xl" />,
 });
 
 export const metadata = await superMeta({

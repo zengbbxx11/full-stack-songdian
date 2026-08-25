@@ -45,4 +45,6 @@ async def downgrade(db: BaseDBAsyncClient) -> str:
 
 
 # 该文件用于修复已应用迁移的版本链；模型状态由后续 9 号迁移提供。
-MODELS_STATE = "PLACEHOLDER_compatibility_migration"
+# 保持为空时，Aerich 会从当前 ORM 模型生成合法状态；不要使用普通文本占位符，
+# 否则 Aerich 会将其当作压缩后的 Base64 快照解码并导致全新数据库迁移失败。
+MODELS_STATE = ""

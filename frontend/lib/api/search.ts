@@ -8,6 +8,7 @@
  */
 
 import { apiFetch, toAbsoluteUrl, type SearchPageDTO } from "./client";
+import { normalizePublicSummary, normalizePublicText } from "@/lib/display-text";
 
 export interface SearchResultItem {
   id: number;
@@ -56,8 +57,8 @@ export async function search(
   const items: SearchResultItem[] = data.items.map((it) => ({
     id: it.id,
     kind: it.kind === "product" ? "product" : "news",
-    title: it.title,
-    summary: it.summary,
+    title: normalizePublicText(it.title),
+    summary: normalizePublicSummary(it.summary),
     slug: it.slug,
     url: it.kind === "product" ? `/products/${it.slug}` : `/news/${it.slug}`,
     rank: it.rank,
@@ -66,5 +67,12 @@ export async function search(
     createdTime: it.created_time ?? null,
   }));
 
-  return { items, total: data.total, tookMs: data.took_ms ?? 0, degraded: data.degraded, note: data.note };
+  return {
+    items,
+    total: data.total,
+    tookMs: data.took_ms ?? 0,
+    degraded: data.degraded,
+    // Public site is English-only; do not leak a legacy localized backend note.
+    note: data.degraded ? "Basic search mode" : "",
+  };
 }

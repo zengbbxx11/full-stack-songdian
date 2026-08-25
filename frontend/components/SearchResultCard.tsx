@@ -19,16 +19,16 @@ import { cn } from "@/lib/utils";
 // 分类标签的视觉映射：product 用 Electric Blue，news 用 Carbon Dark。
 const KIND_META: Record<SearchResultItem["kind"], { label: string; className: string }> = {
   product: {
-    label: "产品",
-    className: "bg-[#3E6AE1] text-white border-transparent",
+    label: "Product",
+    className: "bg-[#d4343e] text-white border-transparent",
   },
   news: {
-    label: "新闻",
+    label: "News",
     className: "bg-[#171A20] text-white border-transparent",
   },
 };
 
-export default function SearchResultCard({ item }: { item: SearchResultItem }) {
+export default function SearchResultCard({ item, preload = false }: { item: SearchResultItem; preload?: boolean }) {
   const kind = item.kind === "product" ? "product" : "news";
   const meta = KIND_META[kind];
   // 图片 404 时切换占位
@@ -42,7 +42,7 @@ export default function SearchResultCard({ item }: { item: SearchResultItem }) {
         "border border-[#EEEEEE]",
         // hover：轻微上浮 + 阴影过渡 + 边框转蓝（对齐站点 hover 规范）
         "transition-all duration-300 ease-out",
-        "hover:-translate-y-1 hover:border-[#3E6AE1] hover:shadow-xl"
+        "touch-manipulation hover:-translate-y-1 hover:border-[#d4343e] hover:shadow-xl active:scale-[0.99] focus-visible:border-[#d4343e]"
       )}
     >
       {/* ====================== 封面图区域 ====================== */}
@@ -53,7 +53,8 @@ export default function SearchResultCard({ item }: { item: SearchResultItem }) {
             alt={item.title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+            preload={preload}
+            className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04] group-focus-visible:scale-[1.04]"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -71,7 +72,7 @@ export default function SearchResultCard({ item }: { item: SearchResultItem }) {
 
       {/* ====================== 内容区域 ====================== */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#171A20] transition-colors duration-300 group-hover:text-[#3E6AE1]">
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#171A20] transition-colors duration-300 group-hover:text-[#d4343e] group-focus-visible:text-[#d4343e]">
           {item.title}
         </h3>
 

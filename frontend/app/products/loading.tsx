@@ -5,43 +5,42 @@
  */
 export default function ProductsLoading() {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
-      {/* 标题骨架 */}
-      <div className="mb-10">
-        <div className="h-3 w-20 rounded animate-pulse bg-[#E5E5E5] mb-3" />
-        <div className="h-8 w-48 rounded animate-pulse bg-[#E5E5E5]" style={{ animationDelay: "0.05s" }} />
-      </div>
-
-      {/* 分类筛选骨架 */}
-      <div className="flex flex-wrap gap-2 mb-10">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[34px] rounded-full animate-pulse bg-[#F4F4F4]"
-            style={{ width: `${70 + i * 15}px`, animationDelay: `${i * 0.06}s` }}
-          />
-        ))}
-      </div>
-
-      {/* 产品网格骨架 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="space-y-3">
-            <div
-              className="aspect-[3/4] rounded-xl animate-pulse bg-[#F4F4F4]"
-              style={{ animationDelay: `${i * 0.08}s` }}
-            />
-            <div
-              className="h-4 w-3/4 rounded animate-pulse bg-[#E5E5E5]"
-              style={{ animationDelay: `${i * 0.08 + 0.04}s` }}
-            />
-            <div
-              className="h-3 w-1/2 rounded animate-pulse bg-[#F4F4F4]"
-              style={{ animationDelay: `${i * 0.08 + 0.08}s` }}
-            />
+    <>
+      <section className="border-b border-white/10 bg-[#111316] py-3">
+        <div className="site-container"><div className="skeleton h-8 w-40 rounded-full bg-white/10" /></div>
+      </section>
+      <section className="bg-[#111316] pb-7 pt-4 md:pb-8 md:pt-5">
+        <div className="site-container">
+          <div className="skeleton h-3 w-28 rounded bg-white/10" />
+          <div className="skeleton mt-3 h-12 w-72 max-w-full rounded bg-white/10" />
+          <div className="skeleton mt-4 h-4 w-[32rem] max-w-full rounded bg-white/10" />
+        </div>
+      </section>
+      <section className="bg-[#f5f6f7] pb-16 pt-8 md:pb-20 md:pt-10">
+        <div className="site-container">
+          <div className="mb-10 overflow-hidden rounded-3xl border border-black/[0.07] bg-white">
+            <div className="border-b border-black/[0.06] px-5 py-4 md:px-6">
+              <div className="skeleton h-5 w-44 rounded" />
+              <div className="skeleton mt-2 h-3 w-64 max-w-full rounded" />
+            </div>
+            <div className="flex gap-2 overflow-hidden px-5 py-5 md:px-6">
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-11 w-32 shrink-0 rounded-full" />)}
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border border-black/8 bg-white">
+                <div className="skeleton aspect-[4/3] md:aspect-square" />
+                <div className="space-y-3 p-4 md:p-5">
+                  <div className="skeleton h-3 w-2/5 rounded" />
+                  <div className="skeleton h-5 w-3/4 rounded" />
+                  <div className="skeleton h-11 w-28 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

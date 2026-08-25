@@ -59,7 +59,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     try {
       result = await search(q, { type, page, pageSize: PAGE_SIZE });
     } catch (e) {
-      errorMessage = e instanceof Error ? e.message : "搜索服务暂时不可用，请稍后重试。";
+      errorMessage = e instanceof Error ? e.message : "Search is temporarily unavailable. Please try again.";
     }
   } else {
     // 无关键词：返回空结果占位（保持类型一致，用于类型切换等场景）。
@@ -102,6 +102,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           )}
 
           {/* ====================== 状态分支 ====================== */}
+          <div id="search-results" aria-live="polite">
           {!q ? (
             // 未输入关键词
             <div className="mt-12 rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] py-24 text-center">
@@ -124,8 +125,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             // 结果网格
             <>
               <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {result.items.map((item) => (
-                  <SearchResultCard key={`${item.kind}-${item.id}`} item={item} />
+                {result.items.map((item, index) => (
+                  <SearchResultCard key={`${item.kind}-${item.id}`} item={item} preload={index === 0} />
                 ))}
               </div>
 
@@ -161,6 +162,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <p className="text-sm text-[#5C5E62]">Try a different keyword or category.</p>
             </div>
           )}
+          </div>
         </div>
       </section>
     </>

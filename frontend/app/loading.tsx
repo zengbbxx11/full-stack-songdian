@@ -20,11 +20,11 @@ export default function LoadingPage() {
         {/* 标题骨架 */}
         <div className="mb-12">
           <div
-            className="h-3 w-24 rounded animate-pulse mb-4"
+            className="h-3 w-24 rounded skeleton mb-4"
             style={{ backgroundColor: "#E5E5E5" }}
           />
           <div
-            className="h-8 w-64 rounded animate-pulse"
+            className="h-8 w-64 rounded skeleton"
             style={{
               backgroundColor: "#E5E5E5",
               animationDelay: "0.1s",
@@ -37,21 +37,21 @@ export default function LoadingPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="space-y-3">
               <div
-                className="aspect-[3/4] rounded-xl animate-pulse"
+                className="aspect-[3/4] rounded-xl skeleton"
                 style={{
                   backgroundColor: "#E5E5E5",
                   animationDelay: `${i * 0.1}s`,
                 }}
               />
               <div
-                className="h-4 w-3/4 rounded animate-pulse"
+                className="h-4 w-3/4 rounded skeleton"
                 style={{
                   backgroundColor: "#E5E5E5",
                   animationDelay: `${i * 0.1 + 0.05}s`,
                 }}
               />
               <div
-                className="h-3 w-1/2 rounded animate-pulse"
+                className="h-3 w-1/2 rounded skeleton"
                 style={{
                   backgroundColor: "#E5E5E5",
                   animationDelay: `${i * 0.1 + 0.1}s`,

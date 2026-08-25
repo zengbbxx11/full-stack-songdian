@@ -127,7 +127,7 @@ export default async function NewsDetailPage({
                 width={800}
                 height={400}
                 className="w-full h-auto max-h-[360px] object-contain"
-                priority
+                preload
               />
             </div>
           )}

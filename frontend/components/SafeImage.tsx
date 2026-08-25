@@ -14,11 +14,12 @@ interface SafeImageProps {
   sizes?: string;
   className?: string;
   style?: CSSProperties;
+  preload?: boolean;
   // 加载失败时渲染的占位内容（由父组件以 ReactNode 传入）
   fallback: ReactNode;
 }
 
-export default function SafeImage({ src, alt, fill, sizes, className, style, fallback }: SafeImageProps) {
+export default function SafeImage({ src, alt, fill, sizes, className, style, preload = false, fallback }: SafeImageProps) {
   const [error, setError] = useState(false);
 
   if (error) return <>{fallback}</>;
@@ -29,6 +30,8 @@ export default function SafeImage({ src, alt, fill, sizes, className, style, fal
       alt={alt}
       fill={fill}
       sizes={sizes}
+      preload={preload}
+      loading={preload ? undefined : "lazy"}
       className={className}
       style={style}
       onError={() => setError(true)}

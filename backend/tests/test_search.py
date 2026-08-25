@@ -2,8 +2,9 @@
 
 覆盖：
 - 空 q → 返回 A030001（HTTP 200 包裹 Result）。
-- 有数据时走 LIKE 降级路径：返回结果、rank=0、标注「基础检索」。
+- 有数据时走 LIKE 降级路径：返回结果、rank=0、标注英文说明。
 - type 过滤（product / news）。
+- 联合结果产品优先；新闻按创建时间从新到旧。
 
 注：本地无 PG / 无 zhparser，搜索固定走 SQLite 降级 LIKE（is_sqlite() 为真），
 这是本地唯一可测的搜索实现（PG TSVector 路径本地不可测，已在注释声明）。
@@ -74,10 +75,10 @@ def test_search_degraded_like_returns_results(client):
     body = r.json()
     assert body["code"] in (0, "0"), body
     data = body["data"]
-    # BD-01 降级：degraded=True，rank 全为 0，标注基础检索
+    # BD-01 降级：degraded=True，rank 全为 0，提示为英文。
     assert data["degraded"] is True, data
     assert data["total"] >= 1
-    assert data["note"], f"降级应标注说明，实际：{data}"
+    assert data["note"] == "Basic search mode", data
     for it in data["items"]:
         assert it["rank"] == 0.0, it
         assert it["kind"] in ("product", "news")
@@ -97,3 +98,29 @@ def test_search_type_filter(client):
     rn = client.get("/api/v1/search", params={"q": "QAType", "type": "news"}).json()["data"]
     assert rn["total"] >= 1
     assert all(it["kind"] == "news" for it in rn["items"]), rn
+
+
+def test_search_products_first_and_news_newest_first(client):
+    h = _admin_headers(client)
+    uid = uuid.uuid4().hex[:8]
+    query = f"QAOrder{uid}"
+    product_slug = f"qa-order-p-{uid}"
+    older_news_slug = f"qa-order-n-old-{uid}"
+    newer_news_slug = f"qa-order-n-new-{uid}"
+
+    _make_news(client, h, older_news_slug, f"{query} older news", _first_news_cat(client))
+    _make_product(client, h, product_slug, f"{query} product", _first_prod_cat(client))
+    _make_news(client, h, newer_news_slug, f"{query} newer news", _first_news_cat(client))
+
+    data = client.get(
+        "/api/v1/search",
+        params={"q": query, "type": "all", "page_size": 20},
+    ).json()["data"]
+    matching = [item for item in data["items"] if query in item["title"]]
+
+    assert [item["kind"] for item in matching] == ["product", "news", "news"], matching
+    assert [item["slug"] for item in matching] == [
+        product_slug,
+        newer_news_slug,
+        older_news_slug,
+    ], matching

@@ -27,14 +27,14 @@ export function InteractiveHoverButton({
   return (
     <button
       className={cn(
-        "group bg-background relative w-auto cursor-pointer overflow-hidden rounded-xl border p-2 px-6 text-center font-semibold",
+        "group bg-background relative min-h-11 w-auto touch-manipulation cursor-pointer overflow-hidden rounded-xl border p-2 px-6 text-center font-semibold active:scale-[0.99]",
         className
       )}
       {...props}
     >
       <span className="relative z-10 inline-flex items-center justify-center gap-2">
         <span>{children}</span>
-        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:-translate-y-0.5" />
       </span>
       <span
         aria-hidden="true"

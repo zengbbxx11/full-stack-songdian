@@ -42,7 +42,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         src={bannerUrl || MEDIA.heroBanner}
         alt="Songdian SMT production line — precision camera manufacturing"
         fill
-        priority
+        preload
         sizes="100vw"
         className="object-cover"
       />

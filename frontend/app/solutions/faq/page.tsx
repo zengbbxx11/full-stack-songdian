@@ -68,7 +68,7 @@ export default function FAQPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-12">
             {/* 分类目录 —— 桌面端粘性侧栏 / 移动端粘性横向胶囊条 */}
-            <aside className="sticky top-16 lg:top-24 self-start z-30 mb-8 lg:mb-0">
+            <aside className="sticky top-16 z-30 -mx-6 mb-8 self-start lg:top-24 lg:mx-0 lg:mb-0">
               <FaqToc categories={toc} />
             </aside>
 

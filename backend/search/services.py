@@ -2,7 +2,8 @@
 
 设计约束：
 - PG：TSVector 相关性检索，``search_vector @@ plainto_tsquery('zh', q)`` 按 ``ts_rank`` 降序。
-- SQLite / 索引慢：降级 ``title LIKE '%q%'``（BD-01），rank=0 并标注「基础检索」。
+- SQLite / 索引慢：降级 ``title LIKE '%q%'``（BD-01），rank=0 并标注英文说明。
+- 联合结果默认产品优先；新闻排在产品后并按发布时间从新到旧。
 - 结果缓存 ``search:q:{hash}:{type}:{page}``（60s）。
 """
 from __future__ import annotations
@@ -21,7 +22,15 @@ CACHE_TTL = 60
 
 def _cache_key(q: str, stype: str, page: int) -> str:
     h = hashlib.md5(f"{q}|{stype}".encode()).hexdigest()[:12]
-    return cache_key("search", "q", h, stype, page)
+    # v2：默认排序改为产品优先、新闻按时间倒序，隔离旧排序缓存。
+    return cache_key("search", "v2", "q", h, stype, page)
+
+
+SEARCH_ORDER_SQL = (
+    "ORDER BY CASE WHEN kind='product' THEN 0 ELSE 1 END ASC, "
+    "CASE WHEN kind='product' THEN rank ELSE 0 END DESC, "
+    "created_time DESC, id DESC"
+)
 
 
 async def _cache_get(key: str) -> SearchPageVO | None:
@@ -82,7 +91,7 @@ async def _sqlite_search(
     if not parts:
         return [], 0, True
     union_sql = " UNION ALL ".join(parts)
-    order_sql = "ORDER BY rank DESC, created_time DESC"
+    order_sql = SEARCH_ORDER_SQL
     # 每个 union part 需要 3 个 ?（title/summary/content_html）
     params = [like, like, like] * len(parts)
     conn = connections.get("default")
@@ -123,7 +132,7 @@ async def _pg_search(
     if not parts:
         return [], 0, False
     union_sql = " UNION ALL ".join(parts)
-    order_sql = "ORDER BY rank DESC, created_time DESC"
+    order_sql = SEARCH_ORDER_SQL
     conn = connections.get("default")
     params = [q, page_size, offset]
     page_rows = await conn.execute_query_dict(
@@ -187,7 +196,7 @@ async def search(
 
     vo = SearchPageVO(
         items=items, total=total, took_ms=took_ms, degraded=degraded,
-        note="基础检索（降级）" if degraded else "",
+        note="Basic search mode" if degraded else "",
     )
     await _cache_set(key, vo)
     return vo

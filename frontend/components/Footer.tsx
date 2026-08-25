@@ -21,7 +21,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* 品牌列 */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
+            <Link href="/" aria-label="Home" className="mb-4 flex min-h-11 touch-manipulation items-center gap-2.5">
               <Image
                 src={MEDIA.logo}
                 alt={COMPANY.name}
@@ -60,7 +60,7 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={s.name}
-                    className="group"
+                    className="group inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full hover:bg-black/5 active:bg-black/10"
                   >
                     {img}
                   </a>
@@ -72,7 +72,7 @@ export default function Footer() {
             </p>
             <Link
               href="/contact"
-              className="inline-flex items-center text-[13px] font-medium text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e]"
+              className="inline-flex min-h-11 touch-manipulation items-center text-[13px] font-medium text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:text-[#b91c1c]"
             >
               Get in touch
               <svg className="w-3.5 h-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,7 +97,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-[14px] font-normal text-[#666b72] transition-colors duration-[330ms] hover:text-[#d4343e]"
+                      className="inline-flex min-h-11 touch-manipulation items-center text-[14px] font-normal text-[#666b72] transition-colors duration-[330ms] hover:text-[#d4343e] active:text-[#b91c1c]"
                     >
                       {link.label}
                     </Link>
@@ -111,17 +111,17 @@ export default function Footer() {
         {/* 底部栏 */}
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-8 sm:flex-row">
           <p className="text-[14px] text-[#777b81]">
-            &copy; {year} {COMPANY.fullName}. All rights reserved.
+            &copy; {year} {COMPANY.fullName} All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20]">
+            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
               Sitemap
             </Link>
-            <Link href="/privacy-policy" className="text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20]">
+            <Link href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
               Privacy
             </Link>
             <CookieSettingsTrigger />
-            <Link href="/solutions/faq" className="text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20]">
+            <Link href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
               FAQ
             </Link>
           </div>

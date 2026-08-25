@@ -82,11 +82,12 @@ export const COMPANY = {
  */
 export const HERO = {
   /** 主标题上方显示的小徽章/标签 */
-  badge: "B2B Camera Manufacturing Partner",
+  badge: "OEM & ODM Camera Manufacturer",
   /** 主 Hero 标题（首页的 H1） */
-  title: "Your Trusted Digital Camera Manufacturer",
+  title: "Digital Camera Manufacturing for Global Brands",
   /** 标题下方的支持性段落 */
-  subtitle: "20 years of OEM/ODM expertise. 30+ new products annually, 10 million units annual output, and 500+ patents. Premium digital cameras designed and manufactured for global brands.",
+  subtitle:
+    "From product customization and engineering to mass production, we deliver complete camera manufacturing solutions backed by 20 years of industry experience.",
   /** 行动号召按钮配置 */
   cta: {
     /** 主要（高亮）CTA */

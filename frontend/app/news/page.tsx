@@ -92,7 +92,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                           sizes="(max-width: 768px) 100vw, 50vw"
                           className="object-cover group-hover:brightness-[1.06] transition-all"
                           style={{ transitionDuration: "0.3s" }}
-                          priority
+                          preload
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-600">

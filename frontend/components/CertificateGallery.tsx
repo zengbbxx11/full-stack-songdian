@@ -61,8 +61,8 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
             key={cert.src}
             type="button"
             onClick={() => setActiveIndex(i)}
-            aria-label={`查看 ${cert.title} 证书高清大图`}
-            className="group flex flex-col overflow-hidden border border-[#EEEEEE] bg-white text-left transition-all hover:border-[#d4343e] hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
+            aria-label={`View ${cert.title} certificate in full size`}
+            className="group flex touch-manipulation flex-col overflow-hidden border border-[#EEEEEE] bg-white text-left transition-all hover:border-[#d4343e] hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
             style={{ borderRadius: "12px", transitionDuration: "0.33s" }}
           >
             {/* 缩略图区域：固定高度、白底、图片完整居中 */}
@@ -72,7 +72,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
                 alt={`${cert.title} 认证证书`}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                className="object-contain transition-transform duration-300 group-hover:scale-105"
+                className="object-contain transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
               />
             </div>
             {/* 标题 + 说明 */}
@@ -91,7 +91,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`${active.title} 证书高清大图`}
+          aria-label={`${active.title} certificate preview`}
           onClick={close}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 p-4 backdrop-blur-sm sm:p-8"
         >
@@ -99,8 +99,8 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
           <button
             type="button"
             onClick={close}
-            aria-label="关闭"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-6 sm:top-6"
+            aria-label="Close certificate preview"
+            className="absolute right-4 top-4 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:right-6 sm:top-6"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" />
@@ -119,7 +119,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
                 fill
                 sizes="100vw"
                 className="object-contain rounded-lg"
-                priority
+                preload
               />
             </div>
             <figcaption className="mt-4 text-center text-white">
@@ -135,8 +135,8 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
               e.stopPropagation();
               setActiveIndex((i) => (i === null ? i : (i - 1 + items.length) % items.length));
             }}
-            aria-label="上一张证书"
-            className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:left-6"
+            aria-label="Previous certificate"
+            className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:left-6"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -148,8 +148,8 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
               e.stopPropagation();
               setActiveIndex((i) => (i === null ? i : (i + 1) % items.length));
             }}
-            aria-label="下一张证书"
-            className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 sm:right-6"
+            aria-label="Next certificate"
+            className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 active:bg-white/30 sm:right-6"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -48,7 +48,9 @@ rollback_apps() {
 SWITCH_STARTED=0
 trap rollback_apps ERR
 
-BACKUP_DIR="${BACKUP_DIR:-/home/ubuntu/backups}" bash scripts/backup.sh
+# 始终备份当前部署目录对应的 Compose 项目，避免 PROD_PATH 使用非默认路径时
+# backup.sh 回落到硬编码目录而备份了错误实例。
+COMPOSE_DIR="$PWD" BACKUP_DIR="${BACKUP_DIR:-/home/ubuntu/backups}" bash scripts/backup.sh
 "${COMPOSE[@]}" pull backend frontend admin-next
 "${COMPOSE[@]}" up -d --wait postgres redis
 "${COMPOSE[@]}" --profile tools run --rm --no-deps migrate

@@ -22,6 +22,16 @@
 | `PROD_SSH_KEY` / `PROD_KNOWN_HOSTS` | SSH 私钥和固定服务器主机指纹 |
 | `GHCR_USERNAME` / `GHCR_TOKEN` | 服务器拉取私有 GHCR 镜像；Token 只需 packages:read |
 
+同时在 GitHub Actions Variables（Repository 或 `production` Environment）配置前端构建变量：
+
+| Variable | 生产值 |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.zsaki.icu` |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.zsaki.icu` |
+| `NEXT_PUBLIC_IMAGE_HOST` | `api.zsaki.icu` |
+
+> 这些 `NEXT_PUBLIC_*` 值在 CI 构建镜像时写入客户端产物。只修改服务器根目录 `.env` 不会改变已发布的 GHCR 前端镜像；域名或 API 地址变化后必须重新运行 CI 并部署新镜像。
+
 服务器的 `.env` 继续只保存在生产机，不上传 GitHub。首次自动发布前应先运行一次 `scripts/backup.sh` 并做恢复演练。
 
 生产发布入口：GitHub Actions → `Deploy production` → Run workflow → 输入本次完整 commit SHA。不要在服务器执行 `docker compose build`。
@@ -138,6 +148,7 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 
 - 后端已内置**降级兜底**：探测不到 `zh` 配置时自动改用内置 `simple` 配置，中文关键词搜索**仍可工作**，只是分词粒度较粗（按非字母数字切分），搜索质量略低于 zhparser。
 - 若未来需要生产级中文搜索，可改为「自定义 PG 镜像编译 zhparser」（构建期需联网拉源码，属可选增强，**非上线必需**）。
+- 无论使用 TSVector、PostgreSQL ILIKE 降级还是本地 SQLite LIKE，联合结果都在数据库分页前按产品分组优先；新闻排在产品后并按 `created_time DESC, id DESC`。降级提示固定为英文 `Basic search mode`。
 
 ---
 
@@ -330,7 +341,7 @@ sudo ufw enable
 | 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | 生产要求 DB 与真实 Redis 均正常；任一异常返回 503，本地内存缓存模式显示 `degraded` |
 | 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
 | SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
-| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera"` | 返回匹配产品 |
+| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera&type=all&page_size=50"` | 产品分组在前；新闻分组按时间倒序；降级提示无中文 |
 | Dashboard stats | 携带 `admin.zsaki.icu` 的 HttpOnly 会话 Cookie 调 `GET /api/v1/admin/stats` | 返回 counts + inquiry_countries + inquiry_status |
 | 审计日志 | 携带 `admin.zsaki.icu` 的 HttpOnly 会话 Cookie 调 `GET /api/v1/admin/audit-logs?page_size=1` | 返回 list + total |
 
@@ -521,7 +532,7 @@ curl -I https://admin.zsaki.icu/signin
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | HTTPS | 管理后台必须配置域名和 Let’s Encrypt 证书；生产 Secure Cookie 不支持 IP/HTTP 登录 |
 | 数据导入 | 新环境见「六、生产初始化」：只运行迁移和最小种子；开发 SQL/CSV 快照禁止导入生产 |
-| 迁移链说明 | aerich 迁移 0-12；10 号迁移收敛历史重复外键，11 号迁移增加询盘归因与通知已读状态，12 号迁移增加内容状态、发布时间与版本记录。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
+| 迁移链说明 | aerich 迁移 0-14；10 号迁移收敛历史重复外键，11 号增加询盘归因与通知已读状态，12 号增加内容状态/发布时间/版本记录，13、14 号只规范公开文案。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
 | 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
 | 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
@@ -534,7 +545,7 @@ curl -I https://admin.zsaki.icu/signin
 
 ---
 
-*最后更新：2026-08-10（生产后台要求 HTTPS 域名；Compose 应用端口仅绑定宿主机回环）*
+*最后更新：2026-08-25（迁移链 0-14；搜索排序/英文降级提示；部署路径备份与搜索冒烟加固）*
 ## 本轮实现补充（2026-08-13）
 
 部署前请以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md) 为现状索引：
@@ -545,7 +556,7 @@ curl -I https://admin.zsaki.icu/signin
 - 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。
 - 生产数据库和运行时上传媒体不由 Git checkout 或镜像构建覆盖；工厂展示视频属于前端静态源码资产，会随前端镜像发布。备份和恢复必须针对 PostgreSQL/上传媒体卷单独执行。
 
-本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-12` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
+本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-14` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`，13、14 号迁移只纠正公开分类、新闻、产品和属性文案。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
 
 ## 2026-08-19 内容工作流发布补充
 
@@ -572,3 +583,27 @@ curl -I https://admin.zsaki.icu/signin
 3. 切换 backend、frontend、admin-next 镜像，确认 `/healthz`、`/readyz`、官网产品详情、后台登录与 `/uploads/...` 图片均正常。
 4. 创建草稿并验证短期预览，再创建数分钟后的定时内容，确认到期前不公开、到期后进入公开 API 且官网缓存刷新。
 5. 应用启动失败可回退到上一组镜像；数据库迁移不会自动降级。若必须执行数据库回退，应先恢复上线前备份并评估新版本写入的数据。
+
+## 2026-08-25 搜索、内容纠错与官网体验发布补充
+
+### 本次数据库影响
+
+- 迁移 13 修正产品分类、新闻摘要、产品摘要/HTML 和产品属性中的确定性拼写与格式错误；迁移 14 清理产品文案中孤立的全角右括号。
+- 两个迁移都不创建、删除或改变表/列/索引，不修改产品状态、价格、库存、关联关系或上传文件，属于低风险内容更新。
+- 两个迁移的 downgrade 有意为空：错误文案不应在应用镜像回滚时恢复。正式发布仍须先备份；如业务方要求恢复旧文本，应从上线前备份中定向恢复内容字段，而不是删除数据库卷。
+- `db/*.sql`、`db/*.csv` 已同步修正仅用于本地重建；生产环境禁止导入这些快照，云端只运行 `aerich upgrade`。
+
+### 本次应用行为
+
+- 联合搜索默认产品在前、新闻在后；新闻按发布时间从新到旧。排序发生在数据库分页前，三个搜索路径行为一致。
+- 搜索降级提示为英文 `Basic search mode`，前端另有英文兜底；搜索缓存版本升级后不会命中旧排序。
+- 官网包含新的横滑提示/sticky 行为、首图预加载、结构匹配骨架、最终值统计、触屏反馈和 reduced-motion 降级，因此必须部署新的 frontend 镜像，不能只发布 backend。
+- `scripts/smoke-deploy.sh` 会额外验证搜索分组、新闻时间顺序和英文降级提示，默认使用宿主机 `python3` 解析 JSON；特殊环境可通过 `PYTHON_BIN` 指定解释器。`scripts/deploy.sh` 会把当前 `PROD_PATH` 显式传给备份脚本，避免自定义路径时备份错误实例。
+
+### 上线前检查
+
+1. 发布 commit 必须包含迁移 13/14、`backend/search/services.py`、搜索测试、前端搜索/交互修改、部署脚本和本文档；先用 `git status --short` 确认没有遗漏的未跟踪文件。
+2. 等待 CI 的 backend、frontend、admin、compose、migration、e2e 和 images 全部成功；不要部署仅完成部分 job 的 SHA。
+3. 确认 GitHub Actions Variables 中三个 `NEXT_PUBLIC_*` 仍是生产 HTTPS 域名，再以完整 commit SHA 运行 `Deploy production`。
+4. 发布脚本应依次完成备份、拉取三镜像、启动 PostgreSQL/Redis、执行迁移、切换三应用和搜索冒烟。任一步失败都停止发布；不要手工跳过迁移或健康检查。
+5. 发布后浏览器验证 `/search?q=417&type=all` 为 Product → News，`/search?q=417&type=news` 无中文提示，并检查产品页横滑、FAQ sticky、移动菜单与底部询盘条。

@@ -143,12 +143,12 @@ function RelatedProductsSkeleton() {
   return (
     <section className="py-14 md:py-20" style={{ backgroundColor: "#F4F4F4" }}>
       <div className="max-w-7xl mx-auto px-6">
-        <div className="h-8 w-48 rounded animate-pulse bg-[#E5E5E5] mb-8" />
+        <div className="skeleton h-8 w-48 rounded mb-8" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="space-y-3">
-              <div className="aspect-square rounded-xl animate-pulse bg-[#E5E5E5]" style={{ animationDelay: `${i * 0.1}s` }} />
-              <div className="h-4 w-3/4 rounded animate-pulse bg-[#E5E5E5]" />
+              <div className="skeleton aspect-square rounded-xl" style={{ animationDelay: `${i * 0.1}s` }} />
+              <div className="skeleton h-4 w-3/4 rounded" />
             </div>
           ))}
         </div>

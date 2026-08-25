@@ -1,6 +1,6 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-> 当前状态（2026-08-19）：最新迁移为 `12_20260819090000_add_content_revision_and_scheduling.py`。产品和新闻现支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史；部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+> 当前状态（2026-08-25）：最新迁移为 `14_20260825094000_normalize_product_punctuation.py`。13、14 号迁移规范公开内容文案；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
@@ -79,7 +79,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 - SQLite 下应用启动时会通过 `generate_schemas()` **自动建全部表/列**
   （含 `Product.tags`、`t_upload_record`、`search_vector`），**无需跑 aerich 迁移**。
-- 搜索引擎在 SQLite 下走 **LIKE 降级（BD-01）**，标注「基础检索」。
+- 搜索引擎在 SQLite 下走 **LIKE 降级（BD-01）**，公开提示为英文 `Basic search mode`。
 - Redis 未配置时自动降级为**进程内内存字典**，缓存/限流/幂等/权限均不报错。
 - SMTP 未配置时询盘仅持久化，`smtp_status` 保持 PENDING（BD-02/MOCK）。
 
@@ -262,7 +262,7 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 产品、新闻、分类的列表与详情缓存会在写入后失效，slug 变更会清理旧 slug；`/readyz` 会区分真实 Redis 与降级缓存。
 - `inquiry` 已支持 `country`、`region`、`landing_page`、`source_product`、`referrer` 和 `utm_*` 归因字段；后台可按来源产品、国家和 UTM 查询。
 - `content` 中的 `NotificationReadState` 支持后台新询盘、超时未跟进、SMTP 失败通知的用户级已读状态。
-- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新结构见 `backend/migrations/models/12_20260819090000_add_content_revision_and_scheduling.py`，并保留 11 号迁移的询盘归因与通知已读状态。
+- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新迁移为 `backend/migrations/models/14_20260825094000_normalize_product_punctuation.py`。12 号迁移提供内容工作流，13、14 号迁移只做公开文案纠错。
 
 ### 与旧版段落的更正
 
@@ -276,3 +276,9 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 草稿和未到期内容不会进入公开列表、详情、搜索或 sitemap。预览令牌由服务端签名，默认 `PREVIEW_TOKEN_TTL=900`，预览响应不缓存且禁止索引。
 - 内容发布、恢复和调度发布都会失效 Redis 列表/详情缓存，并触发官网 ISR revalidation。
 - 生产迁移由 Compose 的独立 `migrate` profile 执行；backend 应用容器启动命令不隐式运行 Aerich。
+
+## 搜索排序与降级提示（2026-08-25）
+
+- `type=all` 在 SQL 的 `LIMIT/OFFSET` 前按产品分组优先，新闻分组排后；产品组保留相关度优先，新闻组按 `created_time DESC, id DESC`。
+- PostgreSQL TSVector、PostgreSQL ILIKE 降级和 SQLite LIKE 降级共用同一排序表达式，避免环境间顺序不一致。
+- 降级提示固定为英文 `Basic search mode`；搜索缓存键已升级为 `v2`，部署后不会继续读取旧排序缓存。

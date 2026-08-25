@@ -16,6 +16,7 @@ import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
+import HorizontalScrollArea from "@/components/HorizontalScrollArea";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string }> }): Promise<Metadata> {
   const sp = await searchParams;
@@ -131,11 +132,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2.5 overflow-x-auto px-5 py-5 [scrollbar-width:thin] md:flex-wrap md:overflow-visible md:px-6">
+              <HorizontalScrollArea ariaLabel="Product categories" className="px-5 pt-5 md:overflow-visible md:px-6 md:pb-5">
+              <div className="flex gap-2.5 pb-1 md:flex-wrap">
                 <Link
                   href="/products"
                   aria-current={!categorySlug ? "page" : undefined}
-                  className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 ${!categorySlug ? "border-[#171A20] bg-[#171A20] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
+                  className={`inline-flex min-h-11 shrink-0 snap-start touch-manipulation items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98] ${!categorySlug ? "border-[#171A20] bg-[#171A20] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
                 >
                   All Products
                 </Link>
@@ -146,7 +148,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex min-h-11 shrink-0 items-center justify-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300
+                    className={`flex min-h-11 shrink-0 snap-start touch-manipulation items-center justify-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98]
                       ${isActive
                         ? "border-[#d4343e] bg-[#d4343e] text-white shadow-[0_8px_20px_rgba(212,52,62,0.22)]"
                         : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
@@ -156,6 +158,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 );
               })}
               </div>
+              </HorizontalScrollArea>
             </div>
           )}
 
@@ -174,9 +177,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           ) : products.length > 0 ? (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <div key={product.id}>
-                    <ProductCard product={product} />
+                    <ProductCard product={product} preload={index === 0} />
                   </div>
                 ))}
               </div>

@@ -8,6 +8,7 @@
  */
 
 import type { PostSummary, PostDetail, WCProductCategory } from "@/lib/types";
+import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
   apiFetch,
   toAbsoluteUrl,
@@ -29,7 +30,7 @@ export async function getNewsCategories(): Promise<WCProductCategory[]> {
     undefined,
     { tags: ["news-categories"] },
   );
-  return data.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
+  return data.map((c) => ({ id: c.id, name: normalizeCategoryName(c.name), slug: c.slug }));
 }
 
 /** 分页获取新闻列表，按摘要字段映射为 PostSummary。 */
@@ -153,14 +154,14 @@ function toPostSummary(n: NewsPageDTO): PostSummary {
   return {
     id: n.id,
     slug: n.slug,
-    title: n.title,
-    excerpt: n.summary,
+    title: normalizePublicText(n.title),
+    excerpt: normalizePublicText(n.summary),
     featuredImage: toAbsoluteUrl(n.cover_image),
-    featuredImageAlt: n.title,
+    featuredImageAlt: normalizePublicText(n.title),
     date: formatDate(n.published_at || n.created_time || ""),
     author: n.author || "Admin",
     categories: n.category
-      ? [{ id: n.category.id, name: n.category.name, slug: n.category.slug }]
+      ? [{ id: n.category.id, name: normalizeCategoryName(n.category.name), slug: n.category.slug }]
       : [],
   };
 }
@@ -169,17 +170,17 @@ function toPostDetail(n: NewsDetailDTO): PostDetail {
   return {
     id: n.id,
     slug: n.slug,
-    title: n.title,
+    title: normalizePublicText(n.title),
     content: n.content_html,
-    excerpt: n.summary,
+    excerpt: normalizePublicText(n.summary),
     featuredImage: toAbsoluteUrl(n.cover_image),
-    featuredImageAlt: n.title,
+    featuredImageAlt: normalizePublicText(n.title),
     date: formatDate(n.published_at || n.created_time || ""),
     modified: n.created_time || n.published_at || "",
     author: n.author || "Admin",
     authorAvatar: "",
     categories: n.category
-      ? [{ id: n.category.id, name: n.category.name, slug: n.category.slug }]
+      ? [{ id: n.category.id, name: normalizeCategoryName(n.category.name), slug: n.category.slug }]
       : [],
     tags: [],
   };

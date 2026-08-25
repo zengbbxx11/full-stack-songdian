@@ -221,7 +221,7 @@ export default function InquiryForm() {
                           aria-checked={active}
                           onClick={() => field.onChange(cat.value)}
                           className={cn(
-                            "px-3.5 py-2 text-sm rounded-full border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3E6AE1]/30",
+                            "min-h-11 touch-manipulation px-3.5 py-2 text-sm rounded-full border transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]/30",
                             active
                               ? "border-[#d4343e] bg-[#fdeced] text-[#d4343e] font-medium"
                               : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
@@ -269,8 +269,8 @@ export default function InquiryForm() {
             />
 
             {/* 可选信息折叠：核心表单保持简短，降低「看起来很长」的心理负担 */}
-            <details className="group rounded-md border border-dashed border-gray-200 px-4 py-3">
-              <summary className="text-sm font-medium text-gray-600 cursor-pointer select-none list-none flex items-center justify-between">
+            <details className="group rounded-md border border-dashed border-gray-200 px-4 py-2">
+              <summary className="min-h-11 touch-manipulation text-sm font-medium text-gray-600 cursor-pointer select-none list-none flex items-center justify-between">
                 <span>Add more details (optional)</span>
                 <span className="text-gray-400 text-xs group-open:hidden">Show</span>
                 <span className="text-gray-400 text-xs hidden group-open:inline">Hide</span>
@@ -318,7 +318,7 @@ export default function InquiryForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[#d4343e] hover:bg-[#b91c1c] text-white"
+                className="min-h-11 w-full touch-manipulation active:scale-[0.99] sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[#d4343e] hover:bg-[#b91c1c] text-white"
                 style={{ borderRadius: "4px" }}
               >
                 {isSubmitting ? (

@@ -1,4 +1,4 @@
-# 当前实现总览（2026-08-19）
+# 当前实现总览（2026-08-25）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -27,7 +27,7 @@
 - 后台调度器默认每 30 秒检查到期内容，发布后清理 Redis 内容缓存并调用官网 `/api/revalidate` 清理 ISR。
 - 产品与新闻核心字段写入不可变 `ContentRevision` 快照；查看和恢复通过各资源的 `/admin/products|news/{id}/revisions` 路由提供，恢复本身会继续生成新版本。
 - 后台可签发默认 15 分钟有效的预览令牌；官网 `/preview/[token]` 强制 `noindex`、`no-store`，不改变正式页面视觉与正式 URL。
-- 最新迁移为 `12_20260819090000_add_content_revision_and_scheduling.py`；生产只执行 `aerich upgrade`，不删除或重建已有卷。
+- 最新迁移为 `14_20260825094000_normalize_product_punctuation.py`。13、14 号迁移只规范公开分类、新闻和产品文案，不改表结构；生产仍只执行 `aerich upgrade`，不删除或重建已有卷。
 
 ## 官网数据与错误处理
 
@@ -48,9 +48,9 @@
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
 - 后台通知覆盖新询盘、超过 24 小时未跟进和 SMTP 失败，并通过 `NotificationReadState` 记录用户级已读状态。
-- 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。
+- 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。联合搜索在数据库分页前按“产品分组优先，新闻分组随后”排序，新闻组按 `created_time DESC, id DESC`；降级提示固定为英文 `Basic search mode`。
 - 官网 SEO 使用规范 URL、sitemap、robots、Open Graph 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。
-- 首页与 About 保留源码内工厂视频；联系页地图、Cookie 横幅和底部询盘栏在移动端协调显示，不产生横向溢出。
+- 首页与 About 保留源码内工厂视频；联系页地图、Cookie 横幅和底部询盘栏在移动端协调显示，不产生横向溢出。产品分类与 FAQ 移动目录提供横滑提示、边缘控制和 sticky 定位；首图预加载、结构匹配骨架、触屏反馈和 `prefers-reduced-motion` 已统一。
 
 ## 可靠性、质量与发布
 
@@ -65,7 +65,8 @@
 1. 所有新增源码、迁移、测试、预览和内容工作流文件已纳入同一个 commit；不得只提交已跟踪文件。
 2. `.env`、`.env.local`、Cookie、数据库、上传卷和运行日志不得进入发布 commit。
 3. 产品或分类 slug 变化后运行 `npm run gen:map` 并提交规范 URL 映射。
-4. CI 全部通过后，以该 commit SHA 运行 `Deploy production`；不要把服务器现场构建作为正式发布方式。
+4. 在 GitHub Actions Variables 配置生产 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST`；根目录 `.env` 不会改写已经构建好的 GHCR 前端镜像。
+5. CI 全部通过后，以该 commit SHA 运行 `Deploy production`；不要把服务器现场构建作为正式发布方式。
 
 ## 仍属于后续工作的事项
 

@@ -1,6 +1,6 @@
 # Songdian Technology — B2B 外贸官网（Next.js + FastAPI）
 
-> 当前状态（2026-08-19）：官网已支持签名草稿预览、结构化 API 错误与 Web Vitals 上报；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+> 当前状态（2026-08-25）：官网已支持签名草稿预览、结构化 API 错误、Web Vitals、英文联合搜索结果和统一的移动/无障碍反馈；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
 
 松典科技（广东）有限公司面向全球 OEM / ODM 数码相机采购商的 B2B 展示型官网。前端为 **Next.js（App Router）**，通过项目自有 FastAPI 后端获取产品/新闻/分类数据，支持 ISR 增量静态再生 + Streaming SSR。
 
@@ -179,7 +179,7 @@ frontend/
 | 新闻详情 | `GET /api/v1/news/{slug}` | 含 content_html |
 | 产品分类 | `GET /api/v1/product-categories` | 只读列表 |
 | 新闻分类 | `GET /api/v1/news-categories` | 只读列表 |
-| 全文搜索 | `GET /api/v1/search` | 关键词 + 类型过滤 |
+| 全文搜索 | `GET /api/v1/search` | 关键词 + 类型过滤；默认产品优先、新闻按时间倒序；降级提示英文 |
 | 询盘提交 | `POST /api/v1/inquiries` | 表单数据（幂等键防重） |
 
 > 数据来源已从 WordPress ETL 迁移到 FastAPI，后续通过管理后台（`../admin-next/`）维护。
@@ -268,7 +268,7 @@ frontend/
 
 ## 部署
 
-生产环境：**腾讯云服务器 + 1Panel Linux 面板 + Docker Compose 全栈编排**，自托管。完整流程见仓库根目录 `deploy-guide.md`（含 `docker compose build` / `up`、数据导入、OpenResty 反代、防火墙）。
+生产环境：**腾讯云服务器 + 1Panel Linux 面板 + Docker Compose 全栈编排**，自托管。正式发布由 CI 构建 GHCR 不可变镜像，再由生产工作流执行备份、独立迁移、镜像切换和冒烟；服务器现场 `docker compose build` 仅用于首次诊断。完整流程见仓库根目录 `deploy-guide.md`。
 
 > ⚠️ 部署前务必在**本地（后端可达）**重新生成产品 URL 规范映射并提交：
 > ```bash

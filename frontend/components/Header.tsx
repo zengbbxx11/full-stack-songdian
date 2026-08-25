@@ -71,8 +71,10 @@ export default function Header() {
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
+    window.dispatchEvent(new CustomEvent("mobile-menu:visibility", { detail: mobileOpen }));
     return () => {
       document.body.style.overflow = "";
+      window.dispatchEvent(new CustomEvent("mobile-menu:visibility", { detail: false }));
     };
   }, [mobileOpen]);
 
@@ -116,14 +118,14 @@ export default function Header() {
         <div className="site-container relative h-16 flex items-center">
           {/* Logo */}
           <div className="flex-1 flex items-center">
-            <Link href="/" className="flex items-center shrink-0">
+            <Link href="/" aria-label="Home" className="flex min-h-11 shrink-0 touch-manipulation items-center">
               <Image
                 src={MEDIA.logo}
                 alt="Songdian Technology"
                 width={128}
                 height={32}
                 className="h-7 w-auto"
-                priority
+                preload
                 unoptimized
               />
             </Link>
@@ -222,7 +224,7 @@ export default function Header() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded"
+              className="md:hidden flex h-11 w-11 touch-manipulation items-center justify-center rounded transition-colors hover:bg-[#f5f6f7] active:bg-[#eceef1]"
               style={{ borderRadius: "4px" }}
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
@@ -270,7 +272,7 @@ export default function Header() {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 onClickCapture={resetScrollForNavigation}
-                className="block px-4 py-3 text-[16px] font-medium rounded text-[#171A20] hover:text-[#d4343e] transition-colors duration-[330ms]"
+                className="block min-h-11 touch-manipulation rounded px-4 py-3 text-[16px] font-medium text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:bg-[#f5f6f7] active:text-[#d4343e]"
                 style={{ fontSize: "16px", fontWeight: 500, borderRadius: "4px" }}
               >
                 {item.label}
@@ -283,7 +285,7 @@ export default function Header() {
                       href={child.href}
                       onClick={() => setMobileOpen(false)}
                       onClickCapture={resetScrollForNavigation}
-                      className="block px-3 py-2 text-[15px] font-normal rounded text-[#171A20] hover:text-[#d4343e] transition-colors duration-[330ms]"
+                      className="block min-h-11 touch-manipulation rounded px-3 py-2.5 text-[15px] font-normal text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:bg-[#f5f6f7] active:text-[#d4343e]"
                       style={{ fontSize: "15px", fontWeight: 400, borderRadius: "4px" }}
                     >
                       {child.label}

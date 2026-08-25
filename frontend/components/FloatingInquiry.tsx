@@ -22,6 +22,7 @@ export default function FloatingInquiry() {
   // 滚动感知：向下滚动隐藏、向上滚动显示
   const [hidden, setHidden] = useState(false);
   const [cookieVisible, setCookieVisible] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const lastY = useRef(0);
 
   useEffect(() => {
@@ -44,7 +45,15 @@ export default function FloatingInquiry() {
     return () => window.removeEventListener("cookie-consent:visibility", onCookieVisibility);
   }, []);
 
-  if (dismissed || cookieVisible || pathname === "/contact") return null;
+  useEffect(() => {
+    const onMenuVisibility = (event: Event) => {
+      setMobileMenuVisible((event as CustomEvent<boolean>).detail);
+    };
+    window.addEventListener("mobile-menu:visibility", onMenuVisibility);
+    return () => window.removeEventListener("mobile-menu:visibility", onMenuVisibility);
+  }, []);
+
+  if (dismissed || cookieVisible || mobileMenuVisible || pathname === "/contact") return null;
 
   return (
     <div
@@ -64,7 +73,7 @@ export default function FloatingInquiry() {
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
           href="/contact"
-          className="inline-flex h-9 items-center rounded-lg bg-[#d4343e] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#b91c1c] sm:px-6"
+          className="inline-flex h-10 touch-manipulation items-center rounded-lg bg-[#d4343e] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#b91c1c] active:bg-[#991b1b] sm:px-6"
         >
           Send Inquiry
           <svg className="ml-1.5 hidden h-4 w-4 sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,7 +86,7 @@ export default function FloatingInquiry() {
           type="button"
           onClick={() => setDismissed(true)}
           aria-label="Dismiss inquiry bar"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

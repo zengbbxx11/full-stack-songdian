@@ -10,6 +10,7 @@ interface PostCardProps {
   post: PostSummary;
   /** 是否显示作者（默认显示）；首页 Latest News 区传 false 隐藏 */
   showAuthor?: boolean;
+  preload?: boolean;
 }
 
 // 图片加载失败 / 无图时的占位（文档图标）
@@ -30,11 +31,11 @@ const imageFallback = (
  * - Hover：Electric Blue 边框 + shadow-sm + 图片 brightness(1.05)
  * - 标题 hover 变蓝
  */
-export default function PostCard({ post, showAuthor = true }: PostCardProps) {
+export default function PostCard({ post, showAuthor = true, preload = false }: PostCardProps) {
   return (
     <Link
       href={`/news/${post.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)]"
+      className="group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[#d4343e]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
     >
       {/* 图片区域 */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
@@ -44,6 +45,7 @@ export default function PostCard({ post, showAuthor = true }: PostCardProps) {
             alt={post.featuredImageAlt}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            preload={preload}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}

@@ -15,6 +15,7 @@ import type {
   WCAttribute,
 } from "@/lib/types";
 import { cache } from "react";
+import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
   apiFetch,
   ApiError,
@@ -38,7 +39,7 @@ export async function getProductCategories(): Promise<WCProductCategory[]> {
     undefined,
     { tags: ["product-categories"] },
   );
-  return data.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
+  return data.map((c) => ({ id: c.id, name: normalizeCategoryName(c.name), slug: c.slug }));
 }
 
 /** 分页获取产品列表，按摘要字段映射为 ProductSummary。 */
@@ -125,8 +126,8 @@ function toProductSummary(p: ProductPageDTO): ProductSummary {
   return {
     id: p.id,
     slug: p.slug,
-    name: p.title,
-    shortDescription: p.summary,
+    name: normalizePublicText(p.title),
+    shortDescription: normalizePublicText(p.summary),
     price: p.price ?? "",
     regularPrice: p.price ?? "",
     salePrice: "",
@@ -135,7 +136,7 @@ function toProductSummary(p: ProductPageDTO): ProductSummary {
     image: toAbsoluteUrl(p.cover_image),
     imageAlt: p.title,
     categories: p.category
-      ? [{ id: p.category.id, name: p.category.name, slug: p.category.slug }]
+      ? [{ id: p.category.id, name: normalizeCategoryName(p.category.name), slug: p.category.slug }]
       : [],
     // 从后端 DTO 读取标签字符串数组；DB 为 NULL 时兜底为空数组
     tags: p.tags || [],
@@ -164,9 +165,9 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
   return {
     id: p.id,
     slug: p.slug,
-    name: p.title,
+    name: normalizePublicText(p.title),
     description: p.content_html,
-    shortDescription: p.summary,
+    shortDescription: normalizePublicText(p.summary),
     price,
     regularPrice: price,
     salePrice: "",
@@ -176,7 +177,7 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
     images,
     gallery: galleries,
     categories: p.category
-      ? [{ id: p.category.id, name: p.category.name, slug: p.category.slug }]
+      ? [{ id: p.category.id, name: normalizeCategoryName(p.category.name), slug: p.category.slug }]
       : [],
     // 从后端 DTO 读取标签字符串数组；DB 为 NULL 时兜底为空数组
     tags: p.tags || [],

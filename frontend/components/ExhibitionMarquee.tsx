@@ -59,7 +59,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Resume auto-scroll" : "Pause auto-scroll"}
           aria-pressed={paused}
-          className="inline-flex h-9 w-9 items-center justify-center rounded border border-[#EEEEEE] bg-white text-[#393C41] transition-colors hover:text-[#d4343e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
+          className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded border border-[#EEEEEE] bg-white text-[#393C41] transition-colors hover:text-[#d4343e] active:bg-[#f2f3f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
         >
           {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
         </button>
@@ -82,7 +82,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
                 <button
                   type="button"
                   onClick={() => setLightboxIndex(realIndex)}
-                  className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-[#EEEEEE] bg-white cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e] focus-visible:ring-offset-2"
+                  className="relative aspect-[4/3] w-full touch-manipulation overflow-hidden rounded-xl border border-[#EEEEEE] bg-white cursor-zoom-in active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e] focus-visible:ring-offset-2"
                   aria-label={`View ${item.name} exhibition photo in full size`}
                 >
                   <Image
@@ -90,7 +90,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
                     alt={item.alt}
                     fill
                     sizes="256px"
-                    className="object-contain p-4 transition-transform duration-300 ease-out group-hover/fig:scale-[1.03]"
+                    className="object-contain p-4 transition-transform duration-300 ease-out group-hover/fig:scale-[1.03] group-focus-within/fig:scale-[1.03]"
                   />
                 </button>
                 <figcaption className="mt-3 text-center">
@@ -122,7 +122,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
           <button
             type="button"
             onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute top-4 right-4 z-10 inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -140,7 +140,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
                 fill
                 sizes="90vw"
                 className="object-contain"
-                priority
+                preload
               />
             </div>
             {/* 底部信息 */}

@@ -50,7 +50,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ token:
       <p className="mt-4 text-lg leading-8 text-[#5C5E62]">{content.summary}</p>
       {image && (
         <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-gray-100">
-          <Image src={image} alt={content.title} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain" priority />
+          <Image src={image} alt={content.title} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain" preload />
         </div>
       )}
       <div className="article-body mt-10" dangerouslySetInnerHTML={{ __html: cleanPostContent(content.content_html) }} />

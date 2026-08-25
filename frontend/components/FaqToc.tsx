@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState, type MouseEvent } from "react";
+import HorizontalScrollArea from "@/components/HorizontalScrollArea";
 import {
   Award,
   ShieldCheck,
@@ -77,23 +78,24 @@ export default function FaqToc({ categories }: { categories: FaqNavItem[] }) {
   return (
     <nav
       aria-label="FAQ categories"
-      className="rounded-xl border border-[#EEEEEE] bg-white p-4 lg:p-5"
+      className="border-y border-[#EEEEEE] bg-white/96 py-3 shadow-[0_8px_24px_rgba(17,19,22,0.06)] backdrop-blur-xl lg:rounded-xl lg:border lg:bg-white lg:p-5 lg:shadow-none"
     >
-      <p className="flex items-center gap-2 px-1 mb-3 text-xs font-semibold uppercase tracking-wider text-[#5C5E62]">
+      <p className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wider text-[#5C5E62] lg:mb-3 lg:px-1">
         <ListTree className="w-4 h-4" />
         Browse by topic
       </p>
-      <ul className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible pb-1 lg:pb-0">
+      <HorizontalScrollArea ariaLabel="FAQ categories" className="px-4 lg:overflow-visible lg:px-0" hint="Swipe through FAQ topics">
+      <ul className="flex gap-2 pb-1 lg:flex-col lg:gap-1 lg:pb-0">
         {categories.map((c) => {
           const Icon = CATEGORY_ICONS[c.label] ?? ListTree;
           const isActive = activeId === c.id;
           return (
-            <li key={c.id} className="shrink-0">
+            <li key={c.id} className="shrink-0 snap-start">
               <a
                 href={`#${c.id}`}
                 onClick={(e) => goTo(e, c.id)}
                 aria-current={isActive ? "true" : undefined}
-                className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-medium whitespace-nowrap lg:whitespace-normal transition-colors ${
+                className={`flex min-h-11 touch-manipulation items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors active:scale-[0.99] lg:whitespace-normal ${
                   isActive
                     ? "border-[#d4343e] bg-[#FDECEC] text-[#d4343e]"
                     : "border-transparent text-[#393C41] hover:bg-[#F4F4F4] hover:text-[#d4343e]"
@@ -113,6 +115,7 @@ export default function FaqToc({ categories }: { categories: FaqNavItem[] }) {
           );
         })}
       </ul>
+      </HorizontalScrollArea>
     </nav>
   );
 }

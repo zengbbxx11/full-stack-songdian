@@ -5,43 +5,25 @@
  */
 export default function NewsLoading() {
   return (
-    <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
-      {/* 标题骨架 */}
-      <div className="mb-10">
-        <div className="h-3 w-20 rounded animate-pulse bg-[#E5E5E5] mb-3" />
-        <div className="h-8 w-48 rounded animate-pulse bg-[#E5E5E5]" style={{ animationDelay: "0.05s" }} />
-      </div>
-
-      {/* 置顶卡片骨架 */}
-      <div className="mb-10">
-        <div
-          className="aspect-[21/9] rounded-xl animate-pulse bg-[#F4F4F4]"
-        />
-      </div>
-
-      {/* 新闻网格骨架 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="space-y-3">
-            <div
-              className="aspect-[16/10] rounded-xl animate-pulse bg-[#F4F4F4]"
-              style={{ animationDelay: `${i * 0.08}s` }}
-            />
-            <div
-              className="h-4 w-1/4 rounded animate-pulse bg-[#E5E5E5]"
-              style={{ animationDelay: `${i * 0.08 + 0.04}s` }}
-            />
-            <div
-              className="h-5 w-3/4 rounded animate-pulse bg-[#E5E5E5]"
-              style={{ animationDelay: `${i * 0.08 + 0.06}s` }}
-            />
-            <div
-              className="h-3 w-full rounded animate-pulse bg-[#F4F4F4]"
-              style={{ animationDelay: `${i * 0.08 + 0.08}s` }}
-            />
+    <>
+      <section className="bg-[#171A20] py-5"><div className="site-container"><div className="skeleton h-8 w-28 rounded-full bg-white/10" /></div></section>
+      <section className="bg-white py-12 md:py-16"><div className="site-container">
+        <div className="mb-10 grid min-h-[320px] overflow-hidden rounded-xl bg-[#F4F4F4] md:grid-cols-2">
+          <div className="skeleton aspect-[4/3] md:aspect-auto" />
+          <div className="flex flex-col justify-center space-y-4 p-8 md:p-10">
+            <div className="skeleton h-4 w-32 rounded" /><div className="skeleton h-7 w-4/5 rounded" />
+            <div className="skeleton h-4 w-full rounded" /><div className="skeleton h-4 w-3/4 rounded" />
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="grid min-h-36 grid-cols-[38%_1fr] overflow-hidden rounded-xl border border-[#EEEEEE]">
+              <div className="skeleton" />
+              <div className="space-y-3 p-5"><div className="skeleton h-3 w-1/3 rounded" /><div className="skeleton h-5 w-4/5 rounded" /><div className="skeleton h-3 w-full rounded" /></div>
+            </div>
+          ))}
+        </div>
+      </div></section>
+    </>
   );
 }

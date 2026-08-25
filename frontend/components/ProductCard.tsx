@@ -11,6 +11,8 @@ import { productPath } from "@/lib/product-url";
 interface ProductCardProps {
   /** 产品数据，包括 slug、name、image、shortDescription 和 categories */
   product: ProductSummary;
+  /** Preload only the single above-the-fold LCP candidate. */
+  preload?: boolean;
 }
 
 // 图片加载失败 / 无图时的占位（相机图标）
@@ -43,11 +45,11 @@ const imageFallback = (
  * - Hover：品牌红边框 #d4343e + 轻微阴影 + 图片 scale(1.03)
  * - CTA：幽灵文字链 "View Details →"，默认 Graphite 灰、卡片 hover 变红 #d4343e + 箭头滑入（蓝色实心按钮已弃用，避免与红 hover 语言撞色且消除重复色块）
  */
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, preload = false }: ProductCardProps) {
   const tags = product.tags || [];
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-within:border-[#d4343e]/60 focus-within:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm">
       {/* 图片区域 */}
       <Link
         href={productPath(product)}
@@ -59,6 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.imageAlt || product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            preload={preload}
             className="object-contain transition-transform group-hover:scale-[1.04]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
@@ -70,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* 信息区域 */}
       <div className="flex flex-1 flex-col p-4 md:p-5">
-        <Link href={productPath(product)} className="flex-1">
+        <Link href={productPath(product)} className="flex-1 rounded-sm focus-visible:outline-offset-4">
           {product.categories[0] && <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8e94]">{product.categories[0].name}</p>}
           <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-[-0.02em] text-[#171A20] transition-colors duration-300 group-hover:text-[#d4343e] md:text-[18px]">
             {product.name}
@@ -89,7 +92,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <Link
           href={productPath(product)}
           aria-label={`View details of ${product.name}`}
-          className="mt-3 inline-flex min-h-11 items-center gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e]"
+          className="mt-3 inline-flex min-h-11 touch-manipulation items-center gap-1 rounded-sm text-xs font-semibold uppercase tracking-[0.08em] text-[#393C41] transition-colors duration-300 group-hover:text-[#d4343e] active:text-[#b91c1c]"
         >
           <span>View Details</span>
           <ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />

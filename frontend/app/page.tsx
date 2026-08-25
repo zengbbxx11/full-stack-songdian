@@ -123,7 +123,7 @@ async function ProductCategoriesSection() {
                   </span>
                   <h3 className="text-xl font-semibold leading-snug tracking-[-0.03em]">{meta.name}</h3>
                 </div>
-                <div className="overflow-hidden max-h-0 opacity-0 transition-all duration-500 ease-out group-hover:delay-500 group-hover:max-h-28 group-hover:opacity-100">
+                <div className="max-h-28 overflow-hidden opacity-100 transition-all duration-500 ease-out lg:max-h-0 lg:opacity-0 lg:group-hover:delay-500 lg:group-hover:max-h-28 lg:group-hover:opacity-100">
                   <p className="mt-2 text-[12px] leading-snug text-white/80 line-clamp-2">{meta.description}</p>
                   <span className="mt-2 inline-flex items-center text-[12px] font-medium text-white/90">
                     Explore
@@ -215,7 +215,7 @@ function HeroFallback() {
   return (
     <section className="relative bg-[#171A20] flex items-end min-h-[70vh]" aria-hidden="true">
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-16 h-16 rounded-full animate-pulse" style={{ backgroundColor: "rgba(255,255,255,0.08)" }} />
+        <div className="skeleton w-16 h-16 rounded-full bg-white/10" />
       </div>
     </section>
   );
@@ -225,11 +225,11 @@ function CategoriesFallback() {
   return (
     <section className="py-16 md:py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="h-3 w-24 rounded animate-pulse bg-[#E5E5E5] mb-3" />
-        <div className="h-8 w-64 rounded animate-pulse bg-[#E5E5E5] mb-10" />
+        <div className="skeleton h-3 w-24 rounded mb-3" />
+        <div className="skeleton h-8 w-64 rounded mb-10" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="aspect-[3/4] rounded-xl animate-pulse bg-[#E5E5E5]" style={{ animationDelay: `${i * 0.1}s` }} />
+            <div key={i} className="skeleton aspect-[3/4] rounded-xl" style={{ animationDelay: `${i * 0.1}s` }} />
           ))}
         </div>
       </div>
@@ -241,14 +241,14 @@ function NewsFallback() {
   return (
     <section className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="h-3 w-24 rounded animate-pulse bg-[#E5E5E5] mb-3" />
-        <div className="h-8 w-48 rounded animate-pulse bg-[#E5E5E5] mb-10" />
+        <div className="skeleton h-3 w-24 rounded mb-3" />
+        <div className="skeleton h-8 w-48 rounded mb-10" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="space-y-3">
-              <div className="aspect-[16/10] rounded-xl animate-pulse bg-[#F4F4F4]" style={{ animationDelay: `${i * 0.1}s` }} />
-              <div className="h-4 w-24 rounded animate-pulse bg-[#E5E5E5]" />
-              <div className="h-5 w-3/4 rounded animate-pulse bg-[#E5E5E5]" />
+              <div className="skeleton aspect-[16/10] rounded-xl" style={{ animationDelay: `${i * 0.1}s` }} />
+              <div className="skeleton h-4 w-24 rounded" />
+              <div className="skeleton h-5 w-3/4 rounded" />
             </div>
           ))}
         </div>

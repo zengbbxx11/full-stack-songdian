@@ -25,12 +25,12 @@ export default function Loading() {
         <div className="max-w-7xl mx-auto px-6">
           {/* 标题占位 */}
           <div className="mb-10">
-            <div className="h-8 w-40 animate-pulse rounded bg-[#F4F4F4]" />
+            <div className="h-8 w-40 skeleton rounded bg-[#F4F4F4]" />
           </div>
           {/* 搜索框占位 */}
-          <div className="mb-4 h-12 w-full animate-pulse rounded-xl bg-[#F4F4F4]" />
+          <div className="mb-4 h-12 w-full skeleton rounded-xl bg-[#F4F4F4]" />
           {/* 类型切换占位 */}
-          <div className="mb-10 h-12 w-full max-w-md animate-pulse rounded-xl bg-[#F4F4F4]" />
+          <div className="mb-10 h-12 w-full max-w-md skeleton rounded-xl bg-[#F4F4F4]" />
           {/* 骨架卡片网格 */}
           <SearchResultSkeletonGrid />
         </div>

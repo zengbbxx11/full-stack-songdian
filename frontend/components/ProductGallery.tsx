@@ -44,13 +44,16 @@ export default function ProductGallery({
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row md:gap-4">
       {/* 左侧缩略图列 */}
-      <div className="flex w-full shrink-0 flex-row gap-2 overflow-x-auto sm:w-16 sm:flex-col md:w-20">
+      <div className="flex w-full shrink-0 snap-x snap-mandatory flex-row gap-2 overflow-x-auto pb-1 sm:w-16 sm:snap-none sm:flex-col sm:overflow-visible sm:pb-0 md:w-20">
         {thumbs.map((img) => (
           <button
             key={img.id}
+            type="button"
+            aria-label={`View ${img.alt || mainAlt}`}
+            aria-pressed={selected === img.src}
             // 点击缩略图切换右侧大图
             onClick={() => setSelected(img.src)}
-            className={`relative h-16 w-16 shrink-0 overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer md:h-20 md:w-20 ${
+            className={`relative h-16 w-16 shrink-0 snap-start touch-manipulation overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer active:scale-[0.98] md:h-20 md:w-20 ${
               selected === img.src
                 ? "border-[#d4343e]"
                 : "border-[#EEEEEE] hover:border-gray-400"
@@ -87,7 +90,7 @@ export default function ProductGallery({
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-contain"
-              priority
+              preload
               onError={() => setMainImgError(true)}
             />
           )}

@@ -2,7 +2,7 @@
 
 /*
  * 文件：components/SearchControls.tsx（客户端组件）
- * 职责：搜索页顶部的搜索输入框（带搜索图标）+ 类型切换 Tabs（全部/产品/新闻）。
+ * 职责：搜索页顶部的搜索输入框（带搜索图标）+ 类型切换 Tabs（All/Products/News）。
  * 提交搜索或切换类型时，通过 router.push 导航至 /search?q=...&type=...，
  * 由服务端搜索页重新执行联合搜索并渲染结果网格（保留原有 URL 驱动模式）。
  *
@@ -18,9 +18,9 @@ type SearchType = "all" | "product" | "news";
 
 // 类型切换选项
 const TABS: { value: SearchType; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "product", label: "产品" },
-  { value: "news", label: "新闻" },
+  { value: "all", label: "All" },
+  { value: "product", label: "Products" },
+  { value: "news", label: "News" },
 ];
 
 export default function SearchControls({
@@ -81,12 +81,12 @@ export default function SearchControls({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索产品与新闻…"
-          aria-label="搜索产品与新闻"
+          placeholder="Search products and news..."
+          aria-label="Search products and news"
           className={cn(
             "h-12 w-full rounded-xl border border-[#EEEEEE] bg-white pl-12 pr-4",
             "text-[15px] text-[#171A20] placeholder:text-[#8E8E8E] outline-none",
-            "transition-colors duration-300 focus:border-[#3E6AE1]"
+            "transition-colors duration-300 focus:border-[#d4343e] focus:shadow-[0_0_0_3px_rgba(212,52,62,0.1)]"
           )}
         />
       </form>
@@ -95,7 +95,7 @@ export default function SearchControls({
       <div
         className="flex items-center gap-1 rounded-xl bg-[#F4F4F4] p-1"
         role="tablist"
-        aria-label="搜索类型"
+        aria-label="Search result type"
       >
         {TABS.map((tab) => {
           const active = type === tab.value;
@@ -105,9 +105,10 @@ export default function SearchControls({
               type="button"
               role="tab"
               aria-selected={active}
+              aria-controls="search-results"
               onClick={() => onTypeChange(tab.value)}
               className={cn(
-                "flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-300",
+                "min-h-11 flex-1 touch-manipulation rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-300 active:bg-white active:text-[#171A20]",
                 active
                   ? "bg-white text-[#171A20] shadow-sm"
                   : "text-[#5C5E62] hover:text-[#171A20]"

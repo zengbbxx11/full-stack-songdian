@@ -6,38 +6,18 @@
 export default function NewsDetailLoading() {
   const lineWidths = [85, 72, 64, 80, 58, 76, 69, 82];
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-      {/* 分类/日期骨架 */}
-      <div className="flex gap-3 mb-4">
-        <div className="h-3 w-16 rounded animate-pulse bg-[#E5E5E5]" />
-        <div className="h-3 w-24 rounded animate-pulse bg-[#F4F4F4]" />
-      </div>
-
-      {/* 标题骨架 */}
-      <div className="space-y-3 mb-8">
-        <div className="h-8 w-full rounded animate-pulse bg-[#F4F4F4]" />
-        <div className="h-8 w-2/3 rounded animate-pulse bg-[#F4F4F4]" style={{ animationDelay: "0.05s" }} />
-      </div>
-
-      {/* 作者/日期骨架 */}
-      <div className="flex gap-4 mb-10 pb-8 border-b border-[#EEEEEE]">
-        <div className="h-4 w-24 rounded animate-pulse bg-[#E5E5E5]" />
-        <div className="h-4 w-32 rounded animate-pulse bg-[#F4F4F4]" />
-      </div>
-
-      {/* 内容骨架 — 多个段落 */}
-      <div className="space-y-3">
-        {lineWidths.map((width, i) => (
-          <div
-            key={i}
-            className="h-4 rounded animate-pulse bg-[#F4F4F4]"
-            style={{
-              width: `${width}%`,
-              animationDelay: `${i * 0.08}s`,
-            }}
-          />
-        ))}
-      </div>
-    </div>
+    <>
+      <section className="bg-[#171A20] py-6 md:py-8"><div className="mx-auto max-w-3xl space-y-4 px-6">
+        <div className="skeleton h-8 w-4/5 rounded-full bg-white/10" />
+        <div className="skeleton h-8 w-full rounded bg-white/10" /><div className="skeleton h-8 w-3/4 rounded bg-white/10" />
+        <div className="skeleton h-4 w-28 rounded bg-white/10" />
+      </div></section>
+      <article className="bg-white pb-16 pt-8 md:pb-20 md:pt-10"><div className="mx-auto max-w-3xl px-6">
+        <div className="skeleton mb-5 aspect-[2/1] max-h-[360px] rounded-xl" />
+        <div className="space-y-3">
+          {lineWidths.map((width, i) => <div key={i} className="skeleton h-4 rounded" style={{ width: `${width}%` }} />)}
+        </div>
+      </div></article>
+    </>
   );
 }

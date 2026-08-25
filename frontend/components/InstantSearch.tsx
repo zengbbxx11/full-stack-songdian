@@ -171,8 +171,8 @@ export default function InstantSearch({ className }: { className?: string }) {
             <div className="py-1" aria-hidden="true">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-2">
-                  <div className="h-9 w-9 shrink-0 animate-pulse rounded bg-[#EEEEEE]" />
-                  <div className="h-3 w-24 animate-pulse rounded bg-[#EEEEEE]" />
+                  <div className="skeleton h-9 w-9 shrink-0 rounded" />
+                  <div className="skeleton h-3 w-24 rounded" />
                 </div>
               ))}
             </div>
@@ -209,7 +209,7 @@ export default function InstantSearch({ className }: { className?: string }) {
                       href={item.url}
                       onClick={() => setOpen(false)}
                       onMouseEnter={() => setActiveIndex(i)}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
+                      className={`flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2 transition-colors active:bg-[#eceef1] ${
                         isActive ? "bg-[#F4F4F4]" : "hover:bg-[#F4F4F4]"
                       }`}
                     >

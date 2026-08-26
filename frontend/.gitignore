@@ -44,5 +44,7 @@ data/
 *.tsbuildinfo
 next-env.d.ts
 
-# large media assets (manually uploaded to server)
-/public/Video/
+# Large video assets are excluded by default. Keep the About-page factory tour
+# in Git because production images are built from a clean CI checkout.
+/public/Video/*
+!/public/Video/SongdianFactoryVideo.mp4

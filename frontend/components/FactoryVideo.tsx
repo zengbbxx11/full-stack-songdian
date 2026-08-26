@@ -2,7 +2,7 @@
 
 // 客户端组件：管理播放状态与视频内联播放（点击后展示 controls）
 import { useRef, useState } from "react";
-import { Play, Video } from "lucide-react";
+import { CircleAlert, LoaderCircle, Play, Video } from "lucide-react";
 
 interface FactoryVideoProps {
   /** 视频地址（通常来自 WordPress 媒体库） */
@@ -26,13 +26,19 @@ export default function FactoryVideo({
   label = "Play the factory tour video",
   className = "",
 }: FactoryVideoProps) {
-  const [playing, setPlaying] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "playing" | "error">("idle");
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePlay = () => {
-    setPlaying(true);
-    // 自动播放可能被浏览器策略拦截；此时控制条已可用，用户可手动点击播放
-    videoRef.current?.play().catch(() => {});
+    const video = videoRef.current;
+    if (!video) {
+      setStatus("error");
+      return;
+    }
+
+    setStatus("loading");
+    // video 始终挂载，因此 play() 直接发生在用户手势内，不会丢失播放授权。
+    void video.play().catch(() => setStatus("error"));
   };
 
   return (
@@ -43,18 +49,19 @@ export default function FactoryVideo({
         boxShadow: "0 18px 50px -20px rgba(23,26,32,0.45)",
       }}
     >
-      {playing ? (
-        <video
-          ref={videoRef}
-          src={src}
-          poster={poster}
-          controls
-          autoPlay
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 h-full w-full bg-black object-cover"
-        />
-      ) : (
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        controls={status === "playing"}
+        playsInline
+        preload="metadata"
+        onPlaying={() => setStatus("playing")}
+        onError={() => setStatus("error")}
+        className="absolute inset-0 h-full w-full bg-black object-cover"
+      />
+
+      {status === "idle" && (
         <button
           type="button"
           onClick={handlePlay}
@@ -76,6 +83,36 @@ export default function FactoryVideo({
             <Play className="h-8 w-8 translate-x-0.5 fill-current" />
           </span>
         </button>
+      )}
+
+      {status === "loading" && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-black/45 text-white"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="inline-flex items-center gap-2 text-sm font-medium">
+            <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
+            Loading video…
+          </span>
+        </div>
+      )}
+
+      {status === "error" && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#171A20] px-6 text-center text-white"
+          role="alert"
+        >
+          <CircleAlert className="h-8 w-8" aria-hidden />
+          <p className="text-sm font-medium">The factory video is temporarily unavailable.</p>
+          <button
+            type="button"
+            onClick={handlePlay}
+            className="rounded-full border border-white/50 px-4 py-2 text-xs font-semibold transition-colors hover:bg-white hover:text-[#171A20]"
+          >
+            Try again
+          </button>
+        </div>
       )}
     </div>
   );

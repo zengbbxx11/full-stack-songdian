@@ -1,0 +1,2 @@
+# Media assets are binary: never attempt text diffs or line-ending conversion.
+*.mp4 binary

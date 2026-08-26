@@ -20,8 +20,10 @@ dev.db
 # Local uploads backup (large binary assets, excluded)
 uploads_bak_*/
 
-# Video files (large, excluded)
-frontend/public/Video/
+# Large video assets are excluded by default; the About-page factory tour is
+# intentionally versioned so CI-built frontend images contain it.
+frontend/public/Video/*
+!frontend/public/Video/SongdianFactoryVideo.mp4
 
 # Temp diagnostics
 diag*.txt

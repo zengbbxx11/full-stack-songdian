@@ -1,6 +1,6 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-> 当前状态（2026-08-25）：最新迁移为 `14_20260825094000_normalize_product_punctuation.py`。13、14 号迁移规范公开内容文案；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+> 当前状态（2026-08-26）：最新迁移为 `15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
@@ -262,7 +262,7 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 产品、新闻、分类的列表与详情缓存会在写入后失效，slug 变更会清理旧 slug；`/readyz` 会区分真实 Redis 与降级缓存。
 - `inquiry` 已支持 `country`、`region`、`landing_page`、`source_product`、`referrer` 和 `utm_*` 归因字段；后台可按来源产品、国家和 UTM 查询。
 - `content` 中的 `NotificationReadState` 支持后台新询盘、超时未跟进、SMTP 失败通知的用户级已读状态。
-- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新迁移为 `backend/migrations/models/14_20260825094000_normalize_product_punctuation.py`。12 号迁移提供内容工作流，13、14 号迁移只做公开文案纠错。
+- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新迁移为 `backend/migrations/models/15_20260826110000_add_content_sort_order.py`。12 号迁移提供内容工作流，13、14 号迁移做公开文案纠错，15 号迁移补齐产品和新闻排序字段。
 
 ### 与旧版段落的更正
 

@@ -27,7 +27,7 @@
 - 后台调度器默认每 30 秒检查到期内容，发布后清理 Redis 内容缓存并调用官网 `/api/revalidate` 清理 ISR。
 - 产品与新闻核心字段写入不可变 `ContentRevision` 快照；查看和恢复通过各资源的 `/admin/products|news/{id}/revisions` 路由提供，恢复本身会继续生成新版本。
 - 后台可签发默认 15 分钟有效的预览令牌；官网 `/preview/[token]` 强制 `noindex`、`no-store`，不改变正式页面视觉与正式 URL。
-- 最新迁移为 `14_20260825094000_normalize_product_punctuation.py`。13、14 号迁移只规范公开分类、新闻和产品文案，不改表结构；生产仍只执行 `aerich upgrade`，不删除或重建已有卷。
+- 最新迁移为 `15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻模型使用的 `sort_order` 字段；生产仍只执行 `aerich upgrade`，不删除或重建已有卷。
 
 ## 官网数据与错误处理
 

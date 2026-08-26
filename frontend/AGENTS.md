@@ -135,7 +135,7 @@ npm run dev → http://localhost:3000
 | `components/PostCard.tsx` | 新闻卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 蓝框+阴影+亮度变化） |
 | `components/SafeImage.tsx` | 客户端图片组件（仅处理 onError 换占位），供 RSC 卡片复用，减少 hydration |
 | `components/ContactMapLoader.tsx` | 客户端加载器，`next/dynamic({ ssr:false })` 按需引入 Leaflet，不进首屏 bundle |
-| `components/StatsBand.tsx` | 首页深色数据带（真实经营指标 + 数字滚动 count-up 入场，framer-motion） |
+| `components/StatsBand.tsx` | 首页深色数据带（服务端输出真实经营指标，避免首屏动画运行时） |
 | `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义，键盘可选） |
 | `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`） |
 | `components/CookieSettingsTrigger.tsx` | 页脚「Cookie Settings」重开入口（派发 `cookie-settings:open` 事件） |

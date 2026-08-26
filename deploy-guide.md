@@ -532,7 +532,7 @@ curl -I https://admin.zsaki.icu/signin
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | HTTPS | 管理后台必须配置域名和 Let’s Encrypt 证书；生产 Secure Cookie 不支持 IP/HTTP 登录 |
 | 数据导入 | 新环境见「六、生产初始化」：只运行迁移和最小种子；开发 SQL/CSV 快照禁止导入生产 |
-| 迁移链说明 | aerich 迁移 0-14；10 号迁移收敛历史重复外键，11 号增加询盘归因与通知已读状态，12 号增加内容状态/发布时间/版本记录，13、14 号只规范公开文案。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
+| 迁移链说明 | aerich 迁移 0-15；10 号迁移收敛历史重复外键，11 号增加询盘归因与通知已读状态，12 号增加内容状态/发布时间/版本记录，13、14 号规范公开文案，15 号补齐产品/新闻排序字段。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
 | 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
 | 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
@@ -545,7 +545,7 @@ curl -I https://admin.zsaki.icu/signin
 
 ---
 
-*最后更新：2026-08-25（迁移链 0-14；搜索排序/英文降级提示；部署路径备份与搜索冒烟加固）*
+*最后更新：2026-08-26（迁移链 0-15；补齐产品/新闻排序字段；CI 增加迁移后结构校验）*
 ## 本轮实现补充（2026-08-13）
 
 部署前请以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md) 为现状索引：
@@ -556,7 +556,7 @@ curl -I https://admin.zsaki.icu/signin
 - 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。
 - 生产数据库和运行时上传媒体不由 Git checkout 或镜像构建覆盖；工厂展示视频属于前端静态源码资产，会随前端镜像发布。备份和恢复必须针对 PostgreSQL/上传媒体卷单独执行。
 
-本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-14` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`，13、14 号迁移只纠正公开分类、新闻、产品和属性文案。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
+本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-15` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`，13、14 号迁移纠正公开文案，15 号迁移补齐产品/新闻 `sort_order` 字段。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
 
 ## 2026-08-19 内容工作流发布补充
 
@@ -588,7 +588,7 @@ curl -I https://admin.zsaki.icu/signin
 
 ### 本次数据库影响
 
-- 迁移 13 修正产品分类、新闻摘要、产品摘要/HTML 和产品属性中的确定性拼写与格式错误；迁移 14 清理产品文案中孤立的全角右括号。
+- 迁移 13 修正产品分类、新闻摘要、产品摘要/HTML 和产品属性中的确定性拼写与格式错误；迁移 14 清理产品文案中孤立的全角右括号；迁移 15 补齐 `t_product.sort_order` 与 `t_news.sort_order`。
 - 两个迁移都不创建、删除或改变表/列/索引，不修改产品状态、价格、库存、关联关系或上传文件，属于低风险内容更新。
 - 两个迁移的 downgrade 有意为空：错误文案不应在应用镜像回滚时恢复。正式发布仍须先备份；如业务方要求恢复旧文本，应从上线前备份中定向恢复内容字段，而不是删除数据库卷。
 - `db/*.sql`、`db/*.csv` 已同步修正仅用于本地重建；生产环境禁止导入这些快照，云端只运行 `aerich upgrade`。
@@ -602,7 +602,7 @@ curl -I https://admin.zsaki.icu/signin
 
 ### 上线前检查
 
-1. 发布 commit 必须包含迁移 13/14、`backend/search/services.py`、搜索测试、前端搜索/交互修改、部署脚本和本文档；先用 `git status --short` 确认没有遗漏的未跟踪文件。
+1. 发布 commit 必须包含当前迁移链、对应测试与 CI 校验、前端修改、部署脚本和本文档；先用 `git status --short` 确认没有遗漏的未跟踪文件。
 2. 等待 CI 的 backend、frontend、admin、compose、migration、e2e 和 images 全部成功；不要部署仅完成部分 job 的 SHA。
 3. 确认 GitHub Actions Variables 中三个 `NEXT_PUBLIC_*` 仍是生产 HTTPS 域名，再以完整 commit SHA 运行 `Deploy production`。
 4. 发布脚本应依次完成备份、拉取三镜像、启动 PostgreSQL/Redis、执行迁移、切换三应用和搜索冒烟。任一步失败都停止发布；不要手工跳过迁移或健康检查。

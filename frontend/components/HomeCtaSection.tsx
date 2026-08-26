@@ -1,26 +1,13 @@
-"use client";
-
 /*
  * 文件：components/HomeCtaSection.tsx
- * 职责：首页底部 CTA 区块（客户端组件）。
- * 因内部包含 InteractiveHoverButton 的 onClick 交互，
- * 必须作为 Client Component 独立于 Server Component 的 page.tsx 之外。
+ * 职责：首页底部 CTA 区块。仅 CTA 按钮本身保留为客户端交互岛。
  */
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import AnimatedSection from "@/components/motion/AnimatedSection";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
-import { trackEvent } from "@/lib/analytics";
+import { CtaButton } from "@/components/CtaButton";
 
 export default function HomeCtaSection() {
-  const router = useRouter();
-
-  function handleInquiryClick() {
-    trackEvent("cta_click", { cta_label: "Home - Send an Inquiry", destination: "/contact" });
-    router.push("/contact");
-  }
-
   return (
     <AnimatedSection>
       <section className="relative overflow-hidden bg-[#111316] py-20 md:py-32">
@@ -34,13 +21,14 @@ export default function HomeCtaSection() {
             Whether you need OEM manufacturing or full ODM product development, our team is ready to help.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <InteractiveHoverButton
-              onClick={handleInquiryClick}
+            <CtaButton
+              href="/contact"
+              ctaLabel="Home - Send an Inquiry"
               fill="bg-[#d4343e]"
               className="h-12 border-[#d4343e] bg-white px-8 text-[14px] text-[#171A20] hover:text-white"
             >
               Send an Inquiry
-            </InteractiveHoverButton>
+            </CtaButton>
             <Link
               href="/about"
               className="inline-flex h-12 items-center rounded-xl border border-white/25 bg-transparent px-8 text-sm font-medium text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[#111316]"

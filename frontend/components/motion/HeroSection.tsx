@@ -1,19 +1,14 @@
-"use client";
-
 /*
  * HeroSection —— 首页全屏 Banner（项目自定义动画组件）
  * 100vh 全屏 hero，以产线实拍图为背景，叠加渐变蒙层保证文字可读。
- * 标题/副标题/CTA 通过 framer-motion 的 staggerChildren 依次上浮淡入；
- * 底部带滚动引导指示；尊重系统“减少动态效果”偏好，开启时关闭错位动画。
+ * 首屏内容使用服务端 HTML 与轻量 CSS 淡入，避免加载完整客户端动画运行时。
  */
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
 import { HERO } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { CtaButton } from "@/components/CtaButton";
 
 interface HeroSectionProps {
   /** Banner 图片 URL（缺省时回退到 media.ts 的 heroBanner） */
@@ -21,21 +16,6 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ bannerUrl }: HeroSectionProps) {
-  const router = useRouter();
-  // useReducedMotion：读取系统“减少动态效果”偏好，据此关闭错位与循环动画。
-  const prefersReducedMotion = useReducedMotion();
-
-  // 减少动态时 staggerChildren 置 0，避免子元素依次动画。
-  const staggerChildren = prefersReducedMotion ? 0 : 0.12;
-
-  // 子元素统一为上浮淡入（y: 24 → 0），比纯透明度过渡更有层次
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: { opacity: 1, y: 0 },
-  };
-  // 与 AnimatedSection 一致的高级减速缓动，动效更顺滑
-  const TRANSITION = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
-
   return (
     <section className="relative overflow-hidden flex min-h-[720px] items-center md:min-h-[760px] lg:min-h-[calc(100svh-4rem)]">
       <Image
@@ -52,58 +32,40 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
       <div className="absolute inset-0 opacity-20 tech-grid" aria-hidden="true" />
 
       {/* Hero 内容 — 左侧对齐，更大气 */}
-      <motion.div
-        className="site-container relative z-10 py-28 md:py-36"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: { staggerChildren, delayChildren: 0.15 },
-          },
-        }}
-      >
+      <div className="site-container relative z-10 py-28 md:py-36">
         <div className="max-w-[820px]">
         {/* 行业徽章 — 描边 + 毛玻璃，更精致 */}
-        <motion.span
-          variants={itemVariants}
-          transition={TRANSITION}
-          className="mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[#d4343e] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
+        <span
+          className="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[#d4343e] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
         >
           {HERO.badge}
-        </motion.span>
+        </span>
 
         {/* 主标题 — 大号醒目 */}
-        <motion.h1
-          variants={itemVariants}
-          transition={TRANSITION}
-          className="mb-7 text-[clamp(3rem,7.3vw,6.8rem)] font-semibold leading-[0.94] tracking-[-0.065em] text-white"
+        <h1
+          className="animate-fade-in-up mb-7 text-[clamp(3rem,7.3vw,6.8rem)] font-semibold leading-[0.94] tracking-[-0.065em] text-white [animation-delay:80ms]"
         >
           {HERO.title}
-        </motion.h1>
+        </h1>
 
         {/* 副标题 — 白色半透明 */}
-        <motion.p
-          variants={itemVariants}
-          transition={TRANSITION}
-          className="mb-10 max-w-2xl text-base font-normal leading-relaxed text-white/72 md:text-xl"
+        <p
+          className="animate-fade-in-up mb-10 max-w-2xl text-base font-normal leading-relaxed text-white/72 [animation-delay:160ms] md:text-xl"
         >
           {HERO.subtitle}
-        </motion.p>
+        </p>
 
         {/* CTA 按钮 — 并排，大尺寸 */}
-        <motion.div
-          variants={itemVariants}
-          transition={TRANSITION}
-          className="flex flex-wrap items-center gap-4"
-        >
+        <div className="animate-fade-in-up flex flex-wrap items-center gap-4 [animation-delay:240ms]">
           {/* 主按钮 — 交互式悬停按钮（白底+红点，hover 时红点放大填满、白字滑入） */}
-          <InteractiveHoverButton
-            onClick={() => router.push(HERO.cta.primary.href)}
+          <CtaButton
+            href={HERO.cta.primary.href}
+            ctaLabel="Home - Primary Hero CTA"
             fill="bg-[#d4343e]"
             className="h-12 border-[#d4343e] bg-white px-8 text-[15px] text-[#171A20] hover:text-white"
           >
             {HERO.cta.primary.label}
-          </InteractiveHoverButton>
+          </CtaButton>
 
           {/* 副按钮 — 幽灵描边，与主按钮形成层次对比 */}
           <Link
@@ -112,29 +74,19 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           >
             {HERO.cta.secondary.label}
           </Link>
-        </motion.div>
         </div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* 滚动引导指示 — 底部居中，缓慢上下浮动，引导用户下滚 */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.1, duration: 0.6 }}
-        aria-hidden="true"
-      >
-        <motion.div
-          animate={prefersReducedMotion ? {} : { y: [0, 8, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          className="flex flex-col items-center gap-2 text-white/70"
-        >
+      <div className="animate-fade-in absolute bottom-8 left-1/2 z-10 -translate-x-1/2 [animation-delay:320ms]" aria-hidden="true">
+        <div className="flex flex-col items-center gap-2 text-white/70">
           <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Scroll</span>
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 }

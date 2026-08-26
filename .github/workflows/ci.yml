@@ -132,6 +132,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --extra dev --frozen
       - run: uv run aerich upgrade
+      - name: Verify migrated database schema
+        run: uv run python -m scripts.verify_schema
       - name: Verify production readiness with PostgreSQL and Redis
         run: |
           uv run uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/backend-integration.log 2>&1 &
@@ -203,6 +205,7 @@ jobs:
         run: |
           uv sync --extra dev --frozen
           uv run aerich upgrade
+          uv run python -m scripts.verify_schema
       - name: Start backend
         working-directory: backend
         run: uv run uvicorn main:app --host 127.0.0.1 --port 8000 > /tmp/e2e-backend.log 2>&1 &

@@ -28,7 +28,11 @@ export default function UserDropdown() {
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={toggleDropdown}
+        aria-label="用户菜单"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-500 flex items-center justify-center text-white font-semibold text-sm">

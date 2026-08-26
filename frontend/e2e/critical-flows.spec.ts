@@ -16,7 +16,7 @@ test("administrator session survives refresh and logout protects the dashboard",
   await loginAdmin(page);
   await page.reload();
   await expect(page).not.toHaveURL(/signin/);
-  await page.locator("button.dropdown-toggle").click();
+  await page.getByRole("button", { name: "用户菜单" }).click();
   await page.getByText("退出登录").click();
   await expect(page).toHaveURL(/signin/);
   await page.goto(adminBase);
@@ -35,7 +35,7 @@ test("visitor submits an inquiry and it appears in admin", async ({ page }) => {
 
   await loginAdmin(page);
   await page.goto(`${adminBase}/inquiries`);
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.locator("table").getByText(email, { exact: true })).toBeVisible();
 });
 
 test("scheduled news stays private but is available through a signed preview", async ({ request, page }) => {

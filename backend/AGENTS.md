@@ -2,7 +2,7 @@
 
 > AGENTS.md — 新会话快速上手指南。聚焦「启动命令 + 模块结构 + 雷区踩坑 + 常用修改路径」。
 
-> 2026-08-19 更新：最新迁移为 12；`content_revision/` 负责产品/新闻版本、恢复和签名预览，lifespan 调度器负责到期发布。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
+> 2026-08-26 更新：最新迁移为 15；15 号迁移补齐产品/新闻 `sort_order` 字段。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
 
 ---
 

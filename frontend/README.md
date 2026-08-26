@@ -119,12 +119,12 @@ frontend/
 │  ├─ SafeImage.tsx             # 图片加载失败占位（客户端子组件，卡片本体保持 RSC）
 │  ├─ ProductGallery.tsx        # 产品图集（客户端缩略图切换）
 │  ├─ PostCard.tsx              # 文章卡片（RSC，图片用 SafeImage 兜底）
-│  ├─ NewsGrid.tsx              # 文章网格
+│  ├─ NewsGrid.tsx              # 服务端文章网格（首页零动画运行时）
 │  ├─ ExhibitionMarquee.tsx     # 展会图片横向滚动墙
 │  ├─ FaqToc.tsx                # FAQ 分类目录（滚动高亮 + 平滑锚点跳转）
 │  ├─ ContactMap.tsx            # Leaflet 地图（客户端动态加载）
 │  ├─ ContactMapLoader.tsx     # Leaflet 按需加载包装（next/dynamic ssr:false）
-│  ├─ StatsBand.tsx             # 首页深色数据带（framer-motion count-up）
+│  ├─ StatsBand.tsx             # 首页深色数据带（服务端真实数值）
 │  ├─ InstantSearch.tsx         # 顶部即时搜索框（combobox/listbox ARIA）
 │  ├─ CertificateGallery.tsx    # 证书 Lightbox 画廊
 │  ├─ FactoryVideo.tsx          # 工厂视频播放器

@@ -1,6 +1,6 @@
 # Songdian B2B — 工厂外贸官网
 
-> 当前实现说明（2026-08-25）：生产发布以 GitHub Actions 构建的 GHCR 不可变镜像、独立 Aerich 迁移和健康检查为准。最新迁移为 14；`db/` 中的 SQL/CSV 仅是本地快照，不作为生产部署输入。
+> 当前实现说明（2026-08-26）：生产发布以 GitHub Actions 构建的 GHCR 不可变镜像、独立 Aerich 迁移和健康检查为准。最新迁移为 15；`db/` 中的 SQL/CSV 仅是本地快照，不作为生产部署输入。
 
 基于 FastAPI + Next.js 的 Songdian 工厂 B2B 外贸全栈系统，展示型官网前端（产品目录 + 询盘）与 Next.js 管理后台分离部署。
 
@@ -280,7 +280,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 
 ### 当前部署与运行边界（2026-08-25）
 
-- 最新数据库迁移为 `backend/migrations/models/14_20260825094000_normalize_product_punctuation.py`。13、14 号迁移为公开文案纠错，不改表结构；已有 PostgreSQL 环境只运行 `aerich upgrade`，不得删除 `pg_data`、重建 schema 或用 `db/` 快照覆盖生产库。
+- 最新数据库迁移为 `backend/migrations/models/15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻模型使用的 `sort_order` 字段；已有 PostgreSQL 环境只运行 `aerich upgrade`，不得删除 `pg_data`、重建 schema 或用 `db/` 快照覆盖生产库。
 - 本地开发中，官网与后台访问 `http://127.0.0.1:8000`；Compose 中官网服务端和后台代理通过 `http://backend:8000` 访问 API，浏览器公开地址仍为 `https://api.zsaki.icu`。
 - `NEXT_PUBLIC_API_URL` 是构建期公开地址；`INTERNAL_API_URL` 与 `BACKEND_PROXY_URL` 是服务端内部地址。各项目的 `.env.local` 仅用于本机，已从 Git 和 Docker 构建上下文排除。
 - 后台 `/uploads/...` 图片保持同源，由 Next.js rewrite 转发到后端；组件不要拼接 localhost 或公网 API 域名。

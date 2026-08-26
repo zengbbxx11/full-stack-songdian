@@ -1,18 +1,19 @@
 classDiagram
     class ProductCategory { BigInt id; String name; String slug; Float sort_order }
-    class Product { BigInt id; String slug; String title; Text content_html; FK category; String status; DateTime published_at; String cover_image; JSON tags; TSVector search_vector }
-    class ProductGallery { BigInt id; FK product; String image_url; Int sort_order }
+    class Product { BigInt id; String slug; String title; String summary; Text content_html; FK category; String sku; Decimal price; String currency; String stock_status; String status; DateTime published_at; String cover_image; JSON tags; Float sort_order; String seo_title; String seo_description; TSVector search_vector }
+    class ProductGallery { BigInt id; FK product; String image_url; String alt; Float sort_order }
     class ProductAttribute { BigInt id; FK product; String name; String slug; String value }
     class NewsCategory { BigInt id; String name; String slug; Float sort_order }
-    class News { BigInt id; String slug; String title; Text content_html; FK category; String status; DateTime published_at; String cover_image; TSVector search_vector }
+    class News { BigInt id; String slug; String title; String summary; Text content_html; FK category; String author; String status; DateTime published_at; String cover_image; Float sort_order; TSVector search_vector }
     class ContentRevision { BigInt id; String resource_type; BigInt resource_id; Int version; String change_type; JSON snapshot; String created_by; DateTime created_time }
-    class Inquiry { BigInt id; String name; String email; String status; String country; String source_product; String landing_page; String referrer; JSON tags; JSON follow_notes }
+    class Inquiry { BigInt id; String name; String email; String phone; String company; String country; String product_interest; String message; String source_page; String landing_page; String source_product; String referrer; String utm_source; String utm_medium; String utm_campaign; String utm_term; String utm_content; String biz_req_no; String status; String smtp_status; Int smtp_retry; String reply_note; FK assigned_user; JSON tags; JSON follow_notes; DateTime last_contact_time }
     class NotificationReadState { BigInt id; FK user; String notification_key; DateTime read_at }
     class AdminUser { BigInt id; String username; String password_hash; FK role; String status }
     class Role { BigInt id; String name; String code }
     class RolePermission { BigInt id; FK role; String permission_code }
     class AuditLog { BigInt id; BigInt user_id; String action; String resource; String result }
-    class UploadRecord { BigInt id; String url; String file_name; BigInt size; String mime_type }
+    class Album { BigInt id; String name; String slug; Float sort_order; FK parent }
+    class UploadRecord { BigInt id; String url; String file_name; BigInt size; String uploaded_by; FK album; String title }
 
     Product "1" --> "0..1" ProductCategory
     Product "1" --> "0..*" ProductGallery
@@ -23,3 +24,6 @@ classDiagram
     AdminUser "1" --> "1" Role
     Role "1" --> "0..*" RolePermission
     AdminUser "1" --> "0..*" NotificationReadState
+    AdminUser "1" --> "0..*" Inquiry : assigned_user
+    Album "1" --> "0..*" Album : parent
+    Album "1" --> "0..*" UploadRecord

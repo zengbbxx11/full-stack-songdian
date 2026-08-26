@@ -113,7 +113,7 @@ backend/
 
 ## 代码审查修复（2026-07-28）
 
-13 项审查问题已修复，详见 `CODE_REVIEW_REMEDIATION.md`。涉及后端的要点：
+13 项审查问题已修复，相关修复已合入当前代码；涉及后端的要点：
 - `content/services.py` 改密用 `user.password_hash`；
 - `product`/`news` services 新增 `_admin` 详情变体，草稿回查不再被 `PUBLISHED` 过滤；
 - `BizException` 统一用 `msg=` 关键字；
@@ -126,7 +126,7 @@ backend/
 
 ## 审计修复（2026-07-31）
 
-P0 级审计修复（详见 `../audit_verification_report.md`）：
+P0 级审计修复（相关行为已合入当前代码）：
 - **P0.1 上传安全**：`uploads/services.py` 新增 mimetypes + magic bytes 双重校验，防扩展名伪造攻击。
 - **P0.3 产品 SEO**：`product/models.py` 新增 `seo_title`(VARCHAR 120) / `seo_description`(VARCHAR 300)，运营可为重点产品手动精修 SEO 元数据。前端优先读取这两个字段，空则回退原有的 title/content_html 截取。
 - **P0.4 询盘 CRM**：`inquiry/` 模块全面升级——状态三态→五态管线（NEW→CONTACTING→QUOTED→DEAL/LOST）；新增 `assigned_user`(FK→AdminUser)、`follow_notes`(JSONB 时间线)、`last_contact_time`、`tags`(JSONB)；新增 `PUT .../assign` + `POST .../follow-note` 端点。迁移含历史数据自动兼容（REPLIED→CONTACTING, ARCHIVED→LOST）。

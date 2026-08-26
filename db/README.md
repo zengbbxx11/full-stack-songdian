@@ -6,8 +6,9 @@
 - 生产环境通过 `aerich upgrade` 创建或升级结构，并仅在首次初始化时启用最小种子（角色、权限、初始管理员）。
 - 任何已有产品、新闻、分类、询盘和上传记录都必须通过受控备份恢复或业务迁移保留，不能依赖本目录快照覆盖。
 - 若仓库需要公开发布，应另行制定敏感历史清理方案；本次不改写 Git 历史。
-## 当前实现补充（2026-08-19）
+## 当前实现补充（2026-08-26）
 
-- 当前迁移链已包含 `12_20260819090000_add_content_revision_and_scheduling.py`；11 号迁移新增询盘归因字段和 `t_notification_read_state`，12 号迁移新增产品/新闻发布状态、`published_at` 和 `t_content_revision`。生产必须通过 Aerich 迁移升级，不导入本目录快照覆盖业务库。
+- 当前迁移链为 `0`–`15`；11 号迁移新增询盘归因字段和 `t_notification_read_state`，12 号迁移新增产品/新闻发布状态、`published_at` 和 `t_content_revision`，13、14 号迁移规范公开文案，15 号迁移新增产品和新闻的 `sort_order`。
+- 生产环境只通过 Aerich 执行 `aerich upgrade`（部署脚本使用独立 `migrate` profile）；已有业务库不得重放已记录版本、删除数据卷、重建 schema，或用本目录快照覆盖。
 - `db/` 中的 SQL/CSV 仅用于本地调试、结构对照或受控迁移开发。生产产品、新闻、询盘和上传媒体以服务器数据卷/备份为准，不长期跟随 Git。
 - PostgreSQL 生产使用 18 线；中文全文检索在未安装 `zhparser` 时由应用降级为 `simple` 配置。

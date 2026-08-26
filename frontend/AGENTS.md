@@ -20,7 +20,7 @@
 | 框架 | Next.js 16 + React 19 + TypeScript（strict） |
 | 样式 | Tailwind CSS v4 + shadcn/ui |
 | 后端 | 项目 FastAPI（`localhost:8000`），数据已从旧 WordPress 后端经 ETL 迁至 PostgreSQL（WP 残留代码已清理） |
-| 表单 | react-hook-form + Zod + Server Actions |
+| 表单 | react-hook-form + Zod + 客户端直接 POST FastAPI |
 | SEO | next-super-meta + JSON-LD 结构化数据 |
 | 动画 | framer-motion |
 | 路由 | App Router（ISR 60s + Streaming SSR） |
@@ -32,7 +32,7 @@
 本地: C:\Users\Administrator\Desktop\Front-end project\full-stack-project\frontend
 后端: C:\Users\Administrator\Desktop\Front-end project\full-stack-project\backend（FastAPI :8000）
 管理后台: C:\Users\Administrator\Desktop\Front-end project\full-stack-project\admin-next（Next.js :3001）
-服务器: /home/ubuntu/songdianweb
+服务器: /home/ubuntu/full-stack-songdian
 ```
 
 ### 本地启动
@@ -265,11 +265,11 @@ npm run dev → http://localhost:3000
 
 `lib/types.ts` 已清理 WordPress/WooCommerce 原始结构类型（死代码）：移除 WP 核心全量类型与
 `WCProductTag` / `WCProductAttribute` / `WCProduct`，仅保留仍被应用层类型引用的
-`WCProductImage` / `WCProductCategory` / `WCAttribute`。详见 `../backend/CODE_REVIEW_REMEDIATION.md` #9。
+`WCProductImage` / `WCProductCategory` / `WCAttribute`。当前类型以 `lib/types.ts` 和实际使用处为准。
 
 ## 审计修复（2026-07-31）
 
-P0 级审计修复（详见 `../audit_verification_report.md`）：
+P0 级审计修复（相关行为已合入当前代码）：
 - **产品 SEO**：`ProductDetail` 类型新增 `seoTitle` / `seoDescription` 字段。产品详情页 `generateMetadata` 优先读这两个字段，空则回退原有的 title/content_html 截取。Open Graph 同步使用 SEO 值。
 - **GA4 事件追踪**：新增 5 个自定义事件 —— `cta_click`（CtaButton + HomeCtaSection）、`product_view`（ProductViewTracker）、`contact_submit`（InquiryForm）。`lib/analytics.ts` 安全封装，无 GA ID 或未同意 Cookie 时静默跳过。
 - **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段。

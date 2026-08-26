@@ -96,18 +96,17 @@ cd full-stack-songdian
 
 ### 2.2 更新已有服务器（保留现有产品、新闻和上传文件）
 
+正式生产更新从 GitHub Actions 的 `Deploy production` 工作流开始：输入已经通过 CI 的完整 commit SHA 或 release tag。工作流会将版本传给服务器上的 `scripts/deploy.sh`，由脚本按顺序完成备份、拉取三组 GHCR 应用镜像、启动 PostgreSQL/Redis、执行独立迁移、以 `--no-build` 切换应用并运行冒烟检查。
+
+服务器更新时不需要、也不应执行 `git pull` 或 `docker compose build`。服务器 checkout 中保留的 Compose 文件和部署脚本只作为编排输入；应用源码、前端构建变量和镜像内容以 CI 产出的指定版本为准。修改任意 `NEXT_PUBLIC_*` 构建变量时，应重新运行 CI 并发布新的镜像版本。
+
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
-# 先生成 PostgreSQL + uploads 备份；失败时立即停止，不要继续更新。
-BACKUP_DIR=/home/ubuntu/backups bash scripts/backup.sh
+# 备份由 scripts/deploy.sh 在 Deploy production 工作流中自动执行
 
-# 仅快进拉取，避免服务器上出现意外合并。
-git pull --ff-only
+# 正式发布不在服务器拉取源码；请通过 GitHub Actions 的 Deploy production 工作流发布指定 SHA/tag
 
-# 代码或任何 NEXT_PUBLIC_* 变量变更后重建；不会删除命名卷。
-docker compose build
-docker compose up -d
 docker compose ps
 ```
 
@@ -160,7 +159,7 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 > git push
 > ```
 
-### 5.1 首次构建
+### 5.1 本地或隔离环境首次构建
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
@@ -172,7 +171,11 @@ test -f .env || { echo "ERROR: .env missing!"; exit 1; }
 docker compose build
 ```
 
-### 5.2 启动（按健康依赖顺序自动编排）
+正式生产首次部署同样先由 GitHub Actions 构建并推送镜像，再运行 `Deploy production`。服务器只拉取指定版本，不把源码 checkout 当作生产构建上下文。
+
+### 5.2 本地或隔离环境启动（按健康依赖顺序自动编排）
+
+本节命令用于本地或隔离环境验证 Compose 启动链。正式生产由 GitHub Actions 的 `Deploy production` 工作流调用 `scripts/deploy.sh`，服务器不手工执行应用镜像切换。
 
 ```bash
 # 先启动数据服务，再显式迁移；迁移失败时不要启动新应用版本
@@ -260,18 +263,16 @@ cd /home/ubuntu/full-stack-songdian
 # 1) .env 设置强随机 ADMIN_PASSWORD，并暂时开启最小种子
 SEED_ON_START=true
 
-# 2) 构建并显式迁移，然后启动应用
-docker compose build
-docker compose up -d postgres redis
-docker compose --profile tools run --rm migrate
-docker compose up -d backend frontend admin-next
+# 2) 提交包含当前迁移和应用代码的版本，等待 CI 生成三组 GHCR 镜像
+#    然后在 GitHub Actions 运行 Deploy production；服务器会自动备份、拉镜像、迁移并切换应用
+# 以上步骤由 scripts/deploy.sh 执行；服务器不现场构建或手工切换应用镜像
 
-# 3) 确认管理员可登录后，关闭一次性种子并重启 backend
+# 3) 确认管理员可登录后，关闭一次性种子，并通过 Deploy production 或配置重启使其生效
 #    编辑 .env：SEED_ON_START=false
 docker compose up -d backend
 ```
 
-已有生产数据库只执行正常的 `docker compose up -d` 和迁移，绝不执行 `DROP SCHEMA`。如确需迁移历史业务内容，先在隔离环境清理账号、询盘和审计数据，再以显式、可验证的数据导入脚本处理。
+已有生产数据库只通过 `Deploy production` 工作流执行备份、迁移和应用切换，绝不执行 `DROP SCHEMA`。如果只是修改 `.env` 运行时配置，可在确认影响范围后执行 `docker compose up -d` 重新注入配置；如确需迁移历史业务内容，先在隔离环境清理账号、询盘和审计数据，再以显式、可验证的数据导入脚本处理。
 
 ---
 

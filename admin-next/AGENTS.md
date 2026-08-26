@@ -49,7 +49,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 ```
 admin-next/src/
 ├── app/                 # 路由（(admin) 布局分组 + (full-width-pages)）
-│   ├── (admin)/         # 受守卫页面：dashboard/products/categories/news/inquiries/media/*-form
+│   ├── (admin)/         # 受守卫页面：dashboard/products/categories/news/inquiries/media/users/settings/audit-logs/*-form
 │   ├── (full-width-pages)/  # 登录等全宽页：signin / signup
 │   ├── layout.tsx / globals.css / not-found.tsx
 ├── components/          # auth/calendar/charts/common/ecommerce/example/form/header/tables/ui/user-profile/videos
@@ -78,7 +78,7 @@ admin-next/src/
 ## ⚠️ 雷区（新会话必读，踩中即崩）
 
 1. **Node 必须 24.18.0**：Node 22 与 Next 16 Turbopack 的 `next/image` Web Streams 不兼容，启动即报错。
-2. **严禁 `@svgr/webpack`**：该依赖虽在 `package.json` devDependencies，但本机 Turbopack 的 webpack-loader worker 子进程**启动即崩（exit 1）**，会拖垮所有页面 500。SVG 图标一律用 `src/icons/generated.tsx` 里的内联 React 组件，不要 `import Icon from './x.svg'`。
+2. **严禁 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 子进程**启动即崩（exit 1）**，会拖垮所有页面 500。SVG 图标一律用 `src/icons/generated.tsx` 里的内联 React 组件，不要 `import Icon from './x.svg'`。
 3. **必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：这是唯一正确的 Tailwind v4 管线。删除它 → Next 16 退化为原生 Tailwind，在本机多 lockfile 仓库里会误判 workspace 根、漏扫 `.tsx` 里的布局类 → 整页「没有样式」（HTTP 仍 200，肉眼像裸 HTML）。
 4. **`proxy.ts` 的 matcher 必须排除 `/api` 与 `/uploads`**：当前为 `["/((?!_next/static|_next/image|favicon.ico|api/|uploads/).*)"]`。若写成 `["/((?!_next/static|_next/image|favicon.ico).*)"]` 会把登录接口 `/api/v1/admin/login` 也当未登录页重定向到 /signin → 浏览器端永远登录失败。
 5. **客户端组件必须显式 `"use client"`**：含 `useState/useRef/useEffect` 的组件忘了加 → 报 500「importing a module that depends on useState into a RSC module」。
@@ -112,11 +112,11 @@ admin-next/src/
 - 未配置 `JWT_SECRET` 时降级为仅校验 `exp` 并告警（仅本地开发，不安全）；
 - 仍需保持 matcher 排除 `/api` 与 `/uploads`（见雷区 ④），否则登录被拦截。
 
-详见 `../backend/CODE_REVIEW_REMEDIATION.md` #13。
+当前 JWT 签名校验以 `src/proxy.ts` 和后端 JWT 配置为准。
 
 ## 审计修复（2026-07-31）
 
-P0 级审计修复（详见 `../audit_verification_report.md`）：
+P0 级审计修复（相关行为已合入当前代码）：
 - **询盘 CRM**：`inquiries/page.tsx` 全面重写——表格新增「负责人」列（点击弹出分配面板）、「标签」列（逗号编辑）、状态五态管线流转按钮、展开行显示跟进时间线。新增分配弹窗和标签编辑弹窗。后端新增 `PUT .../assign` + `POST .../follow-note` 端点。
 - **产品 SEO 管理**：`product-form/page.tsx` 新增「SEO 元数据」面板（seo_title / seo_description 输入框 + 字数计数器）；`products/page.tsx` 表格新增「SEO」列（已设置=绿色 / 未设置=灰色，点击弹出快速编辑弹窗）。
 - **产品批量操作**：`products/page.tsx` 新增全选/单选 Checkbox + 批量操作栏（发布选中/隐藏选中/删除选中），`Promise.all` 并发逐条 PUT/DELETE。

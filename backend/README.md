@@ -69,7 +69,7 @@ pip install -e .
 ```bash
 cd backend
 cp .env.example .env
-#   - DATABASE_URL=sqlite://./dev.db   （默认即用 SQLite，无需 PostgreSQL）
+#   - DATABASE_URL=sqlite://./dev.db   （代码未提供 DATABASE_URL 时才使用 SQLite；`.env.example` 默认是 PostgreSQL）
 #   - REDIS_URL 留空                  （自动降级进程内内存字典）
 #   - JWT_SECRET 建议显式设置：       openssl rand -base64 48
 
@@ -169,6 +169,15 @@ pytest tests/ -q
 
 ---
 
+### 内容工作流、预览与通知接口
+
+- 产品：`GET /admin/products/{id}/revisions` 查看版本，`POST /admin/products/{id}/revisions/{revision_id}/restore` 恢复版本，`POST /admin/products/{id}/preview-token` 签发短期预览令牌。
+- 新闻：`GET /admin/news/{id}/revisions` 查看版本，`POST /admin/news/{id}/revisions/{revision_id}/restore` 恢复版本，`POST /admin/news/{id}/preview-token` 签发短期预览令牌。
+- 通知：`GET /admin/notifications` 获取新询盘、超时未跟进和 SMTP 失败通知；`POST /admin/notifications/read` 写入当前用户的已读状态。
+- 用户和运营：`GET /admin/users/list`、`GET /admin/stats` 提供用户列表和 Dashboard 统计；系统设置还提供 `POST /admin/settings/smtp/test` SMTP 测试发送。
+
+上述路由均位于 `/api/v1` 前缀下，并继续受 JWT Cookie、RBAC 和审计策略约束。
+
 ## 6. 关键设计决策
 
 - **统一返回** `Result{code,msg,msgI18n,data,traceId,timestamp}`，成功 `code="0"`；错误码
@@ -236,7 +245,7 @@ uv run python -m seed.seed_data
 ## 9. 代码审查修复记录
 
 2026-07-28 一轮代码审查发现的 13 项问题已全部修复，详见
-[`CODE_REVIEW_REMEDIATION.md`](./CODE_REVIEW_REMEDIATION.md)。要点：
+当前代码和测试已覆盖上述修复。要点：
 
 - 改密码接口误用 `user.password` → 已改为 `user.password_hash`；
 - 草稿态产品/新闻回查不再因 `status=PUBLISHED` 过滤而 500；
@@ -253,7 +262,7 @@ uv run python -m seed.seed_data
 以 `APP_ENV=production` 决定）；`t_*_category.sort_order` 改为 double precision、`t_news.status` 默认 `DRAFT`、清理
 WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两处致全站 500 的回归
 （`ToastContext` TDZ、`categories` 页 Modal 具名导入）。详见
-[`SECURITY-REMEDIATION.md`](../SECURITY-REMEDIATION.md)「补充加固（2026-07-28）」一节。
+当前认证、迁移和部署行为请以代码、`CURRENT_IMPLEMENTATION.md` 和 `deploy-guide.md` 为准。
 ## 当前实现补充（2026-08-13）
 
 当前运行方式以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准：

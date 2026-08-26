@@ -48,7 +48,7 @@ full-stack-project/
 │   ├── app/                   # App Router 页面
 │   ├── components/            # UI 组件（shadcn/ui）
 │   └── lib/                   # API 客户端/类型/工具
-├── admin-next/                # Next.js 管理后台（产品/新闻/分类/询盘/媒体）
+├── admin-next/                # Next.js 管理后台（产品/新闻/分类/询盘/媒体/用户/设置/审计）
 │   ├── src/app/(admin)/       # App Router 管理页面
 │   ├── src/components/        # UI 组件
 │   └── src/layout/            # 布局（侧边栏/顶栏）
@@ -204,8 +204,11 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 | POST | `/api/v1/admin/products/{id}/attributes` | `product:update` | 添加规格属性 |
 | GET | `/api/v1/admin/categories` | `product:read` | 分类列表（含各分类产品计数） |
 | GET/POST/PUT/DELETE | `/api/v1/admin/news{/:id}` | `news:*` | 新闻 CRUD（含 sort_order） |
+| GET/POST | `/api/v1/admin/products/{id}/revisions`、`/api/v1/admin/products/{id}/revisions/{revision_id}/restore`、`/api/v1/admin/products/{id}/preview-token`；新闻同构 | `product:*` / `news:*` | 内容版本历史、恢复和短期预览令牌 |
 | GET | `/api/v1/admin/inquiries` | `inquiry:read` | 询盘列表 |
-| PUT | `/api/v1/admin/inquiries/{id}/status` | `inquiry:update` | 更新询盘状态 |
+| PUT/POST/DELETE | `/api/v1/admin/inquiries/{id}/status`、`/api/v1/admin/inquiries/{id}/assign`、`/api/v1/admin/inquiries/{id}/follow-note`、`/api/v1/admin/inquiries/{id}` | `inquiry:update` | 更新状态、分配负责人、追加跟进记录、删除询盘 |
+| GET/POST | `/api/v1/admin/notifications`、`/api/v1/admin/notifications/read` | `inquiry:read` | 后台业务通知、用户级已读状态 |
+| GET | `/api/v1/admin/users/list`、`/api/v1/admin/stats` | `admin:login` | 用户列表和 Dashboard 统计 |
 | GET/PUT | `/api/v1/admin/profile` | — | 查看/修改当前用户信息（用户名/密码） |
 | GET/POST | `/api/v1/admin/roles` | `role:*` | 角色管理 |
 | GET | `/api/v1/admin/audit-logs` | `audit:read` | 审计日志 |
@@ -278,7 +281,7 @@ PostgreSQL 经 envkit 安装在 `C:\ProgramData\envkit\services\postgres\18.4\`�
 - 官网正式页面的视觉与内容结构保持不变；草稿只在独立、禁止索引的 `/preview/[token]` 页面展示。
 - `frontend` 提供 `npm run test:e2e` 和 `npm run lighthouse`，CI 保存失败时的 Playwright 诊断与 Lighthouse 报告。
 
-### 当前部署与运行边界（2026-08-25）
+### 当前部署与运行边界（2026-08-26）
 
 - 最新数据库迁移为 `backend/migrations/models/15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻模型使用的 `sort_order` 字段；已有 PostgreSQL 环境只运行 `aerich upgrade`，不得删除 `pg_data`、重建 schema 或用 `db/` 快照覆盖生产库。
 - 本地开发中，官网与后台访问 `http://127.0.0.1:8000`；Compose 中官网服务端和后台代理通过 `http://backend:8000` 访问 API，浏览器公开地址仍为 `https://api.zsaki.icu`。
@@ -317,10 +320,8 @@ npm run build
 
 | 文档 | 说明 |
 |---|---|
-| `docs/archive/ARCHITECTURE_PLAN.md` | 后端历史架构计划（归档，仅供追溯） |
 | `backend/docs/class-diagram.mermaid` | 后端领域类图 |
 | `backend/docs/sequence-diagram.mermaid` | 后端关键流程时序图 |
-| `docs/archive/integration-plan.md` | 官网与 FastAPI 历史集成方案（归档，仅供追溯） |
 | `frontend/docs/class-diagram.mermaid` | 官网集成类图 |
 | `frontend/docs/sequence-diagram.mermaid` | 官网集成时序图 |
 
@@ -351,8 +352,8 @@ uv sync --extra dev
 # 运行全部测试（需要 PostgreSQL）
 pytest tests/ -v
 
-# 运行标签相关测试（纯函数，无需 DB）
-pytest tests/test_product_tags.py -v
+# 运行产品模块测试
+pytest tests/test_product.py -v
 
 # 运行 Phase 1 新增单元测试
 pytest tests/test_admin_phase1.py -v
@@ -412,7 +413,7 @@ docker compose up -d
 - **启动命令**：旧 Windows 沙箱若默认 Node 版本不正确，须直调：`"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p <port>`；正常 Node 24 环境可使用 `npm run dev`。
 - **admin-next 必须保留 `postcss.config.mjs`**（`@tailwindcss/postcss`）：若删除，Turbopack 原生 Tailwind 内容扫描漏掉 `.tsx` 中的布局类（flex/grid/fixed/block），整页无样式
 - **admin-next 严禁使用 `@svgr/webpack`**：本机 Turbopack 的 webpack-loader worker 进程启动即崩（exit 1），会导致所有页面 500
-- **middleware matcher**：`src/proxy.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口被拦截、浏览器端永远登不进去
+- **代理 matcher**：`admin-next/src/proxy.ts` 的 matcher 必须显式排除 `/api` 和 `/uploads`，否则登录接口会被拦截；官网产品 URL 规范化则由 `frontend/proxy.ts` 负责
 - **Turbopack `.next/dev` 缓存写冲突**：若后台所有 `(admin)` 页面同时 500、浏览器报 `An unexpected Turbopack error`，多为两个 next dev 进程抢写同一缓存目录。修法：杀掉 3001 占用进程 → `rm -rf admin-next/.next/dev` → 单进程重起（详见 `admin-next/AGENTS.md` 雷区 ⑧，**别误杀 :3000 的 frontend**）
 - **PostgreSQL 症状速判**：后端所有接口返回 `B999001 系统内部错误` → 几乎一定是 PG 没起。先 `netstat -ano | grep :5432` 确认，再用 envkit `pg_ctl` 拉起
 ## 当前实现补充（2026-08-13）

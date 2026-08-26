@@ -1,6 +1,6 @@
 # Songdian Technology — B2B 外贸官网（Next.js + FastAPI）
 
-> 当前状态（2026-08-25）：官网已支持签名草稿预览、结构化 API 错误、Web Vitals、英文联合搜索结果和统一的移动/无障碍反馈；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+> 当前状态（2026-08-26）：官网已支持签名草稿预览、结构化 API 错误、Web Vitals、英文联合搜索结果和统一的移动/无障碍反馈；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
 
 松典科技（广东）有限公司面向全球 OEM / ODM 数码相机采购商的 B2B 展示型官网。前端为 **Next.js（App Router）**，通过项目自有 FastAPI 后端获取产品/新闻/分类数据，支持 ISR 增量静态再生 + Streaming SSR。
 
@@ -17,7 +17,7 @@
 | 样式 | Tailwind CSS v4（`@tailwindcss/postcss`）+ shadcn/ui 组件库 |
 | 后端 | 项目自有 FastAPI REST API（`backend/`，端口 8000） |
 | 数据迁移 | 旧 WordPress 数据经一次性 ETL 迁至 PostgreSQL（`backend/migration/` 模块已随 M6 移除），前端仅消费 FastAPI |
-| 表单 | react-hook-form + Zod（客户端校验 + 服务端 action 提交） |
+| 表单 | react-hook-form + Zod（客户端校验 + 直接 POST FastAPI） |
 | 询盘通知 | FastAPI 后端 SMTP（管理后台「系统设置」配置；未配置仍持久化询盘） |
 | 动画 | framer-motion（`components/motion/*`） |
 | 图标 | lucide-react（`^1.23.0`） |
@@ -64,6 +64,7 @@ npm run start
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
+| `INTERNAL_API_URL` | `http://127.0.0.1:8000` | Next.js 服务端到后端的内部地址；Compose 中使用 `http://backend:8000` |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | 站点规范地址 |
 | `NEXT_PUBLIC_IMAGE_HOST` | `api.zsaki.icu` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
 | `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
@@ -104,6 +105,7 @@ frontend/
 │  │  └─ [slug]/                # 新闻详情（ISR）
 │  ├─ search/                   # 全站搜索页
 │  ├─ contact/                  # 联系页：表单 + Leaflet 地图 + SMTP 邮件通知
+│  ├─ preview/[token]/          # 后台签名预览（no-store + noindex）
 │  ├─ privacy-policy/           # 隐私政策
 │  ├─ robots.ts                 # /robots.txt
 │  └─ sitemap.ts                # /sitemap.xml
@@ -130,7 +132,7 @@ frontend/
 │  ├─ FactoryVideo.tsx          # 工厂视频播放器
 │  ├─ SpotlightCard.tsx         # 鼠标聚光灯卡片
 │  ├─ AnimatedCounter.tsx       # 数字滚动动画
-│  ├─ form/                     # InquiryForm + FormField（RHF + Zod）
+│  ├─ form/                     # InquiryForm + FormField（RHF + Zod，直接 POST FastAPI）
 │  ├─ motion/                   # framer-motion 封装
 │  ├─ CookieConsent.tsx         # Cookie 同意横幅（底部横向条幅：左文案右按钮；同意后才注入 GA）
 │  ├─ CookieSettingsTrigger.tsx # 页脚「Cookie Settings」重开入口（派发 cookie-settings:open 事件）
@@ -142,7 +144,7 @@ frontend/
 │  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
 │  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
 │  ├─ content-data.ts           # 全站可编辑文案
-│  ├─ seo.ts                    # 结构化数据：organization / breadcrumb / article / product / faq
+│  ├─ seo.ts                    # 结构化数据：Manufacturer / breadcrumb / article / product / faq
 │  ├─ media.ts                  # 图片资源映射
 │  ├─ site-config.ts            # 页脚链接等静态配置
 │  ├─ coord-transform.ts        # 地图坐标转换工具
@@ -200,6 +202,7 @@ frontend/
 | `/solutions` | `content-data.ts` | 静态 |
 | `/solutions/faq` | `content-data.ts` | 静态（revalidate 3600s） |
 | `/contact` | 联系表单 + Leaflet 地图 + SMTP | 静态 |
+| `/preview/[token]` | 后台签名预览页面 | `no-store` + `noindex`，令牌默认 15 分钟有效 |
 
 ### 重定向（308 永久）
 
@@ -230,7 +233,7 @@ frontend/
 | Pewter | `#5C5E62` | 辅助文字/描述 |
 | Light Ash | `#F4F4F4` | 卡片/区域背景 |
 
-风格约定：以 `1px` border（`#EEEEEE`）分隔为主、克制圆角（4px / 12px）；转化型 CTA 允许极淡投影（`shadow-sm` / 滚动玻璃态 `shadow-[0_2px_16px_rgba(212,52,62,0.45)]`）增强可点击感；按钮统一 `rounded-lg`；过渡 `transition-colors duration-300`。
+风格约定：以 `1px` border（`#EEEEEE`）分隔为主；圆角以 `frontend/app/globals.css` 的 `6/10/12/16/20/24/28px` 层级为准，按钮统一 `rounded-lg`。转化型 CTA 允许极淡投影（`shadow-sm` / 滚动玻璃态 `shadow-[0_2px_16px_rgba(212,52,62,0.45)]`）增强可点击感；过渡使用 `transition-colors duration-300`。
 
 ---
 
@@ -251,7 +254,7 @@ frontend/
 ## SEO & 结构化数据
 
 - 全局 `metadata` 定义在 `app/layout.tsx`
-- JSON-LD：`Organization`、`WebSite`、`BreadcrumbList`、`Article`、`Product`、`FAQPage`、`LocalBusiness`
+- JSON-LD：`Manufacturer`、`WebSite`、`BreadcrumbList`、`Article`、`Product`、`FAQPage`；组织实体使用统一 `@id`
 - `app/robots.ts` 与 `app/sitemap.ts` 自动生成
 
 ---

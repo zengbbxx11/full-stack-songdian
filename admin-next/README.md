@@ -1,6 +1,6 @@
 # Songdian B2B — 工厂外贸官网（管理后台）
 
-> 当前状态（2026-08-19）：产品与新闻编辑已接入草稿、定时/立即发布、版本历史、恢复和 15 分钟短期预览。当前部署与迁移说明以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+> 当前状态（2026-08-26）：产品与新闻编辑已接入草稿、定时/立即发布、版本历史、恢复和 15 分钟短期预览；询盘 CRM、通知、用户、设置和审计页面也已接入后端 API。当前部署与迁移说明以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
 
 松典科技 B2B 平台的管理后台，基于 **Next.js 16 + React 19 + Tailwind CSS v4**，通过项目自有 **FastAPI 后端** 提供数据服务。用于管理产品、新闻、分类、询盘和媒体资源。
 
@@ -67,6 +67,9 @@ admin-next/
 │   │   │   ├── inquiries/        # 询盘列表
 │   │   │   ├── media/            # 媒体库（上传/分类/复制URL）
 │   │   │   ├── account/          # 账号设置（改用户名/改密码）
+│   │   │   ├── users/            # 用户管理（创建/删除/重置密码）
+│   │   │   ├── settings/         # 系统设置与 SMTP 测试
+│   │   │   ├── audit-logs/       # 审计日志
 │   │   │   └── (others-pages)/
 │   │   │       ├── product-form/ # 产品编辑表单
 │   │   │       └── news-form/    # 新闻编辑表单
@@ -77,7 +80,7 @@ admin-next/
 │   ├── components/
 │   │   ├── auth/SignInForm.tsx    # 登录表单
 │   │   ├── header/
-│   │   │   ├── NotificationDropdown.tsx  # 通知铃铛（空状态）
+│   │   │   ├── NotificationDropdown.tsx  # 通知下拉（30 秒轮询、未读/已读）
 │   │   │   └── UserDropdown.tsx          # 用户下拉（Sign out）
 │   │   ├── ecommerce/EcommerceMetrics.tsx  # Dashboard 统计卡片
 │   │   ├── form/                 # 表单组件
@@ -106,8 +109,13 @@ admin-next/
 | 产品管理 | 搜索/分类筛选、拖拽排序、新增/编辑/删除，**富文本编辑器**编辑产品详情 |
 | 新闻管理 | 拖拽排序、新增/编辑/删除，**富文本编辑器**编辑内容，**发布时间编辑** |
 | 分类管理 | 查看分类及产品计数 |
-| 询盘管理 | 查看询盘列表 |
+| 内容发布工作流 | DRAFT / SCHEDULED / PUBLISHED、发布时间校验、到期发布、版本历史、恢复和 15 分钟签名预览 |
+| 询盘 CRM | 查看来源/UTM 归因，更新状态、分配负责人、记录跟进时间和跟进备注 |
+| 通知中心 | 30 秒轮询新询盘、超时未跟进和 SMTP 失败通知，支持逐条或全部标记已读 |
 | 媒体管理 | 图片上传、分类管理、复制 URL |
+| 用户管理 | 用户列表、创建、删除和重置密码 |
+| 系统设置 | 站点设置和询盘 SMTP 配置，支持测试发送 |
+| 审计日志 | 查看管理员操作记录 |
 | 账号设置 | 修改用户名、修改密码 |
 | 暗色模式 | 全局切换 |
 

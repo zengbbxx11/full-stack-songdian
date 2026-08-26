@@ -250,7 +250,7 @@ jobs:
           if-no-files-found: ignore
 
   images:
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     needs: [backend, frontend, admin, compose, migration, e2e]
     runs-on: ubuntu-latest
     permissions:
@@ -281,7 +281,7 @@ jobs:
             type=raw,value=${{ github.sha }}
             type=sha,format=long
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
       - uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.component }}

@@ -11,7 +11,7 @@
 
 仓库现在提供两条 GitHub Actions 工作流：
 
-- `.github/workflows/ci.yml`：在提交和 PR 上运行后端测试、前后台 lint/build、Compose 校验；main 分支和 `v*` 标签通过后，将 backend、frontend、admin 三个不可变版本镜像推送到 GHCR。
+- `.github/workflows/ci.yml`：在提交和 PR 上运行后端测试、前后台 lint/build、Compose 校验；master 分支和 `v*` 标签通过后，将 backend、frontend、admin 三个不可变版本镜像推送到 GHCR。
 - `.github/workflows/deploy.yml`：手动输入完整 commit SHA 或 release tag，上传部署清单并在服务器执行备份、独立迁移、指定版本切换和健康检查。应用健康检查失败时回退到上一个已成功版本；数据库迁移不会自动降级，破坏性迁移必须采用向后兼容的分阶段策略。
 
 首次使用前，在 GitHub `production` Environment 配置以下 Secrets：

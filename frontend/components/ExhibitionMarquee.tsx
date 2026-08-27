@@ -53,13 +53,13 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
     >
       {/* 暂停/播放 + 提示 */}
       <div className="absolute -top-12 right-0 z-20 flex items-center gap-2">
-        <span className="hidden sm:inline text-xs text-[#5C5E62]">Click to enlarge</span>
+        <span className="hidden sm:inline text-xs text-[var(--muted-foreground)]">Click to enlarge</span>
         <button
           type="button"
           onClick={() => setPaused((p) => !p)}
           aria-label={paused ? "Resume auto-scroll" : "Pause auto-scroll"}
           aria-pressed={paused}
-          className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded border border-[#EEEEEE] bg-white text-[#393C41] transition-colors hover:text-[#d4343e] active:bg-[#f2f3f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
+          className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded border border-[var(--border)] bg-white text-[var(--graphite)] transition-colors hover:text-[var(--accent)] active:bg-[#f2f3f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
         </button>
@@ -82,7 +82,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
                 <button
                   type="button"
                   onClick={() => setLightboxIndex(realIndex)}
-                  className="relative aspect-[4/3] w-full touch-manipulation overflow-hidden rounded-xl border border-[#EEEEEE] bg-white cursor-zoom-in active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e] focus-visible:ring-offset-2"
+                  className="relative aspect-[4/3] w-full touch-manipulation overflow-hidden rounded-xl border border-[var(--border)] bg-white cursor-zoom-in active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
                   aria-label={`View ${item.name} exhibition photo in full size`}
                 >
                   <Image
@@ -94,11 +94,11 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
                   />
                 </button>
                 <figcaption className="mt-3 text-center">
-                  <p className="truncate text-sm font-semibold text-[#171A20]" title={item.name}>
+                  <p className="truncate text-sm font-semibold text-[var(--foreground)]" title={item.name}>
                     {item.name}
                   </p>
                   {item.year && (
-                    <p className="mt-0.5 text-xs font-medium" style={{ color: "#d4343e" }}>
+                    <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--accent)" }}>
                       {item.year}
                     </p>
                   )}

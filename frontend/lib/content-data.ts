@@ -20,8 +20,12 @@ export const COMPANY = {
   /** SEO meta 描述和简介段落 */
   description:
     "Songdian Technology is a digital camera manufacturer and OEM/ODM camera factory with 20 years of expertise in camera development and manufacturing.",
-  /** 公司成立年份（集团母公司深圳 Sonida 创立于 2006 年） */
+  /** 松典科技（广东）这一法律实体成立年份 */
+  established: 2023,
+  /** 集团制造业务起始年份（母公司深圳 Sonida 创立于 2006 年） */
   founded: 2006,
+  /** 集团母公司法律实体名 */
+  parentName: "Shenzhen Sonida Digital Technology Co., Ltd.",
   /** 员工数量 */
   employees: "1,000+",
   /** 工厂面积 */
@@ -320,7 +324,7 @@ export const PRIVACY = {
       id: "controller",
       title: "1. Who We Are (Data Controller)",
       paragraphs: [
-        "The data controller responsible for your personal information is Songdian Technology (Guangdong) Co., Ltd., a digital camera manufacturer founded in 2006 and headquartered in Foshan, Guangdong, China. Our registered address and full contact details appear in the “Contact Us” section below.",
+        "The data controller responsible for your personal information is Songdian Technology (Guangdong) Co., Ltd., established in 2023 and headquartered in Foshan, Guangdong, China. Its parent company, Shenzhen Sonida Digital Technology Co., Ltd., was founded in 2006. Our registered address and full contact details appear in the “Contact Us” section below.",
       ],
     },
     {

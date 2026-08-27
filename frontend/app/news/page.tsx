@@ -52,7 +52,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   return (
     <>
       {/* 首屏 Hero —— 仅含面包屑 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -62,7 +62,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           {loadError ? (
-            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+            <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">News Unavailable</h3>
               <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{loadError}</p>
               <Link
@@ -80,7 +80,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                 <Link
                   href={`/news/${featured.slug}`}
                   className="group block relative overflow-hidden mb-10 border border-transparent hover:border-[#3E6AE1] hover:shadow-sm transition-all h-full w-full"
-                  style={{ backgroundColor: "#F4F4F4", borderRadius: "12px", transitionDuration: "0.3s" }}
+                  style={{ backgroundColor: "var(--muted)", borderRadius: "12px", transitionDuration: "0.3s" }}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 min-h-[320px]">
                     <div className="relative aspect-[4/3] md:aspect-auto bg-gray-800 overflow-hidden" style={{ borderRadius: "12px 0 0 12px" }}>
@@ -100,7 +100,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col justify-center p-8 md:p-10 relative z-10" style={{ backgroundColor: "#F4F4F4" }}>
+                    <div className="flex flex-col justify-center p-8 md:p-10 relative z-10" style={{ backgroundColor: "var(--muted)" }}>
                       <div className="flex items-center gap-3 mb-3">
                         {featured.categories.length > 0 && (
                           <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full" style={{ backgroundColor: "rgba(62,106,225,0.2)", color: "#3E6AE1" }}>
@@ -109,10 +109,10 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                         )}
                         <span className="text-xs text-gray-400">{featured.date}</span>
                       </div>
-                      <h2 className="text-xl md:text-2xl font-medium leading-snug mb-3" style={{ color: "#171A20" }}>
+                      <h2 className="text-xl md:text-2xl font-medium leading-snug mb-3" style={{ color: "var(--foreground)" }}>
                         {featured.title}
                       </h2>
-                      <p className="text-sm line-clamp-3 leading-relaxed mb-5" style={{ color: "#5C5E62" }}>{featured.excerpt}</p>
+                      <p className="text-sm line-clamp-3 leading-relaxed mb-5" style={{ color: "var(--muted-foreground)" }}>{featured.excerpt}</p>
                       <span className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "#3E6AE1", transitionDuration: "0.33s" }}>
                         Read Article
                         <svg className="w-4 h-4 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
@@ -129,7 +129,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   <SpotlightCard key={post.id} className="h-full">
                   <Link
                     href={`/news/${post.slug}`}
-                    className="group flex flex-col sm:flex-row gap-5 bg-white border border-[#EEEEEE] hover:border-[#3E6AE1] hover:shadow-sm overflow-hidden transition-all h-full w-full"
+                    className="group flex flex-col sm:flex-row gap-5 bg-white border border-[var(--border)] hover:border-[#3E6AE1] hover:shadow-sm overflow-hidden transition-all h-full w-full"
                     style={{ borderRadius: "12px", transitionDuration: "0.3s" }}
                   >
                     <div className="relative sm:w-48 shrink-0 aspect-[4/3] sm:aspect-auto bg-gray-100 overflow-hidden">
@@ -158,17 +158,17 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                     <Link
                       href={`/news?page=${currentPage - 1}`}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
-                      style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
+                      style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Previous
                     </Link>
                   )}
-                  <span className="px-4 py-2.5 text-sm" style={{ color: "#5C5E62" }}>Page {currentPage} / {pagination.totalPages}</span>
+                  <span className="px-4 py-2.5 text-sm" style={{ color: "var(--muted-foreground)" }}>Page {currentPage} / {pagination.totalPages}</span>
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/news?page=${currentPage + 1}`}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
-                      style={{ color: "#393C41", backgroundColor: "#F4F4F4", borderRadius: "4px", transitionDuration: "0.33s" }}
+                      style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
                       Next
                     </Link>
@@ -177,9 +177,9 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
               )}
             </>
           ) : (
-            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+            <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Articles Yet</h3>
-              <p className="text-sm text-gray-500">News articles will appear here once published in the admin panel.</p>
+              <p className="text-sm text-gray-500">New articles are on the way — please check back soon.</p>
             </div>
           )}
         </div>

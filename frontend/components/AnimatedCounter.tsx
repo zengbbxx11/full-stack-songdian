@@ -28,7 +28,7 @@ export function AnimatedCounter({
     <div
       className={`fact-reveal font-bold tracking-tight tabular-nums ${className}`}
     >
-      <span style={{ color: "#171A20" }}>
+      <span style={{ color: "var(--foreground)" }}>
         {prefix}
         {formatted}
         {suffix}

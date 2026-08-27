@@ -284,6 +284,8 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 管理端写入 `SCHEDULED` 时必须提供未来的 `published_at`；调度器按 `SCHEDULED_PUBLISH_INTERVAL`（默认 30 秒）扫描到期记录并切换为 `PUBLISHED`。
 - 草稿和未到期内容不会进入公开列表、详情、搜索或 sitemap。预览令牌由服务端签名，默认 `PREVIEW_TOKEN_TTL=900`，预览响应不缓存且禁止索引。
 - 内容发布、恢复和调度发布都会失效 Redis 列表/详情缓存，并触发官网 ISR revalidation。
+- ISR revalidation 会重新生成公开详情页 HTML、Open Graph 与 Twitter metadata；产品主图或新闻封面变化后，官网社交卡片随页面更新，无图时由 frontend 回退默认品牌图。
+- `/llms.txt` 由 frontend 的共享公司事实配置生成，不是 backend 内容接口；后端无需提供或缓存一份重复的 llms.txt 数据。
 - 生产迁移由 Compose 的独立 `migrate` profile 执行；backend 应用容器启动命令不隐式运行 Aerich。
 
 ## 搜索排序与降级提示（2026-08-25）

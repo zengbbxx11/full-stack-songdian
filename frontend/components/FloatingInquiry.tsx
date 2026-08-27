@@ -66,14 +66,14 @@ export default function FloatingInquiry() {
       aria-label="Quick inquiry"
     >
       <div className="flex h-full w-full items-center justify-between gap-4 px-4 sm:gap-6 sm:px-6 lg:px-8">
-        <span className="min-w-0 truncate text-[14px] font-medium text-[#171A20] sm:text-[15px]">
+        <span className="min-w-0 truncate text-[14px] font-medium text-[var(--foreground)] sm:text-[15px]">
           Discuss your camera project
         </span>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <Link
           href="/contact"
-          className="inline-flex h-10 touch-manipulation items-center rounded-lg bg-[#d4343e] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#b91c1c] active:bg-[#991b1b] sm:px-6"
+          className="inline-flex h-10 touch-manipulation items-center rounded-lg bg-[var(--accent)] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[var(--accent-hover)] active:bg-[#991b1b] sm:px-6"
         >
           Send Inquiry
           <svg className="ml-1.5 hidden h-4 w-4 sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">

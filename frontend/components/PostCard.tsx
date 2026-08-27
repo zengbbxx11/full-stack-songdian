@@ -35,7 +35,7 @@ export default function PostCard({ post, showAuthor = true, preload = false }: P
   return (
     <Link
       href={`/news/${post.slug}`}
-      className="group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[#d4343e]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
+      className="group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[var(--accent)]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
     >
       {/* 图片区域 */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
@@ -55,7 +55,7 @@ export default function PostCard({ post, showAuthor = true, preload = false }: P
         )}
 
         {post.categories.length > 0 && (
-          <span className="absolute left-3 top-3 rounded-lg border-l-2 border-[#d4343e] bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 backdrop-blur-sm">
+          <span className="absolute left-3 top-3 rounded-lg border-l-2 border-[var(--accent)] bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 backdrop-blur-sm">
             {post.categories[0].name}
           </span>
         )}
@@ -63,11 +63,11 @@ export default function PostCard({ post, showAuthor = true, preload = false }: P
 
       {/* 内容区域 */}
       <div className="flex flex-1 flex-col p-4 md:p-5">
-        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-[#d4343e] md:text-xl">
+        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-[var(--accent)] md:text-xl">
           {post.title}
         </h3>
 
-        <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-3" style={{ color: "#5C5E62" }}>
+        <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed mb-3" style={{ color: "var(--muted-foreground)" }}>
           {post.excerpt}
         </p>
 

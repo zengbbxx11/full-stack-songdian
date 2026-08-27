@@ -6,17 +6,17 @@
 export default function ProductsLoading() {
   return (
     <>
-      <section className="border-b border-white/10 bg-[#111316] py-3">
+      <section className="border-b border-white/10 bg-[var(--surface-dark)] py-3">
         <div className="site-container"><div className="skeleton h-8 w-40 rounded-full bg-white/10" /></div>
       </section>
-      <section className="bg-[#111316] pb-7 pt-4 md:pb-8 md:pt-5">
+      <section className="bg-[var(--surface-dark)] pb-7 pt-4 md:pb-8 md:pt-5">
         <div className="site-container">
           <div className="skeleton h-3 w-28 rounded bg-white/10" />
           <div className="skeleton mt-3 h-12 w-72 max-w-full rounded bg-white/10" />
           <div className="skeleton mt-4 h-4 w-[32rem] max-w-full rounded bg-white/10" />
         </div>
       </section>
-      <section className="bg-[#f5f6f7] pb-16 pt-8 md:pb-20 md:pt-10">
+      <section className="bg-[var(--surface-soft)] pb-16 pt-8 md:pb-20 md:pt-10">
         <div className="site-container">
           <div className="mb-10 overflow-hidden rounded-3xl border border-black/[0.07] bg-white">
             <div className="border-b border-black/[0.06] px-5 py-4 md:px-6">

@@ -19,8 +19,11 @@ ENV NEXT_PUBLIC_IMAGE_HOST=$NEXT_PUBLIC_IMAGE_HOST
 # 复制业务源码并构建
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-# About 页依赖本地工厂视频。缺失时立即终止镜像构建，避免发布后静态资源 404。
-RUN test -s public/Video/SongdianFactoryVideo.mp4
+# 官网依赖工厂视频、视频封面和默认社交图。任一缺失都终止镜像构建，
+# 避免本机因残留文件正常、干净 CI 镜像上线后却出现静态资源 404。
+RUN test -s public/Video/SongdianFactoryVideo.mp4 \
+    && test -s public/Video/factory-poster.webp \
+    && test -s public/og/og-default.jpg
 RUN npm run build
 
 # ---- 运行期 ----

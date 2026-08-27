@@ -36,14 +36,14 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         <div className="max-w-[820px]">
         {/* 行业徽章 — 描边 + 毛玻璃，更精致 */}
         <span
-          className="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[#d4343e] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
+          className="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[var(--accent)] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
         >
           {HERO.badge}
         </span>
 
         {/* 主标题 — 大号醒目 */}
         <h1
-          className="animate-fade-in-up mb-7 text-[clamp(3rem,7.3vw,6.8rem)] font-semibold leading-[0.94] tracking-[-0.065em] text-white [animation-delay:80ms]"
+          className="animate-fade-in-up mb-7 text-[clamp(3rem,7.3vw,6.8rem)] font-semibold leading-[0.94] tracking-[-0.04em] text-white [animation-delay:80ms]"
         >
           {HERO.title}
         </h1>
@@ -61,8 +61,8 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           <CtaButton
             href={HERO.cta.primary.href}
             ctaLabel="Home - Primary Hero CTA"
-            fill="bg-[#d4343e]"
-            className="h-12 border-[#d4343e] bg-white px-8 text-[15px] text-[#171A20] hover:text-white"
+            fill="bg-[var(--accent)]"
+            className="h-12 border-[var(--accent)] bg-white px-8 text-[15px] text-[var(--foreground)] hover:text-white"
           >
             {HERO.cta.primary.label}
           </CtaButton>
@@ -70,7 +70,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
           {/* 副按钮 — 幽灵描边，与主按钮形成层次对比 */}
           <Link
             href={HERO.cta.secondary.href}
-            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/35 bg-white/5 px-8 text-[15px] font-semibold text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[#171A20]"
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/35 bg-white/5 px-8 text-[15px] font-semibold text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[var(--foreground)]"
           >
             {HERO.cta.secondary.label}
           </Link>

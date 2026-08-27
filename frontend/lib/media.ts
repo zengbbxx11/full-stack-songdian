@@ -26,11 +26,14 @@ export const MEDIA = {
   /** 首页 Hero Banner */
   heroBanner: "/banner/banner.webp",
 
-  /** 社交媒体分享预览图；复用已核实的 1920×800 工厂实景横幅。 */
-  ogImage: "/banner/banner.webp",
+  /** 社交媒体分享预览图：专用 1200×630 品牌卡片（约 1.91:1，社交平台不裁切） */
+  ogImage: "/og/og-default.jpg",
 
-  /** 工厂宣传视频 */
+  /** 工厂宣传视频（H.264 MP4，fast start） */
   factoryVideo: "/Video/SongdianFactoryVideo.mp4",
+
+  /** 工厂视频封面（点击播放前展示，配合 preload="none" 零流量待命） */
+  factoryVideoPoster: "/Video/factory-poster.webp",
 
   /** 全球 ODM 合作伙伴图 */
   globalOdmPartners: "/global-odm-partners.jpg",

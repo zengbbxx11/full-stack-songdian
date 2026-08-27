@@ -92,13 +92,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <>
-      <section className="border-b border-white/10 bg-[#111316] py-3">
+      <section className="border-b border-white/10 bg-[var(--surface-dark)] py-3">
         <div className="site-container">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
       </section>
 
-      <section className="bg-[#111316] pb-7 pt-4 text-white md:pb-8 md:pt-5">
+      <section className="bg-[var(--surface-dark)] pb-7 pt-4 text-white md:pb-8 md:pt-5">
         <div className="site-container grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="max-w-3xl">
             <p className="section-eyebrow">Product Portfolio</p>
@@ -116,18 +116,18 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </div>
       </section>
 
-      <section className="bg-[#f5f6f7] pb-16 pt-8 md:pb-20 md:pt-10">
+      <section className="bg-[var(--surface-soft)] pb-16 pt-8 md:pb-20 md:pt-10">
         <div className="site-container">
           {/* 产品分类筛选 */}
           {categories.length > 0 && (
             <div className="mb-10 overflow-hidden rounded-3xl border border-black/[0.07] bg-white shadow-[0_18px_50px_rgba(17,19,22,0.06)]">
               <div className="border-b border-black/[0.06] bg-gradient-to-r from-[#fafafa] to-white px-5 py-4 md:px-6">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d4343e]/10 text-[#d4343e]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
                     <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-[15px] font-semibold text-[#171A20]">Browse by category</p>
+                    <p className="text-[15px] font-semibold text-[var(--foreground)]">Browse by category</p>
                     <p className="text-sm text-[#777b81]">Choose a camera type to refine the collection</p>
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 <Link
                   href="/products"
                   aria-current={!categorySlug ? "page" : undefined}
-                  className={`inline-flex min-h-11 shrink-0 snap-start touch-manipulation items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98] ${!categorySlug ? "border-[#171A20] bg-[#171A20] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
+                  className={`inline-flex min-h-11 shrink-0 snap-start touch-manipulation items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98] ${!categorySlug ? "border-[var(--foreground)] bg-[var(--foreground)] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[var(--graphite)] hover:border-[var(--accent)]/50 hover:bg-white hover:text-[var(--accent)]"}`}
                 >
                   All Products
                 </Link>
@@ -150,8 +150,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                     aria-current={isActive ? "page" : undefined}
                     className={`flex min-h-11 shrink-0 snap-start touch-manipulation items-center justify-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98]
                       ${isActive
-                        ? "border-[#d4343e] bg-[#d4343e] text-white shadow-[0_8px_20px_rgba(212,52,62,0.22)]"
-                        : "border-black/10 bg-[#f8f8f9] text-[#393C41] hover:border-[#d4343e]/50 hover:bg-white hover:text-[#d4343e]"}`}
+                        ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(212,52,62,0.22)]"
+                        : "border-black/10 bg-[#f8f8f9] text-[var(--graphite)] hover:border-[var(--accent)]/50 hover:bg-white hover:text-[var(--accent)]"}`}
                   >
                     {cat.name}
                   </Link>
@@ -164,7 +164,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
           {/* 产品网格 / 接口失败降级 / 空态 */}
           {loadError ? (
-            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+            <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Products Unavailable</h3>
               <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{loadError}</p>
               <Link
@@ -189,18 +189,18 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   {currentPage > 1 && (
                     <Link
                       href={`/products?page=${currentPage - 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="inline-flex min-h-11 items-center rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[#393C41] transition-colors hover:border-[#d4343e]/40 hover:text-[#d4343e]"
+                      className="inline-flex min-h-11 items-center rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--graphite)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                     >
                       Previous
                     </Link>
                   )}
-                  <span className="px-3 py-2.5 text-[15px] font-medium" style={{ color: "#5C5E62" }}>
+                  <span className="px-3 py-2.5 text-[15px] font-medium" style={{ color: "var(--muted-foreground)" }}>
                     Page {currentPage} / {pagination.totalPages}
                   </span>
                   {currentPage < pagination.totalPages && (
                     <Link
                       href={`/products?page=${currentPage + 1}${categorySlug ? `&category=${categorySlug}` : ""}`}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[#393C41] transition-colors hover:border-[#d4343e]/40 hover:text-[#d4343e]"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--graphite)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                     >
                       Next <ArrowRight className="h-4 w-4" />
                     </Link>
@@ -209,7 +209,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               )}
             </>
           ) : (
-            <div className="text-center py-24 bg-gray-50 border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+            <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gray-100 flex items-center justify-center">
                 <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -217,7 +217,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Yet</h3>
               <p className="text-sm text-gray-500 max-w-md mx-auto">
-                Add products in the admin panel — they will appear here automatically.
+                Our catalog is being updated — please check back soon or contact us for the latest product list.
               </p>
             </div>
           )}

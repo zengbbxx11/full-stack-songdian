@@ -84,16 +84,16 @@ export default function SearchControls({
           placeholder="Search products and news..."
           aria-label="Search products and news"
           className={cn(
-            "h-12 w-full rounded-xl border border-[#EEEEEE] bg-white pl-12 pr-4",
-            "text-[15px] text-[#171A20] placeholder:text-[#8E8E8E] outline-none",
-            "transition-colors duration-300 focus:border-[#d4343e] focus:shadow-[0_0_0_3px_rgba(212,52,62,0.1)]"
+            "h-12 w-full rounded-xl border border-[var(--border)] bg-white pl-12 pr-4",
+            "text-[15px] text-[var(--foreground)] placeholder:text-[#8E8E8E] outline-none",
+            "transition-colors duration-300 focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(212,52,62,0.1)]"
           )}
         />
       </form>
 
       {/* ====================== 类型切换 Tabs ====================== */}
       <div
-        className="flex items-center gap-1 rounded-xl bg-[#F4F4F4] p-1"
+        className="flex items-center gap-1 rounded-xl bg-[var(--muted)] p-1"
         role="tablist"
         aria-label="Search result type"
       >
@@ -108,10 +108,10 @@ export default function SearchControls({
               aria-controls="search-results"
               onClick={() => onTypeChange(tab.value)}
               className={cn(
-                "min-h-11 flex-1 touch-manipulation rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-300 active:bg-white active:text-[#171A20]",
+                "min-h-11 flex-1 touch-manipulation rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-300 active:bg-white active:text-[var(--foreground)]",
                 active
-                  ? "bg-white text-[#171A20] shadow-sm"
-                  : "text-[#5C5E62] hover:text-[#171A20]"
+                  ? "bg-white text-[var(--foreground)] shadow-sm"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               )}
             >
               {tab.label}

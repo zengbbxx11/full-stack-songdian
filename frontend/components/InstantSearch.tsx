@@ -158,7 +158,7 @@ export default function InstantSearch({ className }: { className?: string }) {
             placeholder="Search products"
             aria-label="Search products"
             autoComplete="off"
-            className="h-10 w-full rounded-xl border border-transparent bg-[#f2f3f5] pl-8 pr-3 text-xs text-[#171A20] outline-none transition-all placeholder:text-[#777b81] hover:bg-[#eceef1] focus:border-[#d4343e] focus:bg-white focus:shadow-[0_0_0_3px_rgba(212,52,62,0.10)] md:w-48"
+            className="h-10 w-full rounded-xl border border-transparent bg-[#f2f3f5] pl-8 pr-3 text-xs text-[var(--foreground)] outline-none transition-all placeholder:text-[#777b81] hover:bg-[#eceef1] focus:border-[var(--accent)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(212,52,62,0.10)] md:w-48"
           />
         </div>
       </form>
@@ -185,7 +185,7 @@ export default function InstantSearch({ className }: { className?: string }) {
 
           {/* 空态 */}
           {!loading && !error && items.length === 0 && (
-            <div className="px-4 py-6 text-center text-sm text-[#5C5E62]">No products found</div>
+            <div className="px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">No products found</div>
           )}
 
           {/* 结果列表：只显示主图 + 型号 */}
@@ -210,13 +210,13 @@ export default function InstantSearch({ className }: { className?: string }) {
                       onClick={() => setOpen(false)}
                       onMouseEnter={() => setActiveIndex(i)}
                       className={`flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2 transition-colors active:bg-[#eceef1] ${
-                        isActive ? "bg-[#F4F4F4]" : "hover:bg-[#F4F4F4]"
+                        isActive ? "bg-[var(--muted)]" : "hover:bg-[var(--muted)]"
                       }`}
                     >
                       {/* 产品缩略图（加载失败自动显示占位）；key=src 使 src 变化时重挂载重置状态 */}
                       <Thumbnail key={item.coverImage ?? "placeholder"} src={item.coverImage} alt={item.title} />
                       {/* 型号 */}
-                      <span className="truncate text-sm font-medium text-[#171A20]">
+                      <span className="truncate text-sm font-medium text-[var(--foreground)]">
                         {modelLabel(item)}
                       </span>
                     </Link>

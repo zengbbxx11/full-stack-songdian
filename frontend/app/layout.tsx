@@ -116,7 +116,7 @@ export const metadata: Metadata = {
     siteName: COMPANY.name,
     title: `${COMPANY.name} — ${COMPANY.tagline}`,
     description: COMPANY.description,
-    images: [{ url: MEDIA.ogImage, width: 1920, height: 800 }],
+    images: [{ url: MEDIA.ogImage, width: 1200, height: 630 }],
   },
 
   // Twitter Card — used by X / Twitter for link previews
@@ -124,7 +124,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${COMPANY.name} — ${COMPANY.tagline}`,
     description: COMPANY.description,
-    images: [{ url: MEDIA.ogImage, width: 1920, height: 800 }],
+    images: [{ url: MEDIA.ogImage, width: 1200, height: 630 }],
   },
 
   // Robots: allow all indexing and crawling by both generic + Google crawlers

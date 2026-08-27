@@ -14,16 +14,16 @@ export function SearchResultSkeletonGrid({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex flex-col overflow-hidden rounded-xl border border-[#EEEEEE] bg-white"
+          className="flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-white"
         >
           {/* 封面图占位 */}
-          <div className="aspect-[4/3] w-full skeleton bg-[#F4F4F4]" />
+          <div className="aspect-[4/3] w-full skeleton bg-[var(--muted)]" />
           {/* 文本占位 */}
           <div className="flex flex-col gap-3 p-4">
-            <div className="h-4 w-3/4 skeleton rounded bg-[#F4F4F4]" />
-            <div className="h-3 w-full skeleton rounded bg-[#F4F4F4]" />
-            <div className="h-3 w-2/3 skeleton rounded bg-[#F4F4F4]" />
-            <div className="mt-2 h-3 w-1/3 skeleton rounded bg-[#F4F4F4]" />
+            <div className="h-4 w-3/4 skeleton rounded bg-[var(--muted)]" />
+            <div className="h-3 w-full skeleton rounded bg-[var(--muted)]" />
+            <div className="h-3 w-2/3 skeleton rounded bg-[var(--muted)]" />
+            <div className="mt-2 h-3 w-1/3 skeleton rounded bg-[var(--muted)]" />
           </div>
         </div>
       ))}

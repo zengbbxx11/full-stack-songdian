@@ -29,7 +29,7 @@ type ContactMapProps = {
 // 品牌红 (#d4343e) 水滴形图钉，纯内联 SVG，无需外部图片
 const PIN_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="38" height="50" viewBox="0 0 38 50" aria-hidden="true">
-  <path d="M19 0C8.5 0 0 8.5 0 19c0 13.7 19 31 19 31s19-17.3 19-31C38 8.5 29.5 0 19 0z" fill="#d4343e"/>
+  <path d="M19 0C8.5 0 0 8.5 0 19c0 13.7 19 31 19 31s19-17.3 19-31C38 8.5 29.5 0 19 0z" fill="var(--accent)"/>
   <circle cx="19" cy="19" r="7" fill="#ffffff"/>
 </svg>`;
 

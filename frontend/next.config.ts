@@ -38,8 +38,10 @@ const nextConfig: NextConfig = {
         pathname: "/uploads/**",
       },
     ],
-    // 允许优化本机回环地址的图片（本地后端开发环境）
-    dangerouslyAllowLocalIP: true,
+    // 允许优化本机回环地址的图片 —— 仅本地开发需要（图片优化器由服务端取图，
+    // 放开本地 IP 会扩大 SSRF 面）。生产部署使用 HTTPS API 域名，必须保持关闭。
+    // 本地在 .env.local 中设置 ALLOW_LOCAL_IMAGE_OPTIMIZATION=true 开启。
+    dangerouslyAllowLocalIP: process.env.ALLOW_LOCAL_IMAGE_OPTIMIZATION === "true",
     // 外部图片优化的缓存时长（秒）
     minimumCacheTTL: 3600,
     // 根据实际布局断点优化响应式图片尺寸

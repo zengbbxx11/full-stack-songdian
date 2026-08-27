@@ -36,7 +36,7 @@ export default async function PrivacyPage() {
   return (
     <>
       {/* 区块 1 —— 仅含面包屑（碳灰底） */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -46,13 +46,13 @@ export default async function PrivacyPage() {
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-3xl mx-auto px-6">
           {/* 标题区 */}
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
             Legal
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
             Privacy Policy
           </h1>
-          <p className="mt-3 text-sm" style={{ color: "#5C5E62" }}>
+          <p className="mt-3 text-sm" style={{ color: "var(--muted-foreground)" }}>
             Last updated: {PRIVACY.lastUpdated}
           </p>
           <p className="mt-6 text-[15px] md:text-base leading-relaxed text-gray-600">
@@ -112,10 +112,10 @@ export default async function PrivacyPage() {
           </div>
 
           {/* 行动号召 —— 红底悬停，与全站 CTA 统一 */}
-          <div className="mt-14 pt-8 border-t border-[#EEEEEE]">
+          <div className="mt-14 pt-8 border-t border-[var(--border)]">
             <CtaButton
               href="/contact"
-              className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-8 text-[14px]"
+              className="border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[44px] px-8 text-[14px]"
             >
               Contact Us
             </CtaButton>

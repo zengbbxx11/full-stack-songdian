@@ -78,9 +78,9 @@ export default function FaqToc({ categories }: { categories: FaqNavItem[] }) {
   return (
     <nav
       aria-label="FAQ categories"
-      className="border-y border-[#EEEEEE] bg-white/96 py-3 shadow-[0_8px_24px_rgba(17,19,22,0.06)] backdrop-blur-xl lg:rounded-xl lg:border lg:bg-white lg:p-5 lg:shadow-none"
+      className="border-y border-[var(--border)] bg-white/96 py-3 shadow-[0_8px_24px_rgba(17,19,22,0.06)] backdrop-blur-xl lg:rounded-xl lg:border lg:bg-white lg:p-5 lg:shadow-none"
     >
-      <p className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wider text-[#5C5E62] lg:mb-3 lg:px-1">
+      <p className="mb-2 flex items-center gap-2 px-4 text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] lg:mb-3 lg:px-1">
         <ListTree className="w-4 h-4" />
         Browse by topic
       </p>
@@ -97,15 +97,15 @@ export default function FaqToc({ categories }: { categories: FaqNavItem[] }) {
                 aria-current={isActive ? "true" : undefined}
                 className={`flex min-h-11 touch-manipulation items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors active:scale-[0.99] lg:whitespace-normal ${
                   isActive
-                    ? "border-[#d4343e] bg-[#FDECEC] text-[#d4343e]"
-                    : "border-transparent text-[#393C41] hover:bg-[#F4F4F4] hover:text-[#d4343e]"
+                    ? "border-[var(--accent)] bg-[#FDECEC] text-[var(--accent)]"
+                    : "border-transparent text-[var(--graphite)] hover:bg-[var(--muted)] hover:text-[var(--accent)]"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 <span className="lg:flex-1 lg:min-w-0 lg:truncate">{c.label}</span>
                 <span
                   className={`ml-2 hidden lg:inline text-xs ${
-                    isActive ? "text-[#d4343e]" : "text-[#8E8E8E]"
+                    isActive ? "text-[var(--accent)]" : "text-[#8E8E8E]"
                   }`}
                 >
                   {c.count}

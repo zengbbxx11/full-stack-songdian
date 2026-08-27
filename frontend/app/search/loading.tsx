@@ -15,7 +15,7 @@ export default function Loading() {
   return (
     <>
       {/* 首屏 Hero —— 仅含面包屑 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -25,12 +25,12 @@ export default function Loading() {
         <div className="max-w-7xl mx-auto px-6">
           {/* 标题占位 */}
           <div className="mb-10">
-            <div className="h-8 w-40 skeleton rounded bg-[#F4F4F4]" />
+            <div className="h-8 w-40 skeleton rounded bg-[var(--muted)]" />
           </div>
           {/* 搜索框占位 */}
-          <div className="mb-4 h-12 w-full skeleton rounded-xl bg-[#F4F4F4]" />
+          <div className="mb-4 h-12 w-full skeleton rounded-xl bg-[var(--muted)]" />
           {/* 类型切换占位 */}
-          <div className="mb-10 h-12 w-full max-w-md skeleton rounded-xl bg-[#F4F4F4]" />
+          <div className="mb-10 h-12 w-full max-w-md skeleton rounded-xl bg-[var(--muted)]" />
           {/* 骨架卡片网格 */}
           <SearchResultSkeletonGrid />
         </div>

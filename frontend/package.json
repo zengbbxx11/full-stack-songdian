@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "verify:seo": "node scripts/verify-seo.mjs",
+    "generate:social-assets": "node scripts/generate-og-assets.mjs",
     "gen:map": "node scripts/gen-canonical-map.mjs",
     "lighthouse": "lhci autorun && lhci assert --config=./lighthouse-budget-config.cjs",
     "test:e2e": "playwright test"
@@ -42,6 +43,7 @@
     "@types/sanitize-html": "^2.16.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "sharp": "^0.35.3",
     "shadcn": "^4.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"

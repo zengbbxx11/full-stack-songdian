@@ -104,7 +104,7 @@ export default function HorizontalScrollArea({
               aria-label={`Scroll ${ariaLabel.toLowerCase()} left`}
               disabled={atStart}
               onClick={() => scrollByPage(-1)}
-              className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-white text-[#393C41] hover:border-[#d4343e]/40 active:bg-[#f2f3f4] disabled:opacity-30"
+              className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-white text-[var(--graphite)] hover:border-[var(--accent)]/40 active:bg-[#f2f3f4] disabled:opacity-30"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -113,7 +113,7 @@ export default function HorizontalScrollArea({
               aria-label={`Scroll ${ariaLabel.toLowerCase()} right`}
               disabled={atEnd}
               onClick={() => scrollByPage(1)}
-              className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-white text-[#393C41] hover:border-[#d4343e]/40 active:bg-[#f2f3f4] disabled:opacity-30"
+              className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-black/10 bg-white text-[var(--graphite)] hover:border-[var(--accent)]/40 active:bg-[#f2f3f4] disabled:opacity-30"
             >
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </button>

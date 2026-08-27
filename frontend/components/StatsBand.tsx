@@ -9,7 +9,7 @@ import { ABOUT } from "@/lib/content-data";
 
 export default function StatsBand() {
   return (
-    <section className="bg-[#111316] py-16 md:py-20" aria-label="Company at a glance">
+    <section className="bg-[var(--surface-dark)] py-16 md:py-20" aria-label="Company at a glance">
       <div className="site-container">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
           {ABOUT.stats.map((s) => (

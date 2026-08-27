@@ -24,7 +24,7 @@ export default function SectionHeading({
   children,
   align = "center",
   className = "",
-  accent = "#d4343e",
+  accent = "var(--accent)",
 }: SectionHeadingProps) {
   const reduce = useReducedMotion();
 

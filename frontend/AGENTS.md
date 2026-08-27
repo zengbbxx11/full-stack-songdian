@@ -279,6 +279,14 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **询盘提交 randomUUID 兼容**：`components/form/InquiryForm.tsx` 的 `crypto.randomUUID()` 在 HTTP（非 HTTPS，如 IP 直连）环境不存在（非安全上下文）——已加 fallback：可用则 `randomUUID()`，否则 `inq-${Date.now()}-${Math.random()...}`。勿改回直接调用。
 - **首页预渲染兜底**：`app/page.tsx` 的 `NewsSection` 对 `getPosts()` 加 `.catch(() => ({ posts: [], pagination: null }))`——`docker compose build` 时后端未启动不会因预渲染 404 失败（降级空数据，运行时正常拉取）。新增首页数据区块时**必须**带同类兜底，否则生产构建会挂。
 
+## 官网社交、GEO 与静态媒体（2026-08-27）
+
+- 默认社交图为 `public/og/og-default.jpg`（1200×630）；产品和新闻详情必须显式输出 Twitter metadata，有内容图时优先使用，无图时回退默认图。
+- `app/llms.txt/route.ts` 是实验性 AI 站点导览。必须区分 2023 年成立的 Songdian Technology 法律实体和 2006 年开始的集团制造历史，不得把二者合并为同一成立年份。
+- `scripts/generate-og-assets.mjs` 通过 `npm run generate:social-assets` 生成默认 OG JPEG 与 `public/Video/factory-poster.webp`。
+- About 页工厂视频使用 `preload="none"`、WebP poster 和可选 WebM source；MP4 为兼容回退。视频与 poster 都是随 frontend 镜像发布的静态源码资产。
+- `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 仅用于本地 loopback/局域网图片调试；生产环境必须关闭或不设置。
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

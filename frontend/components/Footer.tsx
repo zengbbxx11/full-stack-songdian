@@ -16,7 +16,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-black/8 bg-[#f3f4f5] text-[#171A20]">
+    <footer className="border-t border-black/8 bg-[var(--muted)] text-[var(--foreground)]">
       <div className="site-container py-20 md:py-24">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* 品牌列 */}
@@ -72,7 +72,7 @@ export default function Footer() {
             </p>
             <Link
               href="/contact"
-              className="inline-flex min-h-11 touch-manipulation items-center text-[13px] font-medium text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:text-[#b91c1c]"
+              className="inline-flex min-h-11 touch-manipulation items-center text-[13px] font-medium text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:text-[var(--accent-hover)]"
             >
               Get in touch
               <svg className="w-3.5 h-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,7 +89,7 @@ export default function Footer() {
             { title: "Support", links: FOOTER_LINKS.support },
           ].map((col) => (
             <div key={col.title}>
-              <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-[#171A20]">
+              <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]">
                 {col.title}
               </h4>
               <ul className="space-y-2.5">
@@ -97,7 +97,7 @@ export default function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="inline-flex min-h-11 touch-manipulation items-center text-[14px] font-normal text-[#666b72] transition-colors duration-[330ms] hover:text-[#d4343e] active:text-[#b91c1c]"
+                      className="inline-flex min-h-11 touch-manipulation items-center text-[14px] font-normal text-[#666b72] transition-colors duration-[330ms] hover:text-[var(--accent)] active:text-[var(--accent-hover)]"
                     >
                       {link.label}
                     </Link>
@@ -114,14 +114,14 @@ export default function Footer() {
             &copy; {year} {COMPANY.fullName} All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
+            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Sitemap
             </Link>
-            <Link href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
+            <Link href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Privacy
             </Link>
             <CookieSettingsTrigger />
-            <Link href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[#171A20] active:text-[#d4343e]">
+            <Link href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               FAQ
             </Link>
           </div>

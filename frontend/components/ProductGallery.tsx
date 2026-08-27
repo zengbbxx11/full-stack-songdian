@@ -55,8 +55,8 @@ export default function ProductGallery({
             onClick={() => setSelected(img.src)}
             className={`relative h-16 w-16 shrink-0 snap-start touch-manipulation overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer active:scale-[0.98] md:h-20 md:w-20 ${
               selected === img.src
-                ? "border-[#d4343e]"
-                : "border-[#EEEEEE] hover:border-gray-400"
+                ? "border-[var(--accent)]"
+                : "border-[var(--border)] hover:border-gray-400"
             }`}
             style={{ borderRadius: "8px" }}
           >

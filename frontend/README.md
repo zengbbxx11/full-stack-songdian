@@ -1,318 +1,222 @@
-# Songdian Technology — B2B 外贸官网（Next.js + FastAPI）
+# Songdian Technology 官网前端
 
-> 当前状态（2026-08-26）：官网已支持签名草稿预览、结构化 API 错误、Web Vitals、英文联合搜索结果和统一的移动/无障碍反馈；产品详情会区分真实 404 和后端暂时不可用。当前部署边界以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+面向全球 OEM/ODM 数码相机采购商的 B2B 官网，基于 Next.js App Router、React Server Components 和 Tailwind CSS 构建。产品、新闻、搜索与询盘数据由 FastAPI 提供；官网负责内容展示、SEO/GEO、分享卡片与询盘转化入口。
 
-松典科技（广东）有限公司面向全球 OEM / ODM 数码相机采购商的 B2B 展示型官网。前端为 **Next.js（App Router）**，通过项目自有 FastAPI 后端获取产品/新闻/分类数据，支持 ISR 增量静态再生 + Streaming SSR。
-
-> 定位：面向全球 OEM / ODM 数码相机采购商。设计语言为「Tesla 极简」——靠 border 分隔、克制圆角；语义双色信号：🔴 品牌红 `#d4343e` = 转化型 CTA（询盘 / 报价 / 联系），🔵 Electric Blue `#3E6AE1` = 工具 / 功能按钮（搜索 / 筛选）。转化型 CTA 允许极淡投影以增强可点击感。
-
----
+视觉规则见 [DESIGN-tesla.md](./DESIGN-tesla.md)，全栈部署见 [../deploy-guide.md](../deploy-guide.md)，当前交付边界见 [../CURRENT_IMPLEMENTATION.md](../CURRENT_IMPLEMENTATION.md)。
 
 ## 技术栈
 
-| 层 | 技术 |
-|----|------|
-| 框架 | Next.js 16.3.0（App Router，默认 Turbopack）+ React 19.2.4 |
-| 语言 | TypeScript 5（`strict: true`） |
-| 样式 | Tailwind CSS v4（`@tailwindcss/postcss`）+ shadcn/ui 组件库 |
-| 后端 | 项目自有 FastAPI REST API（`backend/`，端口 8000） |
-| 数据迁移 | 旧 WordPress 数据经一次性 ETL 迁至 PostgreSQL（`backend/migration/` 模块已随 M6 移除），前端仅消费 FastAPI |
-| 表单 | react-hook-form + Zod（客户端校验 + 直接 POST FastAPI） |
-| 询盘通知 | FastAPI 后端 SMTP（管理后台「系统设置」配置；未配置仍持久化询盘） |
-| 动画 | framer-motion（`components/motion/*`） |
-| 图标 | lucide-react（`^1.23.0`） |
-| HTML 消毒 | `sanitize-html`（服务端白名单过滤，`lib/html-cleaner.ts`） |
-| 地图 | Leaflet（经 `components/ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 按需加载，不进首屏 bundle） |
-| SEO | next-super-meta（元信息）+ `lib/seo.ts`（JSON-LD 结构化数据）+ `app/robots.ts` / `app/sitemap.ts` |
-| 性能 | React `cache()` 请求去重 + Streaming SSR + Suspense 边界 + 5 个 loading.tsx 骨架屏 + 顶部进度条 |
+- Next.js 16.3、React 19.2、TypeScript
+- Tailwind CSS 4、Geist variable font
+- React Server Components、Streaming SSR、Suspense、ISR
+- React Hook Form、Zod、Lucide React
+- Leaflet 地图按需加载
+- `next/image`，优先 AVIF/WebP
+- Playwright、Lighthouse CI、ESLint
 
----
+## 环境要求与启动
 
-## 环境要求
-
-- **Node.js** ≥ 24（Next.js 16 Turbopack 需要 Node 24，Node 22 的 Web Streams 与 `next/image` 远程优化不兼容）
-- **FastAPI 后端** 运行在 `localhost:8000`（前端直接调用后端 API）
-- 包管理器：`npm`
-
----
-
-## 快速开始
+- Node.js `24.18.0`，以仓库 `.node-version` 为准
+- npm
+- 本地 FastAPI 默认运行在 `http://127.0.0.1:8000`
 
 ```bash
+cp .env.example .env.local
 npm install
-npm run dev        # http://localhost:3000
+npm run dev
 ```
 
-> ⚠️ **沙箱环境** 下 `npm run dev` 可能因 fork 限制失败（EAGAIN），改用：
-> `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000`
->
-> 注意：本机已装 Node 24.18.0 at `C:\Program Files\nodejs\node.exe`，
-> 必须用 Node 24 而非默认的 Node 22 启动。不能用 `node_modules/.bin/next`（bash wrapper），
-> Node 24 直接执行会 SyntaxError，须直调 JS 入口 `next/dist/bin/next`。
+访问 `http://localhost:3000`。提交前至少运行：
 
-生产构建（⚠️ 构建前须先生成产品 URL 规范映射）：
 ```bash
-npm run gen:map   # 生成 lib/generated/canonical-map.ts（需后端 API 可达，默认 http://localhost:8000）
+npm run lint
+npm run verify:seo
 npm run build
-npm run start
 ```
 
----
+涉及交互、响应式或路由行为时再运行 `npm run test:e2e`。
+
+## 常用命令
+
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 启动本地开发服务器 |
+| `npm run build` | 生产构建与类型检查 |
+| `npm run start` | 启动生产构建 |
+| `npm run lint` | ESLint 校验 |
+| `npm run verify:seo` | 检查 SEO/GEO 代码契约与关键静态资产 |
+| `npm run gen:map` | 从后端生成产品 canonical 路径映射 |
+| `npm run generate:social-assets` | 生成默认 OG 图和工厂视频 poster |
+| `npm run lighthouse` | 执行 Lighthouse CI 与预算断言 |
+| `npm run test:e2e` | Playwright 端到端测试 |
+
+`npm run gen:map` 需要后端 API 可达。生成的 `lib/generated/canonical-map.ts` 必须随产品分类/slug 变化一起提交。
 
 ## 环境变量
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | FastAPI 后端地址 |
-| `INTERNAL_API_URL` | `http://127.0.0.1:8000` | Next.js 服务端到后端的内部地址；Compose 中使用 `http://backend:8000` |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | 站点规范地址 |
-| `NEXT_PUBLIC_IMAGE_HOST` | `api.zsaki.icu` | Next.js 图片优化允许访问的后端图片主机；只填主机名 |
-| `NEXT_PUBLIC_SITE_NAME` | `Songdian Technology...` | 站点名称（SEO） |
-| `NEXT_PUBLIC_SITE_DESCRIPTION` | — | 站点描述（SEO） |
-| `NEXT_PUBLIC_ISR_REVALIDATE` | `60` | ISR 缓存时间（秒） |
-| `NEXT_PUBLIC_GA_ID` | — | Google Analytics 4 测量 ID（如 `G-XXXX`）。**仅当用户在 Cookie 同意横幅接受「分析」类后才加载**；不配置则 GA 完全不加载，站点零追踪 |
+参考 [.env.example](./.env.example)。
 
-### 询盘与 SMTP
+| 变量 | 作用 | 注意事项 |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | 浏览器访问的公开 API 地址 | 生产使用 HTTPS API 域名；属于构建期变量 |
+| `INTERNAL_API_URL` | Server Components/构建阶段访问后端 | Compose 中通常为 `http://backend:8000` |
+| `NEXT_PUBLIC_IMAGE_HOST` | `next/image` 允许的远程图片主机 | 只填主机名，不带协议和路径 |
+| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 允许图片优化器访问本地/局域网地址 | 仅本地开发可设 `true`；生产必须关闭或不设置 |
+| `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名 |
+| `NEXT_PUBLIC_SITE_NAME` | 站点名称 | 用于 metadata |
+| `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认描述 | 避免与公开公司事实漂移 |
+| `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID | 留空时不加载 GA |
+| `NEXT_PUBLIC_GOOGLE_VERIFICATION` | Search Console 验证码 | 可选 |
+| `NEXT_PUBLIC_ISR_REVALIDATE` | 默认 ISR 时间 | 单位为秒 |
 
-Contact 页直接调用 FastAPI `POST /api/v1/inquiries`；后端将询盘保存到 PostgreSQL，并按管理后台
-“系统设置”中的 SMTP 配置发送通知。`backend/.env` 中的 `SMTP_*` / `INQUIRY_EMAIL_*` 仅作为后端
-兜底，官网前端无需配置 SMTP，也不再把生产询盘保存到 `data/inquiries.json`。
+本地后端图片使用 loopback 或局域网 IP 且 `next/image` 拒绝请求时，才临时设置：
 
-生产环境将 API、SEO 规范地址和图片主机分别设置为 `https://api.zsaki.icu`、
-`https://www.zsaki.icu`、`api.zsaki.icu`。修改任何 `NEXT_PUBLIC_*` 构建变量后必须重新执行
-`docker compose build frontend`；这些值已作为 Docker build args 注入，不需要修改应用代码。
-
----
-
-## 项目结构
-
-```
-frontend/
-├─ app/                         # App Router 路由（页面）
-│  ├─ layout.tsx                # 根布局：字体(Geist + display:swap)、全局 SEO、JSON-LD、Header/Footer/FloatingInquiry/NavigationProgress
-│  ├─ globals.css               # Tailwind v4 + 设计令牌（CSS 变量）
-│  ├─ page.tsx                  # 首页（Streaming SSR：4 个 Suspense 边界）
-│  ├─ error.tsx                 # 全局错误边界（重试 + 返回首页）
-│  ├─ loading.tsx               # 全局加载骨架屏
-│  ├─ not-found.tsx             # 自定义 404 页面
-│  ├─ about/                    # 关于我们（静态）
-│  ├─ solutions/                # 解决方案概览（静态）
-│  │  └─ faq/                   # 常见问题（粘性目录 + 锚点直达）
-│  ├─ products/                 # 产品列表 + 分类筛选（ISR）
-│  │  ├─ loading.tsx            # 产品列表骨架屏
-│  │  └─ [...slug]/             # 产品详情 catch-all：规范地址 /products/{category}/{slug}；旧扁平地址经 proxy.ts 308 重定向（ISR + Suspense）
-│  ├─ news/                     # 新闻列表 + 置顶（ISR）
-│  │  └─ [slug]/                # 新闻详情（ISR）
-│  ├─ search/                   # 全站搜索页
-│  ├─ contact/                  # 联系页：表单 + Leaflet 地图 + SMTP 邮件通知
-│  ├─ preview/[token]/          # 后台签名预览（no-store + noindex）
-│  ├─ privacy-policy/           # 隐私政策
-│  ├─ robots.ts                 # /robots.txt
-│  └─ sitemap.ts                # /sitemap.xml
-│
-├─ components/
-│  ├─ Header.tsx / Footer.tsx   # 站点导航与页脚（Footer 为 Server Component）
-│  ├─ NavigationProgress.tsx    # 顶部路由进度条（品牌红 #d4343e）
-│  ├─ FloatingInquiry.tsx       # 全站底部常驻询盘栏
-│  ├─ CtaButton.tsx             # 转化型 CTA 客户端包装（Server Component 页用其做 `window.location.href` 跳转）
-│  ├─ HomeCtaSection.tsx        # 首页底部转化 CTA 区块（客户端组件，承载 InteractiveHoverButton）
-│  ├─ Breadcrumbs.tsx           # Tesla 风格面包屑
-│  ├─ ProductCard.tsx           # 产品卡片（RSC，图片用 SafeImage 兜底）
-│  ├─ SafeImage.tsx             # 图片加载失败占位（客户端子组件，卡片本体保持 RSC）
-│  ├─ ProductGallery.tsx        # 产品图集（客户端缩略图切换）
-│  ├─ PostCard.tsx              # 文章卡片（RSC，图片用 SafeImage 兜底）
-│  ├─ NewsGrid.tsx              # 服务端文章网格（首页零动画运行时）
-│  ├─ ExhibitionMarquee.tsx     # 展会图片横向滚动墙
-│  ├─ FaqToc.tsx                # FAQ 分类目录（滚动高亮 + 平滑锚点跳转）
-│  ├─ ContactMap.tsx            # Leaflet 地图（客户端动态加载）
-│  ├─ ContactMapLoader.tsx     # Leaflet 按需加载包装（next/dynamic ssr:false）
-│  ├─ StatsBand.tsx             # 首页深色数据带（服务端真实数值）
-│  ├─ InstantSearch.tsx         # 顶部即时搜索框（combobox/listbox ARIA）
-│  ├─ CertificateGallery.tsx    # 证书 Lightbox 画廊
-│  ├─ FactoryVideo.tsx          # 工厂视频播放器
-│  ├─ SpotlightCard.tsx         # 鼠标聚光灯卡片
-│  ├─ AnimatedCounter.tsx       # 数字滚动动画
-│  ├─ form/                     # InquiryForm + FormField（RHF + Zod，直接 POST FastAPI）
-│  ├─ motion/                   # framer-motion 封装
-│  ├─ CookieConsent.tsx         # Cookie 同意横幅（底部横向条幅：左文案右按钮；同意后才注入 GA）
-│  ├─ CookieSettingsTrigger.tsx # 页脚「Cookie Settings」重开入口（派发 cookie-settings:open 事件）
-│  └─ ui/                       # shadcn/ui 基础组件
-│     └─ interactive-hover-button.tsx # Magic UI 风格交互悬停按钮（dot 展开 + 文字滑出 + 箭头滑入；纯 CSS 过渡，`fill` 自定义悬停色）
-│
-├─ lib/
-│  ├─ api/                      # FastAPI 客户端（products / news / search / categories）
-│  │  └─ client.ts              # 统一 fetch 封装（支持 ISR revalidate / no-store / tags）
-│  ├─ html-cleaner.ts           # 正文 HTML 清洗 + sanitize-html 白名单消毒
-│  ├─ content-data.ts           # 全站可编辑文案
-│  ├─ seo.ts                    # 结构化数据：Manufacturer / breadcrumb / article / product / faq
-│  ├─ media.ts                  # 图片资源映射
-│  ├─ site-config.ts            # 页脚链接等静态配置
-│  ├─ coord-transform.ts        # 地图坐标转换工具
-│  ├─ exhibitions.ts            # 展会图片动态读取
-│  ├─ types.ts                  # API 响应与前端应用层类型
-│  └─ utils.ts                  # cn() 等通用工具
-│
-├─ data/                        # 运行时数据（不入库）
-│  └─ inquiries.json            # 询盘记录
-│
-├─ public/                      # 静态资源（logo.png、展会图片、社媒图标等）
-├─ next.config.ts               # 图片优化（AVIF/WebP）+ 生产配置 + 路由级重定向
-├─ proxy.ts                      # 产品 URL 规范化边缘中间件（308 重定向，Next 16 替代已弃用 middleware.ts）
-├─ scripts/
-│  └─ gen-canonical-map.mjs      # 生成 lib/generated/canonical-map.ts（slug → 规范路径）
-├─ lib/generated/
-│  └─ canonical-map.ts           # 自动生成的规范路径映射（被 proxy.ts 静态导入，未 gitignore，随仓库提交）
-├─ postcss.config.mjs           # Tailwind v4 postcss 插件
-├─ tsconfig.json                # 路径别名 @/* → 项目根
-└─ package.json
+```dotenv
+ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 ```
 
----
+修改后重启开发服务器。生产启用此项会扩大服务端图片请求范围，因此禁止开启。
 
-## 数据来源
+## 路由与渲染
 
-本前端通过项目自有 **FastAPI 后端**（`../backend/`）的 REST API 获取所有数据：
+| 路由 | 数据与渲染 |
+| --- | --- |
+| `/` | 首页，Streaming SSR，多组 Suspense 边界 |
+| `/products` | 产品列表、分类筛选和分页，ISR |
+| `/products/[category]/[slug]` | 产品规范详情页，ISR；旧扁平 URL 由 `proxy.ts` 308 重定向 |
+| `/news`、`/news/[slug]` | 新闻列表与详情，ISR |
+| `/solutions`、`/solutions/faq` | OEM/ODM 方案与 FAQ |
+| `/about` | 公司、工厂视频、认证、时间线与研发能力 |
+| `/contact` | 询盘表单和地图 |
+| `/search` | 产品与新闻联合搜索 |
+| `/preview/[token]` | 签名草稿预览，`no-store`、`noindex` |
+| `/privacy-policy` | 隐私政策 |
+| `/robots.txt`、`/sitemap.xml` | Next.js 动态元数据路由 |
+| `/llms.txt` | 实验性 AI 站点导览，Route Handler + 1 小时 ISR |
 
-| 数据类型 | API 端点 | 说明 |
-|---|---|---|
-| 产品列表 | `GET /api/v1/products` | 分页 + 分类筛选 + 排序 |
-| 产品详情 | `GET /api/v1/products/{slug}` | 含 tags / galleries / attributes |
-| 新闻列表 | `GET /api/v1/news` | 分页 |
-| 新闻详情 | `GET /api/v1/news/{slug}` | 含 content_html |
-| 产品分类 | `GET /api/v1/product-categories` | 只读列表 |
-| 新闻分类 | `GET /api/v1/news-categories` | 只读列表 |
-| 全文搜索 | `GET /api/v1/search` | 关键词 + 类型过滤；默认产品优先、新闻按时间倒序；降级提示英文 |
-| 询盘提交 | `POST /api/v1/inquiries` | 表单数据（幂等键防重） |
+## 数据流与内容来源
 
-> 数据来源已从 WordPress ETL 迁移到 FastAPI，后续通过管理后台（`../admin-next/`）维护。
+- `lib/api/` 封装产品、新闻、搜索和分类 API。
+- `lib/content-data.ts` 是公司事实、首页文案、FAQ、About 内容等静态信息的集中来源。
+- `lib/media.ts` 集中映射仓库静态媒体。
+- 产品和新闻由 FastAPI/PostgreSQL 提供，不在前端维护副本。
+- 询盘直接提交 FastAPI 并写入 PostgreSQL；SMTP 通知和 CRM 状态由后端负责。
+- 前端 `data/` 已被忽略，不是当前询盘存储方案。
 
----
+公司年份口径必须保持一致：
 
-## 路由与渲染策略
+- Songdian Technology (Guangdong) Co., Ltd. 法律实体成立于 2023 年。
+- 母公司 Shenzhen Sonida Digital Technology Co., Ltd. 创立于 2006 年。
+- “20 years”指集团数字影像制造经验，不代表松典科技这一法律实体成立于 2006 年。
 
-| 路由 | 数据来源 | 渲染 |
-|------|---------|------|
-| `/` | FastAPI + `content-data.ts` | ISR 60s + **Streaming**（4 个 Suspense 边界） |
-| `/products` | FastAPI 产品列表 + 分类筛选 | ISR 60s |
-| `/products/[...slug]` | FastAPI 产品详情 + 相关产品 | ISR 60s + **Suspense**；规范地址为 `/products/{category}/{slug}`，旧扁平 `/products/{slug}` 与错分类地址经 `proxy.ts` 308 重定向 |
-| `/news` | FastAPI 新闻列表 | ISR 60s |
-| `/news/[slug]` | FastAPI 新闻详情 | ISR 60s |
-| `/search` | FastAPI 全文搜索 | SSR（实时 `no-store`，新内容即时可搜） |
-| `/about` | `content-data.ts` 静态内容 | 静态 |
-| `/solutions` | `content-data.ts` | 静态 |
-| `/solutions/faq` | `content-data.ts` | 静态（revalidate 3600s） |
-| `/contact` | 联系表单 + Leaflet 地图 + SMTP | 静态 |
-| `/preview/[token]` | 后台签名预览页面 | `no-store` + `noindex`，令牌默认 15 分钟有效 |
+## SEO 与社交分享
 
-### 重定向（308 永久）
+根布局提供默认 metadata、canonical 基准、robots、Open Graph、Twitter Card 和 Manufacturer JSON-LD。页面按需生成 Product、Article、FAQ、Breadcrumb 等结构化数据。
 
-| 旧路由 | 新路由 | 原因 |
-|--------|--------|------|
-| `/services` | `/solutions` | 路由重构 |
-| `/services/faq` | `/solutions/faq` | 同上 |
-| `/blog` | `/news` | 统一命名 |
-| `/blog/:slug*` | `/news/:slug*` | 同上 |
-| `/inquiry` | `/contact` | 询盘入口统一到联系页 |
-| `/products/{slug}` | `/products/{category}/{slug}` | 产品 URL 规范化（SEO 权重集中到分类嵌套地址） |
-| `/products/{wrongCategory}/{slug}` | `/products/{真实分类}/{slug}` | 分类段错误同样 308 到规范地址 |
+默认社交图为 `public/og/og-default.jpg`，固定 1200×630。普通页面使用默认图；产品和新闻详情优先使用内容图片，无图时显式回退到默认图。详情页必须同时提供 Open Graph 与 Twitter metadata，不能依赖根布局隐式继承内容图。
 
-> 路由级重定向（`/services`、`/blog`、`/inquiry` 等）在 `next.config.ts` 配置；**产品 URL 规范化的 308 重定向在根目录 `proxy.ts`（边缘中间件）处理**——原因见下方「已知注意事项」。
+修改 metadata、路由或社交资产后运行 `npm run verify:seo` 和 `npm run build`。
 
----
+## `/llms.txt` 实验性 GEO 导览
 
-## 设计系统
+`app/llms.txt/route.ts` 根据共享公司配置生成 Markdown 风格站点导览。它是社区提案，不是正式 Web 标准，也不保证 AI 搜索排名、抓取或引用。
 
-| 令牌 | 值 | 用途 |
-|------|----|------|
-| 品牌红 | `#d4343e` | 转化型 CTA（询盘 / 报价 / 联系）+ 导航 hover/激活态、Logo 中 GD 红、进度条颜色 |
-| 品牌红 Hover | `#b91c1c` | 转化型 CTA hover 态（如询盘表单提交按钮） |
-| Electric Blue | `#3E6AE1` | 工具 / 功能按钮（搜索提交 / 分页等主动操作；分类筛选栏为红色激活指示，见 DESIGN-tesla.md） |
-| Electric Blue Hover | `#3561CC` | 工具按钮 hover 态 |
-| Carbon Dark | `#171A20` | 标题 + Hero 区域底色 |
-| Graphite | `#393C41` | 正文 |
-| Pewter | `#5C5E62` | 辅助文字/描述 |
-| Light Ash | `#F4F4F4` | 卡片/区域背景 |
+维护要求：
 
-风格约定：以 `1px` border（`#EEEEEE`）分隔为主；圆角以 `frontend/app/globals.css` 的 `6/10/12/16/20/24/28px` 层级为准，按钮统一 `rounded-lg`。转化型 CTA 允许极淡投影（`shadow-sm` / 滚动玻璃态 `shadow-[0_2px_16px_rgba(212,52,62,0.45)]`）增强可点击感；过渡使用 `transition-colors duration-300`。
+- 只写官网可公开、可验证的事实。
+- 法律实体成立年份与集团历史必须分开。
+- 公司资料、联系方式或核心页面变化时同步检查该路由。
+- 不放未公开报价、私人联系人数据或无法证明的营销数字。
+- `Generated` 表示生成日期，不表示公司资料当天更新。
 
----
+生产请求应返回 `200`、`text/plain; charset=utf-8`，并包含正确的法律实体和集团年份口径：
 
-## 内容编辑指南
+```bash
+curl -i https://www.zsaki.icu/llms.txt
+```
 
-| 改什么 | 在哪里改 |
-|-----------|--------|
-| 产品/新闻内容 | 后台管理界面（`../admin-next/`） |
-| 文案 / 公司信息 / FAQ / About | `lib/content-data.ts` |
-| 导航菜单项 | `components/Header.tsx` 中的 `NAV_LINKS` |
-| 配色 | `app/globals.css` 的 CSS 变量 |
-| 页脚链接 | `lib/site-config.ts` |
-| 询盘收件邮箱 / SMTP | 管理后台“系统设置”；frontend 不保存邮件凭据 |
-| 展会图片 | `public/Exhibitions/` 目录增删文件 |
+## 工厂视频与社交资产
 
----
+About 页使用：
 
-## SEO & 结构化数据
+```text
+public/Video/SongdianFactoryVideo.mp4
+public/Video/factory-poster.webp
+```
 
-- 全局 `metadata` 定义在 `app/layout.tsx`
-- JSON-LD：`Manufacturer`、`WebSite`、`BreadcrumbList`、`Article`、`Product`、`FAQPage`；组织实体使用统一 `@id`
-- `app/robots.ts` 与 `app/sitemap.ts` 自动生成
+播放器使用 `poster`、`playsInline` 和 `preload="none"`。组件支持可选 WebM `<source>`；仓库没有 WebM 时自动使用 MP4，不需要创建空路径。
 
----
+媒体交付要求：
 
-## 隐私与 Cookie 同意
+- MP4 使用浏览器兼容的 H.264 视频流，建议 AAC 音频。
+- MP4 应启用 fast start，使 metadata 位于文件前部。
+- poster 使用 16:9 WebP，避免播放前出现黑帧。
+- 反向代理必须支持 Range 请求；`Range: bytes=0-1023` 应返回 `206`。
+- H.264 profile、音频编码和 fast start 需要用 `ffprobe`/`ffmpeg` 或等效工具复核，不能仅凭扩展名判断。
 
-- 官网底部以**横向条幅**呈现 Cookie 同意（`components/CookieConsent.tsx`）：左文案、右按钮（Accept all / Reject / Manage），更宽更矮，视觉沿用 Tesla 极简体系（`bg-card` + 极淡 `ring` 无阴影；主操作按钮用 Electric Blue `#3E6AE1`，属工具 / 功能类按钮语义）。
-- 分类：**Strictly necessary（必要，始终开启、不可关）** 与 **Analytics（分析，opt-in）**。偏好存于 `localStorage` 键 `sd-cookie-consent`（含版本号 `v` 与时间戳）。
-- **Google Analytics 仅在用户接受「分析」类 Cookie 且配置了 `NEXT_PUBLIC_GA_ID` 时才注入**（见「环境变量」），即「同意后才加载」的 GDPR/ePrivacy 合规门控；未配置则不发任何分析 Cookie。
-- 页脚「Cookie Settings」（`components/CookieSettingsTrigger.tsx`）随时重新打开偏好面板。
-- 后台 `admin-next` 为登录后内部工具，仅用严格必要的 `access_token` HttpOnly Cookie + JWT/主题 `localStorage`，**不**展示此横幅。
+重新生成默认 OG 图和 poster：
 
----
+```bash
+npm run generate:social-assets
+```
 
-## 部署
+脚本读取 `public/banner/banner.webp`，输出 `public/og/og-default.jpg` 和 `public/Video/factory-poster.webp`。生成后检查尺寸、体积、文字安全区域和 `git diff`。脚本不会重新编码 MP4。
 
-生产环境：**腾讯云服务器 + 1Panel Linux 面板 + Docker Compose 全栈编排**，自托管。正式发布由 CI 构建 GHCR 不可变镜像，再由生产工作流执行备份、独立迁移、镜像切换和冒烟；服务器现场 `docker compose build` 仅用于首次诊断。完整流程见仓库根目录 `deploy-guide.md`。
+## 设计与组件边界
 
-> ⚠️ 部署前务必在**本地（后端可达）**重新生成产品 URL 规范映射并提交：
-> ```bash
-> npm run gen:map   # 需后端 API 可达；生成 lib/generated/canonical-map.ts
-> git add lib/generated/canonical-map.ts && git commit -m "chore: refresh product canonical map"
-> ```
-> 否则生产环境的产品 308 重定向会使用旧映射（新增 / 改分类的产品落不到规范地址）。
+- 视觉 token 定义在 `app/globals.css`，组件优先使用 CSS 变量。
+- 品牌红用于询盘、报价、联系等转化行为；蓝色用于搜索、分页等工具行为。
+- Server Components 是默认选择，交互区域使用最小 Client Component 边界。
+- `AnimatedCounter.tsx` 服务端直接输出最终数值，CSS 只做视觉增强，确保无 JS、弱网和 AI 抓取环境得到真实数字。
+- `FactoryVideo.tsx` 是 About 页视频播放器。
+- `AnimatedSection` 是轻量服务端结构包装；复杂交互才使用 Framer Motion。
+- 动画必须尊重 `prefers-reduced-motion`，重要内容不能只在 hover 后出现。
 
----
+完整视觉规则见 [DESIGN-tesla.md](./DESIGN-tesla.md)。
 
-## 已知注意事项
+## 关键目录
 
-- **沙箱环境**：`npm run dev` 可能因 fork 限制失败，改用 `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3000`
-- **本项目本地统一使用 Node 24.18.0**：可避免当前 Windows/Turbopack 环境中的兼容性问题；生产镜像按 Dockerfile 固定环境构建。
-- **构建验证**：常规环境使用 `npm run build`；若本地开发服务正在占用 `.next`，先停止该服务或在 CI/容器中构建，避免争用构建目录。
-- **Leaflet 走按需加载**：`ContactMap` 经 `ContactMapLoader.tsx` 用 `next/dynamic({ ssr:false })` 包裹，仅联系页加载，不进首屏 bundle
-- **产品 URL 规范化用 `proxy.ts`（边缘中间件），不是页面 `redirect()`**：本环境 Next.js 16 + Turbopack 下，App Router 页面组件里的 `redirect()` / `permanentRedirect()` 不会发出真实 3xx（被渲染期吞掉）；产品地址的 308 重定向改由根目录 `proxy.ts`（替代已弃用的 `middleware.ts`）基于 `lib/generated/canonical-map.ts` 在边缘层完成。改 URL 结构时务必走 `proxy.ts`，勿改回页面级 `redirect()`。
-- **`npm run gen:map` 是 `next build` 的前置依赖**：`proxy.ts` 静态导入 `lib/generated/canonical-map.ts`；该文件由 `scripts/gen-canonical-map.mjs` 依据后端产品数据生成（未 gitignore，已提交当前快照）。构建 / 部署前若产品或分类有变动，需重新生成并提交，否则 308 重定向会用过期映射。
-- **`Module not found: Can't resolve 'postcss'` 构建报错**：多因 `node_modules/postcss` 被装成空目录（npm 只检查目录存在、不检查内容，部分安装被中断后跳过还原）。修复：`rm -rf node_modules/postcss && npm install` 重新补全即可。
-## 当前实现补充（2026-08-13）
+```text
+app/                           页面、robots、sitemap、llms.txt
+components/                    展示与交互组件
+components/form/               询盘表单
+components/motion/             动画边界
+lib/api/                       FastAPI 客户端
+lib/content-data.ts            共享公司事实与静态内容
+lib/media.ts                   静态媒体路径
+lib/seo.ts                     JSON-LD 与 SEO 工具
+lib/generated/                 canonical 路径映射
+public/og/                     默认社交分享图
+public/Video/                  工厂 MP4 与 poster
+scripts/generate-og-assets.mjs 社交图与 poster 生成脚本
+scripts/verify-seo.mjs          SEO/GEO 契约校验
+next.config.ts                 图片优化、远程主机与生产配置
+proxy.ts                       产品 URL 规范化重定向
+```
 
-当前实现以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准：
+## 发布检查
 
-- 首页和 About 页面均展示 `public/Video/SongdianFactoryVideo.mp4`；视频不参与首屏关键请求，移动端使用响应式容器。
-- 产品内页 Hero、面包屑和分类筛选栏已压缩并使用统一圆角；导航文字和触摸区域已放大，390px 视口不应横向溢出。
-- 全站浮动询盘为全宽底部栏，Cookie 同意横幅显示时自动避让；联系页不重复显示该浮层。
-- SEO 页面标题、描述和 JSON-LD 明确 Songdian Technology 是 digital camera manufacturer / OEM/ODM camera factory；组织类型为 `Manufacturer`。
-- 官网询盘会提交国家、产品 slug、落地页、来源页和 UTM 归因字段。产品详情的 CTA 使用 `?product=<slug>` 预填来源产品。
-- `INTERNAL_API_URL` 用于 Next.js 服务端到 Compose 内部 API 的访问；浏览器公开 API 仍使用 `NEXT_PUBLIC_API_URL`。
+1. 源 banner 或社交设计变化时运行 `npm run generate:social-assets`。
+2. 产品分类或 slug 变化时运行 `npm run gen:map` 并提交输出。
+3. 依次运行 lint、SEO 校验和生产构建。
+4. 确认 poster 与默认 OG 图未被 `.gitignore` 排除。
+5. 在生产构建中检查 `/llms.txt`、社交 metadata、视频 poster 和 MP4 Range 响应。
+6. 通过仓库级部署流程发布，不在运行中容器内临时覆盖静态文件。
 
-### 与旧版段落的更正
+## 常见问题
 
-- 设计规范中的旧版 `4px / 12px` 圆角、Tesla 蓝色 CTA 和 14px 导航仅是历史参考；当前代码以 `frontend/app/globals.css` 的品牌红/中性灰 token 和 6/10/12/16/20/24/28px 圆角层级为准。
-- SEO JSON-LD 当前包含 `Manufacturer`（统一 `@id`），不是仅使用 `Organization`/`LocalBusiness` 的旧清单。
-- 部署文档中的服务器现场构建命令只用于本地或首次诊断；正式生产发布使用 GHCR 版本镜像和独立迁移。
+### 后端图片在本地无法由 `next/image` 加载
 
-## 当前数据访问与质量边界（2026-08-19）
+确认图片主机和 API 地址正确。本地确实需要访问 loopback/局域网地址时，再设置 `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 并重启；生产不要开启。
 
-- 服务端优先使用 `INTERNAL_API_URL`；浏览器公开地址使用 `NEXT_PUBLIC_API_URL`。Compose 中前者为 `http://backend:8000`，后者为 `https://api.zsaki.icu`。
-- `lib/api/client.ts` 的 `ApiError` 保留 HTTP `status`、业务 `code`、请求 `path` 和原始 `cause`。产品详情仅把 HTTP 404 或 `A010001` 交给 `notFound()`；网络、429、5xx 和非法响应交给产品级错误边界显示可重试状态。
-- `/preview/[token]` 是后台签名预览入口，使用 `no-store` 并输出 `noindex`；它不会改变正式产品/新闻页面的结构或视觉内容。
-- 产品卡片与图库使用 `object-contain`，但图片容器不再添加大块 padding；不得改成 `object-cover` 裁掉产品主体。
-- `next.config.ts` 限制静态生成并发，避免批量产品预渲染触发后端按 IP 限流。
-- Web Vitals 仅在用户接受 Analytics 且配置 GA4 后上报；常规验证依次运行 `npm run lint`、`npm run verify:seo`、`npm run build`，关键链路运行 `npm run test:e2e`，性能预算运行 `npm run lighthouse`。
+### 构建时后端不可用
+
+首页和列表页对内容 API 有降级处理，但 canonical map 生成仍需要后端。正式发布前应在后端可达时刷新映射并提交。
+
+### 视频本机正常、部署后 poster 404
+
+运行 `git status --short --untracked-files=all`，确认 `public/Video/factory-poster.webp` 出现在提交中；再检查 CI 构建上下文和容器内 `/app/public/Video/`。不要手工复制文件到容器来长期规避问题。
+
+### 修改环境变量后仍使用旧地址
+
+`NEXT_PUBLIC_*` 变量会进入构建产物。生产域名或 API 地址变化后必须重新构建并发布 frontend 镜像。

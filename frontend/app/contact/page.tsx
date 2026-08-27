@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { wgs84ToGcj02 } from "@/lib/coord-transform";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Mail, Phone, Clock } from "lucide-react";
 
 export const metadata = await superMeta({
   title: "Contact Songdian Sales",
@@ -54,13 +54,13 @@ export default async function ContactPage() {
       />
 
       {/* 首屏 Hero —— 仅含面包屑 */}
-      <section className="border-b border-white/10 bg-[#111316] py-5">
+      <section className="border-b border-white/10 bg-[var(--surface-dark)] py-5">
         <div className="site-container">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
       </section>
 
-      <section className="bg-[#111316] pb-10 pt-6 text-white md:pb-12 md:pt-8">
+      <section className="bg-[var(--surface-dark)] pb-10 pt-6 text-white md:pb-12 md:pt-8">
         <div className="site-container max-w-4xl">
           <p className="section-eyebrow">Start a conversation</p>
           <h1 className="mt-3 text-[clamp(2.55rem,4.5vw,4rem)] font-semibold leading-[1] tracking-[-0.05em]">Tell us what you want to build.</h1>
@@ -69,13 +69,13 @@ export default async function ContactPage() {
       </section>
 
       {/* 主内容区 */}
-      <section className="section-shell bg-[#f5f6f7]">
+      <section className="section-shell bg-[var(--surface-soft)]">
         <div className="site-container">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16">
 
             {/* 左栏 */}
             <div className="lg:col-span-2">
-              <Card className="border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+              <Card className="border-[var(--border)]" style={{ borderRadius: "12px" }}>
                 <CardHeader>
                   <CardTitle className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Contact Information</CardTitle>
                 </CardHeader>
@@ -84,7 +84,7 @@ export default async function ContactPage() {
                     {
                       label: "Address",
                       value: address,
-                      icon: <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>,
+                      icon: <MapPin className="w-5 h-5 text-gray-600" strokeWidth={1.5} />,
                     },
                     {
                       label: "Email",
@@ -94,17 +94,17 @@ export default async function ContactPage() {
                           <a href={`mailto:${emailAlt}`} className="text-sm text-gray-500 hover:text-gray-900 transition-colors mt-0.5 block">{emailAlt}</a>
                         </>
                       ),
-                      icon: <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>,
+                      icon: <Mail className="w-5 h-5 text-gray-600" strokeWidth={1.5} />,
                     },
                     {
                       label: "Phone / WhatsApp",
                       value: <><p className="text-sm text-gray-500">Phone: {phone}</p><p className="text-sm text-gray-500 mt-0.5">WhatsApp: {whatsapp}</p></>,
-                      icon: <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>,
+                      icon: <Phone className="w-5 h-5 text-gray-600" strokeWidth={1.5} />,
                     },
                     {
                       label: "Business Hours",
                       value: <p className="text-sm text-gray-500">{COMPANY.contact.hours}</p>,
-                      icon: <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                      icon: <Clock className="w-5 h-5 text-gray-600" strokeWidth={1.5} />,
                     },
                   ].map((item) => (
                     <div key={item.label} className="flex gap-4">

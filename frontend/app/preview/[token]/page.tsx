@@ -32,8 +32,8 @@ export default async function PreviewPage({ params }: { params: Promise<{ token:
   if (!preview) {
     return (
       <section className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <h1 className="text-2xl font-semibold text-[#171A20]">Preview link unavailable</h1>
-        <p className="mt-3 text-[#5C5E62]">This preview link is invalid or has expired. Generate a new link in the admin panel.</p>
+        <h1 className="text-2xl font-semibold text-[var(--foreground)]">Preview link unavailable</h1>
+        <p className="mt-3 text-[var(--muted-foreground)]">This preview link is invalid or has expired. Generate a new link in the admin panel.</p>
       </section>
     );
   }
@@ -45,9 +45,9 @@ export default async function PreviewPage({ params }: { params: Promise<{ token:
       <div className="mb-8 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Private preview · This page is not indexed and may differ from the published version.
       </div>
-      <p className="text-sm font-medium uppercase tracking-wide text-[#d4343e]">{preview.resource_type}</p>
-      <h1 className="mt-2 text-3xl font-semibold text-[#171A20] md:text-4xl">{content.title}</h1>
-      <p className="mt-4 text-lg leading-8 text-[#5C5E62]">{content.summary}</p>
+      <p className="text-sm font-medium uppercase tracking-wide text-[var(--accent)]">{preview.resource_type}</p>
+      <h1 className="mt-2 text-3xl font-semibold text-[var(--foreground)] md:text-4xl">{content.title}</h1>
+      <p className="mt-4 text-lg leading-8 text-[var(--muted-foreground)]">{content.summary}</p>
       {image && (
         <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl bg-gray-100">
           <Image src={image} alt={content.title} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain" preload />

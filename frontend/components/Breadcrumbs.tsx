@@ -49,7 +49,7 @@ export default function Breadcrumbs({
         className={`inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border px-2 py-1.5 text-sm shadow-sm backdrop-blur-sm ${
           isDark
             ? "border-white/10 bg-white/[0.06] text-white/65"
-            : "border-black/[0.08] bg-white/90 text-[#5C5E62]"
+            : "border-black/[0.08] bg-white/90 text-[var(--muted-foreground)]"
         }`}
       >
         {items.map((item, i) => (
@@ -68,7 +68,7 @@ export default function Breadcrumbs({
                 className={`inline-flex h-7 items-center rounded-full px-2 font-medium transition-colors ${
                   isDark
                     ? "hover:bg-white/10 hover:text-white"
-                    : "hover:bg-[#f5f6f7] hover:text-[#d4343e]"
+                    : "hover:bg-[var(--surface-soft)] hover:text-[var(--accent)]"
                 }`}
               >
                 {i === 0 ? <Home className="h-3.5 w-3.5" aria-hidden="true" /> : item.label}
@@ -76,7 +76,7 @@ export default function Breadcrumbs({
             ) : (
               <span
                 aria-current="page"
-                className={`truncate rounded-full px-2 py-1 font-semibold ${isDark ? "bg-white/10 text-white" : "bg-[#f5f6f7] text-[#171A20]"}`}
+                className={`truncate rounded-full px-2 py-1 font-semibold ${isDark ? "bg-white/10 text-white" : "bg-[var(--surface-soft)] text-[var(--foreground)]"}`}
               >
                 {item.label}
               </span>

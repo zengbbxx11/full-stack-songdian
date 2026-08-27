@@ -82,14 +82,14 @@ async function ProductCategoriesSection() {
 
   return (
     <AnimatedSection>
-    <section className="section-shell bg-[#f5f6f7]">
+    <section className="section-shell bg-[var(--surface-soft)]">
       <div className="site-container">
         <div className="mb-12 flex items-end justify-between md:mb-16">
           <div>
             <span className="section-eyebrow">Product Categories</span>
             <h2 className="section-title mt-4">Cameras We Manufacture</h2>
           </div>
-          <Link href="/products" className="hidden md:inline-flex items-center text-sm font-medium transition-colors hover:text-[#d4343e]" style={{ color: "#393C41", transitionDuration: "0.33s" }}>
+          <Link href="/products" className="hidden md:inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
@@ -99,7 +99,7 @@ async function ProductCategoriesSection() {
             <Link
               key={category.id}
               href={`/products?category=${category.slug}`}
-              className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[#171A20] transition-[flex-grow] duration-500 ease-out sm:aspect-[3/4] lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.5]"
+              className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[var(--foreground)] transition-[flex-grow] duration-500 ease-out sm:aspect-[3/4] lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.5]"
               aria-label={`${meta.name} — view products`}
             >
               {product?.image ? (
@@ -118,7 +118,7 @@ async function ProductCategoriesSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5 text-white md:p-6">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-base font-bold tabular-nums" style={{ color: "#d4343e" }} aria-hidden="true">
+                  <span className="text-base font-bold tabular-nums" style={{ color: "var(--accent)" }} aria-hidden="true">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <h3 className="text-xl font-semibold leading-snug tracking-[-0.03em]">{meta.name}</h3>
@@ -136,7 +136,7 @@ async function ProductCategoriesSection() {
         </div>
 
         <div className="mt-8 text-center md:hidden">
-          <Link href="/products" className="inline-flex items-center text-sm font-medium transition-colors hover:text-[#d4343e]" style={{ color: "#393C41", transitionDuration: "0.33s" }}>
+          <Link href="/products" className="inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All Products <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
@@ -153,12 +153,12 @@ async function ExhibitionSection() {
 
   return (
     <AnimatedSection>
-    <section className="py-16 md:py-24 bg-white border-y border-[#EEEEEE]">
+    <section className="py-16 md:py-24 bg-white border-y border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-12">
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#d4343e" }}>Global Presence</span>
-          <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "#171A20" }}>Trade Shows We&apos;ve Attended</h2>
-          <p className="mt-3 text-base font-medium mx-auto max-w-2xl" style={{ color: "#5C5E62" }}>
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>Global Presence</span>
+          <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "var(--foreground)" }}>Trade Shows We&apos;ve Attended</h2>
+          <p className="mt-3 text-base font-medium mx-auto max-w-2xl" style={{ color: "var(--muted-foreground)" }}>
             We showcase our latest OEM / ODM camera innovations at leading industry events worldwide — click to view full photos.
           </p>
         </div>
@@ -174,31 +174,28 @@ async function NewsSection() {
   // 兜底：构建期/后端不可达时降级为空数组，避免预渲染失败（Next build 会执行本组件）
   const { posts } = await getPosts({ perPage: 3 }).catch(() => ({ posts: [], pagination: null }));
 
+  // 无文章时整块不渲染，避免向访客暴露后台相关空态文案
+  if (posts.length === 0) return null;
+
   return (
     <section className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <AnimatedSection>
         <div className="flex items-end justify-between mb-12">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#5C5E62" }}>News &amp; Insights</span>
-            <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "#171A20" }}>Latest Updates</h2>
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>News &amp; Insights</span>
+            <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "var(--foreground)" }}>Latest Updates</h2>
           </div>
-          <Link href="/news" className="hidden md:inline-flex items-center text-sm font-medium transition-colors" style={{ color: "#393C41", transitionDuration: "0.33s" }}>
+          <Link href="/news" className="hidden md:inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </Link>
         </div>
         </AnimatedSection>
 
-        {posts.length > 0 ? (
-          <NewsGrid posts={posts} />
-        ) : (
-          <div className="text-center py-12 text-gray-400 bg-white border border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
-            <p className="text-sm">No articles published yet. Add posts in the admin panel.</p>
-          </div>
-        )}
+        <NewsGrid posts={posts} />
 
         <div className="mt-8 text-center md:hidden">
-          <Link href="/news" className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "#393C41", transitionDuration: "0.33s" }}>
+          <Link href="/news" className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All News <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </Link>
         </div>
@@ -213,7 +210,7 @@ async function NewsSection() {
 
 function HeroFallback() {
   return (
-    <section className="relative bg-[#171A20] flex items-end min-h-[70vh]" aria-hidden="true">
+    <section className="relative bg-[var(--foreground)] flex items-end min-h-[70vh]" aria-hidden="true">
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="skeleton w-16 h-16 rounded-full bg-white/10" />
       </div>
@@ -279,8 +276,8 @@ export default function HomePage() {
                 className="flex shrink-0 items-center justify-center gap-1.5 border-r border-black/8 px-4 py-2 last:border-r-0 lg:px-2"
                 title={cert.full}
               >
-                <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: "#d4343e" }} aria-hidden="true" />
-                <span className="text-sm font-medium" style={{ color: "#393C41" }}>{cert.code}</span>
+                <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} aria-hidden="true" />
+                <span className="text-sm font-medium" style={{ color: "var(--graphite)" }}>{cert.code}</span>
               </li>
             ))}
           </ul>
@@ -307,13 +304,13 @@ export default function HomePage() {
               return (
                 <div
                   key={item.title}
-                  className="group relative flex flex-col rounded-2xl border border-black/8 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#d4343e]/40 hover:shadow-[0_18px_45px_rgba(17,19,22,0.08)]"
+                  className="group relative flex flex-col rounded-2xl border border-black/8 bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:shadow-[0_18px_45px_rgba(17,19,22,0.08)]"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#d4343e]/8 text-[#d4343e] transition-colors duration-300 group-hover:bg-[#d4343e] group-hover:text-white">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent)]/8 text-[var(--accent)] transition-colors duration-300 group-hover:bg-[var(--accent)] group-hover:text-white">
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </div>
-                  <h3 className="mt-5 text-[17px] font-semibold tracking-tight text-[#171A20]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#5C5E62]">{item.description}</p>
+                  <h3 className="mt-5 text-[17px] font-semibold tracking-tight text-[var(--foreground)]">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">{item.description}</p>
                 </div>
               );
             })}
@@ -321,7 +318,7 @@ export default function HomePage() {
           <div className="mt-10 flex justify-start md:mt-12">
             <Link
               href="/about#factory-tour"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-[#f5f6f7] px-5 text-sm font-semibold text-[#171A20] transition-colors hover:border-[#d4343e] hover:text-[#d4343e]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-[var(--surface-soft)] px-5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <Play className="h-4 w-4 fill-current" aria-hidden="true" />
               Watch Factory Tour
@@ -336,9 +333,9 @@ export default function HomePage() {
 
       {/* ═══ 静态区块：全球 ODM 合作伙伴 ═══ */}
       <AnimatedSection>
-      <section className="section-shell bg-[#f5f6f7]">
+      <section className="section-shell bg-[var(--surface-soft)]">
         <div className="site-container">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
             {GLOBAL_ODM.eyebrow}
           </p>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-3">
@@ -346,10 +343,10 @@ export default function HomePage() {
           </h2>
           <div className="mb-8 max-w-2xl">
             <p className="text-lg font-semibold text-gray-900 leading-snug">{GLOBAL_ODM.tagline}</p>
-            <p className="text-base font-medium mt-1" style={{ color: "#5C5E62" }}>{GLOBAL_ODM.taglineSecondary}</p>
+            <p className="text-base font-medium mt-1" style={{ color: "var(--muted-foreground)" }}>{GLOBAL_ODM.taglineSecondary}</p>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-[#EEEEEE]">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border)]">
             <Image
               src={MEDIA.globalOdmPartners}
               alt="Global ODM partner and export network map"
@@ -360,13 +357,13 @@ export default function HomePage() {
             />
           </div>
 
-          <p className="mt-6 text-sm leading-relaxed max-w-3xl mx-auto text-center" style={{ color: "#5C5E62" }}>
+          <p className="mt-6 text-sm leading-relaxed max-w-3xl mx-auto text-center" style={{ color: "var(--muted-foreground)" }}>
             {GLOBAL_ODM.exportDescription}
           </p>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {GLOBAL_ODM.brands.map((brand) => (
-              <span key={brand} className="rounded-lg border border-[#EEEEEE] bg-white px-3 py-1 text-[13px] font-medium text-[#393C41]">
+              <span key={brand} className="rounded-lg border border-[var(--border)] bg-white px-3 py-1 text-[13px] font-medium text-[var(--graphite)]">
                 {brand}
               </span>
             ))}

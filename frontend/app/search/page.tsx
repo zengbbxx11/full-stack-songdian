@@ -72,7 +72,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <>
       {/* 首屏 Hero —— 仅含面包屑 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -82,9 +82,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <div className="max-w-7xl mx-auto px-6">
           {/* ====================== 标题 + 结果计数 ====================== */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-[#171A20] md:text-3xl">Search</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)] md:text-3xl">Search</h1>
             {q && result && !errorMessage && (
-              <p className="mt-2 text-sm text-[#5C5E62]">
+              <p className="mt-2 text-sm text-[var(--muted-foreground)]">
                 {result.total} result{result.total === 1 ? "" : "s"} for &ldquo;{q}&rdquo;
                 <span className="ml-2 text-[#8E8E8E]">· {result.tookMs} ms</span>
               </p>
@@ -96,7 +96,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
           {/* 降级提示（后端搜索不可用时给出友好说明，不阻断页面） */}
           {result?.degraded && result.note && (
-            <div className="mt-6 rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] px-4 py-3 text-sm text-[#5C5E62]">
+            <div className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
               {result.note}
             </div>
           )}
@@ -105,15 +105,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <div id="search-results" aria-live="polite">
           {!q ? (
             // 未输入关键词
-            <div className="mt-12 rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] py-24 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-[#171A20]">Enter a search term</h3>
-              <p className="text-sm text-[#5C5E62]">Find products and news across the site.</p>
+            <div className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--muted)] py-24 text-center">
+              <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">Enter a search term</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">Find products and news across the site.</p>
             </div>
           ) : errorMessage ? (
             // 错误态
-            <div className="mt-12 rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] py-24 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-[#171A20]">Something went wrong</h3>
-              <p className="mx-auto mb-6 max-w-md text-sm text-[#5C5E62]">{errorMessage}</p>
+            <div className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--muted)] py-24 text-center">
+              <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">Something went wrong</h3>
+              <p className="mx-auto mb-6 max-w-md text-sm text-[var(--muted-foreground)]">{errorMessage}</p>
               <Link
                 href={`/search?q=${encodeURIComponent(q)}&type=${type}`}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-[#3E6AE1] px-5 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#3561CC]"
@@ -136,18 +136,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   {page > 1 && (
                     <Link
                       href={`/search?q=${encodeURIComponent(q)}&type=${type}&page=${page - 1}`}
-                      className="rounded-lg bg-[#F4F4F4] px-5 py-2.5 text-sm font-medium text-[#393C41] transition-colors duration-300 hover:bg-[#E9E9E9]"
+                      className="rounded-lg bg-[var(--muted)] px-5 py-2.5 text-sm font-medium text-[var(--graphite)] transition-colors duration-300 hover:bg-[#E9E9E9]"
                     >
                       Previous
                     </Link>
                   )}
-                  <span className="px-4 py-2.5 text-sm text-[#5C5E62]">
+                  <span className="px-4 py-2.5 text-sm text-[var(--muted-foreground)]">
                     Page {page} / {totalPages}
                   </span>
                   {page < totalPages && (
                     <Link
                       href={`/search?q=${encodeURIComponent(q)}&type=${type}&page=${page + 1}`}
-                      className="rounded-lg bg-[#F4F4F4] px-5 py-2.5 text-sm font-medium text-[#393C41] transition-colors duration-300 hover:bg-[#E9E9E9]"
+                      className="rounded-lg bg-[var(--muted)] px-5 py-2.5 text-sm font-medium text-[var(--graphite)] transition-colors duration-300 hover:bg-[#E9E9E9]"
                     >
                       Next
                     </Link>
@@ -157,9 +157,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </>
           ) : (
             // 空状态
-            <div className="mt-12 rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] py-24 text-center">
-              <h3 className="mb-2 text-lg font-semibold text-[#171A20]">No results found</h3>
-              <p className="text-sm text-[#5C5E62]">Try a different keyword or category.</p>
+            <div className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--muted)] py-24 text-center">
+              <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">No results found</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">Try a different keyword or category.</p>
             </div>
           )}
           </div>

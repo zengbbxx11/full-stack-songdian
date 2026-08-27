@@ -132,6 +132,13 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **动态头部**：`UserDropdown.tsx` 改为从 `/admin/profile` 动态读取用户名，显示真实 username + 首字母头像（不再硬编码"管理员"/"A"）。
 - **询盘国家标记**：`inquiries/page.tsx` 跟进对话框新增 Country 输入框，保存时写入数据库（纯后台标记，客户表单不需要国家字段）。
 
+## 官网社交 metadata 联动（2026-08-27）
+
+- 产品主图和新闻封面会成为公开详情页的 Open Graph/Twitter 图片；媒体选择器和表单不得无提示地丢失已有封面 URL。
+- 无封面时由官网回退到默认 1200×630 品牌图，管理后台不需要生成占位记录或写入默认图 URL。
+- 保存封面、SEO 标题/描述、新闻标题/摘要后，后端负责缓存失效与官网 ISR revalidation；后台不要直接调用公开页面或拼接社交 metadata。
+- `/llms.txt` 是 frontend 的实验性站点导览，不属于管理 API，不在后台新增一个重复编辑入口；公司核心事实继续由官网共享内容配置维护。
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

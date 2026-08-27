@@ -23,6 +23,10 @@ Songdian 官网面向全球 OEM/ODM 数码相机采购商。视觉应当现代�
 | 角色 | 值 | 使用场景 |
 |---|---|---|
 | Brand Red / Primary | `#d4343e` | 询盘、报价、联系、导航激活、焦点状态 |
+
+> **品牌色决策（2026-08-27 定稿）**：官网使用 `#d4343e` 是 B2B 场景的刻意选择（更沉稳），
+> APP 等 C 端触点使用另一品牌红，两边划界使用、不统一。
+> 后续修改官网配色时不要把 `#d4343e` 当作"与品牌不符"的问题处理。
 | Brand Red Hover | `#b91c1c` | 品牌红按钮悬停 |
 | Carbon Dark | `#171A20` | 标题、主导航、主要正文 |
 | Surface Dark | `#111316` | 深色 Hero、数据带和视频占位 |
@@ -112,8 +116,8 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 - 产品图片使用 `ProductGallery` 和统一的 `object-fit` 规则，图片容器保持稳定比例，避免布局跳动。
 - 产品卡片、详情主图和缩略图统一使用 `object-contain`，确保相机主体完整；容器只保留必要的极小安全边距，不得恢复大块 padding，也不得改用 `object-cover` 裁切产品。
-- 工厂视频组件为 `components/FactoryVideo.tsx`，点击后才播放，使用 `preload="metadata"`、`playsInline` 和 `controls`。
-- 当前视频资产为 `frontend/public/Video/SongdianFactoryVideo.mp4`，首页与 About 页面均可展示。它是静态前端源码资产，不等同于生产运行时上传媒体。
+- 工厂视频组件为 `components/FactoryVideo.tsx`，点击后才播放，使用 16:9 WebP poster、`preload="none"`、`playsInline` 和 `controls`；WebM 是可选增强，MP4 是兼容回退。
+- 当前视频及封面资产为 `frontend/public/Video/SongdianFactoryVideo.mp4` 与 `factory-poster.webp`，仅在 About 页面展示。它们是静态前端源码资产，不等同于生产运行时上传媒体。
 - 视频、图片和地图都必须在 390px 视口下检查，不得造成横向滚动。
 
 ## 7. 动效与可访问性

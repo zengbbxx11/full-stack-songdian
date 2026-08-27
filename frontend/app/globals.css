@@ -1,15 +1,16 @@
 /**
  * globals.css — Songdian Technology B2B 官网
  * ------------------------------------------------------------------
- * 基于 Tesla 设计哲学的极简设计系统
+ * 克制、产品优先的极简设计系统（详见 DESIGN-tesla.md）
  *
  * 核心原则：
- *   - 产品（摄影/图片）是设计的全部，UI 只是辅助
- *   - 无阴影、无渐变、无装饰边框
- *   - 唯一色：Electric Blue (#3E6AE1) 仅用于 CTA
- *   - 统一的 0.33s 过渡动画
- *   - 4px 圆角 = 精确而不俏皮
- *   - 留白即奢侈信号
+ *   - 产品图片和工厂视频是主要视觉内容，UI 负责建立层级与行动路径
+ *   - 品牌红 #d4343e 用于询盘/转化类 CTA、导航激活与焦点状态
+ *     （B2B 场景的刻意决策；APP 侧 C 端触点使用另一品牌红，两边划界不统一）
+ *   - 中性灰建立结构层级；Electric Blue 仅保留给确有工具语义的状态
+ *   - 1px 浅色边框为主，阴影只用于浮层等需要脱离页面的元素
+ *   - 圆角体系 6–28px（--radius-sm … --radius-4xl），按容器尺度递进
+ *   - 统一的 0.33s 过渡动画；动效尊重 prefers-reduced-motion
  */
 
 @import "tailwindcss";
@@ -21,11 +22,11 @@
    ============================================================ */
 
 @theme inline {
-  /* 主色 — Electric Blue，仅用于 CTA 按钮 */
+  /* 主色 — 品牌红 #d4343e，用于询盘/转化 CTA、焦点与激活状态 */
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
 
-  /* 品牌红 — 呼应 Logo 中红色 GD，用于导航激活态等点缀 */
+  /* 品牌红别名 — 与 --color-accent 同值，语义上强调品牌识别 */
   --color-brand-red: var(--brand-red);
 
   /* 文字层级 */
@@ -99,6 +100,7 @@
   --surface-soft: #f5f6f7;
   --surface-dark: #111316;
   --border-strong: #d9dcdf;
+  --graphite: #393C41;         /* Graphite — 次级正文 */
   --content-max: 1280px;
 }
 
@@ -115,8 +117,8 @@
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, -apple-system, sans-serif;
   color: var(--foreground);
-  line-height: 1.43;  /* 匹配 Tesla 的 14px/20px 比例 */
-  font-size: 14px;     /* Tesla 默认正文字号 */
+  line-height: 1.43;  /* 15px/21px 上下，保持原有比例感 */
+  font-size: 15px;    /* B2B 客群可读性优先，由 14px 上调（DESIGN-tesla.md 建议 16–18px，此处先保守一步） */
   font-weight: 400;
   background: var(--background);
   overflow-x: clip;

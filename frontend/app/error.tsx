@@ -22,7 +22,7 @@ export default function ErrorPage({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-      <div className="w-16 h-16 mb-6 rounded-full bg-[#F4F4F4] flex items-center justify-center">
+      <div className="w-16 h-16 mb-6 rounded-full bg-[var(--muted)] flex items-center justify-center">
         <svg
           className="w-8 h-8 text-[#8E8E8E]"
           fill="none"
@@ -38,8 +38,8 @@ export default function ErrorPage({
         </svg>
       </div>
 
-      <h1 className="text-2xl font-bold text-[#171A20] mb-3">Something went wrong</h1>
-      <p className="text-sm text-[#5C5E62] max-w-md mb-8">
+      <h1 className="text-2xl font-bold text-[var(--foreground)] mb-3">Something went wrong</h1>
+      <p className="text-sm text-[var(--muted-foreground)] max-w-md mb-8">
         We encountered an unexpected error. This might be temporary — please try again.
       </p>
 
@@ -57,7 +57,7 @@ export default function ErrorPage({
         </button>
         <Link
           href="/"
-          className="inline-flex items-center px-6 text-sm font-medium rounded h-[42px] border border-[#D0D1D2] text-[#393C41] transition-colors hover:bg-[#F4F4F4]"
+          className="inline-flex items-center px-6 text-sm font-medium rounded h-[42px] border border-[#D0D1D2] text-[var(--graphite)] transition-colors hover:bg-[var(--muted)]"
           style={{
             borderRadius: "4px",
             transitionDuration: "0.33s",

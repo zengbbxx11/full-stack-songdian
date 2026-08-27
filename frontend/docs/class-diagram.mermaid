@@ -5,22 +5,110 @@ classDiagram
         +apiFetch(path, params, options): Promise~T~
         +toAbsoluteUrl(path): string|null
     }
-    class ApiError { +status: number|null; +code: string|null; +path: string; +cause: unknown }
+    class ApiError {
+        +status: number|null
+        +code: string|null
+        +path: string
+        +cause: unknown
+    }
     class products_api {
         +getProducts(params): ProductPage
         +getProductBySlug(slug): ProductDetail|null
         +getProductCategories(): Category[]
         +getAllProductSlugEntries(): ProductSlugEntry[]
     }
-    class ProductDetailPage { +notFound(); +ProductUnavailable(); +generateMetadata() }
-    class PreviewPage { +validateSignedToken(); +noindex; +no-store }
-    class WebVitalsReporter { +reportWebVitals(metric); +requiresAnalyticsConsent }
-    class ProductSummary { +slug; +name; +image; +categories; +stockStatus }
-    class ProductDetail { +description; +gallery; +attributes; +seoTitle; +seoDescription }
+    class news_api {
+        +getPosts(params): PostPage
+        +getPostBySlug(slug): PostDetail|null
+        +getAllPostSlugs(): string[]
+    }
+    class ProductDetailPage {
+        +generateMetadata()
+        +notFound()
+        +ProductUnavailable()
+    }
+    class NewsDetailPage {
+        +generateMetadata()
+        +articleSchema()
+    }
+    class SocialMetadata {
+        +openGraph
+        +twitter
+        +contentImageOrDefault()
+    }
+    class RootLayoutMetadata {
+        +metadataBase
+        +canonical
+        +defaultOpenGraph
+        +defaultTwitter
+        +ManufacturerJsonLd
+    }
+    class MEDIA {
+        +string ogImage
+        +string factoryVideo
+        +string factoryVideoPoster
+    }
+    class COMPANY {
+        +number established
+        +number founded
+        +string parentName
+        +Contact contact
+    }
+    class LlmsRoute {
+        +GET() Response
+        +number revalidate
+        +boolean experimentalProposal
+    }
+    class AssetGenerator {
+        +generateSocialAssets()
+        +string ogDefault
+        +string factoryPoster
+    }
+    class SeoGeoContract {
+        +verifyMetadata()
+        +verifyEntityYears()
+        +verifyImagePolicy()
+        +verifyAssetDimensions()
+    }
+    class PreviewPage {
+        +validateSignedToken()
+        +noindex
+        +no-store
+    }
+    class WebVitalsReporter {
+        +reportWebVitals(metric)
+        +requiresAnalyticsConsent
+    }
+    class ProductSummary {
+        +slug
+        +name
+        +image
+        +categories
+        +stockStatus
+    }
+    class ProductDetail {
+        +description
+        +gallery
+        +attributes
+        +seoTitle
+        +seoDescription
+    }
 
     api_client --> ApiError : throws
     products_api --> api_client : uses
+    news_api --> api_client : uses
     ProductDetailPage --> products_api : loads
+    NewsDetailPage --> news_api : loads
+    ProductDetailPage --> SocialMetadata : resolves
+    NewsDetailPage --> SocialMetadata : resolves
+    RootLayoutMetadata --> MEDIA : default image
+    SocialMetadata --> MEDIA : no-content-image fallback
+    LlmsRoute --> COMPANY : shared public facts
+    AssetGenerator --> MEDIA : generates committed assets
+    SeoGeoContract --> RootLayoutMetadata : validates
+    SeoGeoContract --> SocialMetadata : validates
+    SeoGeoContract --> LlmsRoute : validates
+    SeoGeoContract --> MEDIA : validates dimensions and size
     ProductDetailPage --> ApiError : distinguishes outage
     ProductSummary <|-- ProductDetail
     PreviewPage --> api_client : signed preview fetch

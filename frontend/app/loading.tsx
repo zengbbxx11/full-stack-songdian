@@ -8,10 +8,10 @@ export default function LoadingPage() {
   return (
     <>
       {/* 顶部加载指示条 — 品牌红脉冲动画 */}
-      <div className="fixed top-14 left-0 right-0 z-50 h-[2px] bg-[#EEEEEE]">
+      <div className="fixed top-14 left-0 right-0 z-50 h-[2px] bg-[var(--border)]">
         <div
           className="h-full animate-loading-bar"
-          style={{ backgroundColor: "#d4343e", width: "40%" }}
+          style={{ backgroundColor: "var(--accent)", width: "40%" }}
         />
       </div>
 

@@ -139,3 +139,9 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA 与站点验证配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
 - **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT 并收敛历史外键，迁移 11 增加询盘归因与通知已读状态，迁移 12 增加内容状态、发布时间和版本表。生产由独立 Compose `migrate` profile 显式执行 `aerich upgrade`，backend 应用容器不自动迁移。
 - ⚠️ **生产初始化**：生产只运行迁移和最小种子（角色、权限、首个管理员）。`db/seed_data.sql`、完整 SQL 和 CSV 是本地开发快照，含业务数据与密码哈希，禁止导入生产。
+
+## 官网 SEO/GEO 联动（2026-08-27）
+
+- 产品主图、新闻封面、SEO 标题/描述和新闻摘要属于公开详情页 metadata 输入；写入、恢复和调度发布后必须继续执行 Redis 失效与 frontend ISR revalidation。
+- frontend 会在内容无图时回退默认品牌 OG 图；backend 不应把默认静态图 URL写入产品或新闻数据来模拟封面。
+- `/llms.txt` 由 frontend 基于共享公开公司资料生成，不新增 backend 路由、数据库表或缓存副本，避免两个事实源漂移。

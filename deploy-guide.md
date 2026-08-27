@@ -34,7 +34,7 @@
 
 服务器的 `.env` 继续只保存在生产机，不上传 GitHub。首次自动发布前应先运行一次 `scripts/backup.sh` 并做恢复演练。
 
-生产发布入口：GitHub Actions → `Deploy production` → Run workflow → 输入本次完整 commit SHA。不要在服务器执行 `docker compose build`。
+生产发布默认入口：GitHub Actions → `Deploy production` → Run workflow → 输入本次完整 commit SHA。若必须由运维人员手动发布，可按「二、获取代码」中的手动部署章节，在服务器上拉取已通过 CI 的 GHCR 镜像并执行 `scripts/deploy.sh`；不要在服务器现场构建应用镜像，除非使用文档中的备用流程。
 > **数据保护**：Git 仓库只包含代码和少量随镜像发布的静态资源；线上 PostgreSQL、运营上传文件、产品和新闻数据位于 Docker 命名卷，绝不会随 `git clone` 或 `git pull` 获取。已有服务器必须先备份，严禁删除 `pg_data`、`uploads_data` 或导入 `db/` 下的开发快照。
 
 ---
@@ -98,19 +98,167 @@ cd full-stack-songdian
 
 正式生产更新从 GitHub Actions 的 `Deploy production` 工作流开始：输入已经通过 CI 的完整 commit SHA 或 release tag。工作流会将版本传给服务器上的 `scripts/deploy.sh`，由脚本按顺序完成备份、拉取三组 GHCR 应用镜像、启动 PostgreSQL/Redis、执行独立迁移、以 `--no-build` 切换应用并运行冒烟检查。
 
-服务器更新时不需要、也不应执行 `git pull` 或 `docker compose build`。服务器 checkout 中保留的 Compose 文件和部署脚本只作为编排输入；应用源码、前端构建变量和镜像内容以 CI 产出的指定版本为准。修改任意 `NEXT_PUBLIC_*` 构建变量时，应重新运行 CI 并发布新的镜像版本。
+服务器更新时不需要现场构建应用。自动发布由 GitHub Actions 上传最新的 Compose 文件和部署脚本；手动发布时只需将服务器 checkout 中的编排文件同步到目标版本，应用源码、前端构建变量和镜像内容仍以 CI 产出的指定版本为准。修改任意 `NEXT_PUBLIC_*` 构建变量时，应重新运行 CI 并发布新的镜像版本。
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
 # 备份由 scripts/deploy.sh 在 Deploy production 工作流中自动执行
 
-# 正式发布不在服务器拉取源码；请通过 GitHub Actions 的 Deploy production 工作流发布指定 SHA/tag
+# 正式发布默认通过 GitHub Actions 的 Deploy production 工作流发布指定 SHA/tag
 
 docker compose ps
 ```
 
 > 禁止执行 `docker compose down -v`、`docker volume rm`、`DROP SCHEMA`，也不要以 `db/*.sql` 或 `db/*.csv` 覆盖生产库。
+
+### 2.3 手动部署已有服务器（拉取 GHCR 版本镜像）
+
+本节适用于 GitHub Actions 的 `CI` 工作流已经成功，且 `images (backend, backend)`、`images (frontend, frontend)`、`images (admin-next, admin)` 均已完成的情况。手动部署仍然使用仓库的 `scripts/deploy.sh`，因此会保留备份、独立迁移、健康检查和应用回滚逻辑。
+
+#### 2.3.1 同步部署编排文件
+
+服务器上的 `.env` 只保存生产密钥，不随 Git 更新。先确认 checkout 没有本地代码改动，再同步 `master` 中的 Compose 文件和部署脚本：
+
+```bash
+ssh ubuntu@106.53.220.184
+cd /home/ubuntu/full-stack-songdian
+
+git status --short
+# 如果这里出现未提交的业务文件，先停止并处理，不要强制覆盖。
+
+git fetch origin
+git pull --ff-only origin master
+```
+
+如果要部署特定提交，记录该提交的完整 SHA（不能只使用 GitHub 页面上的短 SHA）：
+
+```bash
+git rev-parse HEAD
+```
+
+确认生产配置仍然存在：
+
+```bash
+test -f .env || { echo "ERROR: .env missing" >&2; exit 1; }
+```
+
+#### 2.3.2 登录 GHCR 并执行部署
+
+GHCR 为私有仓库时，使用只有 `packages:read` 权限的 GitHub Token。不要把 Token 写进命令行参数或提交到文件：
+
+```bash
+export GHCR_USERNAME='你的 GitHub 用户名'
+read -rsp "GHCR token: " GHCR_TOKEN
+echo
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
+  -u "$GHCR_USERNAME" \
+  --password-stdin
+unset GHCR_TOKEN GHCR_USERNAME
+```
+
+将 `IMAGE_VERSION` 替换为已经通过 CI 的完整 commit SHA 或 release tag，然后执行：
+
+```bash
+cd /home/ubuntu/full-stack-songdian
+IMAGE_VERSION='完整 commit SHA 或 release tag'
+IMAGE_REGISTRY='ghcr.io/zengbbxx11/full-stack-songdian' \
+  bash scripts/deploy.sh "$IMAGE_VERSION"
+```
+
+`scripts/deploy.sh` 会依次执行：
+
+1. 备份当前部署状态。
+2. 拉取 backend、frontend、admin 三个指定版本镜像。
+3. 等待 PostgreSQL 和 Redis 健康。
+4. 执行独立数据库迁移。
+5. 以 `--no-build` 切换应用容器。
+6. 运行后端、官网、管理后台和搜索冒烟检查。
+7. 新版本失败时回滚到上一个已记录的应用版本。
+
+成功时应看到：
+
+```text
+Deployment <commit-sha> completed successfully.
+```
+
+#### 2.3.3 手动部署后的验证
+
+```bash
+cd /home/ubuntu/full-stack-songdian
+
+# 五个服务状态
+docker compose --env-file .env ps
+
+# 确认前端容器内包含 About 页视频、poster 与默认社交图
+docker compose --env-file .env exec -T frontend sh -lc \
+  'test -s /app/public/Video/SongdianFactoryVideo.mp4 && \
+   test -s /app/public/Video/factory-poster.webp && \
+   test -s /app/public/og/og-default.jpg && \
+   ls -lh /app/public/Video/SongdianFactoryVideo.mp4 \
+          /app/public/Video/factory-poster.webp \
+          /app/public/og/og-default.jpg'
+
+# 官网 About 页
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  http://127.0.0.1:3000/about
+
+# 实验性 AI 站点导览：应返回 200 与 text/plain
+curl -sS -D - -o /tmp/songdian-llms.txt \
+  http://127.0.0.1:3000/llms.txt
+
+# 视频 Range 请求：应返回 206、video/mp4 和 content-range
+curl -sS -D - -o /dev/null \
+  -H "Range: bytes=0-1023" \
+  https://www.zsaki.icu/Video/SongdianFactoryVideo.mp4
+```
+
+视频请求正常时应至少包含：
+
+```text
+HTTP/2 206
+content-type: video/mp4
+content-range: bytes 0-1023/<total-size>
+accept-ranges: bytes
+```
+
+如果容器内缺少视频、poster 或默认 OG 图，不要手动从宿主机临时复制到容器中；应检查这些静态源码资产是否进入发布 commit、是否被 `.gitignore` 排除，以及 CI 是否确实构建了对应 frontend 镜像，再重新部署正确的 SHA。
+
+### 2.4 手动现场构建 frontend（备用）
+
+只有在 GHCR 镜像暂时不可用、且本次变更仅涉及 frontend 时，才使用这个备用流程。它不会替代完整生产发布流程，也不会自动完成 backend/admin 镜像切换或数据库迁移。
+
+```bash
+cd /home/ubuntu/full-stack-songdian
+git fetch origin
+git pull --ff-only origin master
+
+test -s frontend/public/Video/SongdianFactoryVideo.mp4 || {
+  echo "ERROR: factory video is missing" >&2
+  exit 1
+}
+
+test -s frontend/public/Video/factory-poster.webp || {
+  echo "ERROR: factory video poster is missing" >&2
+  exit 1
+}
+
+test -s frontend/public/og/og-default.jpg || {
+  echo "ERROR: default social image is missing" >&2
+  exit 1
+}
+
+test -f .env || { echo "ERROR: .env missing" >&2; exit 1; }
+
+docker compose --env-file .env build frontend
+docker compose --env-file .env up -d --no-deps frontend
+docker compose --env-file .env exec -T frontend sh -lc \
+  'test -s /app/public/Video/SongdianFactoryVideo.mp4 && \
+   test -s /app/public/Video/factory-poster.webp && \
+   test -s /app/public/og/og-default.jpg'
+```
+
+如果同时修改了 backend、admin-next 或数据库迁移，不要只构建 frontend；应使用 GHCR 版本镜像配合 `scripts/deploy.sh`，或在隔离环境完整构建并验证全部服务后再发布。
 
 ---
 
@@ -134,6 +282,7 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 | `SEED_CONTENT_CATEGORIES` | 生产保持 `false`；设为 `true` 才额外写入演示分类，绝不删除或覆盖现有产品、新闻及分类 |
 | `CORS_ORIGINS` | 官网 + 后台公网域名，逗号分隔，**禁用通配** |
 | `NEXT_PUBLIC_API_URL` | 浏览器直连的 API 地址（走 OpenResty 反代） |
+| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 仅限本地开发允许图片优化器访问 loopback/局域网地址；生产必须不设置或保持 `false` |
 | `TRUSTED_PROXIES` | 留空时自动识别 Docker 网桥网关；仅自定义反代拓扑时填写可信代理 IP，禁止使用通配符 |
 
 > ⚠️ `.env` 含密钥，已被根目录 `.gitignore` 忽略，绝不入库。
@@ -175,7 +324,7 @@ docker compose build
 
 ### 5.2 本地或隔离环境启动（按健康依赖顺序自动编排）
 
-本节命令用于本地或隔离环境验证 Compose 启动链。正式生产由 GitHub Actions 的 `Deploy production` 工作流调用 `scripts/deploy.sh`，服务器不手工执行应用镜像切换。
+本节命令用于本地或隔离环境验证 Compose 启动链。正式生产无论采用 GitHub Actions 自动发布还是按 2.3 节手动发布，都应由 `scripts/deploy.sh` 负责备份、迁移、应用切换和冒烟检查；不要绕过脚本直接在生产环境启动新版本。
 
 ```bash
 # 先启动数据服务，再显式迁移；迁移失败时不要启动新应用版本
@@ -456,17 +605,30 @@ docker run --rm -v songdian-b2b_uploads_data:/data alpine sh -c "cd /data && tar
 
 ---
 
-## 十一、静态资源补充（视频文件）
+## 十一、官网静态媒体（视频、poster 与默认 OG 图）
 
-About 页面工厂视频已位于仓库 `frontend/public/Video/SongdianFactoryVideo.mp4`。通常随前端镜像构建发布，无需另行上传。
+About 页面工厂视频与 poster、全站默认社交图均为仓库源码资产，通常随前端镜像构建发布，无需另行上传：
 
-```bash
-# 如需替换视频：先在本地覆盖同一路径文件，再提交代码并按“日常更新流程”重建 frontend 镜像。
-git add frontend/public/Video/SongdianFactoryVideo.mp4
-git commit -m "assets: update factory video"
+```text
+frontend/public/Video/SongdianFactoryVideo.mp4
+frontend/public/Video/factory-poster.webp
+frontend/public/og/og-default.jpg
 ```
 
-> 由于前端在容器内以 `next start` 运行，替换视频后需提交代码并由 CI 构建新的 frontend 版本镜像，再通过生产部署工作流发布；也可改用对象存储/CDN 外链。
+```bash
+# 默认 OG 图或 poster 变化时重新生成；替换 MP4 时保留同一路径。
+cd frontend
+npm run generate:social-assets
+cd ..
+
+# 确认三项资产均未被忽略并进入本次提交
+git status --short --untracked-files=all -- \
+  frontend/public/Video/SongdianFactoryVideo.mp4 \
+  frontend/public/Video/factory-poster.webp \
+  frontend/public/og/og-default.jpg
+```
+
+> 由于前端在容器内以 `next start` 运行，替换任一静态媒体后都需提交代码并由 CI 构建新的 frontend 版本镜像，再通过生产部署工作流发布。MP4 的 H.264 profile、音频编码和 fast start 应使用 `ffprobe`/`ffmpeg` 或等效工具复核；仅凭扩展名和浏览器本机可播放不能证明编码要求全部满足。
 
 ---
 
@@ -546,12 +708,12 @@ curl -I https://admin.zsaki.icu/signin
 
 ---
 
-*最后更新：2026-08-26（迁移链 0-15；补齐产品/新闻排序字段；CI 增加迁移后结构校验）*
+*最后更新：2026-08-27（同步默认 OG、Twitter metadata、llms.txt、工厂视频 poster 与静态资产 CI 门禁）*
 ## 本轮实现补充（2026-08-13）
 
 部署前请以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md) 为现状索引：
 
-- CI 构建并推送 GHCR 镜像后，生产按完整 commit SHA/tag 发布；不要在服务器执行现场 `docker compose build` 作为正式发布流程。
+- CI 构建并推送 GHCR 镜像后，生产默认通过 `Deploy production` 工作流，或按「2.3 手动部署已有服务器」在服务器执行 `scripts/deploy.sh`，使用完整 commit SHA/tag 发布；现场 `docker compose build` 仅作为「2.4」所述的 frontend 备用流程。
 - 迁移通过 `docker compose --profile tools run --rm migrate` 单独执行，再启动应用容器；应用启动不会隐式迁移。
 - `/readyz` 同时检查数据库和真实 Redis。生产 Redis 不可用时应停止发布并恢复 Redis，不要把内存降级视为生产可用状态。
 - 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。

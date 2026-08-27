@@ -30,10 +30,10 @@ interface HorizontalTimelineProps {
   items: readonly TimelineItem[];
 }
 
-const BRAND_RED = "#d4343e";
+const BRAND_RED = "var(--accent)";
 const BRAND_RED_SOFT = "#E8555E";
-const CARBON = "#171A20";
-const PEWTER = "#5C5E62";
+const CARBON = "var(--foreground)";
+const PEWTER = "var(--muted-foreground)";
 
 /** 按年份匹配一个 Lucide 图标，让每个里程碑更有辨识度 */
 const YEAR_ICONS: Record<string, LucideIcon> = {
@@ -118,10 +118,10 @@ export default function HorizontalTimeline({ items }: HorizontalTimelineProps) {
                     />
                     <motion.div
                       variants={nodeVariants}
-                      className="relative w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 bg-white group-hover:bg-[#d4343e] transition-colors duration-300 z-10"
+                      className="relative w-12 h-12 rounded-full flex items-center justify-center shrink-0 border-2 bg-white group-hover:bg-[var(--accent)] transition-colors duration-300 z-10"
                       style={{ borderColor: BRAND_RED }}
                     >
-                      <span className="text-xs font-bold text-[#d4343e] group-hover:text-white transition-colors duration-300">
+                      <span className="text-xs font-bold text-[var(--accent)] group-hover:text-white transition-colors duration-300">
                         {i + 1}
                       </span>
                     </motion.div>
@@ -140,7 +140,7 @@ export default function HorizontalTimeline({ items }: HorizontalTimelineProps) {
 
                   {/* 标题 */}
                   <p
-                    className="text-sm font-semibold text-center leading-snug mb-2 transition-colors duration-300 group-hover:text-[#d4343e]"
+                    className="text-sm font-semibold text-center leading-snug mb-2 transition-colors duration-300 group-hover:text-[var(--accent)]"
                     style={{ color: CARBON }}
                   >
                     {item.title}

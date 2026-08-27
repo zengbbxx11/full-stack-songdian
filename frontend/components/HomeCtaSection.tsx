@@ -10,7 +10,7 @@ import { CtaButton } from "@/components/CtaButton";
 export default function HomeCtaSection() {
   return (
     <AnimatedSection>
-      <section className="relative overflow-hidden bg-[#111316] py-20 md:py-32">
+      <section className="relative overflow-hidden bg-[var(--surface-dark)] py-20 md:py-32">
         <div className="absolute inset-0 opacity-20 tech-grid" aria-hidden="true" />
         <div className="site-container relative text-center">
           <p className="section-eyebrow">OEM / ODM partnership</p>
@@ -24,14 +24,14 @@ export default function HomeCtaSection() {
             <CtaButton
               href="/contact"
               ctaLabel="Home - Send an Inquiry"
-              fill="bg-[#d4343e]"
-              className="h-12 border-[#d4343e] bg-white px-8 text-[14px] text-[#171A20] hover:text-white"
+              fill="bg-[var(--accent)]"
+              className="h-12 border-[var(--accent)] bg-white px-8 text-[14px] text-[var(--foreground)] hover:text-white"
             >
               Send an Inquiry
             </CtaButton>
             <Link
               href="/about"
-              className="inline-flex h-12 items-center rounded-xl border border-white/25 bg-transparent px-8 text-sm font-medium text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[#111316]"
+              className="inline-flex h-12 items-center rounded-xl border border-white/25 bg-transparent px-8 text-sm font-medium text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[var(--surface-dark)]"
             >
               About Us
             </Link>

@@ -37,7 +37,7 @@ export default function SolutionsPage() {
   return (
     <>
       {/* ====================== Hero ====================== */}
-      <section className="relative overflow-hidden" style={{ backgroundColor: "#171A20" }}>
+      <section className="relative overflow-hidden" style={{ backgroundColor: "var(--foreground)" }}>
         {/* 细微点阵纹理，增强质感 */}
         <div
           className="absolute inset-0 opacity-[0.05]"
@@ -54,7 +54,7 @@ export default function SolutionsPage() {
         <div className="relative max-w-4xl mx-auto px-6 pb-12 pt-4 text-center md:pb-14 md:pt-2">
           <p
             className="text-xs font-semibold uppercase tracking-[0.22em] mb-4"
-            style={{ color: "#d4343e" }}
+            style={{ color: "var(--accent)" }}
           >
             {hero.eyebrow}
           </p>
@@ -71,13 +71,13 @@ export default function SolutionsPage() {
       </section>
 
       {/* ====================== 三大核心解决方案 ====================== */}
-      <section className="bg-[#F4F4F4] py-16 md:py-24">
+      <section className="bg-[var(--muted)] py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-2xl mb-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] mb-3" style={{ color: "#d4343e" }}>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] mb-3" style={{ color: "var(--accent)" }}>
               Three Core Solutions
             </p>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: "#171A20" }}>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
               One partner, three ways to market
             </h2>
           </div>
@@ -89,7 +89,7 @@ export default function SolutionsPage() {
                 <article
                   key={sol.id}
                   id={sol.id}
-                  className="scroll-mt-24 rounded-2xl border border-[#EEEEEE] bg-white p-8 md:p-10 transition-all duration-300 hover:border-[#d4343e]/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+                  className="scroll-mt-24 rounded-2xl border border-[var(--border)] bg-white p-8 md:p-10 transition-all duration-300 hover:border-[var(--accent)]/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
                 >
                   <div className="md:grid md:grid-cols-2 md:gap-10 md:items-center">
                     {/* 左：标识 + 文案 + CTA */}
@@ -103,20 +103,20 @@ export default function SolutionsPage() {
                         </span>
                         <span
                           className="text-sm font-semibold uppercase tracking-wide"
-                          style={{ color: "#d4343e" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {sol.tagline}
                         </span>
                       </div>
-                      <h3 className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: "#171A20" }}>
+                      <h3 className="text-xl md:text-2xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
                         {sol.title}
                       </h3>
-                      <p className="mt-3 text-sm md:text-base leading-relaxed" style={{ color: "#5C5E62" }}>
+                      <p className="mt-3 text-sm md:text-base leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
                         {sol.summary}
                       </p>
                       <CtaButton
                         href="/contact"
-                        className="mt-6 border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[42px] px-5 text-[14px]"
+                        className="mt-6 border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[42px] px-5 text-[14px]"
                       >
                         Request a Quote
                       </CtaButton>
@@ -128,7 +128,7 @@ export default function SolutionsPage() {
                         <li
                           key={f}
                           className="flex items-start gap-3 text-sm md:text-[15px]"
-                          style={{ color: "#393C41" }}
+                          style={{ color: "var(--graphite)" }}
                         >
                           <span
                             className="flex items-center justify-center w-5 h-5 rounded-full shrink-0 mt-0.5"
@@ -151,7 +151,7 @@ export default function SolutionsPage() {
       {/* ====================== 收尾 CTA ====================== */}
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-6">
-          <div className="rounded-2xl px-8 py-12 md:px-12 text-center" style={{ backgroundColor: "#171A20" }}>
+          <div className="rounded-2xl px-8 py-12 md:px-12 text-center" style={{ backgroundColor: "var(--foreground)" }}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
               Not sure which solution fits?
             </h2>
@@ -162,7 +162,7 @@ export default function SolutionsPage() {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <CtaButton
                 href="/contact"
-                className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-6 text-[14px]"
+                className="border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[44px] px-6 text-[14px]"
               >
                 Request a Quote
               </CtaButton>

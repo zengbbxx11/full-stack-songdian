@@ -7,7 +7,7 @@ export default function NewsDetailLoading() {
   const lineWidths = [85, 72, 64, 80, 58, 76, 69, 82];
   return (
     <>
-      <section className="bg-[#171A20] py-6 md:py-8"><div className="mx-auto max-w-3xl space-y-4 px-6">
+      <section className="bg-[var(--foreground)] py-6 md:py-8"><div className="mx-auto max-w-3xl space-y-4 px-6">
         <div className="skeleton h-8 w-4/5 rounded-full bg-white/10" />
         <div className="skeleton h-8 w-full rounded bg-white/10" /><div className="skeleton h-8 w-3/4 rounded bg-white/10" />
         <div className="skeleton h-4 w-28 rounded bg-white/10" />

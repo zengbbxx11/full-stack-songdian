@@ -24,12 +24,14 @@ sequenceDiagram
         API->>DB: INSERT ContentRevision(version, snapshot, created_by)
         API->>R: 删除列表、详情、旧 slug 与搜索缓存
         API->>F: POST /api/revalidate（内部密钥）
+        Note over API,F: 官网重新生成详情 HTML、Open Graph 与 Twitter metadata
         API-->>A: 更新后的产品与工作流状态
 
         A->>API: POST /api/v1/admin/products/{id}/revisions/{revision_id}/restore
         API->>DB: 保存恢复前快照并恢复目标版本
         API->>R: 再次失效相关缓存
         API->>F: POST /api/revalidate
+        Note over API,F: 封面或 SEO 字段恢复后同步刷新社交卡片
         API-->>A: 恢复结果与新版本号
     end
 
@@ -53,6 +55,9 @@ sequenceDiagram
                 API->>DB: 批量切换为 PUBLISHED
                 API->>R: 失效产品/新闻/搜索缓存
                 API->>F: POST /api/revalidate
+                Note over API,F: 发布后的页面与社交 metadata 一起进入新 ISR 版本
             end
         end
     end
+
+    Note over API,F: /llms.txt 由 frontend 共享公司事实配置生成，不经过 backend 内容 API

@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { CtaButton } from "@/components/CtaButton";
 import { ProductViewTracker } from "@/components/ProductViewTracker";
 import { cleanPostContent } from "@/lib/html-cleaner";
+import { MEDIA } from "@/lib/media";
 import { generateBreadcrumbs, productSchema, safeJsonLd } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 
@@ -42,7 +43,8 @@ export async function generateStaticParams() {
     .map((e) => ({ slug: [e.categorySlug as string, e.slug] }));
 }
 
-// 动态生成该产品的 SEO 元信息（title / description / canonical / Open Graph）
+// 动态生成该产品的 SEO 元信息（title / description / canonical / Open Graph / Twitter）
+// 注意：不显式写 twitter 时，X 会回退到根布局的默认横幅而非产品图（已实测确认缺口）
 export async function generateMetadata({
   params,
 }: {
@@ -70,6 +72,8 @@ export async function generateMetadata({
   const seoTitle = product.seoTitle || product.name;
   const factoryDescription = `${product.name}, manufactured by ${COMPANY.name}, an OEM/ODM digital camera factory.${plainDesc ? ` ${plainDesc}` : ""}`;
   const seoDesc = product.seoDescription || factoryDescription.slice(0, 160).trim();
+  const socialImage = product.images?.[0]?.src || MEDIA.ogImage;
+
   return {
     title: seoTitle,
     description: seoDesc,
@@ -77,8 +81,14 @@ export async function generateMetadata({
     openGraph: {
       title: seoTitle,
       description: seoDesc,
-      images: product.images?.[0]?.src ? [{ url: product.images[0].src, width: 800, height: 800 }] : [],
+      images: [{ url: socialImage, width: product.images?.[0]?.src ? 800 : 1200, height: product.images?.[0]?.src ? 800 : 630 }],
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoTitle,
+      description: seoDesc,
+      images: [socialImage],
     },
   };
 }
@@ -126,7 +136,7 @@ async function RelatedProducts({ categoryId, currentProductId }: { categoryId: n
   if (related.length === 0) return null;
 
   return (
-    <section className="py-14 md:py-20" style={{ backgroundColor: "#F4F4F4" }}>
+    <section className="py-14 md:py-20" style={{ backgroundColor: "var(--muted)" }}>
       <div className="max-w-7xl mx-auto px-6">
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Related Products</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -141,7 +151,7 @@ async function RelatedProducts({ categoryId, currentProductId }: { categoryId: n
 
 function RelatedProductsSkeleton() {
   return (
-    <section className="py-14 md:py-20" style={{ backgroundColor: "#F4F4F4" }}>
+    <section className="py-14 md:py-20" style={{ backgroundColor: "var(--muted)" }}>
       <div className="max-w-7xl mx-auto px-6">
         <div className="skeleton h-8 w-48 rounded mb-8" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -160,20 +170,20 @@ function RelatedProductsSkeleton() {
 function ProductUnavailable({ retryHref }: { retryHref: string }) {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#F4F4F4]">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--muted)]">
         <svg className="h-8 w-8 text-[#8E8E8E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
       </div>
-      <h1 className="mb-3 text-2xl font-bold text-[#171A20]">Product information is temporarily unavailable</h1>
-      <p className="mb-8 max-w-md text-sm text-[#5C5E62]">
+      <h1 className="mb-3 text-2xl font-bold text-[var(--foreground)]">Product information is temporarily unavailable</h1>
+      <p className="mb-8 max-w-md text-sm text-[var(--muted-foreground)]">
         We could not load this product right now. Please try again in a moment.
       </p>
       <div className="flex gap-3">
         <a href={retryHref} className="inline-flex h-[42px] items-center rounded bg-[#3E6AE1] px-6 text-sm font-medium text-white transition-colors hover:bg-[#3561CC]">
           Try again
         </a>
-        <Link href="/products" className="inline-flex h-[42px] items-center rounded border border-[#D0D1D2] px-6 text-sm font-medium text-[#393C41] transition-colors hover:bg-[#F4F4F4]">
+        <Link href="/products" className="inline-flex h-[42px] items-center rounded border border-[#D0D1D2] px-6 text-sm font-medium text-[var(--graphite)] transition-colors hover:bg-[var(--muted)]">
           Browse Products
         </Link>
       </div>
@@ -255,7 +265,7 @@ export default async function ProductDetailPage({
         <ProductViewTracker productName={product.name} productSlug={product.slug} />
 
         {/* 面包屑导航 */}
-        <section className="border-b border-white/10 bg-[#111316] py-5">
+        <section className="border-b border-white/10 bg-[var(--surface-dark)] py-5">
           <div className="site-container">
             <Breadcrumbs items={breadcrumbs} variant="dark" />
           </div>
@@ -285,7 +295,7 @@ export default async function ProductDetailPage({
                     )}
                   </>
                 ) : (
-                  <div className="aspect-square bg-gray-50 border border-[#EEEEEE] flex items-center justify-center text-gray-300" style={{ borderRadius: "12px" }}>
+                  <div className="aspect-square bg-gray-50 border border-[var(--border)] flex items-center justify-center text-gray-300" style={{ borderRadius: "12px" }}>
                     <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     </svg>
@@ -296,7 +306,7 @@ export default async function ProductDetailPage({
               {/* 右栏：产品信息 */}
               <div className="lg:sticky lg:top-28 lg:self-start">
                 <p className="section-eyebrow mb-4">Product Model</p>
-                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.055em] text-[#111316]">
+                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--surface-dark)]">
                   {product.name}
                 </h1>
 
@@ -322,7 +332,7 @@ export default async function ProductDetailPage({
                   <CtaButton
                     href={`/contact?product=${encodeURIComponent(product.slug)}`}
                     ctaLabel="Product Detail - Send Inquiry"
-                    className="h-12 border-[#d4343e] bg-white px-8 text-[14px] text-[#171A20] hover:text-white"
+                    className="h-12 border-[var(--accent)] bg-white px-8 text-[14px] text-[var(--foreground)] hover:text-white"
                   >
                     Send Inquiry
                   </CtaButton>
@@ -335,11 +345,11 @@ export default async function ProductDetailPage({
                 </div>
 
                 {/* OEM/ODM 说明 */}
-                <div className="flex items-center gap-2.5 rounded-xl border border-[#d4343e]/15 bg-[#d4343e]/5 p-4">
-                  <svg className="w-5 h-5 shrink-0 text-[#d4343e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/15 bg-[var(--accent)]/5 p-4">
+                  <svg className="w-5 h-5 shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm text-[#393C41]">
+                  <span className="text-sm text-[var(--graphite)]">
                     Available for OEM/ODM — wholesale pricing upon request
                   </span>
                 </div>
@@ -350,7 +360,7 @@ export default async function ProductDetailPage({
 
         {/* 规格参数 */}
         {specs.length > 0 && (
-          <section className="section-shell bg-[#f5f6f7]">
+          <section className="section-shell bg-[var(--surface-soft)]">
             <div className="site-container max-w-5xl">
               <p className="section-eyebrow">Technical overview</p>
               <h2 className="section-title mb-10 mt-4">Specifications</h2>
@@ -358,10 +368,10 @@ export default async function ProductDetailPage({
                 <table className="w-full">
                   <tbody>
                     {specs.map((spec, i) => (
-                      <tr key={i} className="border-b border-[#EEEEEE] last:border-0">
+                      <tr key={i} className="border-b border-[var(--border)] last:border-0">
                         {spec.label ? (
                           <>
-                            <th scope="row" className="w-[35%] min-w-32 border-r border-[#EEEEEE] bg-gray-50/50 px-4 py-3.5 text-left text-sm font-medium text-gray-500 md:px-6">
+                            <th scope="row" className="w-[35%] min-w-32 border-r border-[var(--border)] bg-gray-50/50 px-4 py-3.5 text-left text-sm font-medium text-gray-500 md:px-6">
                               {spec.label}
                             </th>
                             <td className="min-w-48 px-4 py-3.5 text-sm text-gray-900 md:px-6">{spec.value}</td>

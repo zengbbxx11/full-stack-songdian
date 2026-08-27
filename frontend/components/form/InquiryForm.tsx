@@ -153,7 +153,7 @@ export default function InquiryForm() {
   // 提交成功后的内联成功态（替代原生 alert，体验更顺滑）
   if (submitted) {
     return (
-      <Card className="w-full border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+      <Card className="w-full border-[var(--border)]" style={{ borderRadius: "12px" }}>
         <CardContent className="py-12 md:py-16 text-center px-6">
           <div
             className="w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center"
@@ -181,7 +181,7 @@ export default function InquiryForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Card className="w-full border-[#EEEEEE]" style={{ borderRadius: "12px" }}>
+      <Card className="w-full border-[var(--border)]" style={{ borderRadius: "12px" }}>
         <CardHeader>
           <CardTitle className="text-xl font-bold text-gray-900">Send an Inquiry</CardTitle>
           <CardDescription className="text-sm text-gray-500">
@@ -221,9 +221,9 @@ export default function InquiryForm() {
                           aria-checked={active}
                           onClick={() => field.onChange(cat.value)}
                           className={cn(
-                            "min-h-11 touch-manipulation px-3.5 py-2 text-sm rounded-full border transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]/30",
+                            "min-h-11 touch-manipulation px-3.5 py-2 text-sm rounded-full border transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30",
                             active
-                              ? "border-[#d4343e] bg-[#fdeced] text-[#d4343e] font-medium"
+                              ? "border-[var(--accent)] bg-[#fdeced] text-[var(--accent)] font-medium"
                               : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
                           )}
                         >
@@ -318,7 +318,7 @@ export default function InquiryForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="min-h-11 w-full touch-manipulation active:scale-[0.99] sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[#d4343e] hover:bg-[#b91c1c] text-white"
+                className="min-h-11 w-full touch-manipulation active:scale-[0.99] sm:w-auto px-8 py-3 text-sm font-semibold transition-colors duration-[330ms] bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white"
                 style={{ borderRadius: "4px" }}
               >
                 {isSubmitting ? (

@@ -57,7 +57,7 @@ export default function FAQPage() {
       />
 
       {/* 首屏 —— 仅含面包屑，与其他页面保持一致 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -84,11 +84,11 @@ export default function FAQPage() {
                   >
                     <div className="flex items-center gap-3 mb-5">
                       {CatIcon && (
-                        <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#F4F4F4] text-[#3E6AE1] shrink-0">
+                        <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--muted)] text-[#3E6AE1] shrink-0">
                           <CatIcon className="w-5 h-5" />
                         </span>
                       )}
-                      <h2 className="text-xl md:text-2xl font-semibold text-[#171A20] tracking-tight">
+                      <h2 className="text-xl md:text-2xl font-semibold text-[var(--foreground)] tracking-tight">
                         {category.category}
                       </h2>
                     </div>
@@ -97,15 +97,15 @@ export default function FAQPage() {
                       {category.items.map((faq) => (
                         <details
                           key={faq.question}
-                          className="group rounded-xl border border-[#EEEEEE] bg-white overflow-hidden transition-colors hover:border-[#D0D1D2] group-open:border-[#d4343e]"
+                          className="group rounded-xl border border-[var(--border)] bg-white overflow-hidden transition-colors hover:border-[#D0D1D2] group-open:border-[var(--accent)]"
                         >
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[15px] font-medium text-[#171A20]">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[15px] font-medium text-[var(--foreground)]">
                             <span>{faq.question}</span>
-                            <ChevronDown className="w-5 h-5 shrink-0 text-[#8E8E8E] transition-transform duration-300 group-open:rotate-180 group-open:text-[#d4343e]" />
+                            <ChevronDown className="w-5 h-5 shrink-0 text-[#8E8E8E] transition-transform duration-300 group-open:rotate-180 group-open:text-[var(--accent)]" />
                           </summary>
                           <div
                             className="px-5 pb-5 text-[14px] leading-relaxed"
-                            style={{ color: "#5C5E62" }}
+                            style={{ color: "var(--muted-foreground)" }}
                           >
                             {faq.answer}
                           </div>
@@ -117,15 +117,15 @@ export default function FAQPage() {
               })}
 
               {/* 收尾 CTA —— 找不到答案时引导至联系页 */}
-              <div className="rounded-xl border border-[#EEEEEE] bg-[#F4F4F4] p-8 text-center">
-                <h3 className="text-lg font-semibold text-[#171A20]">Still have questions?</h3>
-                <p className="mt-2 text-sm mx-auto max-w-md" style={{ color: "#5C5E62" }}>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-8 text-center">
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">Still have questions?</h3>
+                <p className="mt-2 text-sm mx-auto max-w-md" style={{ color: "var(--muted-foreground)" }}>
                   Our team typically replies within 24 hours with a free, no-obligation quote.
                 </p>
                 <CtaButton
                   href="/contact"
                   ctaLabel="FAQ - Contact Our Team"
-                  className="mt-5 border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[46px] px-6 text-[14px]"
+                  className="mt-5 border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[46px] px-6 text-[14px]"
                 >
                   Contact Our Team
                 </CtaButton>

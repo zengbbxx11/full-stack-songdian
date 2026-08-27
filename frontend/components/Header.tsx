@@ -39,11 +39,11 @@ const NAV_LINKS: NavLink[] = [
 ];
 
 const COLORS = {
-  carbonDark: "#171A20",
+  carbonDark: "var(--foreground)",
   electricBlue: "#3E6AE1",
   electricBlueHover: "#3457B8",
-  brandRed: "#d4343e",
-  brandRedHover: "#b91c1c",
+  brandRed: "var(--accent)",
+  brandRedHover: "var(--accent-hover)",
   white: "#FFFFFF",
 } as const;
 
@@ -158,7 +158,7 @@ export default function Header() {
                   <Link
                     href={item.href}
                     onClickCapture={resetScrollForNavigation}
-                    className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[#171A20] hover:bg-[#f7f7f8] hover:text-[#d4343e] transition-colors duration-[330ms]"
+                    className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[var(--foreground)] hover:bg-[#f7f7f8] hover:text-[var(--accent)] transition-colors duration-[330ms]"
                     style={
                       isActive
                         ? { fontWeight: 600, color: COLORS.brandRed, borderRadius: "4px" }
@@ -198,7 +198,7 @@ export default function Header() {
                           key={child.label}
                           href={child.href}
                           onClickCapture={resetScrollForNavigation}
-                          className="flex items-center px-4 py-2.5 mx-1 text-[15px] rounded-md hover:bg-gray-50 text-[#171A20] hover:text-[#d4343e] transition-colors duration-[150ms]"
+                          className="flex items-center px-4 py-2.5 mx-1 text-[15px] rounded-md hover:bg-gray-50 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors duration-[150ms]"
                           style={{ fontSize: "15px", fontWeight: 400 }}
                         >
                           {child.label}
@@ -216,15 +216,15 @@ export default function Header() {
             <InstantSearch className="hidden md:block" />
             <InteractiveHoverButton
               onClick={() => router.push("/contact")}
-              fill="bg-[#d4343e]"
-              className="hidden md:inline-flex border-[#d4343e] bg-white text-[#171A20] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
+              fill="bg-[var(--accent)]"
+              className="hidden md:inline-flex border-[var(--accent)] bg-white text-[var(--foreground)] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
             >
               Request Quote
             </InteractiveHoverButton>
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden flex h-11 w-11 touch-manipulation items-center justify-center rounded transition-colors hover:bg-[#f5f6f7] active:bg-[#eceef1]"
+              className="md:hidden flex h-11 w-11 touch-manipulation items-center justify-center rounded transition-colors hover:bg-[var(--surface-soft)] active:bg-[#eceef1]"
               style={{ borderRadius: "4px" }}
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
@@ -272,20 +272,20 @@ export default function Header() {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 onClickCapture={resetScrollForNavigation}
-                className="block min-h-11 touch-manipulation rounded px-4 py-3 text-[16px] font-medium text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:bg-[#f5f6f7] active:text-[#d4343e]"
+                className="block min-h-11 touch-manipulation rounded px-4 py-3 text-[16px] font-medium text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:bg-[var(--surface-soft)] active:text-[var(--accent)]"
                 style={{ fontSize: "16px", fontWeight: 500, borderRadius: "4px" }}
               >
                 {item.label}
               </Link>
               {item.children && (
-                <div className="ml-4 mt-1 space-y-1 pl-4" style={{ borderLeft: "2px solid #EEEEEE" }}>
+                <div className="ml-4 mt-1 space-y-1 pl-4" style={{ borderLeft: "2px solid var(--border)" }}>
                   {item.children.map((child) => (
                     <Link
                       key={child.label}
                       href={child.href}
                       onClick={() => setMobileOpen(false)}
                       onClickCapture={resetScrollForNavigation}
-                      className="block min-h-11 touch-manipulation rounded px-3 py-2.5 text-[15px] font-normal text-[#171A20] transition-colors duration-[330ms] hover:text-[#d4343e] active:bg-[#f5f6f7] active:text-[#d4343e]"
+                      className="block min-h-11 touch-manipulation rounded px-3 py-2.5 text-[15px] font-normal text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:bg-[var(--surface-soft)] active:text-[var(--accent)]"
                       style={{ fontSize: "15px", fontWeight: 400, borderRadius: "4px" }}
                     >
                       {child.label}
@@ -300,11 +300,11 @@ export default function Header() {
             <InstantSearch />
           </div>
 
-          <div className="pt-5 mt-3" style={{ borderTop: "1px solid #EEEEEE" }}>
+          <div className="pt-5 mt-3" style={{ borderTop: "1px solid var(--border)" }}>
             <InteractiveHoverButton
               onClick={() => { setMobileOpen(false); router.push("/contact"); }}
-              fill="bg-[#d4343e]"
-              className="block w-full border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-6 text-[15px]"
+              fill="bg-[var(--accent)]"
+              className="block w-full border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[44px] px-6 text-[15px]"
             >
               Request Quote
             </InteractiveHoverButton>

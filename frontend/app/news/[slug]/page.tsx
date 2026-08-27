@@ -18,6 +18,7 @@ import PostCard from "@/components/PostCard";
 import { generateBreadcrumbs, articleSchema, safeJsonLd } from "@/lib/seo";
 import { formatDate } from "@/lib/api/client";
 import { cleanPostContent } from "@/lib/html-cleaner";
+import { MEDIA } from "@/lib/media";
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成文章详情
 export const revalidate = 60;
@@ -28,7 +29,8 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-// 动态生成该文章的 SEO 元信息（title / description / canonical / Open Graph）
+// 动态生成该文章的 SEO 元信息（title / description / canonical / Open Graph / Twitter）
+// 注意：不显式写 twitter 时，X 会回退到根布局的默认横幅而非文章封面
 export async function generateMetadata({
   params,
 }: {
@@ -37,14 +39,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Post Not Found" };
+  const desc = post.excerpt?.slice(0, 160);
+  const socialImage = post.featuredImage || MEDIA.ogImage;
   return {
     title: post.title,
-    description: post.excerpt?.slice(0, 160),
+    description: desc,
     alternates: { canonical: `/news/${slug}` },
     openGraph: {
-      title: post.title, description: post.excerpt?.slice(0, 160),
-      images: post.featuredImage ? [{ url: post.featuredImage, width: 1200, height: 630 }] : [],
+      title: post.title, description: desc,
+      images: [{ url: socialImage, width: 1200, height: 630 }],
       type: "article", publishedTime: post.date, modifiedTime: post.modified, authors: [post.author],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: desc,
+      images: [socialImage],
     },
   };
 }
@@ -87,7 +97,7 @@ export default async function NewsDetailPage({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(schema) }} />
 
-      <section className="py-6 md:py-8" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-6 md:py-8" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-3xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
 
@@ -136,12 +146,12 @@ export default async function NewsDetailPage({
 
           {/* 标签 —— 背景 #F4F4F4、文字 #5C5E62 */}
           {post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-14 pt-10 border-t border-[#EEEEEE]">
+            <div className="flex flex-wrap gap-2 mt-14 pt-10 border-t border-[var(--border)]">
               {post.tags.map((tag) => (
                 <span
                   key={tag.id}
                   className="text-xs px-3 py-1.5 rounded-full"
-                  style={{ backgroundColor: "#F4F4F4", color: "#5C5E62" }}
+                  style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}
                 >
                   #{tag.name}
                 </span>
@@ -155,15 +165,15 @@ export default async function NewsDetailPage({
               {prevPost ? (
                 <Link
                   href={`/news/${prevPost.slug}`}
-                  className="group flex flex-col gap-1 rounded-xl border border-[#EEEEEE] px-5 py-4 transition-colors hover:border-[#d4343e]"
+                  className="group flex flex-col gap-1 rounded-xl border border-[var(--border)] px-5 py-4 transition-colors hover:border-[var(--accent)]"
                 >
-                  <span className="flex items-center gap-1.5 text-xs" style={{ color: "#5C5E62" }}>
+                  <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--muted-foreground)" }}>
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                     Previous
                   </span>
-                  <span className="text-[15px] font-medium leading-snug text-[#171A20] transition-colors group-hover:text-[#d4343e]">
+                  <span className="text-[15px] font-medium leading-snug text-[var(--foreground)] transition-colors group-hover:text-[var(--accent)]">
                     {prevPost.title}
                   </span>
                   <span className="text-xs mt-0.5" style={{ color: "#8E8E8E" }}>{prevPost.date}</span>
@@ -175,15 +185,15 @@ export default async function NewsDetailPage({
               {nextPost ? (
                 <Link
                   href={`/news/${nextPost.slug}`}
-                  className="group flex flex-col gap-1 rounded-xl border border-[#EEEEEE] px-5 py-4 sm:items-end sm:text-right transition-colors hover:border-[#d4343e]"
+                  className="group flex flex-col gap-1 rounded-xl border border-[var(--border)] px-5 py-4 sm:items-end sm:text-right transition-colors hover:border-[var(--accent)]"
                 >
-                  <span className="flex items-center gap-1.5 text-xs" style={{ color: "#5C5E62" }}>
+                  <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--muted-foreground)" }}>
                     Next
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </span>
-                  <span className="text-[15px] font-medium leading-snug text-[#171A20] transition-colors group-hover:text-[#d4343e]">
+                  <span className="text-[15px] font-medium leading-snug text-[var(--foreground)] transition-colors group-hover:text-[var(--accent)]">
                     {nextPost.title}
                   </span>
                   <span className="text-xs mt-0.5" style={{ color: "#8E8E8E" }}>{nextPost.date}</span>
@@ -212,7 +222,7 @@ export default async function NewsDetailPage({
 
       {/* 相关文章 */}
       {related.length > 0 && (
-        <section className="py-16 md:py-20 bg-gray-50 border-t border-[#EEEEEE]">
+        <section className="py-16 md:py-20 bg-gray-50 border-t border-[var(--border)]">
           <div className="max-w-5xl mx-auto px-6">
             <h2 className="text-xl md:text-2xl font-medium text-gray-900 tracking-normal mb-8">
               More Articles

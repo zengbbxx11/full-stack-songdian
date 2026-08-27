@@ -1,45 +1,90 @@
 sequenceDiagram
     autonumber
-    participant U as 浏览器
-    participant P as 产品详情 Server Component
-    participant C as apiFetch / ApiError
+    participant U as 浏览器/社交爬虫
+    participant P as 产品或新闻详情 Server Component
+    participant C as apiFetch / React cache
     participant B as FastAPI
+    participant M as MEDIA 默认社交图
 
-    U->>P: GET /products/{category}/{slug}
-    P->>C: getProductBySlug(slug)
-    C->>B: GET /api/v1/products/{slug}
-    alt 请求成功
-        B-->>C: Result{code:"0",data:ProductDetail}
-        C-->>P: ProductDetail
-        P-->>U: 产品 HTML（ISR）
-    else 真实不存在
-        B-->>C: HTTP 404 或 code=A010001
-        C-->>P: ApiError(status/code/path)
-        P->>P: notFound()
-        P-->>U: 标准 404 + noindex
-    else 网络、429、5xx 或非法响应
-        B--xC: 暂时不可用
-        C-->>P: ApiError(status/code/path/cause)
-        P-->>U: ProductUnavailable + Retry
+    rect rgb(245, 247, 250)
+        Note over U,M: 详情页 HTML 与社交 metadata
+        U->>P: GET 产品或新闻详情 URL
+        P->>C: getProductBySlug / getPostBySlug
+        C->>B: GET /api/v1/products|news/{slug}
+        alt 请求成功且有内容图
+            B-->>C: Result{code:"0", data, cover image}
+            C-->>P: ProductDetail / PostDetail
+            P->>P: 生成 canonical、Open Graph、Twitter
+            P-->>U: ISR HTML + 内容图 og:image/twitter:image
+        else 请求成功但无内容图
+            B-->>C: Result{code:"0", data, no cover image}
+            C-->>P: ProductDetail / PostDetail
+            P->>M: 读取 /og/og-default.jpg
+            M-->>P: 1200×630 默认品牌图
+            P-->>U: ISR HTML + 默认 og:image/twitter:image
+        else 真实不存在
+            B-->>C: HTTP 404 或 code=A010001
+            C-->>P: ApiError(status/code/path)
+            P->>P: notFound()
+            P-->>U: 标准 404 + noindex
+        else 网络、429、5xx 或非法响应
+            B--xC: 暂时不可用
+            C-->>P: ApiError(status/code/path/cause)
+            P-->>U: ProductUnavailable + Retry
+        end
+    end
+
+    participant L as /llms.txt Route Handler
+    participant D as content-data COMPANY
+
+    rect rgb(255, 248, 245)
+        Note over U,D: 实验性 AI 站点导览
+        U->>L: GET /llms.txt
+        L->>D: 读取公开公司事实
+        D-->>L: 法律实体 2023、母公司/集团历史 2006、联系方式
+        L-->>U: text/plain Markdown + 1h cache
+        Note over L,D: 页面目录由路由维护；不把 llms.txt 视为正式标准或排名保证
+    end
+
+    participant Dev as 开发者
+    participant G as generate:social-assets
+    participant V as verify:seo
+    participant CI as GitHub Actions / Docker build
+
+    rect rgb(245, 252, 247)
+        Note over Dev,CI: 静态社交资产生成与云端门禁
+        Dev->>G: npm run generate:social-assets
+        G-->>Dev: og-default.jpg + factory-poster.webp
+        Dev->>V: npm run verify:seo
+        V->>V: 校验 metadata、实体年份、图片策略、尺寸与体积
+        V-->>Dev: SEO/GEO contract passed
+        Dev->>CI: push 完整 commit
+        CI->>V: 在干净 checkout 中再次校验
+        CI->>CI: Dockerfile 检查 MP4、poster、默认 OG 图
+        CI-->>Dev: 生成 frontend SHA 镜像
     end
 
     participant A as 管理后台
-    participant V as /preview/[token]
-    A->>U: 打开短期预览 URL
-    U->>V: GET /preview/{signed-token}
-    V->>B: GET /api/v1/preview/{token} (no-store)
-    alt token 有效
-        B-->>V: 草稿产品/新闻数据
-        V-->>U: noindex 预览页面
-    else token 过期或无效
-        B-->>V: 401/404
-        V-->>U: 预览不可用提示
+    participant R as /preview/[token]
+
+    rect rgb(247, 246, 255)
+        Note over A,B: 草稿预览不进入公开索引
+        A->>U: 打开短期预览 URL
+        U->>R: GET /preview/{signed-token}
+        R->>B: GET /api/v1/preview/{token} (no-store)
+        alt token 有效
+            B-->>R: 草稿产品/新闻数据
+            R-->>U: noindex 预览页面
+        else token 过期或无效
+            B-->>R: 401/404
+            R-->>U: 预览不可用提示
+        end
     end
 
-    participant R as WebVitalsReporter
-    U->>R: 页面性能指标生成
+    participant W as WebVitalsReporter
+    U->>W: 页面性能指标生成
     alt 已接受 Analytics 且配置 GA4
-        R->>R: 上报 LCP/CLS/INP/FCP/TTFB
+        W->>W: 上报 LCP/CLS/INP/FCP/TTFB
     else 未同意或未配置
-        R-->>U: 不发送分析数据
+        W-->>U: 不发送分析数据
     end

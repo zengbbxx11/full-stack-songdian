@@ -48,3 +48,4 @@ next-env.d.ts
 # in Git because production images are built from a clean CI checkout.
 /public/Video/*
 !/public/Video/SongdianFactoryVideo.mp4
+!/public/Video/factory-poster.webp

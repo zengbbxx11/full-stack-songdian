@@ -5,9 +5,11 @@ import { useRef, useState } from "react";
 import { CircleAlert, LoaderCircle, Play, Video } from "lucide-react";
 
 interface FactoryVideoProps {
-  /** 视频地址（通常来自 WordPress 媒体库） */
+  /** 视频地址（MP4 / H.264，兼容性兜底格式） */
   src: string;
-  /** 可选封面图（WordPress 媒体 URL）。不传则用品牌渐变占位。 */
+  /** 可选 WebM（VP9/AV1）地址。提供时作为首选源，MP4 自动兜底 */
+  webmSrc?: string;
+  /** 封面图。不传则用品牌渐变占位。 */
   poster?: string;
   /** 播放按钮的无障碍标签 */
   label?: string;
@@ -22,6 +24,7 @@ interface FactoryVideoProps {
  */
 export default function FactoryVideo({
   src,
+  webmSrc,
   poster,
   label = "Play the factory tour video",
   className = "",
@@ -43,7 +46,7 @@ export default function FactoryVideo({
 
   return (
     <div
-      className={`relative aspect-video w-full overflow-hidden bg-gradient-to-br from-[#171A20] to-[#393C41] ${className}`}
+      className={`relative aspect-video w-full overflow-hidden bg-gradient-to-br from-[var(--foreground)] to-[var(--graphite)] ${className}`}
       style={{
         borderRadius: "16px",
         boxShadow: "0 18px 50px -20px rgba(23,26,32,0.45)",
@@ -51,15 +54,17 @@ export default function FactoryVideo({
     >
       <video
         ref={videoRef}
-        src={src}
         poster={poster}
         controls={status === "playing"}
         playsInline
-        preload="metadata"
+        preload="none"
         onPlaying={() => setStatus("playing")}
         onError={() => setStatus("error")}
         className="absolute inset-0 h-full w-full bg-black object-cover"
-      />
+      >
+        {webmSrc && <source src={webmSrc} type="video/webm" />}
+        <source src={src} type="video/mp4" />
+      </video>
 
       {status === "idle" && (
         <button
@@ -79,7 +84,7 @@ export default function FactoryVideo({
             aria-hidden
           />
           {/* 播放按钮 */}
-          <span className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white text-[#171A20] shadow-xl transition-transform duration-300 group-hover:scale-110">
+          <span className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white text-[var(--foreground)] shadow-xl transition-transform duration-300 group-hover:scale-110">
             <Play className="h-8 w-8 translate-x-0.5 fill-current" />
           </span>
         </button>
@@ -100,7 +105,7 @@ export default function FactoryVideo({
 
       {status === "error" && (
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#171A20] px-6 text-center text-white"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--foreground)] px-6 text-center text-white"
           role="alert"
         >
           <CircleAlert className="h-8 w-8" aria-hidden />
@@ -108,7 +113,7 @@ export default function FactoryVideo({
           <button
             type="button"
             onClick={handlePlay}
-            className="rounded-full border border-white/50 px-4 py-2 text-xs font-semibold transition-colors hover:bg-white hover:text-[#171A20]"
+            className="rounded-full border border-white/50 px-4 py-2 text-xs font-semibold transition-colors hover:bg-white hover:text-[var(--foreground)]"
           >
             Try again
           </button>

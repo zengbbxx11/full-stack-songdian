@@ -38,12 +38,12 @@ export default function ProductSortControls({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <label htmlFor="product-sort" className="text-sm text-[#5C5E62] shrink-0">Sort:</label>
+      <label htmlFor="product-sort" className="text-sm text-[var(--muted-foreground)] shrink-0">Sort:</label>
       <select
         id="product-sort"
         value={active}
         onChange={handleChange}
-        className="text-sm border border-[#EEEEEE] rounded px-3 py-2 bg-white text-[#393C41] cursor-pointer focus:outline-none focus:border-[#3E6AE1] transition-colors"
+        className="text-sm border border-[var(--border)] rounded px-3 py-2 bg-white text-[var(--graphite)] cursor-pointer focus:outline-none focus:border-[#3E6AE1] transition-colors"
         style={{ borderRadius: "4px" }}
       >
         {SORT_OPTIONS.map((opt) => (

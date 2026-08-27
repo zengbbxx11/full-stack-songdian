@@ -20,11 +20,11 @@ import { cn } from "@/lib/utils";
 const KIND_META: Record<SearchResultItem["kind"], { label: string; className: string }> = {
   product: {
     label: "Product",
-    className: "bg-[#d4343e] text-white border-transparent",
+    className: "bg-[var(--accent)] text-white border-transparent",
   },
   news: {
     label: "News",
-    className: "bg-[#171A20] text-white border-transparent",
+    className: "bg-[var(--foreground)] text-white border-transparent",
   },
 };
 
@@ -39,14 +39,14 @@ export default function SearchResultCard({ item, preload = false }: { item: Sear
       href={item.url}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-xl bg-white",
-        "border border-[#EEEEEE]",
+        "border border-[var(--border)]",
         // hover：轻微上浮 + 阴影过渡 + 边框转蓝（对齐站点 hover 规范）
         "transition-all duration-300 ease-out",
-        "touch-manipulation hover:-translate-y-1 hover:border-[#d4343e] hover:shadow-xl active:scale-[0.99] focus-visible:border-[#d4343e]"
+        "touch-manipulation hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-xl active:scale-[0.99] focus-visible:border-[var(--accent)]"
       )}
     >
       {/* ====================== 封面图区域 ====================== */}
-      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#F4F4F4]">
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[var(--muted)]">
         {item.coverImage && !imgError ? (
           <Image
             src={item.coverImage}
@@ -72,12 +72,12 @@ export default function SearchResultCard({ item, preload = false }: { item: Sear
 
       {/* ====================== 内容区域 ====================== */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#171A20] transition-colors duration-300 group-hover:text-[#d4343e] group-focus-visible:text-[#d4343e]">
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--foreground)] transition-colors duration-300 group-hover:text-[var(--accent)] group-focus-visible:text-[var(--accent)]">
           {item.title}
         </h3>
 
         {item.summary && (
-          <p className="line-clamp-2 text-[13px] leading-relaxed text-[#5C5E62]">
+          <p className="line-clamp-2 text-[13px] leading-relaxed text-[var(--muted-foreground)]">
             {item.summary}
           </p>
         )}

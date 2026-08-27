@@ -40,7 +40,7 @@ export default function AboutPage() {
   return (
     <>
       {/* 区块 1 —— 仅含面包屑 */}
-      <section className="py-5" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-5" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
@@ -52,7 +52,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
             {/* 左栏 —— 品牌故事 */}
             <div className="lg:col-span-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
                 Who We Are
               </p>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-6">
@@ -76,9 +76,9 @@ export default function AboutPage() {
 
             {/* 右栏 —— 紧凑数据统计条（细线网格，无卡片） */}
             {/* lg 以上用左侧细竖线 + 左内边距，与左栏品牌故事形成「两栏一体」的视觉关系 */}
-            <div className="lg:col-span-5 lg:border-l lg:border-[#EEEEEE] lg:pl-16">
+            <div className="lg:col-span-5 lg:border-l lg:border-[var(--border)] lg:pl-16">
               {/* 与左栏 "Who We Are" 呼应的小标题，建立左右两栏的对称节奏 */}
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
                 By the Numbers
               </p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:gap-x-10">
@@ -90,7 +90,7 @@ export default function AboutPage() {
                         ? "border-t-2 pt-4" /* 首项焦点：品牌红加粗细线 */
                         : "border-t border-[#E5E5E5] pt-4"
                     }
-                    style={idx === 0 ? { borderTopColor: "#d4343e" } : undefined}
+                    style={idx === 0 ? { borderTopColor: "var(--accent)" } : undefined}
                   >
                     <AnimatedCounter
                       target={stat.value}
@@ -101,7 +101,7 @@ export default function AboutPage() {
                     />
                     <p
                       className="text-xs mt-2 font-medium uppercase tracking-wide"
-                      style={{ color: "#5C5E62" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       {stat.label}
                     </p>
@@ -125,7 +125,7 @@ export default function AboutPage() {
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           {/* 品牌红 eyebrow + 区块标题，与「Who We Are / By the Numbers」的视觉语言呼应 */}
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "#d4343e" }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
             Manufacturing Excellence
           </p>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-10">
@@ -138,23 +138,24 @@ export default function AboutPage() {
             {ABOUT.manufacturing.map((block) => (
               <div
                 key={block.title}
-                className="p-8 bg-white border border-[#EEEEEE] hover:border-[#D0D1D2] transition-colors"
+                className="p-8 bg-white border border-[var(--border)] hover:border-[#D0D1D2] transition-colors"
                 style={{ borderRadius: "12px", transitionDuration: "0.33s" }}
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">{block.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#5C5E62" }}>{block.body}</p>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{block.body}</p>
               </div>
             ))}
           </div>
 
-          {/* 工厂视频 */}
+          {/* 工厂视频（带封面，点击后才加载视频流量） */}
           <FactoryVideo
             src={MEDIA.factoryVideo}
+            poster={MEDIA.factoryVideoPoster}
             label="Play Songdian factory tour video"
           />
           <p
             className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed"
-            style={{ color: "#5C5E62" }}
+            style={{ color: "var(--muted-foreground)" }}
           >
             {ABOUT.factory.caption}
           </p>
@@ -165,7 +166,7 @@ export default function AboutPage() {
       <section className="py-16 md:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <SectionHeading className="mb-3">Certifications &amp; Compliance</SectionHeading>
-          <p className="mb-10 text-sm" style={{ color: "#5C5E62" }}>
+          <p className="mb-10 text-sm" style={{ color: "var(--muted-foreground)" }}>
             Click any certificate to view the full image.
           </p>
           <CertificateGallery items={ABOUT.certificationImages} />
@@ -173,7 +174,7 @@ export default function AboutPage() {
       </section>
 
       {/* 区块 7 —— 行动号召（电光蓝） */}
-      <section className="py-16 md:py-24" style={{ backgroundColor: "#171A20" }}>
+      <section className="py-16 md:py-24" style={{ backgroundColor: "var(--foreground)" }}>
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-white tracking-tight mb-4" style={{ fontSize: "30px", fontWeight: 500, color: "#FFFFFF" }}>
             Ready to Partner With Us?
@@ -183,7 +184,7 @@ export default function AboutPage() {
           </p>
           <CtaButton
             href="/contact"
-            className="border-[#d4343e] bg-white text-[#171A20] shadow-sm h-[44px] px-8 text-[14px]"
+            className="border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[44px] px-8 text-[14px]"
           >
             Get in Touch
           </CtaButton>

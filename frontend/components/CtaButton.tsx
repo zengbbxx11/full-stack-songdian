@@ -21,7 +21,7 @@ interface CtaButtonProps {
   ctaLabel?: string;
 }
 
-export function CtaButton({ href, children, className, fill = "bg-[#d4343e]", ctaLabel }: CtaButtonProps) {
+export function CtaButton({ href, children, className, fill = "bg-[var(--accent)]", ctaLabel }: CtaButtonProps) {
   const router = useRouter();
 
   function handleClick() {

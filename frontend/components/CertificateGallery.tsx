@@ -62,7 +62,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
             type="button"
             onClick={() => setActiveIndex(i)}
             aria-label={`View ${cert.title} certificate in full size`}
-            className="group flex touch-manipulation flex-col overflow-hidden border border-[#EEEEEE] bg-white text-left transition-all hover:border-[#d4343e] hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4343e]"
+            className="group flex touch-manipulation flex-col overflow-hidden border border-[var(--border)] bg-white text-left transition-all hover:border-[var(--accent)] hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             style={{ borderRadius: "12px", transitionDuration: "0.33s" }}
           >
             {/* 缩略图区域：固定高度、白底、图片完整居中 */}
@@ -78,7 +78,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
             {/* 标题 + 说明 */}
             <div className="border-t border-[#F2F2F2] px-3 pb-3 pt-2">
               <div className="text-sm font-semibold text-gray-900">{cert.title}</div>
-              <div className="mt-0.5 text-[11px] leading-snug" style={{ color: "#5C5E62" }}>
+              <div className="mt-0.5 text-[11px] leading-snug" style={{ color: "var(--muted-foreground)" }}>
                 {cert.description}
               </div>
             </div>

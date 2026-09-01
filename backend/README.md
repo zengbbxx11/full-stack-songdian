@@ -1,6 +1,6 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-> 当前状态（2026-08-26）：最新迁移为 `15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+> 当前状态（2026-09-01）：最新迁移为 `15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。媒体接口支持引用查询、历史引用同步和按 URL 路径自动归类。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
@@ -164,7 +164,7 @@ pytest tests/ -q
 | M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs |
 | M5 内容 | GET/POST/PUT/DELETE | /admin/users、/admin/users/list、/admin/stats |
 | 设置 | GET/PUT/POST | /public/settings、/admin/settings、/admin/settings/smtp/test |
-| 上传/媒体库 | GET/POST/PUT/DELETE | /admin/upload、/admin/upload/batch、/admin/upload/records、/admin/albums |
+| 上传/媒体库 | GET/POST/PUT/DELETE | /admin/upload、/admin/upload/batch、/admin/upload/records、/admin/upload/{id}/usage、/admin/upload/sync、/admin/upload/auto-categorize、/admin/albums |
 | 系统 | GET | /healthz、/readyz |
 
 ---
@@ -177,6 +177,12 @@ pytest tests/ -q
 - 用户和运营：`GET /admin/users/list`、`GET /admin/stats` 提供用户列表和 Dashboard 统计；系统设置还提供 `POST /admin/settings/smtp/test` SMTP 测试发送。
 
 上述路由均位于 `/api/v1` 前缀下，并继续受 JWT Cookie、RBAC 和审计策略约束。
+
+### 媒体引用与归档
+
+- `GET /admin/upload/{id}/usage` 返回素材被产品图库、产品封面和新闻封面引用的数量与明细；被引用素材通过删除接口删除时需要显式 `force=true`，否则后端拒绝操作。
+- `POST /admin/upload/sync` 扫描产品/新闻中已引用但尚未建立 `UploadRecord` 的 URL，补齐媒体库记录；`POST /admin/upload/auto-categorize` 仅整理未分类记录，不移动物理文件。
+- 产品/新闻表单可传 `categorize=product:{slug}` 或 `categorize=news:{slug}`，后端自动创建或复用 `Products / {slug}`、`News / {slug}` 子相册。相册是逻辑归档，LocalStorageBackend 仍按年份/UUID 保存文件并返回 `/uploads/{year}/{uuid}.ext` URL。
 
 ## 6. 关键设计决策
 

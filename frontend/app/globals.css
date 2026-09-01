@@ -475,7 +475,7 @@ html {
 }
 
 /* 键盘焦点可见性 — 统一焦点环，提升键盘/读屏可达性（a11y） */
-:focus-visible {
+:focus-visible:not([data-focus-visible="none"]) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

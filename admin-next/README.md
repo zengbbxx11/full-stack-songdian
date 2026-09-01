@@ -1,6 +1,6 @@
 # Songdian B2B — 工厂外贸官网（管理后台）
 
-> 当前状态（2026-08-26）：产品与新闻编辑已接入草稿、定时/立即发布、版本历史、恢复和 15 分钟短期预览；询盘 CRM、通知、用户、设置和审计页面也已接入后端 API。当前部署与迁移说明以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
+> 当前状态（2026-09-01）：产品与新闻编辑已接入草稿、定时/立即发布、版本历史、恢复和 15 分钟短期预览；询盘 CRM、通知、用户、设置和审计页面也已接入后端 API。媒体库支持查看图片引用位置和内容归档提示。当前部署与迁移说明以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。
 
 松典科技 B2B 平台的管理后台，基于 **Next.js 16 + React 19 + Tailwind CSS v4**，通过项目自有 **FastAPI 后端** 提供数据服务。用于管理产品、新闻、分类、询盘和媒体资源。
 
@@ -65,7 +65,7 @@ admin-next/
 │   │   │   ├── news/             # 新闻列表（拖拽排序/删除）
 │   │   │   ├── categories/       # 分类列表（含产品计数）
 │   │   │   ├── inquiries/        # 询盘列表
-│   │   │   ├── media/            # 媒体库（上传/分类/复制URL）
+│   │   │   ├── media/            # 媒体库（上传/归档/使用情况/复制URL）
 │   │   │   ├── account/          # 账号设置（改用户名/改密码）
 │   │   │   ├── users/            # 用户管理（创建/删除/重置密码）
 │   │   │   ├── settings/         # 系统设置与 SMTP 测试
@@ -112,7 +112,7 @@ admin-next/
 | 内容发布工作流 | DRAFT / SCHEDULED / PUBLISHED、发布时间校验、到期发布、版本历史、恢复和 15 分钟签名预览 |
 | 询盘 CRM | 查看来源/UTM 归因，更新状态、分配负责人、记录跟进时间和跟进备注 |
 | 通知中心 | 30 秒轮询新询盘、超时未跟进和 SMTP 失败通知，支持逐条或全部标记已读 |
-| 媒体管理 | 图片上传、分类管理、复制 URL |
+| 媒体管理 | 图片上传、Products/News 子相册归档、查看引用位置、删除风险提示、复制 URL |
 | 用户管理 | 用户列表、创建、删除和重置密码 |
 | 系统设置 | 站点设置和询盘 SMTP 配置，支持测试发送 |
 | 审计日志 | 查看管理员操作记录 |
@@ -138,6 +138,9 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 不读取或保存 JWT 到 `localStorage`；浏览器同源请求自动携带 HttpOnly Cookie。
 - **数据获取统一用 SWR + 共享 api-client**：根布局已用 `SWRProvider` 注入全局 `fetcher`（`swrFetcher`，复用 `apiFetch` 鉴权 + 信封解包）。所有列表页（products / news / categories / inquiries / media）均已迁移为 `useSWR(path)` 拉取，本地派生用 `useMemo`，变更后 `mutate()` 重校（不再手写 `useEffect+setState` 样板）。共享类型集中在 `src/types/index.ts`。
 - 媒体库（`/media`）已改为 API 驱动：通过 `GET /api/v1/admin/upload/records` 分页获取上传记录，上传仍走 `POST /api/v1/admin/upload`。
+- 媒体库每条素材支持“查看使用情况”：调用 `GET /api/v1/admin/upload/{id}/usage`，展示产品图库、产品封面和新闻封面的引用数量与名称，并可跳转到对应编辑页；引用信息按素材缓存，删除前仍由后端执行引用保护。
+- 产品/新闻编辑页上传封面或图库图片时，会通过 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入 `Products / {slug}` 或 `News / {slug}` 子相册。没有 slug 时进入“未分类”；相册只是管理归属，不会改写返回的媒体 URL。
+- 媒体库的“同步引用图片”用于补齐历史内容中尚未建立 `UploadRecord` 的引用，“自动归类”用于按已有媒体 URL 路径整理未分类素材；两者都不会移动物理文件。
 - 底层统一请求入口 `lib/api-client.ts` 的 `apiFetch<T>(path, options: ApiFetchOptions)`：统一请求同源 `/api/v1`、解包 `{code,data}` 信封、`body` 支持普通对象（自动 `JSON.stringify`）；401 时只调用一次刷新接口并重试一次。一次性调用才直接 `fetch`。
 - 响应格式：`{ code: "0", msg, data }`，code 为字符串 "0" 表示成功
 - 代码注释：中文
@@ -168,10 +171,12 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 
 目录树中旧的“通知铃铛（空状态）”描述已失效：当前 `NotificationDropdown` 已接入通知 API、30 秒轮询、未读徽标和已读操作。
 
-## 当前媒体与内容工作流约定（2026-08-19）
+## 当前媒体与内容工作流约定（2026-09-01）
 
 - 认证始终为 Cookie-only：登录/刷新响应体不包含 JWT，客户端不读取或持久化访问令牌。
 - `resolveMediaUrl()` 对 `/uploads/...` 保持同源，Next.js rewrite 再根据 `BACKEND_PROXY_URL` 转发；外部绝对 URL 原样使用。组件不得拼接 `NEXT_PUBLIC_API_URL` 或 `localhost:8000`。
+- 媒体列表中的“查看使用情况”是显式点击动作，引用明细来自后端 `/admin/upload/{id}/usage`；“使用中”标签显示引用数量，“未使用”状态仅表示当前未匹配产品/新闻封面或图库引用。
+- 产品/新闻封面上传提示会实时显示目标子相册；产品使用 `Products / 产品 slug`，新闻使用 `News / 新闻 slug`。上传接口仍按年份/UUID 保存物理文件，子相册是 `UploadRecord.album_id` 的逻辑组织。
 - 产品、新闻列表展示当前状态和计划发布时间；编辑页的 `ContentWorkflowPanel` 负责状态选择、时间校验、版本查看/恢复与预览入口。
 - 草稿预览会打开官网 `/preview/[token]`，令牌短期有效且不可用于正式公开 URL；恢复历史版本后应刷新编辑数据与版本列表。
 - 本地启动端口应使用 `npm run dev -- -p 3001`；若脚本未透传参数，可用 `npx next dev -p 3001`。`npm run dev -- -p 3001` 不应被写成 `npm run dev -- 3001`，后者会被 Next.js 解释为项目目录。

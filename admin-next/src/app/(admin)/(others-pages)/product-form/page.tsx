@@ -271,7 +271,14 @@ function ProductFormInner() {
 
         {/* 封面图 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
+            <p className={`mt-1 text-xs ${form.slug.trim() ? "text-gray-400" : "text-amber-600 dark:text-amber-400"}`}>
+              {form.slug.trim()
+                ? <>上传后归档至：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span></>
+                : "请先填写别名；现在上传的图片将进入媒体库的“未分类”。"}
+            </p>
+          </div>
           <div className="flex items-start gap-4">
             {form.cover_image ? (
               <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-32 object-cover rounded-lg border" alt="Cover" />
@@ -292,9 +299,16 @@ function ProductFormInner() {
         {(isEdit || isCopy) && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
-                产品图库（{galleries.length}）
-              </h3>
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
+                  产品图库（{galleries.length}）
+                </h3>
+                <p className={`mt-1 text-xs ${form.slug.trim() ? "text-gray-400" : "text-amber-600 dark:text-amber-400"}`}>
+                  {form.slug.trim()
+                    ? <>新增图片归档至：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span></>
+                    : "请先填写别名，以便新增图片自动归档。"}
+                </p>
+              </div>
               <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg cursor-pointer hover:bg-brand-600 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                 {uploading ? "上传中..." : "+ 添加图片"}
                 <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />

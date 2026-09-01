@@ -94,6 +94,31 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 | `/robots.txt`、`/sitemap.xml` | Next.js 动态元数据路由 |
 | `/llms.txt` | 实验性 AI 站点导览，Route Handler + 1 小时 ISR |
 
+## 资源加载与性能边界
+
+官网采用“首屏关键资源优先、非关键资源按需”的分层策略，不把所有内容一律延迟加载：
+
+| 资源/区域 | 当前策略 | 说明 |
+| --- | --- | --- |
+| Hero、Logo、首个 LCP 候选 | `next/image` `preload` | 保障首屏最大内容及时显示，不应改成懒加载 |
+| 产品/新闻卡片图片 | `SafeImage` 默认 `loading="lazy"` | `preload={true}` 只给首屏候选；失败时渲染占位 |
+| 首页非首屏图片 | `next/image` 默认懒加载或显式 `loading="lazy"` | 配合 `sizes` 减少不必要的下载尺寸 |
+| About 时间轴、证书画廊 | `next/dynamic` 代码分包 | 当前是组件动态分包，不等同于滚动进入视口才加载 |
+| Contact Leaflet 地图 | `next/dynamic({ ssr: false })` | 只在浏览器端加载，不进入服务端 HTML；目前不是 IntersectionObserver 视口懒加载 |
+| About 工厂视频 | `<video preload="none">` | 展示 poster，用户点击播放后才请求视频数据 |
+| 首页异步数据区块 | `Suspense` Streaming SSR | 是服务端流式渲染，不等同于图片懒加载；关键文字仍可被搜索引擎读取 |
+
+修改加载策略时优先检查 LCP、CLS、INP 和弱网移动设备表现；不能为了减少请求而延迟 Hero、首屏标题或首屏 CTA。
+
+## 响应式导航、路由与页脚
+
+- Header 在 `lg` 断点显示桌面导航、搜索框和 Request Quote；低于 `lg` 使用移动菜单，避免平板宽度下搜索框遮挡导航项。
+- Header 内部 `Link` 使用 `scroll={false}`，并由 `resetScrollForNavigation()` 显式回到页面顶部，防止 Next.js 在旧滚动位置或异步内容加载完成后把新页面定位到中间区块。
+- About 页首屏内容顺序固定为 `Who We Are` 眉题、`Our Story` 主标题，`Our Journey` 位于下一段；从 Home 任意滚动位置点击 About 都必须从页面顶部进入。
+- 首页 Hero 在 `xl`（≥1280px）宽屏采用左上方内容布局，沿 `site-container` 对齐；内容列放宽至 `980px`，让 1920px 视口下标题保持合理换行。CTA 需位于固定底部询盘栏上方，Scroll 提示使用视口高度定位以避开 56px 浮层；平板和手机继续使用流式布局。
+- `InstantSearch` 聚焦时保留一层品牌红边框，并通过 `data-focus-visible="none"` 避免全局 `:focus-visible` 焦点环造成双层红框；搜索仍保留可见的聚焦状态。
+- Footer 的 Facebook、YouTube、Instagram、TikTok 均使用 `44×44px` 外层槽位；没有链接的图标也不能改用裸 `span`，否则会破坏等间距布局。
+
 ## 数据流与内容来源
 
 - `lib/api/` 封装产品、新闻、搜索和分类 API。

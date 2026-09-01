@@ -48,7 +48,12 @@ export default function Footer() {
                 );
                 if (!url) {
                   return (
-                    <span key={s.name} aria-label={s.name} title={`${s.name} — coming soon`}>
+                    <span
+                      key={s.name}
+                      aria-label={s.name}
+                      title={`${s.name} — coming soon`}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full"
+                    >
                       {img}
                     </span>
                   );

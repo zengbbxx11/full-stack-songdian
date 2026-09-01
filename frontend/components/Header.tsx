@@ -118,7 +118,7 @@ export default function Header() {
         <div className="site-container relative h-16 flex items-center">
           {/* Logo */}
           <div className="flex-1 flex items-center">
-            <Link href="/" aria-label="Home" className="flex min-h-11 shrink-0 touch-manipulation items-center">
+            <Link href="/" scroll={false} aria-label="Home" className="flex min-h-11 shrink-0 touch-manipulation items-center">
               <Image
                 src={MEDIA.logo}
                 alt="Songdian Technology"
@@ -134,7 +134,7 @@ export default function Header() {
           {/* 桌面端导航 */}
           <nav
             ref={dropdownRef}
-            className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2"
+            className="hidden lg:flex items-center gap-1 absolute left-1/2 -translate-x-1/2"
           >
             {NAV_LINKS.map((item) => {
               const isActive =
@@ -157,6 +157,7 @@ export default function Header() {
                 >
                   <Link
                     href={item.href}
+                    scroll={false}
                     onClickCapture={resetScrollForNavigation}
                     className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[var(--foreground)] hover:bg-[#f7f7f8] hover:text-[var(--accent)] transition-colors duration-[330ms]"
                     style={
@@ -197,6 +198,7 @@ export default function Header() {
                         <Link
                           key={child.label}
                           href={child.href}
+                          scroll={false}
                           onClickCapture={resetScrollForNavigation}
                           className="flex items-center px-4 py-2.5 mx-1 text-[15px] rounded-md hover:bg-gray-50 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors duration-[150ms]"
                           style={{ fontSize: "15px", fontWeight: 400 }}
@@ -213,18 +215,18 @@ export default function Header() {
 
           {/* 右侧：搜索 + CTA + 汉堡 */}
           <div className="flex-1 flex items-center justify-end gap-3">
-            <InstantSearch className="hidden md:block" />
+            <InstantSearch className="hidden lg:block" />
             <InteractiveHoverButton
               onClick={() => router.push("/contact")}
               fill="bg-[var(--accent)]"
-              className="hidden md:inline-flex border-[var(--accent)] bg-white text-[var(--foreground)] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
+              className="hidden lg:inline-flex border-[var(--accent)] bg-white text-[var(--foreground)] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
             >
               Request Quote
             </InteractiveHoverButton>
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden flex h-11 w-11 touch-manipulation items-center justify-center rounded transition-colors hover:bg-[var(--surface-soft)] active:bg-[#eceef1]"
+              className="lg:hidden flex h-11 w-11 touch-manipulation items-center justify-center rounded transition-colors hover:bg-[var(--surface-soft)] active:bg-[#eceef1]"
               style={{ borderRadius: "4px" }}
               aria-label="Toggle menu"
               aria-expanded={mobileOpen}
@@ -256,7 +258,7 @@ export default function Header() {
 
       {/* ====================== 移动端菜单 — 在 <header> 外部，避免 backdrop-filter 劫持 fixed 定位 ====================== */}
       <div
-        className={`md:hidden fixed inset-0 top-16 bg-white z-40 transition-all overflow-y-auto ${
+        className={`lg:hidden fixed inset-0 top-16 bg-white z-40 transition-all overflow-y-auto ${
           mobileOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
         }`}
         style={{ transitionDuration: "0.33s" }}
@@ -270,6 +272,7 @@ export default function Header() {
             >
               <Link
                 href={item.href}
+                scroll={false}
                 onClick={() => setMobileOpen(false)}
                 onClickCapture={resetScrollForNavigation}
                 className="block min-h-11 touch-manipulation rounded px-4 py-3 text-[16px] font-medium text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:bg-[var(--surface-soft)] active:text-[var(--accent)]"
@@ -283,6 +286,7 @@ export default function Header() {
                     <Link
                       key={child.label}
                       href={child.href}
+                      scroll={false}
                       onClick={() => setMobileOpen(false)}
                       onClickCapture={resetScrollForNavigation}
                       className="block min-h-11 touch-manipulation rounded px-3 py-2.5 text-[15px] font-normal text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:bg-[var(--surface-soft)] active:text-[var(--accent)]"

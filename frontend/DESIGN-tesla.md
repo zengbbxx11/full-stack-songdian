@@ -1,6 +1,6 @@
 # Songdian 官网视觉与交互规范
 
-> 当前版本：2026-08-19。本文以 `frontend/` 当前代码为准，名称保留是为了兼容既有引用；“Tesla”只表示克制、产品优先的设计灵感，不代表复制 Tesla 品牌、字体或内容。
+> 当前版本：2026-09-01。本文以 `frontend/` 当前代码为准，名称保留是为了兼容既有引用；“Tesla”只表示克制、产品优先的设计灵感，不代表复制 Tesla 品牌、字体或内容。
 >
 > 系统部署、SEO、缓存、API 和发布流程请以 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 与根目录 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
@@ -77,11 +77,24 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 ## 5. 页面结构
 
+### 首页 Hero
+
+- `components/motion/HeroSection.tsx` 使用工厂实拍图作为首屏背景，Hero 图片是 LCP 候选，继续使用 `next/image` `preload`，不得改成普通懒加载。
+- `xl`（≥1280px）宽屏将内容放在左上方视觉区域，保留 `site-container` 的左右基线；标题内容列为 `980px`，避免 1920px 视口下标题不必要地多换一行。
+- 宽屏 Hero 的 `Explore Products` 和 `Get a Quote` 必须完整位于固定底部询盘栏（56px）上方；Scroll 提示使用视口高度安全定位，不得被浮层覆盖。
+- 平板和手机保持自然流式布局，CTA 允许换行但不能横向溢出；至少回归 1440px、1024px 和 390px 视口。
+
 ### Header
 
-- 桌面端保留 Logo、主导航和主要询盘 CTA；导航字体不低于 15px。
-- 移动端使用折叠菜单，菜单项应保持足够的点击高度。
+- `lg` 及以上保留 Logo、主导航、即时搜索和主要询盘 CTA；导航字体不低于 15px。
+- `lg` 以下使用折叠菜单，菜单项应保持足够的点击高度；平板端不能让搜索框挤压或遮挡导航项。
+- 站内导航链接使用 `scroll={false}`，点击后由导航逻辑显式回到页面顶部，避免异步页面内容把新页面定位到中间区块。About 页首屏应先呈现 `Who We Are / Our Story`，`Our Journey` 放在下一段。
 - 当前页面或悬停状态使用品牌红，避免同时使用多种激活颜色。
+
+### 即时搜索
+
+- 搜索框使用品牌红表示聚焦，但只保留一层 `1px` 边框；输入控件不得同时叠加全局焦点环和自定义外框。
+- `InstantSearch` 仍需保留可见的聚焦状态与键盘操作，不得用 `outline: none` 让键盘用户失去位置提示；当前实现通过 `data-focus-visible="none"` 排除重复的全局焦点环。
 
 ### Breadcrumbs
 
@@ -112,11 +125,15 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 使用浅灰/白色背景、深色文字、品牌红交互色和原始黑红 Logo。不要使用纯黑页脚，以免与 Logo 中的黑色字标失去对比。
 
+- Facebook、YouTube、Instagram、TikTok 四个社交图标统一使用 `44×44px` 圆形槽位，并保持固定 `gap`；无链接的平台也必须保留同样的占位尺寸，只显示“coming soon”提示。
+
 ## 6. 图片与视频
 
 - 产品图片使用 `ProductGallery` 和统一的 `object-fit` 规则，图片容器保持稳定比例，避免布局跳动。
 - 产品卡片、详情主图和缩略图统一使用 `object-contain`，确保相机主体完整；容器只保留必要的极小安全边距，不得恢复大块 padding，也不得改用 `object-cover` 裁切产品。
+- 首屏 Hero、Logo 和首个 LCP 候选图片使用 `next/image` `preload`；`SafeImage` 默认输出 `loading="lazy"`，非首屏卡片和内容图片不得无理由预加载。所有响应式图片都应提供准确的 `sizes`。
 - 工厂视频组件为 `components/FactoryVideo.tsx`，点击后才播放，使用 16:9 WebP poster、`preload="none"`、`playsInline` 和 `controls`；WebM 是可选增强，MP4 是兼容回退。
+- About 的时间轴/证书画廊采用 `next/dynamic` 做代码分包；Contact 地图采用 `ssr: false` 仅客户端动态加载。两者目前都不是基于滚动位置的 IntersectionObserver 懒加载，文档和验收不能误称为“滚动到才加载”。
 - 当前视频及封面资产为 `frontend/public/Video/SongdianFactoryVideo.mp4` 与 `factory-poster.webp`，仅在 About 页面展示。它们是静态前端源码资产，不等同于生产运行时上传媒体。
 - 视频、图片和地图都必须在 390px 视口下检查，不得造成横向滚动。
 
@@ -124,19 +141,22 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 - 使用短时长、低幅度的 opacity/translate 动效；`prefers-reduced-motion: reduce` 时直接显示内容。
 - 所有图标按钮必须有可读的 `aria-label`；当前页链接使用 `aria-current`。
-- 键盘焦点使用全局 `:focus-visible` 焦点环；页面提供 skip-link。
+- 键盘焦点默认使用全局 `:focus-visible` 焦点环；即时搜索使用同等可见度的单层品牌红边框，页面提供 skip-link。
 - 不使用自动播放工厂视频，不把重要信息只放在 hover 状态。
 
 ## 8. 响应式验收清单
 
-至少检查 1440px 桌面和 390px 手机：
+至少检查 1440px 桌面、1024px 左右的平板宽度和 390px 手机：
 
 - 页面 `scrollWidth` 不超过视口宽度。
-- Header、筛选栏、面包屑和产品卡片没有文字溢出。
+- Header、搜索框、筛选栏、面包屑和产品卡片没有文字溢出；平板端导航不被搜索框遮挡。
+- 1920px/1440px 宽屏首页 Hero 的标题、说明和 `Explore Products` / `Get a Quote` CTA 完整可见；CTA 与底部询盘栏保持安全间距，Scroll 提示不被浮层覆盖。
 - 产品 Hero 与 `Browse by category` 间距紧凑，首屏能看到有效内容。
 - 联系页地图、询盘表单和固定底栏不会互相遮挡。
 - 视频封面、播放按钮和控制条可以正常使用。
 - 导航、按钮和筛选项具备足够的触摸区域。
+- 从 Home 页面顶部、中部和底部点击 About 后，首屏显示 `Who We Are / Our Story`，而不是 `Our Journey`。
+- 搜索框获得焦点时只有一层品牌红边框；页脚四个社交图标的外层槽位和中心间距一致。
 
 ## 9. 实现索引
 
@@ -144,6 +164,7 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 |---|---|
 | 全局颜色、字体、圆角 | `frontend/app/globals.css` |
 | Header / Footer | `frontend/components/Header.tsx` / `Footer.tsx` |
+| 首页 Hero | `frontend/components/motion/HeroSection.tsx` |
 | 面包屑 | `frontend/components/Breadcrumbs.tsx` |
 | 产品列表与筛选 | `frontend/app/products/page.tsx` |
 | 产品详情 | `frontend/app/products/[...slug]/page.tsx` |

@@ -126,17 +126,17 @@ npm run dev → http://localhost:3000
 | `lib/site-config.ts` | 页脚链接等静态配置 |
 | `lib/types.ts` | TypeScript 类型定义（ProductSummary, ProductDetail, WCProductCategory 等；ProductDetail 含 seoTitle/seoDescription 字段） |
 | `app/products/[...slug]/page.tsx` | 产品详情页 — `generateMetadata` 优先读取后端 seoTitle/seoDescription，空则回退 title/content_html 截取 |
-| `components/Header.tsx` | 导航栏（白底黑字，品牌红 hover，CSS transition） |
-| `components/Footer.tsx` | 页脚 |
+| `components/Header.tsx` | 导航栏（`lg` 桌面断点、平板移动菜单、搜索与顶部滚动重置） |
+| `components/Footer.tsx` | 页脚（社交图标统一槽位与等间距） |
 | `components/NavigationProgress.tsx` | 顶部路由切换进度条（品牌红 #d4343e，零依赖） |
 | `components/motion/HeroSection.tsx` | 首页 Hero |
 | `components/ProductCard.tsx` | 产品卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 红框+阴影+缩放） |
-| `components/ProductGallery.tsx` | 产品详情页左侧缩略图+右侧大图（next/image + priority） |
+| `components/ProductGallery.tsx` | 产品详情页左侧缩略图+右侧大图（next/image + 主图 `preload`） |
 | `components/PostCard.tsx` | 新闻卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 蓝框+阴影+亮度变化） |
 | `components/SafeImage.tsx` | 客户端图片组件（仅处理 onError 换占位），供 RSC 卡片复用，减少 hydration |
 | `components/ContactMapLoader.tsx` | 客户端加载器，`next/dynamic({ ssr:false })` 按需引入 Leaflet，不进首屏 bundle |
 | `components/StatsBand.tsx` | 首页深色数据带（服务端输出真实经营指标，避免首屏动画运行时） |
-| `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义，键盘可选） |
+| `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义、键盘可选、单层聚焦边框） |
 | `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`） |
 | `components/CookieSettingsTrigger.tsx` | 页脚「Cookie Settings」重开入口（派发 `cookie-settings:open` 事件） |
 | `components/ProductViewTracker.tsx` | 产品详情页 GA4 `product_view` 事件打点（客户端组件，useEffect 触发） |
@@ -177,7 +177,10 @@ npm run dev → http://localhost:3000
 | `apiFetch()` 统一封装 | `lib/api/client.ts` | 所有 API 调用共享 ISR revalidate 逻辑 |
 | Tree-shaking | `next.config.ts` — `optimizePackageImports` | framer-motion / lucide-react 按需加载 |
 | 卡片回归 RSC | `SafeImage.tsx` + `ProductCard/PostCard` | 图片兜底逻辑下沉到客户端子组件，卡片本体为服务端组件，减少 hydration |
-| 地图按需加载 | `ContactMapLoader.tsx` | `next/dynamic({ ssr:false })`，Leaflet 仅在联系页加载，不进首屏 bundle |
+| 首屏图片优先级 | `HeroSection.tsx`、`Header.tsx`、`SafeImage.tsx` | Hero/Logo 和首个 LCP 候选使用 `preload`；`SafeImage` 默认 `loading="lazy"` |
+| 动态组件分包 | `app/about/page.tsx` | 时间轴与证书画廊用 `next/dynamic` 拆分客户端代码；不等同于视口触发加载 |
+| 视频延迟请求 | `FactoryVideo.tsx` | poster 首先展示，`preload="none"`，用户点击播放后加载视频 |
+| 地图按需加载 | `ContactMapLoader.tsx` | `next/dynamic({ ssr:false })`，Leaflet 仅在联系页客户端加载，不进服务端首屏 bundle；当前不是 IntersectionObserver 视口懒加载 |
 | 列表错误降级 | `app/products`、`app/news` | fetch 加 try/catch，后端异常时渲染「暂不可用+重试」而非整页 error |
 | 可访问性 | `app/layout.tsx` + `globals.css` | 全站 skip-link 跳主内容 + 全局 focus-visible 焦点环；外链补 `rel="noopener"` |
 
@@ -205,6 +208,8 @@ npm run dev → http://localhost:3000
 
 - **Logo**：`public/logo.png`（本地）
 - **产品图 / 文章图**：通过 FastAPI 后端管理（管理后台上传，`/uploads/` 提供静态文件服务）
+- **媒体引用查询**：管理后台调用 `GET /api/v1/admin/upload/{id}/usage` 展示产品图库、产品封面和新闻封面的使用位置；被引用素材删除前由后端拦截确认。
+- **上传归档**：产品表单通过 `product:{slug}` 归入 `Products / {slug}`，新闻表单通过 `news:{slug}` 归入 `News / {slug}`；slug 为空时进入“未分类”。这是媒体库相册归属，物理文件仍由后端按其存储策略保存，不能据此拼接 URL。
 - **OG 图**：`lib/media.ts` 配置
 - **产品相册**：附属于产品，管理后台表单管理
 - **展会图片**：`public/Exhibitions/` 目录增删文件
@@ -286,6 +291,15 @@ P0 级审计修复（相关行为已合入当前代码）：
 - `scripts/generate-og-assets.mjs` 通过 `npm run generate:social-assets` 生成默认 OG JPEG 与 `public/Video/factory-poster.webp`。
 - About 页工厂视频使用 `preload="none"`、WebP poster 和可选 WebM source；MP4 为兼容回退。视频与 poster 都是随 frontend 镜像发布的静态源码资产。
 - `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 仅用于本地 loopback/局域网图片调试；生产环境必须关闭或不设置。
+
+## 官网界面与导航优化（2026-09-01）
+
+- Header 在 `lg` 断点切换桌面导航与移动菜单；搜索框和 Request Quote 不在平板宽度与主导航争抢空间。
+- Header 站内链接使用 `scroll={false}` 配合显式顶部重置，确保从 Home 任意滚动位置进入 About 等页面时从首屏开始；About 的首屏顺序为 `Who We Are / Our Story`，`Our Journey` 在下一段。
+- `InstantSearch` 聚焦态保留单层品牌红边框，通过 `data-focus-visible="none"` 避免全局焦点环叠加成双层边框；键盘操作和可见聚焦状态仍需保留。
+- Footer 的 Facebook、YouTube、Instagram、TikTok 统一使用 `44×44px` 图标槽位；无链接平台也必须占位并提示 `coming soon`，不得让图标间距随链接状态改变。
+- 首页 Hero 在 `xl`（≥1280px）宽屏使用上左布局，沿 `site-container` 左侧对齐，标题列放宽至 `980px`；`Explore Products` / `Get a Quote` 必须避开固定 56px 询盘栏。
+- Hero 的 Scroll 提示按视口高度安全定位，避免内容撑高时落入底部浮层；本次回归覆盖 1920×920、1440×900、1024×768 和 390×844。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

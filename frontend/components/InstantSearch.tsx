@@ -158,7 +158,8 @@ export default function InstantSearch({ className }: { className?: string }) {
             placeholder="Search products"
             aria-label="Search products"
             autoComplete="off"
-            className="h-10 w-full rounded-xl border border-transparent bg-[#f2f3f5] pl-8 pr-3 text-xs text-[var(--foreground)] outline-none transition-all placeholder:text-[#777b81] hover:bg-[#eceef1] focus:border-[var(--accent)] focus:bg-white focus:shadow-[0_0_0_3px_rgba(212,52,62,0.10)] md:w-48"
+            data-focus-visible="none"
+            className="h-10 w-full rounded-xl border border-transparent bg-[#f2f3f5] pl-8 pr-3 text-xs text-[var(--foreground)] outline-none transition-all placeholder:text-[#777b81] hover:bg-[#eceef1] focus:border-[var(--accent)] focus:bg-white focus-visible:outline-none md:w-48"
           />
         </div>
       </form>

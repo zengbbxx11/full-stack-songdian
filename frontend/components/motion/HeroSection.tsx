@@ -17,7 +17,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ bannerUrl }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden flex min-h-[720px] items-center md:min-h-[760px] lg:min-h-[calc(100svh-4rem)]">
+    <section className="relative flex min-h-[720px] items-center overflow-hidden md:min-h-[760px] lg:min-h-[calc(100svh-4rem)] xl:items-start">
       <Image
         src={bannerUrl || MEDIA.heroBanner}
         alt="Songdian SMT production line — precision camera manufacturing"
@@ -32,8 +32,8 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
       <div className="absolute inset-0 opacity-20 tech-grid" aria-hidden="true" />
 
       {/* Hero 内容 — 左侧对齐，更大气 */}
-      <div className="site-container relative z-10 py-28 md:py-36">
-        <div className="max-w-[820px]">
+      <div className="site-container relative z-10 py-28 md:py-36 xl:pb-20 xl:pt-8">
+        <div className="max-w-[820px] xl:max-w-[980px]">
         {/* 行业徽章 — 描边 + 毛玻璃，更精致 */}
         <span
           className="animate-fade-in-up mb-8 inline-flex items-center gap-2 rounded-lg border-l-2 border-[var(--accent)] bg-white/8 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm"
@@ -79,7 +79,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
       </div>
 
       {/* 滚动引导指示 — 底部居中，缓慢上下浮动，引导用户下滚 */}
-      <div className="animate-fade-in absolute bottom-8 left-1/2 z-10 -translate-x-1/2 [animation-delay:320ms]" aria-hidden="true">
+      <div className="animate-fade-in absolute left-1/2 top-[calc(100svh-12rem)] z-10 -translate-x-1/2 [animation-delay:320ms]" aria-hidden="true">
         <div className="flex flex-col items-center gap-2 text-white/70">
           <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Scroll</span>
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

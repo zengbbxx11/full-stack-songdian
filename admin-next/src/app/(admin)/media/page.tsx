@@ -12,6 +12,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useCallback, useState } from "react";
+import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
@@ -59,6 +60,19 @@ function buildTree(albums: Album[]): TreeAlbum[] {
 function usageLabel(item: UsageItem): string {
   const map: Record<string, string> = { product_gallery: "产品图库", product_cover: "产品封面", news_cover: "新闻封面" };
   return `${map[item.type] ?? item.type}: ${item.name}`;
+}
+
+function usageTypeLabel(type: UsageItem["type"]): string {
+  const map: Record<UsageItem["type"], string> = {
+    product_gallery: "产品图库",
+    product_cover: "产品封面",
+    news_cover: "新闻封面",
+  };
+  return map[type];
+}
+
+function usageEditHref(item: UsageItem): string {
+  return item.type === "news_cover" ? `/news-form?id=${item.id}` : `/product-form?id=${item.id}`;
 }
 
 // ─────────────────────── 树节点组件 ───────────────────────
@@ -136,6 +150,9 @@ export default function MediaPage() {
   const [confirm, setConfirm] = useState<{ title: string; message: React.ReactNode; onConfirm: () => void; confirmText?: string } | null>(null);
   const [albumModal, setAlbumModal] = useState<{ open: boolean; editing: Album | null }>({ open: false, editing: null });
   const [albumForm, setAlbumForm] = useState({ name: "", slug: "", parent_id: "" });
+  const [usageModal, setUsageModal] = useState<{
+    record: UploadRecord | null; info: UsageInfo | null; loading: boolean; error: string | null;
+  }>({ record: null, info: null, loading: false, error: null });
   // 引用缓存：按 record id 存储 usage 信息，hover 时懒加载
   const [usageCache, setUsageCache] = useState<Map<number, UsageInfo>>(new Map());
 
@@ -229,6 +246,20 @@ export default function MediaPage() {
     } catch { /* 忽略 */ }
   };
 
+  const openUsage = async (rec: UploadRecord) => {
+    const cached = usageCache.get(rec.id) ?? null;
+    setUsageModal({ record: rec, info: cached, loading: !cached, error: null });
+    if (cached) return;
+    try {
+      const info = await apiFetch<UsageInfo>(`/admin/upload/${rec.id}/usage`);
+      setUsageCache((prev) => new Map(prev).set(rec.id, info));
+      setUsageModal((prev) => prev.record?.id === rec.id ? { ...prev, info, loading: false } : prev);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "引用信息加载失败";
+      setUsageModal((prev) => prev.record?.id === rec.id ? { ...prev, loading: false, error: message } : prev);
+    }
+  };
+
   // 相册 CRUD
   const openCreateAlbum = () => { setAlbumForm({ name: "", slug: "", parent_id: "" }); setAlbumModal({ open: true, editing: null }); };
   const openEditAlbum = (a: Album) => { setAlbumForm({ name: a.name, slug: a.slug, parent_id: a.parent_id?.toString() ?? "" }); setAlbumModal({ open: true, editing: a }); };
@@ -270,6 +301,9 @@ export default function MediaPage() {
       {/* 主内容 */}
       <div className="flex-1 min-w-0">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">媒体库</h2>
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-xs leading-5 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-300">
+          产品表单上传的图片会自动归入 <strong>Products / 产品别名</strong>，新闻封面会归入 <strong>News / 新闻别名</strong>；上传前未填写别名的图片会进入“未分类”。相册只用于整理，不会改变图片 URL。
+        </div>
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx={11} cy={11} r={8}/><path d="m21 21-4.3-4.3" strokeLinecap="round"/></svg>
@@ -296,7 +330,7 @@ export default function MediaPage() {
             title="Scan products & news for image references not yet tracked"
           >
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="inline mr-1"><path d="M21 12a9 9 0 11-6.219-8.56"/><path d="M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Sync
+            同步引用图片
           </button>
           {/* 自动归���按钮 */}
           <button
@@ -311,15 +345,15 @@ export default function MediaPage() {
             title="Auto-categorize uncategorized images by product/news path"
           >
             <FolderIcon className="w-3 h-3 inline mr-1" />
-            Categorize
+            自动归类
           </button>
-          {selectedIds.size > 0 && (<><span className="text-xs text-gray-500 ml-2">{selectedIds.size} selected</span><button onClick={() => setConfirm({ title: "批量删除", message: `删除选中 ${selectedIds.size} 个文件？不可撤销。`, confirmText: `Delete ${selectedIds.size}`, onConfirm: () => { handleBatchDelete(); setConfirm(null); } })} className="px-3 py-2 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"><TrashBinIcon className="w-3.5 h-3.5 inline mr-1" /> Delete</button></>)}
+          {selectedIds.size > 0 && (<><span className="text-xs text-gray-500 ml-2">已选择 {selectedIds.size} 项</span><button onClick={() => setConfirm({ title: "批量删除", message: `删除选中 ${selectedIds.size} 个文件？不可撤销。`, confirmText: `删除 ${selectedIds.size} 项`, onConfirm: () => { handleBatchDelete(); setConfirm(null); } })} className="px-3 py-2 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"><TrashBinIcon className="w-3.5 h-3.5 inline mr-1" /> 批量删除</button></>)}
         </div>
 
         {total === 0 && !isLoading && (
           <label className="flex flex-col items-center gap-3 p-10 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl cursor-pointer hover:border-brand-500 transition-colors mb-4">
             <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-gray-300 dark:text-gray-600"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Drag & drop or click to upload</p><p className="text-xs text-gray-400">JPG/PNG/WebP/GIF · Max 10MB</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">拖拽图片到此处，或点击上传</p><p className="text-xs text-gray-400">JPG / PNG / WebP / GIF · 最大 10MB</p>
             <input type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" disabled={uploading} />
           </label>
         )}
@@ -328,7 +362,7 @@ export default function MediaPage() {
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-12 text-center"><div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
         ) : records.length > 0 ? (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-            <div className="flex items-center gap-3 mb-3 px-1"><label className="flex items-center gap-1.5 cursor-pointer select-none"><input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" /><span className="text-xs text-gray-500">{allSelected ? "Deselect" : "Select all"}</span></label><span className="text-xs text-gray-400 ml-auto">{total} files</span></div>
+            <div className="flex items-center gap-3 mb-3 px-1"><label className="flex items-center gap-1.5 cursor-pointer select-none"><input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" /><span className="text-xs text-gray-500">{allSelected ? "取消全选" : "全选"}</span></label><span className="text-xs text-gray-400 ml-auto">共 {total} 个文件</span></div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {records.map((rec) => {
                 const isSelected = selectedIds.has(rec.id);
@@ -339,15 +373,25 @@ export default function MediaPage() {
                     <div className="p-2">
                       <p className="text-xs text-gray-700 dark:text-gray-300 truncate mb-0.5">{rec.title || rec.file_name}</p>
                       <p className="text-[10px] text-gray-400 mb-1.5">{formatSize(rec.size)}</p>
-                      {/* 引用标签：hover 后懒加载，有引用则显示蓝色标签 */}
-                      {usageCache.has(rec.id) && usageCache.get(rec.id)!.in_use ? (
-                        <div className="mb-1.5" title={usageCache.get(rec.id)!.items.map(usageLabel).join("\n")}>
-                          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); void openUsage(rec); }}
+                        className={`mb-1.5 flex w-full items-center justify-between rounded px-1.5 py-1 text-[10px] transition-colors ${
+                          usageCache.get(rec.id)?.in_use
+                            ? "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400"
+                            : "bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {usageCache.has(rec.id) ? (usageCache.get(rec.id)!.in_use ? (
+                            <>
                             <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {usageCache.get(rec.id)!.count}
-                          </span>
-                        </div>
-                      ) : null}
+                              使用中 · {usageCache.get(rec.id)!.count} 处
+                            </>
+                          ) : "未使用") : "查看使用情况"}
+                        </span>
+                        <span aria-hidden="true">›</span>
+                      </button>
                       <div className="flex gap-1">
                         <button onClick={(e) => { e.stopPropagation(); copyUrl(resolveMediaUrl(rec.url)); }} className="flex-1 text-[11px] py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">复制</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(rec); }} className="text-[11px] py-1 px-2 rounded bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"><TrashBinIcon className="w-3 h-3" /></button>
@@ -366,6 +410,50 @@ export default function MediaPage() {
 
       {/* 对话框 */}
       <ConfirmDialog open={!!confirm} title={confirm?.title ?? ""} message={confirm?.message ?? ""} onConfirm={confirm?.onConfirm ?? (() => {})} onCancel={() => setConfirm(null)} confirmText={confirm?.confirmText ?? "删除"} />
+
+      <Modal
+        isOpen={!!usageModal.record}
+        onClose={() => setUsageModal({ record: null, info: null, loading: false, error: null })}
+        className="mx-4 max-w-2xl"
+      >
+        {usageModal.record && (
+          <div className="p-6 sm:p-8">
+            <h3 className="pr-12 text-lg font-semibold text-gray-800 dark:text-white/90">图片使用情况</h3>
+            <div className="mt-5 flex gap-4 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/60">
+              <img src={resolveMediaUrl(usageModal.record.url)} alt={usageModal.record.title || usageModal.record.file_name} className="h-20 w-20 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-gray-700" />
+              <div className="min-w-0 self-center">
+                <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{usageModal.record.title || usageModal.record.file_name}</p>
+                <p className="mt-1 break-all text-xs leading-5 text-gray-500 dark:text-gray-400">{usageModal.record.url}</p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              {usageModal.loading && <p className="py-8 text-center text-sm text-gray-400">正在查询引用位置...</p>}
+              {usageModal.error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">{usageModal.error}</p>}
+              {!usageModal.loading && !usageModal.error && usageModal.info && !usageModal.info.in_use && (
+                <div className="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">这张图片目前未被使用</p>
+                  <p className="mt-1 text-xs text-gray-400">可以安全整理或删除，但删除操作仍不可撤销。</p>
+                </div>
+              )}
+              {!usageModal.loading && usageModal.info?.in_use && (
+                <div>
+                  <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">共被 {usageModal.info.count} 处内容引用：</p>
+                  <ul className="max-h-72 space-y-2 overflow-y-auto">
+                    {usageModal.info.items.map((item, index) => (
+                      <li key={`${item.type}-${item.id}-${index}`} className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
+                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">{usageTypeLabel(item.type)}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
+                        <Link href={usageEditHref(item)} className="shrink-0 text-xs font-medium text-brand-500 hover:text-brand-600">查看内容</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal isOpen={albumModal.open} onClose={() => setAlbumModal({ open: false, editing: null })}>
         <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 p-6">

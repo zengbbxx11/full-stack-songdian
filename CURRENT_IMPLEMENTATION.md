@@ -1,4 +1,4 @@
-# 当前实现总览（2026-08-26）
+# 当前实现总览（2026-09-01）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -41,6 +41,9 @@
 
 - 登录、刷新和退出只使用 HttpOnly Cookie；生产环境额外启用 `Secure`，浏览器 JavaScript 不读取或保存 JWT。
 - 后台媒体使用 `resolveMediaUrl()`：相对 `/uploads/...` 保持同源，由 Next.js rewrite 转发到后端；外部绝对 URL 原样保留。
+- 媒体库每条上传记录都可以通过 `GET /api/v1/admin/upload/{id}/usage` 查询引用明细，区分产品图库、产品封面和新闻封面，并从弹窗跳转到对应的产品/新闻编辑页；后端删除接口仍会阻止未确认的被引用素材删除。
+- 产品与新闻编辑表单上传图片时，会按 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入媒体库的 `Products / {slug}` 或 `News / {slug}` 子相册；未填写 slug 的上传进入“未分类”。相册只改变逻辑归属，不改变媒体 URL，文件本身仍由后端存储后端管理。
+- 媒体库提供“同步引用图片”和“自动归类”：前者为已有产品/新闻引用但缺少 `UploadRecord` 的 URL 补齐记录，后者仅按既有媒体 URL 路径规则整理未分类记录。
 - 禁止在组件中重新拼接 `http://localhost:8000`，否则会破坏 Windows、Docker 和生产域名兼容性。
 - 产品/新闻编辑页包含内容状态、发布时间、版本历史、恢复和短期预览入口。
 
@@ -52,6 +55,10 @@
 - 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。
 - `/llms.txt` 作为实验性 AI 站点导览按小时再验证；它明确区分 2023 年成立的 Songdian Technology 法律实体与 2006 年开始的集团制造历史，不视为正式标准或排名保证。
 - 当前工厂视频仅在 About 页面展示，使用 WebP poster、`preload="none"` 和可选 WebM source；视频、poster 与默认 OG 图均属于随 frontend 镜像发布的静态源码资产。
+- 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图目前是 `ssr: false` 的客户端动态组件，并非滚动进入视口后才加载。
+- 官网 Header 在 `lg` 断点显示桌面导航、搜索和报价 CTA，较窄视口使用移动菜单，避免平板端搜索框挤压导航；站内导航链接使用 `scroll={false}` 配合显式顶部重置，确保从任意滚动位置跳转到新页面都从首屏开始。About 页首屏顺序为 `Who We Are / Our Story`，`Our Journey` 位于下一段。
+- 首页 Hero 在 `xl`（≥1280px）宽屏使用上左对齐，内容仍沿 `site-container` 左侧基线；标题内容列放宽至 980px，避免 1920px 视口不必要的换行。底部 CTA 与 Scroll 提示避开固定 56px 询盘栏；平板和手机保留自然流式布局，并在 1024px、390px 视口验证无横向溢出。
+- 官网即时搜索聚焦时只显示一层品牌红边框，避免全局焦点环与输入框边框叠加；页脚四个社交图标统一占用 `44×44px` 槽位，链接状态不会改变图标间距。
 - 联系页地图、Cookie 横幅和底部询盘栏在移动端协调显示，不产生横向溢出。产品分类与 FAQ 移动目录提供横滑提示、边缘控制和 sticky 定位；首图预加载、结构匹配骨架、触屏反馈和 `prefers-reduced-motion` 已统一。
 
 ## 可靠性、质量与发布

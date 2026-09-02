@@ -127,10 +127,11 @@ npm run build
 正式生产发布：
 
 1. 推送完整、可复现的 commit。
-2. 等待 GitHub Actions 构建 backend、frontend、admin-next 和相关验证任务。
-3. 使用完整 commit SHA 运行 `Deploy production`。
-4. 发布脚本先备份，再迁移、切换镜像并执行冒烟检查。
-5. 失败时回退应用镜像；数据库回退必须基于上线前备份和单独评估。
+2. 等待 GitHub Actions 的 `CI` job 和同一 commit 的 `images` 矩阵全部成功；后者必须包含 backend、frontend、admin-next 三个镜像。
+3. 从 GitHub commit 详情页复制 40 位完整 commit SHA，不使用 Actions 列表中的短 SHA。
+4. 默认通过 `Deploy production` 发布；手动更新时，先在服务器执行 `git pull --ff-only origin master`，再用 `git rev-parse HEAD` 核对服务器 SHA 与目标 SHA 一致。
+5. 使用 `scripts/deploy.sh` 发布。脚本先备份，再迁移、切换镜像并执行冒烟检查；发布后还要检查 `/readyz`、官网、后台、`/llms.txt`、OG 图和视频 Range 响应。
+6. 失败时回退应用镜像；数据库回退必须基于上线前备份和单独评估。
 
 严禁：
 
@@ -140,7 +141,7 @@ npm run build
 - 在生产启用 `dangerouslyAllowLocalIP` 对应环境变量。
 - 临时向运行中的容器复制缺失静态资产来掩盖 CI 构建问题。
 
-详细命令、OpenResty、HTTPS、备份恢复和上线检查见 [deploy-guide.md](./deploy-guide.md)。
+详细的手动更新顺序、完整 SHA 核对、OpenResty、HTTPS、备份恢复和上线检查见 [deploy-guide.md](./deploy-guide.md)。
 
 ## 文档索引
 

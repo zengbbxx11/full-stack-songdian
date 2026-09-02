@@ -106,8 +106,9 @@ cd /home/ubuntu/full-stack-songdian
 # 备份由 scripts/deploy.sh 在 Deploy production 工作流中自动执行
 
 # 正式发布默认通过 GitHub Actions 的 Deploy production 工作流发布指定 SHA/tag
+# 如采用手动更新，必须完整执行下方 2.3 节的 CI、SHA 核对、部署和验收流程
 
-docker compose ps
+docker compose --env-file .env ps
 ```
 
 > 禁止执行 `docker compose down -v`、`docker volume rm`、`DROP SCHEMA`，也不要以 `db/*.sql` 或 `db/*.csv` 覆盖生产库。
@@ -116,7 +117,18 @@ docker compose ps
 
 本节适用于 GitHub Actions 的 `CI` 工作流已经成功，且 `images (backend, backend)`、`images (frontend, frontend)`、`images (admin-next, admin)` 均已完成的情况。手动部署仍然使用仓库的 `scripts/deploy.sh`，因此会保留备份、独立迁移、健康检查和应用回滚逻辑。
 
-#### 2.3.1 同步部署编排文件
+#### 2.3.1 发布前确认并获取完整 commit SHA
+
+手动更新只允许使用同一 commit 的完整 40 位 SHA。先在 GitHub Actions 打开该提交对应的 `CI` 运行记录，确认以下 job 全部成功：
+
+- `backend`、`frontend`、`admin`、`compose`、`migration`、`e2e`。
+- `images` 矩阵中的 `backend`、`frontend`、`admin-next` 三行（对应镜像名分别为 `backend`、`frontend`、`admin`）。
+
+`images` 只会在 `master` 或 `v*` tag 的非 PR 运行中生成。如果 `images` 被跳过，不能按本节发布。
+
+在成功的 CI 运行顶部点击短 SHA，进入 commit 详情页后点击复制按钮，获取 40 位完整 SHA；也可以从 commit 详情 URL 的 `/commit/<完整 SHA>` 部分复制。不要使用 Actions 列表中的 7 位短 SHA，也不要把 `<`、`>` 一起写入命令。
+
+#### 2.3.2 同步部署编排文件并核对版本
 
 服务器上的 `.env` 只保存生产密钥，不随 Git 更新。先确认 checkout 没有本地代码改动，再同步 `master` 中的 Compose 文件和部署脚本：
 
@@ -124,26 +136,46 @@ docker compose ps
 ssh ubuntu@106.53.220.184
 cd /home/ubuntu/full-stack-songdian
 
+# 替换为上一步从 GitHub 复制的 40 位完整 SHA；不要使用短 SHA
+DEPLOY_SHA='CI 与 images 均已成功的完整 commit SHA'
+if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "ERROR: DEPLOY_SHA must be the 40-character lowercase commit SHA" >&2
+  exit 2
+fi
+
 git status --short
 # 如果这里出现未提交的业务文件，先停止并处理，不要强制覆盖。
 
+test -z "$(git status --porcelain)" || {
+  echo "ERROR: working tree is not clean; stop instead of overwriting local changes" >&2
+  exit 1
+}
+
+test "$(git branch --show-current)" = "master" || {
+  echo "ERROR: expected the production checkout to be on master" >&2
+  exit 1
+}
+
 git fetch origin
 git pull --ff-only origin master
+
+git show -s --format='commit %H%nsubject %s' HEAD
+SERVER_SHA="$(git rev-parse HEAD)"
+if [ "$SERVER_SHA" != "$DEPLOY_SHA" ]; then
+  echo "ERROR: server SHA $SERVER_SHA does not match target SHA $DEPLOY_SHA" >&2
+  echo "Stop and use the exact CI-passed commit; do not deploy this checkout." >&2
+  exit 1
+fi
 ```
 
-如果要部署特定提交，记录该提交的完整 SHA（不能只使用 GitHub 页面上的短 SHA）：
-
-```bash
-git rev-parse HEAD
-```
-
-确认生产配置仍然存在：
+服务器代码版本确认无误后，检查生产环境文件和 Compose 配置：
 
 ```bash
 test -f .env || { echo "ERROR: .env missing" >&2; exit 1; }
+docker compose --env-file .env config -q
 ```
 
-#### 2.3.2 登录 GHCR 并执行部署
+#### 2.3.3 登录 GHCR 并执行部署
 
 GHCR 为私有仓库时，使用只有 `packages:read` 权限的 GitHub Token。不要把 Token 写进命令行参数或提交到文件：
 
@@ -157,13 +189,20 @@ printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
 unset GHCR_TOKEN GHCR_USERNAME
 ```
 
-将 `IMAGE_VERSION` 替换为已经通过 CI 的完整 commit SHA 或 release tag，然后执行：
+使用 2.3.2 中已经核对过的 `DEPLOY_SHA` 执行发布。不要改成另一个 SHA，也不要绕过 `scripts/deploy.sh` 直接切换应用容器：
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
-IMAGE_VERSION='完整 commit SHA 或 release tag'
+test -n "${DEPLOY_SHA:-}" || {
+  echo "ERROR: DEPLOY_SHA is not set; use the SHA verified in 2.3.2" >&2
+  exit 2
+}
+test "$(git rev-parse HEAD)" = "$DEPLOY_SHA" || {
+  echo "ERROR: current checkout no longer matches DEPLOY_SHA" >&2
+  exit 1
+}
 IMAGE_REGISTRY='ghcr.io/zengbbxx11/full-stack-songdian' \
-  bash scripts/deploy.sh "$IMAGE_VERSION"
+  bash scripts/deploy.sh "$DEPLOY_SHA"
 ```
 
 `scripts/deploy.sh` 会依次执行：
@@ -182,13 +221,17 @@ IMAGE_REGISTRY='ghcr.io/zengbbxx11/full-stack-songdian' \
 Deployment <commit-sha> completed successfully.
 ```
 
-#### 2.3.3 手动部署后的验证
+#### 2.3.4 手动部署后的验证
 
 ```bash
 cd /home/ubuntu/full-stack-songdian
 
 # 五个服务状态
 docker compose --env-file .env ps
+
+# 确认运行中的三组应用镜像标签和脚本记录的版本
+docker compose --env-file .env images
+cat .deploy/current-version
 
 # 确认前端容器内包含 About 页视频、poster 与默认社交图
 docker compose --env-file .env exec -T frontend sh -lc \
@@ -198,6 +241,21 @@ docker compose --env-file .env exec -T frontend sh -lc \
    ls -lh /app/public/Video/SongdianFactoryVideo.mp4 \
           /app/public/Video/factory-poster.webp \
           /app/public/og/og-default.jpg'
+
+# 通过公网反代检查 API、官网和管理后台
+curl -fsS --max-time 15 https://api.zsaki.icu/readyz
+curl -fsS --max-time 15 -o /dev/null -w "website: %{http_code}\n" \
+  https://www.zsaki.icu/
+curl -fsS --max-time 15 -o /dev/null -w "admin: %{http_code}\n" \
+  https://admin.zsaki.icu/signin
+
+# /llms.txt：应返回 200，响应类型应为 text/plain
+curl -fsS --max-time 15 -D - -o /tmp/songdian-llms.txt \
+  https://www.zsaki.icu/llms.txt
+
+# 默认 OG 图：应返回 200，响应类型应为 image/jpeg
+curl -fsS --max-time 15 -D - -o /dev/null \
+  https://www.zsaki.icu/og/og-default.jpg
 
 # 官网 About 页
 curl -sS -o /dev/null -w "%{http_code}\n" \
@@ -557,9 +615,19 @@ docker compose ps                       # 当前状态一览
 | **询盘国家分布** | 运营在后台询盘跟进对话框标记 country，Dashboard 统计才有数据 |
 | **用户管理** | admin 账号不可删除；所有新账号统一 admin 权限；重置密码即时生效 |
 | **审计日志** | 36 处操作自动记录，后台侧边栏 → 审计日志查看 |
-| **GA4 事件** | `cta_click` / `product_view` / `contact_submit` 三个转化事件已埋点；需配置 `NEXT_PUBLIC_GA_ID` |
+| **GA4 事件** | `cta_click` / `product_view` / `contact_submit` 三个转化事件已埋点；优先在管理后台“设置”中配置 `ga_id`，`NEXT_PUBLIC_GA_ID` 仅作为兼容兜底 |
 | **Redis 缓存** | 产品列表(5min) / 分类(30min) / 新闻列表(5min) 自动缓存，写操作自动失效 |
 | **备份** | `scripts/backup.sh` 覆盖 PG + uploads，配置 cron 每日凌晨 3 点执行 |
+
+### 在线设置与回显验收
+
+GA4、Clarity 和站点/邮件相关配置可在管理后台的“设置”页面维护。`ga_id` 和 `clarity_id` 只填写 ID，不要粘贴 Google 或 Clarity 提供的完整 `<script>`；分析工具仍受官网分析同意流程控制，留空对应 ID 可关闭该工具。
+
+设置保存后无需重启应用。普通字段（例如 GA4 ID、Clarity 项目 ID、联系邮箱、SMTP 主机）重新进入页面或刷新后应继续明文回显；页面只提交实际修改的字段。SMTP 授权码属于敏感字段，只能看到密码框和“已配置”状态，后端返回值为 `******`，留空或不修改时保留原值。
+
+部署后可按下列方式做人工验收：登录 `https://admin.zsaki.icu`，进入“设置”，确认已保存的普通字段仍显示，修改一个普通字段后保存并刷新确认回显，再检查授权码仍为掩码。不要把真实 GA、Clarity、SMTP 值写入部署日志、截图、命令行或提交记录。
+
+如果设置页面显示读取失败，先使用页面的“重新读取设置”按钮；不要用空表单覆盖线上配置。保存成功但重新读取提示失败时，应保留页面显示的已保存值，待后端恢复后再重试读取。
 
 ### 自动备份（scripts/backup.sh）
 
@@ -708,7 +776,7 @@ curl -I https://admin.zsaki.icu/signin
 
 ---
 
-*最后更新：2026-08-27（同步默认 OG、Twitter metadata、llms.txt、工厂视频 poster 与静态资产 CI 门禁）*
+*最后更新：2026-09-02（固化同一 commit SHA 的 CI/images 门禁、服务器版本核对与发布后公网验收流程）*
 ## 本轮实现补充（2026-08-13）
 
 部署前请以仓库根目录 [`CURRENT_IMPLEMENTATION.md`](./CURRENT_IMPLEMENTATION.md) 为现状索引：

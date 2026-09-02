@@ -1,4 +1,4 @@
-# 当前实现总览（2026-09-01）
+# 当前实现总览（2026-09-02）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -47,6 +47,15 @@
 - 禁止在组件中重新拼接 `http://localhost:8000`，否则会破坏 Windows、Docker 和生产域名兼容性。
 - 产品/新闻编辑页包含内容状态、发布时间、版本历史、恢复和短期预览入口。
 
+## 系统设置与第三方统计配置
+
+- 管理后台 `/settings` 通过同源代理调用 `/api/v1/admin/settings`。`ga_id`、`clarity_id`、联系邮箱、SMTP 主机等普通配置保存后明文回显；GA4 和 Clarity 只填写对应 ID，不填写完整安装脚本。
+- 官网仍由现有的分析同意与运行时设置流程加载 GA4/Clarity；`ga_id` 或 `clarity_id` 留空即可关闭对应工具。本次后台回显修复没有新增统计脚本，也没有改变官网的同意逻辑。
+- 设置页只提交相对当前服务端值发生变化的字段，并在保存成功后同步 SWR 缓存；服务端刷新不会覆盖用户正在编辑的字段，避免旧缓存或竞态读取把已保存值显示为空。
+- 设置读取失败时显示可重试的错误状态；未确认到设置数据时禁止保存。保存成功但后续重新读取失败时，页面保留已保存值并提示重试。
+- `smtp_password` 是唯一按敏感值处理的设置：后端返回 `******`，界面使用密码输入框并显示“已配置”；留空或不修改时保留原授权码，新授权码保存后也不会明文回显。
+- 上述回显、局部提交和错误处理改动只涉及 `admin-next` 设置页，不涉及数据库结构、设置 API 协议或官网统计脚本。
+
 ## 现有业务与官网能力
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
@@ -75,7 +84,9 @@
 2. `.env`、`.env.local`、Cookie、数据库、上传卷和运行日志不得进入发布 commit。
 3. 产品或分类 slug 变化后运行 `npm run gen:map` 并提交规范 URL 映射。
 4. 在 GitHub Actions Variables 配置生产 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST`；根目录 `.env` 不会改写已经构建好的 GHCR 前端镜像。
-5. CI 全部通过后，以该 commit SHA 运行 `Deploy production`；不要把服务器现场构建作为正式发布方式。
+5. GitHub Actions 的 `CI` 中 `backend`、`frontend`、`admin`、`compose`、`migration`、`e2e`，以及同一 commit 的 `images` 矩阵三项均成功后，才允许发布；`images` 被跳过时不能部署。
+6. 从 GitHub commit 详情页复制 40 位完整 SHA；手动发布时在服务器执行 `git pull --ff-only origin master` 后，用 `git rev-parse HEAD` 与目标 SHA 核对一致，再执行 `scripts/deploy.sh`。
+7. 发布后必须检查 Compose 服务状态、`/readyz`、官网、管理后台、`/llms.txt`、默认 OG 图和视频 Range 响应；完整命令以 [`deploy-guide.md`](./deploy-guide.md) 的手动部署章节为准。
 
 ## 仍属于后续工作的事项
 

@@ -52,6 +52,14 @@ _GENERAL_DEFAULTS = [
 ]
 
 
+async def _invalidate_public_settings_cache() -> None:
+    """清理公开设置缓存，让后台修改在下一次官网请求时可见。"""
+    try:
+        await get_redis().delete(cache_key("public", "settings"))
+    except Exception:  # noqa: BLE001 - 缓存失效失败不应阻断配置保存
+        pass
+
+
 async def ensure_admin_settings() -> None:
     """惰性初始化后台可编辑的系统设置，且不覆盖已有值。
 
@@ -133,6 +141,8 @@ async def update_setting(
         value = setting.value
     setting.value = value
     await setting.save()
+    if key in PUBLIC_SETTING_KEYS:
+        await _invalidate_public_settings_cache()
     return Result.ok(msg="保存成功")
 
 
@@ -150,6 +160,7 @@ async def batch_update_settings(
     """
     body = await request.json()
     updated = 0
+    public_settings_changed = False
     for key, value in body.items():
         setting = await Setting.get_or_none(key=key)
         if setting is not None:
@@ -159,6 +170,9 @@ async def batch_update_settings(
             setting.value = str(value)
             await setting.save()
             updated += 1
+            public_settings_changed = public_settings_changed or key in PUBLIC_SETTING_KEYS
+    if public_settings_changed:
+        await _invalidate_public_settings_cache()
     return Result.ok(msg=f"已更新 {updated} 项配置")
 
 

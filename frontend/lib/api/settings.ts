@@ -9,10 +9,11 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
- * 后端公开设置接口返回的联系信息字段。
+ * 后端公开设置接口返回的联系信息、备案号和 Google Analytics 字段。
  * 所有字段均为可选 —— 未在后端配置时不会出现。
  */
 export interface PublicSettings {
+  ga_id?: string;
   company_email?: string;
   company_phone?: string;
   company_whatsapp?: string;
@@ -38,5 +39,27 @@ export async function getPublicSettings(): Promise<PublicSettings> {
     return json.code === "0" ? json.data : {};
   } catch {
     return {}; // 返回空对象，由调用方 fallback
+  }
+}
+
+/**
+ * 在浏览器端读取公开设置。
+ *
+ * CookieConsent 需要运行时读取后台保存的 GA ID，不能依赖构建时内联的环境变量。
+ * 使用 no-store 避免浏览器缓存旧配置；后端仍会使用自己的公开设置缓存。
+ * 请求失败返回 null，调用方可以区分“后台明确为空”和“接口不可用”。
+ */
+export async function getPublicSettingsClient(): Promise<PublicSettings | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/public/settings`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error("Failed to fetch public settings");
+    const json = await res.json();
+    if (json.code !== "0" && json.code !== 0) return null;
+    return (json.data ?? {}) as PublicSettings;
+  } catch {
+    return null;
   }
 }

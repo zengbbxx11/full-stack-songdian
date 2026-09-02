@@ -121,6 +121,40 @@ def test_admin_settings_are_initialized_lazily(client):
     assert {"ga_id", "google_verification", "smtp_host", "smtp_password"} <= set(data)
 
 
+def test_public_ga_setting_refreshes_after_admin_update(client):
+    h = _admin_headers(client)
+    initialized = client.get("/api/v1/admin/settings", headers=h)
+    assert initialized.status_code == 200, initialized.text
+
+    cached = client.get("/api/v1/public/settings")
+    assert cached.status_code == 200, cached.text
+    assert cached.json()["data"]["ga_id"] == ""
+
+    updated = client.put(
+        "/api/v1/admin/settings/ga_id",
+        headers=h,
+        json={"value": "G-TEST123"},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["code"] in (0, "0"), updated.json()
+
+    public = client.get("/api/v1/public/settings")
+    assert public.status_code == 200, public.text
+    assert public.json()["data"]["ga_id"] == "G-TEST123"
+
+    batch = client.put(
+        "/api/v1/admin/settings",
+        headers=h,
+        json={"ga_id": "G-TEST456"},
+    )
+    assert batch.status_code == 200, batch.text
+    assert batch.json()["code"] in (0, "0"), batch.json()
+
+    public_after_batch = client.get("/api/v1/public/settings")
+    assert public_after_batch.status_code == 200, public_after_batch.text
+    assert public_after_batch.json()["data"]["ga_id"] == "G-TEST456"
+
+
 def test_account_lock_after_five_failures(client):
     """连续 5 次错误密码 → 锁定；第 6 次正确密码仍失败（status=LOCKED，再次登录失败）。"""
     # 1~5 次错误密码

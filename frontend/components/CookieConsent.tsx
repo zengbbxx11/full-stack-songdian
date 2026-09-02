@@ -5,7 +5,8 @@
 //  - 白底卡片 + 极淡描边（ring，不用阴影）、Carbon 文字、Electric Blue 仅用于主 CTA；
 //  - 4px 圆角（按钮）/ 12px（卡片）、0.33s 过渡、无渐变；
 //  - 移动端优先：小屏整块堆叠，大屏横向操作区；
-//  - 仅在用户接受「分析」类且配置了 NEXT_PUBLIC_GA_ID 时注入 Google Analytics；
+//  - 仅在用户接受「分析」类且配置了后台 ga_id 时注入 Google Analytics；
+//    公开设置接口不可用时，允许使用 NEXT_PUBLIC_GA_ID 作为兜底。
 //  - 监听 "cookie-settings:open" 事件，供页脚「Cookie Settings」重新打开偏好面板。
 
 import Link from "next/link";
@@ -14,9 +15,11 @@ import { useEffect, useState } from "react";
 import { Settings2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getPublicSettingsClient } from "@/lib/api/settings";
 
 const STORAGE_KEY = "sd-cookie-consent";
 const CONSENT_VERSION = 1;
+const GA_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 type ConsentState = {
   necessary: true;
@@ -33,6 +36,11 @@ type Category = {
   description: string;
   locked?: boolean;
 };
+
+function safeGaId(value: unknown): string | null {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  return GA_ID_PATTERN.test(candidate) ? candidate : null;
+}
 
 const CATEGORIES: Category[] = [
   {
@@ -56,6 +64,7 @@ export default function CookieConsent() {
   const [show, setShow] = useState(false);
   const [view, setView] = useState<"banner" | "preferences">("banner");
   const [analyticsToggle, setAnalyticsToggle] = useState(false);
+  const [gaId, setGaId] = useState<string | null>(null);
 
   // 挂载后读取已存同意；无记录则展示横幅（避免 SSR 水合不一致）
   useEffect(() => {
@@ -76,6 +85,21 @@ export default function CookieConsent() {
       }
       setShow(true);
     });
+  }, []);
+
+  // 优先读取管理后台的运行时配置；公开接口不可用时回退到构建期环境变量。
+  useEffect(() => {
+    let active = true;
+    void getPublicSettingsClient().then((settings) => {
+      if (!active) return;
+      const resolvedId = settings
+        ? safeGaId(settings.ga_id)
+        : safeGaId(process.env.NEXT_PUBLIC_GA_ID);
+      setGaId(resolvedId);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // 页脚「Cookie Settings」触发重新打开偏好面板
@@ -113,8 +137,6 @@ export default function CookieConsent() {
   }
 
   if (!mounted) return null;
-
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
     <>

@@ -65,7 +65,7 @@ npm run build
 | `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名 |
 | `NEXT_PUBLIC_SITE_NAME` | 站点名称 | 用于 metadata |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认描述 | 避免与公开公司事实漂移 |
-| `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID | 留空时不加载 GA |
+| `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID 兜底 | 后台缺少 ga_id 或接口失败时使用；后台明确留空时关闭 GA |
 | `NEXT_PUBLIC_GOOGLE_VERIFICATION` | Search Console 验证码 | 可选 |
 | `NEXT_PUBLIC_ISR_REVALIDATE` | 默认 ISR 时间 | 单位为秒 |
 
@@ -76,6 +76,18 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 ```
 
 修改后重启开发服务器。生产启用此项会扩大服务端图片请求范围，因此禁止开启。
+
+## Google Analytics 与 Microsoft Clarity
+
+管理后台“系统设置”中填写 `ga_id`（GA4 测量 ID）和 `clarity_id`（Clarity 安装代码最后的项目 ID，仅字母和数字）。只填 ID，不要填写整段脚本。Clarity 默认关闭，没有环境变量或硬编码项目 ID；后台留空即可关闭。
+
+官网挂载后通过公开设置接口读取配置，请求最多等待 5 秒。后台保存会清理公开设置缓存，已打开的网页需完整刷新才能读取新 ID；后续修改 ID 无需重新构建前端。
+
+两个工具共享 Analytics Cookie 选择。新增会话回放后同意版本提升为 2，旧访客会重新看到提示。Clarity 仅在同意后向 head 异步插入脚本，广告存储始终拒绝；撤回同意时发送 Consent V2 拒绝信号并停止记录，再次同意会恢复。询盘表单包含 `data-clarity-mask="true"`，管理后台不加载 Clarity。
+
+首次部署后打开设置页保存 Clarity ID，在官网接受 Analytics Cookie，再到 Clarity 检查安装和会话。Clarity 项目侧请开启要求 Cookie 同意的设置。开发测试应拦截第三方请求，避免向真实项目发送测试流量。
+
+配置边界测试：`node --test scripts/test-tracking.mjs`。浏览器同意流程：启动官网后运行 `npm run test:e2e -- e2e/analytics-consent.spec.ts`；可用 `E2E_FRONTEND_URL` 指定地址，或用 `E2E_BROWSER_CHANNEL=chrome` 使用本机 Chrome。
 
 ## 路由与渲染
 

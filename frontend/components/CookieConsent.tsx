@@ -5,8 +5,8 @@
 //  - 白底卡片 + 极淡描边（ring，不用阴影）、Carbon 文字、Electric Blue 仅用于主 CTA；
 //  - 4px 圆角（按钮）/ 12px（卡片）、0.33s 过渡、无渐变；
 //  - 移动端优先：小屏整块堆叠，大屏横向操作区；
-//  - 仅在用户接受「分析」类且配置了后台 ga_id 时注入 Google Analytics；
-//    公开设置接口不可用时，允许使用 NEXT_PUBLIC_GA_ID 作为兜底。
+//  - 同意「分析」后按后台 ga_id / clarity_id 加载 Google Analytics / Clarity；
+//    GA 配置缺失或公开设置接口不可用时，允许 NEXT_PUBLIC_GA_ID 兜底。
 //  - 监听 "cookie-settings:open" 事件，供页脚「Cookie Settings」重新打开偏好面板。
 
 import Link from "next/link";
@@ -15,11 +15,12 @@ import { useEffect, useState } from "react";
 import { Settings2, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getPublicSettingsClient } from "@/lib/api/settings";
+import { getPublicSettingsClient, resolveGaId } from "@/lib/api/settings";
+import { safeClarityId, syncClarityConsent } from "@/lib/clarity";
 
 const STORAGE_KEY = "sd-cookie-consent";
-const CONSENT_VERSION = 1;
-const GA_ID_PATTERN = /^G-[A-Z0-9]+$/i;
+// Clarity adds session replay: ask returning visitors to review the expanded scope.
+const CONSENT_VERSION = 2;
 
 type ConsentState = {
   necessary: true;
@@ -37,11 +38,6 @@ type Category = {
   locked?: boolean;
 };
 
-function safeGaId(value: unknown): string | null {
-  const candidate = typeof value === "string" ? value.trim() : "";
-  return GA_ID_PATTERN.test(candidate) ? candidate : null;
-}
-
 const CATEGORIES: Category[] = [
   {
     id: "necessary",
@@ -54,7 +50,7 @@ const CATEGORIES: Category[] = [
     id: "analytics",
     title: "Analytics",
     description:
-      "Help us measure traffic and improve the site. Aggregated and non-identifying. Active only when Google Analytics is enabled.",
+      "Allow Google Analytics traffic measurement and Microsoft Clarity heatmaps and session recordings, when enabled. Inquiry form content is masked in recordings.",
   },
 ];
 
@@ -65,6 +61,7 @@ export default function CookieConsent() {
   const [view, setView] = useState<"banner" | "preferences">("banner");
   const [analyticsToggle, setAnalyticsToggle] = useState(false);
   const [gaId, setGaId] = useState<string | null>(null);
+  const [clarityId, setClarityId] = useState<string | null>(null);
 
   // 挂载后读取已存同意；无记录则展示横幅（避免 SSR 水合不一致）
   useEffect(() => {
@@ -92,15 +89,17 @@ export default function CookieConsent() {
     let active = true;
     void getPublicSettingsClient().then((settings) => {
       if (!active) return;
-      const resolvedId = settings
-        ? safeGaId(settings.ga_id)
-        : safeGaId(process.env.NEXT_PUBLIC_GA_ID);
-      setGaId(resolvedId);
+      setGaId(resolveGaId(settings, process.env.NEXT_PUBLIC_GA_ID));
+      setClarityId(safeClarityId(settings?.clarity_id));
     });
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    syncClarityConsent(clarityId, consent?.analytics === true);
+  }, [clarityId, consent?.analytics]);
 
   // 页脚「Cookie Settings」触发重新打开偏好面板
   useEffect(() => {
@@ -169,7 +168,8 @@ export default function CookieConsent() {
                   <h2 className="text-sm font-medium text-foreground">We use cookies</h2>
                   <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
                     We use cookies to keep the site running and, with your permission, to
-                    understand how visitors use it. See our{" "}
+                    measure traffic and use Microsoft Clarity heatmaps and session recordings
+                    to understand how visitors use it. See our{" "}
                     <Link
                       href="/privacy-policy#cookies"
                       className="font-medium text-primary hover:underline"

@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
+
 ADMIN = ("admin", "Songdian@2026")
 
 
@@ -118,41 +120,50 @@ def test_admin_settings_are_initialized_lazily(client):
     r = client.get("/api/v1/admin/settings", headers=h)
     assert r.status_code == 200, r.text
     data = r.json()["data"]
-    assert {"ga_id", "google_verification", "smtp_host", "smtp_password"} <= set(data)
+    assert {"ga_id", "clarity_id", "google_verification", "smtp_host", "smtp_password"} <= set(data)
 
 
-def test_public_ga_setting_refreshes_after_admin_update(client):
+@pytest.mark.parametrize(
+    ("key", "first_id", "second_id"),
+    [("ga_id", "G-TEST123", "G-TEST456"), ("clarity_id", "test123", "test456")],
+)
+def test_public_tracking_setting_refreshes_after_admin_update(client, key, first_id, second_id):
     h = _admin_headers(client)
     initialized = client.get("/api/v1/admin/settings", headers=h)
     assert initialized.status_code == 200, initialized.text
 
     cached = client.get("/api/v1/public/settings")
     assert cached.status_code == 200, cached.text
-    assert cached.json()["data"]["ga_id"] == ""
+    assert cached.json()["data"][key] == ""
+    assert "smtp_password" not in cached.json()["data"]
 
     updated = client.put(
-        "/api/v1/admin/settings/ga_id",
+        f"/api/v1/admin/settings/{key}",
         headers=h,
-        json={"value": "G-TEST123"},
+        json={"value": first_id},
     )
     assert updated.status_code == 200, updated.text
     assert updated.json()["code"] in (0, "0"), updated.json()
 
     public = client.get("/api/v1/public/settings")
     assert public.status_code == 200, public.text
-    assert public.json()["data"]["ga_id"] == "G-TEST123"
+    assert public.json()["data"][key] == first_id
 
     batch = client.put(
         "/api/v1/admin/settings",
         headers=h,
-        json={"ga_id": "G-TEST456"},
+        json={key: second_id},
     )
     assert batch.status_code == 200, batch.text
     assert batch.json()["code"] in (0, "0"), batch.json()
 
     public_after_batch = client.get("/api/v1/public/settings")
     assert public_after_batch.status_code == 200, public_after_batch.text
-    assert public_after_batch.json()["data"]["ga_id"] == "G-TEST456"
+    assert public_after_batch.json()["data"][key] == second_id
+
+    cleared = client.put("/api/v1/admin/settings", headers=h, json={key: ""})
+    assert cleared.json()["code"] in (0, "0"), cleared.text
+    assert client.get("/api/v1/public/settings").json()["data"][key] == ""
 
 
 def test_account_lock_after_five_failures(client):

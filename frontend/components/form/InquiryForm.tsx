@@ -180,7 +180,7 @@ export default function InquiryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} data-clarity-mask="true">
       <Card className="w-full border-[var(--border)]" style={{ borderRadius: "12px" }}>
         <CardHeader>
           <CardTitle className="text-xl font-bold text-gray-900">Send an Inquiry</CardTitle>

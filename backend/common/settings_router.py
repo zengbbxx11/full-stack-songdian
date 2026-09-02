@@ -30,6 +30,7 @@ PUBLIC_SETTING_KEYS = {
     "company_facebook",
     "site_name",
     "ga_id",
+    "clarity_id",
 }
 PUBLIC_SETTINGS_TTL = 300  # 缓存 5 分钟
 
@@ -48,6 +49,7 @@ _SMTP_DEFAULTS = [
 
 _GENERAL_DEFAULTS = [
     ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
+    ("clarity_id", "", "Microsoft Clarity 项目 ID", "填写安装代码中的项目 ID（仅字母和数字），不要粘贴整段脚本；留空关闭"),
     ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
 ]
 

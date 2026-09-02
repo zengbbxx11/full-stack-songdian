@@ -314,7 +314,7 @@ export const STRENGTHS = [
  */
 export const PRIVACY = {
   /** 最近更新日期 */
-  lastUpdated: "July 27, 2026",
+  lastUpdated: "September 2, 2026",
   /** 开篇说明（数据控制者 + 适用范围） */
   intro:
     "Songdian Technology (Guangdong) Co., Ltd. (\"Songdian\", \"we\", \"us\") operates this website to present our OEM/ODM digital camera manufacturing services to business customers worldwide. This Privacy Policy explains what personal information we collect, how we use and protect it, and the choices and rights you have. By using this site, you agree to the practices described below.",
@@ -337,7 +337,7 @@ export const PRIVACY = {
         "Inquiry & contact forms — your name, company name, business email, optional phone number, and the message you submit.",
         "Subscriptions — your email address if you sign up for product updates or newsletters.",
         "Partner accounts — login credentials and profile details if you are granted access to a customer portal.",
-        "Automatically collected data — IP address, browser and device type, and referring pages. Aggregated, non-identifying usage analytics are collected only where you have accepted analytics cookies (see Section 5).",
+        "Automatically collected data — IP address, browser and device type, and referring pages. With your analytics consent, enabled tools may collect page views, clicks, scrolls, and interaction recordings to help us improve the website (see Section 5).",
       ],
     },
     {
@@ -366,7 +366,7 @@ export const PRIVACY = {
       ],
       bullets: [
         "Strictly necessary — required for core site functionality and security.",
-        "Analytics — help us measure traffic and improve the site (aggregated, non-identifying). Loaded only after you accept them.",
+        "Analytics — when enabled, Google Analytics measures traffic and Microsoft Clarity provides heatmaps and session recordings of website interactions. These tools load only after you accept analytics cookies. Inquiry form content is masked in Clarity recordings. We send Clarity a denied advertising-storage signal. You can withdraw your choice through Cookie Settings; withdrawing stops Clarity recording.",
         "Preference — remember choices such as language or region.",
       ],
     },
@@ -377,7 +377,7 @@ export const PRIVACY = {
         "We do not sell your personal information. We share it only with:",
       ],
       bullets: [
-        "Service providers — vetted partners who help us run the site, deliver email, and provide IT and customer-support services, bound by confidentiality.",
+        "Service providers — partners who help us run the site, deliver email, and provide IT and customer-support services. When analytics tools are enabled and you consent, website usage data is also processed by Google Analytics and Microsoft Clarity. Microsoft's handling of this data is described at https://privacy.microsoft.com/privacystatement.",
         "Professional advisors and authorities — where required by law, regulation, legal process, or to protect rights and safety.",
         "A successor entity — in connection with a merger, acquisition, or asset transfer, subject to this policy.",
       ],

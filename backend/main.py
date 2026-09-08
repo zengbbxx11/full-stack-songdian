@@ -1,19 +1,7 @@
-"""应用入口 — FastAPI 启动文件
-────────────────────────────────────────────────
-这个文件是后端的"总开关"。你运行 `uvicorn main:app` 时，
-就是从这里的 `app = FastAPI(...)` 开始启动整个服务。
+"""FastAPI entry point: dependencies, routes, scheduled publishing and durable jobs.
 
-启动流程（按顺序）：
-  ① 连 Redis（连不上就降级到内存，不会崩）
-  ② 连 PostgreSQL + 创建/更新数据库表
-  ③ 如果 .env 里 SEED_ON_START=true → 自动写入种子数据（admin 账号等）
-  ④ 注册所有 API 路由（产品/新闻/搜索/询盘/登录/上传...）
-  ⑤ 挂载静态文件服务（/uploads/ 下的图片）
-  ⑥ 监听 8000 端口，等待请求
-
-关闭流程：
-  ① 断开数据库连接
-  ② 断开 Redis 连接
+PostgreSQL schema changes run through the separate Aerich migration step.
+Redis is required in production Compose; local development may use memory.
 """
 from __future__ import annotations
 
@@ -47,12 +35,10 @@ async def lifespan(app: FastAPI):
     """应用生命周期：启动时初始化服务，关闭时释放资源。"""
 
     # ── 启动阶段 ──
-    # 1. Redis：先尝试连接。如果 Redis 没装或挂了，自动降级为"进程内内存字典"，
-    #    缓存/限流/幂等全部用内存替代，绝不因此阻断启动。
+    # Redis：生产要求真实连接，开发环境可降级到内存。
     await init_redis()
 
-    # 2. 数据库：连接 PostgreSQL，自动建表/加列（如果缺少）。
-    #    用的是 Tortoise ORM，它会根据 models.py 中的定义自动同步表结构。
+    # PostgreSQL 只连接；schema 由独立 Aerich 迁移维护。SQLite 测试自动建表。
     await init_db()
 
     # 3. 种子数据：如果 .env 里设置了 SEED_ON_START=true，
@@ -80,14 +66,17 @@ async def lifespan(app: FastAPI):
         name="scheduled-content-publisher",
     )
 
-    # yield 之后是关闭阶段
-    yield
-
-    # ── 关闭阶段 ──
-    scheduler_stop.set()
-    await scheduler_task
-    await close_db()
-    await close_redis()
+    from common.tasks import job_loop
+    jobs_task = asyncio.create_task(job_loop(scheduler_stop), name="background-jobs")
+    try:
+        yield
+    finally:
+        scheduler_stop.set()
+        try:
+            await asyncio.wait_for(asyncio.gather(scheduler_task, jobs_task), timeout=30)
+        finally:
+            await close_db()
+            await close_redis()
 
 
 # 生产环境下自动隐藏 /docs API 文档页面（安全考虑）

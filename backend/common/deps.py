@@ -3,21 +3,16 @@
 设计约束：
 - ``get_current_user``：校验 HttpOnly ``access_token`` Cookie，缺失/过期/黑名单/禁用 → C401001/C403001。
 - ``require_permission(code)``：在已登录基础上校验 RBAC 权限码，无权限 → C403001(A050003)。
-- 权限经 Redis 缓存 ``auth:perm:{uid}``（TTL=access_token_ttl），无 Redis 时直查 PG（BD-03 降级）。
+- 权限从数据库读取，避免撤权与缓存回填竞争导致旧权限复活。
 - ``get_settings``：注入全局配置。
 """
 from __future__ import annotations
-
-import hashlib
-import hmac
-import json
 
 from fastapi import Depends, Request
 
 from common.config import settings
 from common.exceptions import BizException, ErrorCode
 from common.jwt import decode_token, is_revoked
-from common.redis_client import cache_key, get_redis
 
 # 避免循环依赖：直接引用模型，不引用 content.services
 from content.models import AdminUser, RolePermission
@@ -55,61 +50,17 @@ async def get_current_user(
     user = await AdminUser.get_or_none(id=int(payload["sub"]))
     if user is None:
         raise BizException(ErrorCode.C401001)
+    if payload.get("sv", 0) != user.session_version:
+        raise BizException(ErrorCode.C401001)
     if user.status != "ENABLED":
         # 禁用/锁定账号禁止操作
         raise BizException(ErrorCode.C403001, "账号已被禁用或锁定")
     return user
 
 
-# ── F-05：RBAC 权限缓存 HMAC 签名（防共享 Redis 被篡改注入权限）──
-def _sign_perms(perms: list[str]) -> str:
-    body = json.dumps(perms, separators=(",", ":"), ensure_ascii=False)
-    key = (settings.jwt_secret or "dev-insecure-default").encode("utf-8")
-    sig = hmac.new(key, body.encode("utf-8"), hashlib.sha256).hexdigest()
-    return f"{sig}:{body}"
-
-
-def _verify_perms(signed: str) -> list[str] | None:
-    try:
-        sig, _, body = signed.partition(":")
-        if not sig or not body:
-            return None
-        key = (settings.jwt_secret or "dev-insecure-default").encode("utf-8")
-        expected = hmac.new(key, body.encode("utf-8"), hashlib.sha256).hexdigest()
-        if hmac.compare_digest(sig, expected):
-            return json.loads(body)
-    except Exception:  # noqa: BLE001
-        return None
-    return None
-
-
 async def get_user_permissions(user: AdminUser) -> list[str]:
-    """获取用户权限码（带 HMAC 签名缓存，security-audit F-05）。"""
-    redis = get_redis()
-    perm_cache_key = cache_key("auth", "perm", user.id)
-    try:
-        cached = await redis.get(perm_cache_key)
-        if cached:
-            verified = _verify_perms(cached)
-            if verified is not None:
-                return verified
-    except Exception:  # noqa: BLE001
-        pass
-
-    role = await user.role
-    if role is None:
-        perms: list[str] = []
-    else:
-        perms = list(
-            await RolePermission.filter(role_id=role.id).values_list(
-                "permission_code", flat=True
-            )
-        )
-    try:
-        await redis.setex(perm_cache_key, settings.access_token_ttl, _sign_perms(perms))
-    except Exception:  # noqa: BLE001
-        pass
-    return perms
+    """Read current grants from DB: revocations cannot race with cached permission fills."""
+    return list(await RolePermission.filter(role_id=user.role_id).values_list("permission_code", flat=True))
 
 
 def require_permission(code: str):

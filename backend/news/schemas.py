@@ -21,6 +21,7 @@ class NewsCreateRequest(BaseModel):
     summary: str = Field(..., max_length=500)
     content_html: str
     category_id: int
+    cover_image: str | None = Field(default=None, max_length=500)
     author: str | None = Field(default=None, max_length=100)
     published_at: datetime | None = None
     status: str = NewsStatus.DRAFT.value  # 默认草稿，需显式发布（security-audit：防新闻被自动公开）
@@ -50,7 +51,7 @@ class NewsUpdateRequest(BaseModel):
     published_at: datetime | None = None
     status: str | None = None
     sort_order: float | None = None
-    cover_image: str | None = None
+    cover_image: str | None = Field(default=None, max_length=500)
     version: int | None = None
 
     @field_validator("slug")

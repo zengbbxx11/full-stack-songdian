@@ -62,9 +62,9 @@ async def logout(
     response: Response,
 ) -> Result:
     # 即使 access 已过期也应清理两枚 Cookie；refresh 仍可用于吊销整族会话。
-    token = request.cookies.get("access_token") or request.cookies.get("refresh_token")
-    if token:
-        await services.logout(token)
+    for token in {request.cookies.get("access_token"), request.cookies.get("refresh_token")}:
+        if token:
+            await services.logout(token)
     # 清除 HttpOnly Cookie（前端 document.cookie 无法清除 HttpOnly，必须由后端下发过期 Cookie）。
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
@@ -159,7 +159,7 @@ async def list_admin_users(
 
 @router.get("/admin/users/list", summary="Backend user list with roles")
 async def list_users_admin(
-    _user: AdminUser = Depends(require_permission("admin:login")),
+    _user: AdminUser = Depends(require_permission("role:update")),
 ) -> Result:
     users = await services.list_users()
     return Result.ok(users)
@@ -168,7 +168,7 @@ async def list_users_admin(
 @router.post("/admin/users", summary="Create backend user（统一管理员权限）")
 async def create_user(
     data: CreateUserRequest,
-    _user: AdminUser = Depends(require_permission("admin:login")),
+    _user: AdminUser = Depends(require_permission("role:update")),
 ) -> Result:
     result = await services.create_user(data.username, data.password)
     return Result.ok(result)
@@ -177,7 +177,7 @@ async def create_user(
 @router.delete("/admin/users/{user_id}", summary="Delete backend user")
 async def delete_user(
     user_id: int,
-    _user: AdminUser = Depends(require_permission("admin:login")),
+    _user: AdminUser = Depends(require_permission("role:update")),
 ) -> Result:
     await services.delete_user(user_id)
     return Result.ok({"id": user_id})
@@ -186,7 +186,7 @@ async def delete_user(
 @router.put("/admin/users/{user_id}/reset-password", summary="Reset user password")
 async def reset_user_password(
     user_id: int, data: ResetPasswordRequest,
-    _user: AdminUser = Depends(require_permission("admin:login")),
+    _user: AdminUser = Depends(require_permission("role:update")),
 ) -> Result:
     result = await services.reset_password(user_id, data.new_password)
     return Result.ok(result)

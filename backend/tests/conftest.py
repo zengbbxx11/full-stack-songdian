@@ -70,7 +70,7 @@ for _smtp_field in (
 
 
 @pytest.fixture(autouse=True, scope="function")
-def _qa_isolate_state():
+def _qa_isolate_state(monkeypatch):
     """QA 隔离夹具（在工程师基座之上扩展，不破坏原有 client 夹具）。
 
     每个用例独立：
@@ -78,6 +78,9 @@ def _qa_isolate_state():
       避免跨用例数据 / 软删 / 锁污染，也规避 sqlite 文件锁导致的清理失败。
     - 重置模块级内存 Redis 单例，使下一用例 lifespan 重新创建干净实例。
     """
+    async def idle_jobs(stop):
+        await stop.wait()
+    monkeypatch.setattr("common.tasks.job_loop", idle_jobs)
     db_name = f"test_{_uuid.uuid4().hex}.db"
     db_path = os.path.join(_PROJECT_ROOT, db_name)
     _cfg.settings.database_url = f"sqlite://{db_path}"

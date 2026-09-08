@@ -2,7 +2,7 @@
 
 > AGENTS.md — 新会话快速上手指南。聚焦「启动命令 + 模块结构 + 雷区踩坑 + 常用修改路径」。
 
-> 2026-08-26 更新：最新迁移为 15；15 号迁移补齐产品/新闻 `sort_order` 字段。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
+> 2026-09-08 更新：最新迁移为 16，新增后台任务表与账户会话版本；15 号迁移补齐产品/新闻 `sort_order` 字段。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
 
 ---
 
@@ -145,3 +145,14 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 产品主图、新闻封面、SEO 标题/描述和新闻摘要属于公开详情页 metadata 输入；写入、恢复和调度发布后必须继续执行 Redis 失效与 frontend ISR revalidation。
 - frontend 会在内容无图时回退默认品牌 OG 图；backend 不应把默认静态图 URL写入产品或新闻数据来模拟封面。
 - `/llms.txt` 由 frontend 基于共享公开公司资料生成，不新增 backend 路由、数据库表或缓存副本，避免两个事实源漂移。
+
+## 2026-09-08 可靠性约定
+
+- 询盘入库和邮件任务同事务提交；接口返回 PENDING，worker 异步发送，最多 5 次失败尝试。不得恢复为请求内等待 SMTP。
+- 内容写入、搜索向量、版本、缓存失效任务同事务；提交后尝试失效，失败由任务表重试。
+- PostgreSQL 编辑与 CRM 跟进使用事务行锁；不要对旧对象全字段保存覆盖并发修改。
+- SEO/封面/标签等局部更新必须区分未提交与显式清空。
+- 用户管理要求 role:update；已发布内容修改和已发布/定时版本恢复要求对应 publish 权限。
+- 改密递增 session_version，使旧 access/refresh 均失效；刷新族使用原子 SET NX 消费。权限读取数据库。
+- 新增模型模块 common.task_model，生产启动前必须先执行迁移 16。
+- 常规验证：pytest -q、ruff check .；PostgreSQL 并发验证：python -m scripts.verify_reliability，仅可对 backend_qa_* 或 *_ci 临时库运行。

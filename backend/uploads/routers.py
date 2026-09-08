@@ -133,10 +133,16 @@ async def upload_batch(
     vos: list[dict] = []
     saved_urls: list[str] = []
     records: list[UploadRecord] = []
+    total_bytes = 0
     try:
         for f in files:
             url = await backend.save(f, f.filename or "upload.bin")
             saved_urls.append(url)
+            total_bytes += f.size or 0
+            from common.config import settings
+            from common.exceptions import BizException
+            if total_bytes > settings.max_upload_total_mb * 1024 * 1024:
+                raise BizException(ErrorCode.C400001, "上传总大小超出限制")
             record = await services.record_upload(
                 url=url,
                 file_name=f.filename or "upload.bin",

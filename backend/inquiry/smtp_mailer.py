@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 
 from common.config import settings
@@ -101,13 +102,19 @@ def _send_sync(
 
     try:
         port = int(cfg.get("smtp_port") or 587)
-        with smtplib.SMTP(cfg["smtp_host"], port, timeout=10) as server:
-            server.starttls()
+        recipients = [value.strip() for value in cfg["inquiry_email_to"].split(",") if value.strip()]
+        if port == 465:
+            connection = smtplib.SMTP_SSL(cfg["smtp_host"], port, timeout=10, context=ssl.create_default_context())
+        else:
+            connection = smtplib.SMTP(cfg["smtp_host"], port, timeout=10)
+        with connection as server:
+            if port != 465:
+                server.starttls(context=ssl.create_default_context())
             if cfg.get("smtp_password"):
                 server.login(cfg["smtp_user"], cfg["smtp_password"])
             server.sendmail(
                 cfg["inquiry_email_from"],
-                [cfg["inquiry_email_to"]],
+                recipients,
                 msg.as_string(),
             )
         return SmtpStatus.SENT

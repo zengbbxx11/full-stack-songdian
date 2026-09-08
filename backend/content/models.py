@@ -20,6 +20,7 @@ class AdminUser(TimestampedMixin, Model):
     status = fields.CharField(max_length=30, default="ENABLED")  # ENABLED/DISABLED/LOCKED
     last_login = fields.DatetimeField(null=True)
     login_fail = fields.IntField(default=0)
+    session_version = fields.IntField(default=0)
 
     class Meta:
         table = "t_admin_user"

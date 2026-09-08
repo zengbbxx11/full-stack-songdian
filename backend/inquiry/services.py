@@ -11,13 +11,13 @@
 """
 from __future__ import annotations
 
-import json
 import re
 from datetime import UTC, datetime, timedelta
 
 from common.enums import InquiryStatus, SmtpStatus
 from common.exceptions import BizException, ErrorCode
-from common.idempotency import acquire_idempotency
+from common.tasks import enqueue, transactional_write
+from tortoise.exceptions import IntegrityError
 from common.result import PageRequest
 from content.models import AdminUser, NotificationReadState
 from inquiry.models import Inquiry
@@ -29,7 +29,6 @@ from inquiry.schemas import (
     InquirySubmitRequest,
     InquiryVO,
 )
-from inquiry.smtp_mailer import send_inquiry_mail
 from tortoise.expressions import Q
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -54,40 +53,23 @@ async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
     # 业务校验先行：非法输入直接走 A040001/A040002（HTTP 200），不污染幂等键。
     _validate_inquiry_request(data)
 
-    # 幂等：biz_req_no 占位；重复提交返回首次结果
-    first = await acquire_idempotency(f"inquiry:{data.biz_req_no}")
-    if not first:
+    # The database unique constraint is authoritative, even after Redis eviction/restart.
+    existing = await Inquiry.get_or_none(biz_req_no=data.biz_req_no)
+    if existing is not None:
+        return InquiryVO.from_model(existing)
+    from tortoise.transactions import in_transaction
+    try:
+        async with in_transaction():
+            inquiry = await Inquiry.create(
+                **data.model_dump(), status=InquiryStatus.NEW.value,
+                smtp_status=SmtpStatus.PENDING.value, smtp_retry=0,
+            )
+            await enqueue("inquiry_mail", {"inquiry_id": inquiry.id})
+    except IntegrityError:
         existing = await Inquiry.get_or_none(biz_req_no=data.biz_req_no)
-        if existing is not None:
-            return InquiryVO.from_model(existing)
-        # 极端情况：键存在但行未落库，继续创建（兜底）
-
-    inquiry = await Inquiry.create(
-        name=data.name, email=data.email, phone=data.phone, company=data.company,
-        country=data.country, product_interest=data.product_interest,
-        message=data.message, source_page=data.source_page,
-        landing_page=data.landing_page, source_product=data.source_product,
-        referrer=data.referrer, utm_source=data.utm_source,
-        utm_medium=data.utm_medium, utm_campaign=data.utm_campaign,
-        utm_term=data.utm_term, utm_content=data.utm_content,
-        biz_req_no=data.biz_req_no, status=InquiryStatus.NEW.value,
-        smtp_status=SmtpStatus.PENDING.value, smtp_retry=0,
-    )
-
-    # 触发 SMTP（未配置则保持 PENDING，不报错）
-    extra = {
-        "company": data.company or "", "country": data.country or "",
-        "phone": data.phone or "", "product_interest": data.product_interest or "",
-        "source_page": data.source_page or "", "landing_page": data.landing_page or "",
-        "source_product": data.source_product or "", "referrer": data.referrer or "",
-        "utm_source": data.utm_source or "", "utm_medium": data.utm_medium or "",
-        "utm_campaign": data.utm_campaign or "",
-    }
-    smtp_status = await send_inquiry_mail(data.name, data.email, data.message, extra=extra)
-    inquiry.smtp_status = smtp_status.value
-    if smtp_status == SmtpStatus.FAILED:
-        inquiry.smtp_retry = (inquiry.smtp_retry or 0) + 1
-    await inquiry.save()
+        if existing is None:
+            raise
+        return InquiryVO.from_model(existing)
     return InquiryVO.from_model(inquiry)
 
 
@@ -135,8 +117,9 @@ _ALLOWED_TRANSITIONS = {
 }
 
 
+@transactional_write
 async def update_status(inquiry_id: int, data: InquiryStatusRequest) -> InquiryDetailVO:
-    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    inquiry = await Inquiry.filter(id=inquiry_id).select_for_update().first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     allowed = _ALLOWED_TRANSITIONS.get(inquiry.status, set())
@@ -150,8 +133,8 @@ async def update_status(inquiry_id: int, data: InquiryStatusRequest) -> InquiryD
         inquiry.tags = data.tags
     if data.country is not None:
         inquiry.country = data.country
-    await inquiry.save()
-    return InquiryDetailVO.from_model(inquiry)
+    await inquiry.save(update_fields=["status", "reply_note", "tags", "country", "updated_time"])
+    return await get_inquiry(inquiry_id)
 
 
 async def delete_inquiry(inquiry_id: int) -> None:
@@ -164,9 +147,10 @@ async def delete_inquiry(inquiry_id: int) -> None:
 
 # ── CRM 新增操作（2026-07-31） ──
 
+@transactional_write
 async def assign_user(inquiry_id: int, data: InquiryAssignRequest, operator: AdminUser) -> InquiryDetailVO:
     """分配/取消分配销售人员。"""
-    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    inquiry = await Inquiry.filter(id=inquiry_id).select_for_update().first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     if data.assigned_user_id is not None:
@@ -176,46 +160,42 @@ async def assign_user(inquiry_id: int, data: InquiryAssignRequest, operator: Adm
         inquiry.assigned_user = assignee
     else:
         inquiry.assigned_user = None  # type: ignore[assignment]
-    await inquiry.save()
+    await inquiry.save(update_fields=["assigned_user_id", "updated_time"])
     # 自动追加一条跟进记录
     note_text = f"分配给 {assignee.username}" if data.assigned_user_id else "取消分配"
     await _append_follow_note(inquiry_id, note_text, operator.username)
-    return InquiryDetailVO.from_model(inquiry)
+    return await get_inquiry(inquiry_id)
 
 
+@transactional_write
 async def add_follow_note(inquiry_id: int, data: FollowNoteRequest, operator: AdminUser) -> InquiryDetailVO:
     """追加跟进记录，并更新 last_contact_time。"""
-    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    inquiry = await Inquiry.filter(id=inquiry_id).select_for_update().first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     await _append_follow_note(inquiry_id, data.note, operator.username)
     inquiry.last_contact_time = datetime.now(UTC)
-    await inquiry.save()
-    return InquiryDetailVO.from_model(inquiry)
+    await inquiry.save(update_fields=["last_contact_time", "updated_time"])
+    return await get_inquiry(inquiry_id)
 
 
+@transactional_write
 async def update_tags(inquiry_id: int, tags: list[str]) -> InquiryDetailVO:
     """整体覆盖标签数组。"""
-    inquiry = await Inquiry.filter(id=inquiry_id).select_related("assigned_user").first()
+    inquiry = await Inquiry.filter(id=inquiry_id).select_for_update().first()
     if inquiry is None:
         raise BizException(ErrorCode.C404001, "询盘不存在")
     inquiry.tags = tags
-    await inquiry.save()
-    return InquiryDetailVO.from_model(inquiry)
+    await inquiry.save(update_fields=["tags", "updated_time"])
+    return await get_inquiry(inquiry_id)
 
 
 async def _append_follow_note(inquiry_id: int, note: str, username: str) -> None:
-    """内部公共：逐条追加跟进时间线记录（不重新查 Inquiry，调用方负责）。"""
+    """Caller holds the inquiry row lock and transaction (also works on SQLite)."""
+    inquiry = await Inquiry.get(id=inquiry_id)
     entry = {"time": datetime.now(UTC).isoformat(), "user": username, "note": note}
-    # 用原生 update 避免并发覆盖 risk
-    from tortoise import connections
-    conn = connections.get("default")
-    await conn.execute_query(
-        """UPDATE "t_inquiry"
-           SET follow_notes = COALESCE(follow_notes, '[]'::jsonb) || $1::jsonb
-           WHERE id = $2""",
-        [f"[{json.dumps(entry)}]", inquiry_id],
-    )
+    inquiry.follow_notes = [*(inquiry.follow_notes or []), entry]
+    await inquiry.save(update_fields=["follow_notes", "updated_time"])
 
 
 async def list_notifications(user: AdminUser) -> dict:
@@ -273,7 +253,9 @@ async def list_notifications(user: AdminUser) -> dict:
         key=lambda item: item["created_time"] or datetime.min.replace(tzinfo=UTC), reverse=True
     )
     notifications = notifications[:100]
-    read_keys = set(await NotificationReadState.filter(user_id=user.id).values_list(
+    read_keys = set(await NotificationReadState.filter(
+        user_id=user.id, notification_key__in=[item["key"] for item in notifications]
+    ).values_list(
         "notification_key", flat=True
     ))
     for item in notifications:

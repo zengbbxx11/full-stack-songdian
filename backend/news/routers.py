@@ -117,9 +117,10 @@ async def restore_news_revision(
     news_id: int,
     revision_id: int,
     request: Request,
+    can_publish: bool = Depends(optional_permission("news:publish")),
     current_user: AdminUser = Depends(require_permission("news:update")),
 ) -> Result:
-    vo = await services.restore_news_revision(news_id, revision_id, current_user.username)
+    vo = await services.restore_news_revision(news_id, revision_id, current_user.username, can_publish=can_publish)
     return Result.ok(vo.model_dump(mode="json"))
 
 
@@ -155,6 +156,17 @@ async def create_news_category(
     return Result.ok(vo.model_dump(mode="json"))
 
 
+@router.put("/admin/news-categories/sort", summary="新闻分类拖拽排序")
+@audit(action="news.category.sort", resource="news:category:sort")
+async def reorder_news_categories(
+    data: NewsCategoryReorderReq,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("news:category:update")),
+) -> Result:
+    await services.reorder_news_category(data.ids)
+    return Result.ok(msg="已排序")
+
+
 @router.put("/admin/news-categories/{news_category_id}", summary="更新新闻分类")
 @audit(action="news.category.update", resource="news:category:{news_category_id}")
 async def update_news_category(
@@ -176,14 +188,3 @@ async def delete_news_category(
 ) -> Result:
     await services.delete_news_category(news_category_id, operator=current_user.username)
     return Result.ok(msg="已删除")
-
-
-@router.put("/admin/news-categories/sort", summary="新闻分类拖拽排序")
-@audit(action="news.category.sort", resource="news:category:sort")
-async def reorder_news_categories(
-    data: NewsCategoryReorderReq,
-    request: Request,
-    current_user: AdminUser = Depends(require_permission("news:category:update")),
-) -> Result:
-    await services.reorder_news_category(data.ids)
-    return Result.ok(msg="已排序")

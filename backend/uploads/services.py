@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+import asyncio
 import os
 import re
 import uuid
@@ -96,10 +97,8 @@ class LocalStorageBackend:
         if ext not in ALLOWED_EXT:
             raise BizException(ErrorCode.C400001, f"不支持的文件类型：{ext or '未知'}")
 
-        content = await file.read()
-
-        # 魔数 + mimetypes 双重校验（防扩展名伪造 / 脚本伪装成图片上传）
-        _validate_image_content(content, filename)
+        max_bytes = settings.max_upload_mb * 1024 * 1024
+        content = await file.read(max_bytes + 1)
 
         max_bytes = settings.max_upload_mb * 1024 * 1024
         if len(content) > max_bytes:
@@ -108,12 +107,15 @@ class LocalStorageBackend:
                 f"文件大小 {len(content) // 1024}KB 超过 {settings.max_upload_mb}MB 上限",
             )
 
+        _validate_image_content(content, filename)
+        file.size = len(content)
+
         # 按年份分子目录，使用 uuid 避免文件名碰撞
         year = datetime.now(UTC).strftime("%Y")
         target_dir = self.root / year
-        target_dir.mkdir(parents=True, exist_ok=True)
+        await asyncio.to_thread(target_dir.mkdir, parents=True, exist_ok=True)
         stored_name = f"{uuid.uuid4().hex}{ext}"
-        (target_dir / stored_name).write_bytes(content)
+        await asyncio.to_thread((target_dir / stored_name).write_bytes, content)
 
         return f"{settings.media_url}/{year}/{stored_name}"
 

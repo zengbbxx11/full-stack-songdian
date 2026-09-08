@@ -6,6 +6,7 @@ import json
 from fastapi import APIRouter, Depends, Request
 
 from common.audit import audit
+from common.tasks import transactional_write
 from common.deps import get_current_user, require_permission
 from common.enums import SmtpStatus
 from common.redis_client import cache_key, get_redis
@@ -139,7 +140,7 @@ async def update_setting(
     if setting is None:
         return Result(code="A010001", msg="配置项不存在", data=None)
     # SMTP 密码：前端回传掩码时保留原值（未修改授权码）
-    if key == "smtp_password" and value == SMTP_PASSWORD_MASK:
+    if key == "smtp_password" and value in ("", None, SMTP_PASSWORD_MASK):
         value = setting.value
     setting.value = value
     await setting.save()
@@ -150,6 +151,7 @@ async def update_setting(
 
 @router.put("/admin/settings", summary="批量更新系统设置")
 @audit(action="settings.batch_update", resource="settings")
+@transactional_write
 async def batch_update_settings(
     request: Request,
     _user: AdminUser = Depends(require_permission("settings:update")),
@@ -167,7 +169,7 @@ async def batch_update_settings(
         setting = await Setting.get_or_none(key=key)
         if setting is not None:
             # SMTP 密码：前端回传掩码时保留原值（未修改授权码）
-            if key == "smtp_password" and str(value) == SMTP_PASSWORD_MASK:
+            if key == "smtp_password" and value in ("", None, SMTP_PASSWORD_MASK):
                 value = setting.value
             setting.value = str(value)
             await setting.save()

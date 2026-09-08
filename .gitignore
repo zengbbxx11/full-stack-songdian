@@ -41,3 +41,6 @@ test-results/
 .lighthouseci/
 # Local runtime logs
 runtime-logs/
+
+# Disposable backend integration databases and local verification scripts
+.qa/

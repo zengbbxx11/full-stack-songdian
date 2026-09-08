@@ -41,6 +41,7 @@ class Settings(BaseSettings):
         "uploads.models",
         "common.settings_model",
         "content_revision.models",
+        "common.task_model",
     ]
 
     # ── Redis（开发默认允许内存降级；生产 Compose 强制要求真实 Redis）──
@@ -81,8 +82,8 @@ class Settings(BaseSettings):
     rate_user_qps: int = 30
     rate_login_per_min: int = 10
 
-    # ── CORS（security-audit F-09）：显式来源，禁用凭据，避免通配 + cookie 风险 ──
-    # 逗号分隔，如 "http://localhost:3000,http://localhost:3001"。Bearer 鉴权无需凭据。
+    # Cookie 鉴权允许携带凭据；CORS 只接受显式配置的可信来源。
+    # 逗号分隔，如 "http://localhost:3000,http://localhost:3001"。
     cors_origins: str = (
         "http://localhost:3000,http://localhost:3001,"
         "http://127.0.0.1:3000,http://127.0.0.1:3001"
@@ -168,6 +169,8 @@ class Settings(BaseSettings):
           避免被伪造令牌；OpenAPI 文档默认关闭（需显式 openapi_docs_enabled=true）。
         """
         is_prod = self.app_env.strip().lower() == "production"
+        if is_prod and self.jwt_secret and len(self.jwt_secret.encode("utf-8")) < 32:
+            raise RuntimeError("生产环境 JWT_SECRET 必须至少为 32 字节")
         placeholder = "change-me-strong-random"
         if not self.jwt_secret or self.jwt_secret == placeholder:
             if is_prod:

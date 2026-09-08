@@ -84,6 +84,8 @@ class ApiSecurityMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        # This middleware runs outside TraceMiddleware; populate IP before limiting.
+        request.scope["client_ip"] = get_client_ip(request)
         if path.startswith("/api/v1/"):
             try:
                 await api_rate_limit(request)

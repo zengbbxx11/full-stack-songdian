@@ -11,6 +11,9 @@ from common.config import TORTOISE_ORM
 REQUIRED_COLUMNS = {
     ("t_product", "sort_order"),
     ("t_news", "sort_order"),
+    ("t_admin_user", "session_version"),
+    ("t_background_job", "payload"),
+    ("t_background_job", "lease_token"),
 }
 
 
@@ -25,7 +28,10 @@ async def verify_schema() -> None:
             WHERE table_schema = current_schema()
               AND (table_name, column_name) IN (
                   ('t_product', 'sort_order'),
-                  ('t_news', 'sort_order')
+                  ('t_news', 'sort_order'),
+                  ('t_admin_user', 'session_version'),
+                  ('t_background_job', 'payload'),
+                  ('t_background_job', 'lease_token')
               )
             """
         )
@@ -34,7 +40,7 @@ async def verify_schema() -> None:
         if missing:
             formatted = ", ".join(f"{table}.{column}" for table, column in missing)
             raise RuntimeError(f"Missing required database columns after migration: {formatted}")
-        print("Schema verification passed: t_product.sort_order, t_news.sort_order")
+        print("Schema verification passed:", ", ".join(f"{t}.{c}" for t, c in sorted(REQUIRED_COLUMNS)))
     finally:
         await Tortoise.close_connections()
 

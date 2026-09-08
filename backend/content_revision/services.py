@@ -7,19 +7,42 @@ from typing import Any, Awaitable, Callable
 import jwt
 from tortoise.functions import Max
 from tortoise.exceptions import IntegrityError
+from tortoise.transactions import in_transaction
+from common.logger import get_logger
 
 from common.config import settings
 from common.exceptions import BizException, ErrorCode
 from content_revision.models import ContentRevision
 
 PRODUCT_FIELDS = (
-    "slug", "title", "summary", "content_html", "category_id", "sku", "price",
-    "currency", "stock_status", "status", "published_at", "cover_image", "tags",
-    "sort_order", "seo_title", "seo_description",
+    "slug",
+    "title",
+    "summary",
+    "content_html",
+    "category_id",
+    "sku",
+    "price",
+    "currency",
+    "stock_status",
+    "status",
+    "published_at",
+    "cover_image",
+    "tags",
+    "sort_order",
+    "seo_title",
+    "seo_description",
 )
 NEWS_FIELDS = (
-    "slug", "title", "summary", "content_html", "category_id", "author",
-    "published_at", "status", "cover_image", "sort_order",
+    "slug",
+    "title",
+    "summary",
+    "content_html",
+    "category_id",
+    "author",
+    "published_at",
+    "status",
+    "cover_image",
+    "sort_order",
 )
 
 
@@ -36,21 +59,26 @@ def snapshot_model(model: Any, resource_type: str) -> dict[str, Any]:
     return result
 
 
-async def record_revision(model: Any, resource_type: str, change_type: str, operator: str) -> ContentRevision:
+async def record_revision(
+    model: Any, resource_type: str, change_type: str, operator: str
+) -> ContentRevision:
     for attempt in range(3):
-        rows = await ContentRevision.filter(
-            resource_type=resource_type, resource_id=model.id
-        ).annotate(max_version=Max("version")).values("max_version")
+        rows = (
+            await ContentRevision.filter(resource_type=resource_type, resource_id=model.id)
+            .annotate(max_version=Max("version"))
+            .values("max_version")
+        )
         current = max((row["max_version"] or 0 for row in rows), default=0)
         try:
-            return await ContentRevision.create(
-                resource_type=resource_type,
-                resource_id=model.id,
-                version=current + 1,
-                change_type=change_type,
-                snapshot=snapshot_model(model, resource_type),
-                created_by=operator or None,
-            )
+            async with in_transaction():
+                return await ContentRevision.create(
+                    resource_type=resource_type,
+                    resource_id=model.id,
+                    version=current + 1,
+                    change_type=change_type,
+                    snapshot=snapshot_model(model, resource_type),
+                    created_by=operator or None,
+                )
         except IntegrityError:
             if attempt == 2:
                 raise
@@ -114,8 +142,7 @@ async def scheduled_publish_loop(
         try:
             await publish_due()
         except Exception:  # noqa: BLE001
-            # 调度失败不能终止 API；下一周期会自动重试。
-            pass
+            get_logger(__name__).exception("Scheduled content publishing failed; will retry")
         try:
             await asyncio.wait_for(stop.wait(), timeout=max(settings.scheduled_publish_interval, 5))
         except TimeoutError:

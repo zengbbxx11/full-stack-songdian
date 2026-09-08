@@ -73,9 +73,9 @@ class ProductUpdateRequest(BaseModel):
     published_at: datetime | None = None
     cover_image: str | None = Field(default=None, max_length=500)
     sort_order: float | None = None
-    # tags：编辑时整体覆盖（T04）。缺省空数组。
+    # tags：提交时整体覆盖；未提交时保留原值，空数组表示清空。
     tags: list[str] = []
-    # SEO 字段（传 null / 不传则清空该字段，回退系统默认值）
+    # SEO 字段：未提交保留，显式 null/空字符串清空并回退默认值。
     seo_title: str | None = Field(default=None, max_length=120)
     seo_description: str | None = Field(default=None, max_length=300)
     version: int | None = None  # 乐观锁占位（当前以 id 为主键）

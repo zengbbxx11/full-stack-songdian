@@ -63,10 +63,10 @@ async def resolve_tsconfig() -> str:
         return _TS_CONFIG
     try:
         # 探测 'zh' 配置是否可用（依赖 zhparser 扩展）
-        await connections.get("default").execute_query(
-            "SELECT to_tsvector('zh', '探测')"
+        _, rows = await connections.get("default").execute_query(
+            "SELECT 1 FROM pg_ts_config WHERE cfgname = 'zh' AND pg_ts_config_is_visible(oid)"
         )
-        _TS_CONFIG = "zh"
+        _TS_CONFIG = "zh" if rows else "simple"
     except Exception:  # 配置不存在或无权访问，降级
         _TS_CONFIG = "simple"
     return _TS_CONFIG
@@ -93,6 +93,7 @@ async def update_search_vector(table: str, pk: int, *text_fields: str) -> None:
         await connections.get("default").execute_query(sql, [pk])
     except Exception as exc:  # 搜索向量失败不影响主数据落库，仅告警，可后续统一重建
         logger.warning("search_vector 重建失败 table=%s pk=%s: %s", table, pk, exc)
+        raise
 
 
 # 全文检索 GIN 索引名（与迁移 migrations/models/3_*.py 保持一致）

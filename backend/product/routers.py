@@ -115,9 +115,10 @@ async def add_gallery(
     product_id: int,
     data: GalleryCreateRequest,
     request: Request,
+    can_publish: bool = Depends(optional_permission("product:publish")),
     current_user: AdminUser = Depends(require_permission("product:update")),
 ) -> Result:
-    vo = await services.add_gallery(product_id, data)
+    vo = await services.add_gallery(product_id, data, can_publish=can_publish)
     return Result.ok(vo.model_dump(mode="json"))
 
 
@@ -127,9 +128,10 @@ async def delete_gallery(
     product_id: int,
     gallery_id: int,
     request: Request,
+    can_publish: bool = Depends(optional_permission("product:publish")),
     current_user: AdminUser = Depends(require_permission("product:update")),
 ) -> Result:
-    await services.delete_gallery(product_id, gallery_id)
+    await services.delete_gallery(product_id, gallery_id, can_publish=can_publish)
     return Result.ok(None)
 
 
@@ -139,9 +141,10 @@ async def add_attribute(
     product_id: int,
     data: AttributeCreateRequest,
     request: Request,
+    can_publish: bool = Depends(optional_permission("product:publish")),
     current_user: AdminUser = Depends(require_permission("product:update")),
 ) -> Result:
-    vo = await services.add_attribute(product_id, data)
+    vo = await services.add_attribute(product_id, data, can_publish=can_publish)
     return Result.ok(vo.model_dump(mode="json"))
 
 
@@ -151,9 +154,10 @@ async def delete_attribute(
     product_id: int,
     attr_id: int,
     request: Request,
+    can_publish: bool = Depends(optional_permission("product:publish")),
     current_user: AdminUser = Depends(require_permission("product:update")),
 ) -> Result:
-    await services.delete_attribute(product_id, attr_id)
+    await services.delete_attribute(product_id, attr_id, can_publish=can_publish)
     return Result.ok(None)
 
 
@@ -182,9 +186,10 @@ async def restore_product_revision(
     product_id: int,
     revision_id: int,
     request: Request,
+    can_publish: bool = Depends(optional_permission("product:publish")),
     current_user: AdminUser = Depends(require_permission("product:update")),
 ) -> Result:
-    vo = await services.restore_product_revision(product_id, revision_id, current_user.username)
+    vo = await services.restore_product_revision(product_id, revision_id, current_user.username, can_publish=can_publish)
     return Result.ok(vo.model_dump(mode="json"))
 
 
@@ -220,6 +225,17 @@ async def create_category(
     return Result.ok(vo.model_dump(mode="json"))
 
 
+@router.put("/admin/categories/sort", summary="分类拖拽排序")
+@audit(action="category.sort", resource="category:sort")
+async def reorder_categories(
+    data: ReorderReq,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("category:update")),
+) -> Result:
+    await services.reorder_category(data.ids)
+    return Result.ok(msg="已排序")
+
+
 @router.put("/admin/categories/{category_id}", summary="更新分类")
 @audit(action="category.update", resource="category:{category_id}")
 async def update_category(
@@ -241,14 +257,3 @@ async def delete_category(
 ) -> Result:
     await services.delete_category(category_id, operator=current_user.username)
     return Result.ok(msg="已删除")
-
-
-@router.put("/admin/categories/sort", summary="分类拖拽排序")
-@audit(action="category.sort", resource="category:sort")
-async def reorder_categories(
-    data: ReorderReq,
-    request: Request,
-    current_user: AdminUser = Depends(require_permission("category:update")),
-) -> Result:
-    await services.reorder_category(data.ids)
-    return Result.ok(msg="已排序")

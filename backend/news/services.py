@@ -16,7 +16,7 @@ from common.enums import NewsStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
 from common.redis_client import cache_key, get_redis
-from common.revalidation import revalidate_frontend
+from common.tasks import enqueue, transactional_write
 from common.result import PageRequest
 from common.search_vector import update_search_vector
 from content_revision import services as revision_services
@@ -51,6 +51,13 @@ def _publishing_values(status: str, published_at: datetime | None, can_publish: 
     return status, published_at
 
 
+async def _safe_cache_get(key: str) -> str | None:
+    try:
+        return await get_redis().get(key)
+    except Exception:
+        return None
+
+
 async def _cache_get_detail(slug: str) -> dict | None:
     try:
         raw = await get_redis().get(cache_key("news", "detail", slug))
@@ -74,19 +81,9 @@ async def _cache_del_detail(slug: str) -> None:
 
 
 async def _invalidate_news_content(*slugs: str, categories: bool = False) -> None:
-    redis = get_redis()
-    try:
-        await redis.delete_prefix(cache_key("news", "list", ""))
-        for slug in {value for value in slugs if value}:
-            await _cache_del_detail(slug)
-    except Exception:  # noqa: BLE001
-        pass
-
-    unique_slugs = {value for value in slugs if value}
-    tags = ["news", *(f"news:{slug}" for slug in unique_slugs)]
-    if categories:
-        tags.append("news-categories")
-    await revalidate_frontend(tags=tags, paths=["/", "/news", "/sitemap.xml"])
+    await enqueue("content_cache", {
+        "resource": "news", "slugs": sorted({s for s in slugs if s}), "categories": categories,
+    })
 
 
 async def list_categories() -> list[NewsCategoryVO]:
@@ -103,7 +100,7 @@ async def list_news(
     keyword: str | None = None,
 ) -> tuple[list[NewsPageVO], int]:
     ck = cache_key("news", "list", str(category_id), str(status), str(keyword or ""), str(req.offset), str(req.limit))
-    raw = await get_redis().get(ck)
+    raw = await _safe_cache_get(ck)
     if raw:
         try:
             data = json.loads(raw)
@@ -119,7 +116,7 @@ async def list_news(
     if keyword:
         q = q.filter(title__icontains=keyword)
     total = await q.count()
-    rows = await q.order_by("sort_order", "-created_time").offset(req.offset).limit(req.limit).prefetch_related("category")
+    rows = await q.order_by("sort_order", "-created_time", "id").offset(req.offset).limit(req.limit).prefetch_related("category")
     vos = [NewsPageVO.from_model(r) for r in rows]
 
     try:
@@ -157,12 +154,13 @@ async def get_news_detail_admin(slug: str) -> NewsDetailVO:
     return NewsDetailVO.from_model(news)
 
 
+@transactional_write
 async def create_news(
     data: NewsCreateRequest, operator: str = "", can_publish: bool = True
 ) -> NewsDetailVO:
     if await NewsCategory.get_or_none(id=data.category_id, deleted=0) is None:
         raise BizException(ErrorCode.A020001, "新闻分类不存在")
-    if await News.get_or_none(slug=data.slug, deleted=0) is not None:
+    if await News.get_or_none(slug=data.slug) is not None:
         raise BizException(ErrorCode.A020002)
     # security-audit F-11：无发布权限时，禁止直接置为 PUBLISHED（降级为 DRAFT）。
     status, published_at = _publishing_values(data.status, data.published_at, can_publish)
@@ -175,6 +173,7 @@ async def create_news(
         content_html=cleaned,
         category_id=data.category_id,
         author=clean_text(data.author),
+        cover_image=data.cover_image,
         status=status,
         created_by=operator or None, updated_by=operator or None,
     )
@@ -182,8 +181,7 @@ async def create_news(
     # 交由 ORM 自动填充创建时间（草稿/发布均给合理默认值）。
     if published_at is not None:
         create_kwargs["published_at"] = published_at
-    # 创建包事务保证原子性；注意 update_search_vector 使用原生 execute_query，
-    # 不能置于 in_transaction() 内（asyncpg 会重置连接），故放在事务提交之后。
+    # 外层事务同时提交正文、搜索向量、版本及缓存失效任务。
     async with in_transaction():
         news = await News.create(**create_kwargs)
     await update_search_vector("t_news", news.id, "title", "summary", "content_html")
@@ -192,17 +190,20 @@ async def create_news(
     return await get_news_detail_admin(data.slug)
 
 
+@transactional_write
 async def update_news(
     news_id: int, data: NewsUpdateRequest, operator: str = "", can_publish: bool = True
 ) -> NewsDetailVO:
-    news = await News.get_or_none(id=news_id, deleted=0)
+    news = await News.filter(id=news_id, deleted=0).select_for_update().first()
     if news is None:
         raise BizException(ErrorCode.A020001)
+    if news.status == "PUBLISHED" and not can_publish:
+        raise BizException(ErrorCode.C403001, "修改已发布内容需要发布权限，请先由发布者撤回草稿")
     old_slug = news.slug
     if data.category_id is not None and await NewsCategory.get_or_none(id=data.category_id, deleted=0) is None:
         raise BizException(ErrorCode.A020001, "新闻分类不存在")
     if data.slug is not None and data.slug != news.slug:
-        if await News.get_or_none(slug=data.slug, deleted=0) is not None:
+        if await News.get_or_none(slug=data.slug) is not None:
             raise BizException(ErrorCode.A020002)
     # security-audit F-18：sort_order 范围校验（拒绝 NaN / 非有限 / 极端值）。
     if data.sort_order is not None:
@@ -213,9 +214,9 @@ async def update_news(
     requested_status = data.status or news.status
     requested_time = data.published_at if data.published_at is not None else news.published_at
     normalized_status, normalized_time = _publishing_values(requested_status, requested_time, can_publish)
-    for field in ["title", "summary", "slug", "category_id", "author", "sort_order"]:
+    for field in ["title", "summary", "slug", "category_id", "author", "sort_order", "cover_image"]:
         val = getattr(data, field)
-        if val is not None:
+        if field in data.model_fields_set and (val is not None or field in {"author", "cover_image"}):
             # security-audit F-01：标题/摘要/作者作为纯文本清洗。
             if field in ("title", "summary", "author"):
                 val = clean_text(val)
@@ -234,8 +235,9 @@ async def update_news(
     return await get_news_detail_admin(news.slug)
 
 
+@transactional_write
 async def delete_news(news_id: int, operator: str = "") -> None:
-    news = await News.get_or_none(id=news_id, deleted=0)
+    news = await News.filter(id=news_id, deleted=0).select_for_update().first()
     if news is None:
         raise BizException(ErrorCode.A020001)
     news.deleted = 1
@@ -262,11 +264,12 @@ async def _next_news_category_sort_order() -> int:
     """
     rows = await NewsCategory.filter(deleted=0).annotate(m=Max("sort_order")).values("m")
     max_order = max((r["m"] for r in rows), default=None)
-    return (max_order or -1) + 1
+    return (-1 if max_order is None else max_order) + 1
 
 
+@transactional_write
 async def create_news_category(data: NewsCategoryCreate, operator: str = "") -> NewsCategoryVO:
-    if await NewsCategory.get_or_none(slug=data.slug, deleted=0) is not None:
+    if await NewsCategory.get_or_none(slug=data.slug) is not None:
         raise BizException(ErrorCode.A020001, "分类别名重复")
     sort_order = data.sort_order if data.sort_order is not None else await _next_news_category_sort_order()
     cat = await NewsCategory.create(name=data.name, slug=data.slug, sort_order=sort_order)
@@ -274,12 +277,13 @@ async def create_news_category(data: NewsCategoryCreate, operator: str = "") -> 
     return NewsCategoryVO.from_model(cat)
 
 
+@transactional_write
 async def update_news_category(news_category_id: int, data: NewsCategoryUpdate, operator: str = "") -> NewsCategoryVO:
     cat = await NewsCategory.get_or_none(id=news_category_id, deleted=0)
     if cat is None:
         raise BizException(ErrorCode.A020001, "分类不存在")
     if data.slug is not None and data.slug != cat.slug:
-        if await NewsCategory.get_or_none(slug=data.slug, deleted=0) is not None:
+        if await NewsCategory.get_or_none(slug=data.slug) is not None:
             raise BizException(ErrorCode.A020001, "分类别名重复")
     for field in ["name", "slug", "sort_order"]:
         val = getattr(data, field)
@@ -290,6 +294,7 @@ async def update_news_category(news_category_id: int, data: NewsCategoryUpdate, 
     return NewsCategoryVO.from_model(cat)
 
 
+@transactional_write
 async def delete_news_category(news_category_id: int, operator: str = "") -> None:
     # 软删（复用 SoftDeleteMixin 的 deleted 标记），与新闻一致。
     cat = await NewsCategory.get_or_none(id=news_category_id, deleted=0)
@@ -300,6 +305,7 @@ async def delete_news_category(news_category_id: int, operator: str = "") -> Non
     await _invalidate_news_content(categories=True)
 
 
+@transactional_write
 async def reorder_news_category(ids: list[int]) -> None:
     """按目标顺序数组回写 sort_order（数组索引即排序顺序）。
 
@@ -328,13 +334,16 @@ async def list_news_revisions(news_id: int) -> list[dict]:
     return await revision_services.list_revisions("news", news_id)
 
 
-async def restore_news_revision(news_id: int, revision_id: int, operator: str) -> NewsDetailVO:
-    news = await News.get_or_none(id=news_id, deleted=0)
+@transactional_write
+async def restore_news_revision(news_id: int, revision_id: int, operator: str, can_publish: bool = False) -> NewsDetailVO:
+    news = await News.filter(id=news_id, deleted=0).select_for_update().first()
     if news is None:
         raise BizException(ErrorCode.A020001)
     revision = await revision_services.get_revision("news", news_id, revision_id)
     old_slug = news.slug
-    snapshot = revision.snapshot
+    snapshot = dict(revision.snapshot)
+    if snapshot.get("status") in {"PUBLISHED", "SCHEDULED"} and not can_publish:
+        raise BizException(ErrorCode.C403001, "恢复已发布或定时版本需要发布权限")
     category_id = snapshot.get("category_id")
     if category_id and await NewsCategory.get_or_none(id=category_id, deleted=0) is None:
         raise BizException(ErrorCode.A020001, "历史版本关联的新闻分类不存在")
@@ -360,15 +369,16 @@ async def get_news_preview(news_id: int) -> NewsDetailVO:
     return NewsDetailVO.from_model(news)
 
 
+@transactional_write
 async def publish_due_news() -> int:
     now = datetime.now(UTC)
     due = await News.filter(
         deleted=0, status=NewsStatus.SCHEDULED.value, published_at__lte=now
-    ).values_list("id", "slug")
+    ).order_by("id").limit(100).values_list("id", "slug")
     published = 0
     for news_id, slug in due:
         changed = await News.filter(
-            id=news_id, status=NewsStatus.SCHEDULED.value
+            id=news_id, deleted=0, status=NewsStatus.SCHEDULED.value, published_at__lte=now
         ).update(status=NewsStatus.PUBLISHED.value)
         if changed:
             news = await News.get(id=news_id)

@@ -20,10 +20,10 @@ from search.schemas import SearchItemVO, SearchPageVO
 CACHE_TTL = 60
 
 
-def _cache_key(q: str, stype: str, page: int) -> str:
+def _cache_key(q: str, stype: str, page: int, page_size: int = 20) -> str:
     h = hashlib.md5(f"{q}|{stype}".encode()).hexdigest()[:12]
     # v2：默认排序改为产品优先、新闻按时间倒序，隔离旧排序缓存。
-    return cache_key("search", "v2", "q", h, stype, page)
+    return cache_key("search", "v3", "q", h, stype, page, page_size)
 
 
 SEARCH_ORDER_SQL = (
@@ -182,7 +182,7 @@ async def search(
     page = max(page, 1)
     page_size = min(max(page_size, 1), 50)
 
-    key = _cache_key(q, stype, page)
+    key = _cache_key(q.strip(), stype, page, page_size)
     cached = await _cache_get(key)
     if cached is not None:
         return cached

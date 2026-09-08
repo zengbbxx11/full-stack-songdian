@@ -52,9 +52,7 @@ async def global_rate_limit(request: Request) -> None:
     key = cache_key("rl", "global", str(int(time.time())))
     try:
         redis = get_redis()
-        count = await redis.incr(key)
-        if count == 1:
-            await redis.expire(key, 2)
+        count = await redis.increment_with_expiry(key, 2)
         if count > settings.rate_global_qps:
             raise BizException(ErrorCode.C429001)
     except BizException:
@@ -74,13 +72,11 @@ async def api_rate_limit(request: Request) -> None:
 async def ip_rate_limit(request: Request, limit: int | None = None) -> None:
     """单 IP 滑动窗口限流（Redis 计数降级内存）。"""
     ip = _client_ip(request)
-    key = f"rl:ip:{ip}"
+    key = cache_key("rl", "ip", ip)
     max_count = limit or settings.rate_ip_qps
     redis = get_redis()
     try:
-        count = await redis.incr(key)
-        if count == 1:
-            await redis.expire(key, 1)
+        count = await redis.increment_with_expiry(key, 1)
         if count > max_count:
             raise BizException(ErrorCode.C429001)
     except BizException:
@@ -123,12 +119,10 @@ async def _memory_ip_allow(ip: str, max_count: int) -> None:
 async def login_rate_limit(request: Request) -> None:
     """登录重保限流：单 IP 10 次/分钟（Redis 计数，降级内存）。"""
     ip = _client_ip(request)
-    key = f"login:rl:{ip}"
+    key = cache_key("login", "rl", ip)
     redis = get_redis()
     try:
-        count = await redis.incr(key)
-        if count == 1:
-            await redis.expire(key, 60)
+        count = await redis.increment_with_expiry(key, 60)
         if count > settings.rate_login_per_min:
             raise BizException(ErrorCode.C429001)
     except BizException:

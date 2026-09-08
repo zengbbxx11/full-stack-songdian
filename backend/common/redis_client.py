@@ -48,6 +48,8 @@ class RedisLike:
 
     async def incr(self, key: str) -> int: ...
 
+    async def increment_with_expiry(self, key: str, seconds: int) -> int: ...
+
     async def expire(self, key: str, seconds: int) -> bool: ...
 
     async def ttl(self, key: str) -> int: ...
@@ -138,6 +140,15 @@ class MemoryBackend(RedisLike):
             self._store[key] = str(val)
             return val
 
+    async def increment_with_expiry(self, key: str, seconds: int) -> int:
+        async with self._lock:
+            await self._sweep_expired()
+            value = int(self._store.get(key, "0")) + 1
+            self._store[key] = str(value)
+            if key not in self._expire_at:
+                self._expire_at[key] = self._now() + seconds
+            return value
+
     async def expire(self, key: str, seconds: int) -> bool:
         async with self._lock:
             if key in self._store:
@@ -190,6 +201,14 @@ class RealRedisBackend(RedisLike):
 
     async def incr(self, key: str) -> int:
         return int(await self._client.incr(key))
+
+    async def increment_with_expiry(self, key: str, seconds: int) -> int:
+        # INCR and TTL must be atomic: a crash between commands must not lock out an IP forever.
+        return int(await self._client.eval(
+            "local n=redis.call('INCR',KEYS[1]); "
+            "if redis.call('TTL',KEYS[1]) < 0 then redis.call('EXPIRE',KEYS[1],ARGV[1]); end; return n",
+            1, key, seconds,
+        ))
 
     async def expire(self, key: str, seconds: int) -> bool:
         return bool(await self._client.expire(key, seconds))

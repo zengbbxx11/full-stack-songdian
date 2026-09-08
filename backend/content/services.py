@@ -6,6 +6,11 @@
 from __future__ import annotations
 
 import uuid
+import asyncio
+from tortoise.transactions import in_transaction
+from tortoise.functions import Count
+from tortoise.expressions import F
+from common.tasks import transactional_write
 from datetime import UTC, datetime
 
 from common.config import settings
@@ -13,6 +18,7 @@ from common.enums import AdminStatus
 from common.exceptions import BizException, ErrorCode
 from common.jwt import (
     create_access_token,
+    consume_family,
     create_refresh_token,
     decode_token,
     is_family_revoked,
@@ -84,9 +90,10 @@ async def login(username: str, password: str, ip: str = "unknown") -> IssuedSess
             locked = settings.security_fail_closed
         if not locked:
             # 锁已过期 → 自动解锁，允许重新尝试
-            user.status = AdminStatus.ENABLED.value
-            user.login_fail = 0
-            await user.save()
+            await AdminUser.filter(id=user.id, status="LOCKED", session_version=user.session_version).update(
+                status="ENABLED", login_fail=0, updated_time=datetime.now(UTC),
+            )
+            await user.refresh_from_db()
         else:
             raise BizException(ErrorCode.A050002, "账号已锁定，请 15 分钟后再试")
 
@@ -95,24 +102,26 @@ async def login(username: str, password: str, ip: str = "unknown") -> IssuedSess
         raise BizException(ErrorCode.A050002, "账号已禁用")
 
     # ④⑤ 比对密码
-    if not verify_password(password, user.password_hash):
-        # 密码错误：累计失败次数
-        user.login_fail = (user.login_fail or 0) + 1
+    if not await asyncio.to_thread(verify_password, password, user.password_hash):
+        await AdminUser.filter(id=user.id, status="ENABLED", session_version=user.session_version).update(
+            login_fail=F("login_fail") + 1,
+        )
+        await user.refresh_from_db()
         if user.login_fail >= 5:
-            # 失败 5 次 → 锁定账号 15 分钟（数据库 + Redis 双重保障）
-            user.status = AdminStatus.LOCKED.value
+            await AdminUser.filter(id=user.id, status="ENABLED").update(status="LOCKED")
             try:
                 await get_redis().setex(cache_key("login", "lock", username), LOGIN_LOCK_TTL, "1")
             except Exception:
-                pass  # Redis 挂了也不影响数据库锁，下次登录会被拦截
-        await user.save()
+                pass
         raise BizException(ErrorCode.A050002)
 
-    # ⑥ 登录成功 — 重置失败计数，签发 JWT
-    user.login_fail = 0
-    user.status = AdminStatus.ENABLED.value
-    user.last_login = datetime.now(UTC)
-    await user.save()
+    changed = await AdminUser.filter(
+        id=user.id, password_hash=user.password_hash, session_version=user.session_version,
+        status="ENABLED",
+    ).update(login_fail=0, last_login=datetime.now(UTC), updated_time=datetime.now(UTC))
+    if not changed:
+        raise BizException(ErrorCode.A050002)
+
     await _clear_user_perm_cache(user)  # 清除旧权限缓存，强制下次重新加载
 
     # 获取用户的角色和权限码
@@ -120,8 +129,8 @@ async def login(username: str, password: str, ip: str = "unknown") -> IssuedSess
 
     # 生成令牌族 ID（fid）— 同一次登录的 access+refresh 共享
     fid = uuid.uuid4().hex
-    access = create_access_token(user.id, user.username, roles, perms, fid=fid)
-    refresh = create_refresh_token(user.id, user.username, fid=fid)
+    access = create_access_token(user.id, user.username, roles, perms, fid=fid, session_version=user.session_version)
+    refresh = create_refresh_token(user.id, user.username, fid=fid, session_version=user.session_version)
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
 
     return IssuedSession(
@@ -182,13 +191,16 @@ async def refresh(refresh_token: str) -> IssuedSession:
     if user.status != AdminStatus.ENABLED.value:
         raise BizException(ErrorCode.C403001, "账号已被禁用或锁定")
 
-    # ④ 轮换：签发新族，吊销旧族
+    if payload.get("sv", 0) != user.session_version:
+        raise BizException(ErrorCode.C401001)
+    if not old_fid or not await consume_family(old_fid):
+        raise BizException(ErrorCode.C401001)
+
+    # ④ 轮换：签发新族，旧族已通过 SET NX 原子吊销
     roles, perms = await load_user_claims(user)
     new_fid = uuid.uuid4().hex
-    access = create_access_token(user.id, user.username, roles, perms, fid=new_fid)
-    new_refresh = create_refresh_token(user.id, user.username, fid=new_fid)
-    if old_fid:
-        await revoke_family(old_fid)  # 旧 refresh 立刻作废，只能刷一次
+    access = create_access_token(user.id, user.username, roles, perms, fid=new_fid, session_version=user.session_version)
+    new_refresh = create_refresh_token(user.id, user.username, fid=new_fid, session_version=user.session_version)
     expires_at = int(datetime.now(UTC).timestamp()) + settings.access_token_ttl
     return IssuedSession(
         access_token=access, refresh_token=new_refresh, roles=roles,
@@ -197,14 +209,8 @@ async def refresh(refresh_token: str) -> IssuedSession:
 
 
 async def list_roles() -> list[RoleVO]:
-    roles = await Role.all().order_by("id")
-    result: list[RoleVO] = []
-    for role in roles:
-        perms = list(
-            await RolePermission.filter(role_id=role.id).values_list("permission_code", flat=True)
-        )
-        result.append(RoleVO.from_model(role, perms))
-    return result
+    roles = await Role.all().order_by("id").prefetch_related("role_permissions")
+    return [RoleVO.from_model(role, [p.permission_code for p in role.role_permissions]) for role in roles]
 
 
 async def create_role(data: RoleCreateRequest) -> RoleVO:
@@ -218,13 +224,14 @@ async def bind_permissions(role_id: int, data: RolePermRequest) -> RoleVO:
     role = await Role.get_or_none(id=role_id)
     if role is None:
         raise BizException(ErrorCode.C404001, "角色不存在")
-    # 仅接收已知权限码，忽略未知
-    valid = [c for c in data.permission_codes if c in ALL_PERMISSIONS]
-    await RolePermission.filter(role_id=role.id).delete()
-    if valid:
-        await RolePermission.bulk_create(
-            [RolePermission(role_id=role.id, permission_code=c) for c in valid]
-        )
+    valid = list(dict.fromkeys(c for c in data.permission_codes if c in ALL_PERMISSIONS))
+    async with in_transaction():
+        await Role.filter(id=role.id).select_for_update().get()
+        await RolePermission.filter(role_id=role.id).delete()
+        if valid:
+            await RolePermission.bulk_create(
+                [RolePermission(role_id=role.id, permission_code=c) for c in valid]
+            )
     # 清该角色下所有用户的权限缓存
     users = await AdminUser.filter(role_id=role.id)
     for u in users:
@@ -250,12 +257,15 @@ async def list_audit_logs(req: PageRequest) -> tuple[list[AuditPageVO], int]:
     return [AuditPageVO.from_model(r) for r in rows], total
 
 
+@transactional_write
 async def update_profile(user: AdminUser, data: UpdateProfileRequest) -> ProfileVO:
     """修改当前登录用户的用户名和/或密码。
 
     - 修改密码须提供 current_password 校验身份。
     - 修改用户名须检查唯一性。
     """
+    user = await AdminUser.filter(id=user.id).select_for_update().get()
+    await user.fetch_related("role")
     # 修改用户名
     username = data.username.strip() if data.username is not None else None
     if data.username is not None and not username:
@@ -270,9 +280,10 @@ async def update_profile(user: AdminUser, data: UpdateProfileRequest) -> Profile
     if data.new_password is not None:
         if not data.current_password:
             raise BizException(ErrorCode.A040001, "修改密码须提供当前密码")
-        if not verify_password(data.current_password, user.password_hash):
+        if not await asyncio.to_thread(verify_password, data.current_password, user.password_hash):
             raise BizException(ErrorCode.A050001, "当前密码不正确")
-        user.password_hash = hash_password(data.new_password)
+        user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+        user.session_version += 1
 
     await user.save()
     return ProfileVO.from_model(user)
@@ -319,13 +330,15 @@ async def delete_user(user_id: int) -> None:
     await user.delete()
 
 
+@transactional_write
 async def reset_password(user_id: int, new_password: str) -> dict:
     """重置用户密码。"""
     from common.password import hash_password
-    user = await AdminUser.get_or_none(id=user_id)
+    user = await AdminUser.filter(id=user_id).select_for_update().first()
     if user is None:
         raise BizException(ErrorCode.C404001, "User not found")
-    user.password_hash = hash_password(new_password)
+    user.password_hash = await asyncio.to_thread(hash_password, new_password)
+    user.session_version += 1
     await user.save()
     return {"id": user.id, "username": user.username}
 
@@ -339,24 +352,18 @@ async def get_dashboard_stats() -> dict:
     product_count = await Product.filter(deleted=0).count()
     news_count = await News.filter(deleted=0).count()
     category_count = await ProductCategory.filter(deleted=0).count()
-    inquiries = await Inquiry.all()
-    inquiry_count = len(inquiries)
-
-    # Country distribution from filled-in country field
+    inquiry_count = await Inquiry.all().count()
+    rows = await Inquiry.all().group_by("country").annotate(total=Count("id")).values("country", "total")
     country_map: dict[str, int] = {}
-    for i in inquiries:
-        c = (i.country or "").strip()
-        if not c:
-            c = "Unknown"
-        country_map[c] = country_map.get(c, 0) + 1
-    countries = sorted([{"country": k, "count": v} for k, v in country_map.items()],
-                       key=lambda x: x["count"], reverse=True)[:10]
-
-    # Status distribution
-    status_map: dict[str, int] = {}
-    for i in inquiries:
-        s = i.status or ""
-        status_map[s] = status_map.get(s, 0) + 1
+    for row in rows:
+        country = (row["country"] or "").strip() or "Unknown"
+        country_map[country] = country_map.get(country, 0) + row["total"]
+    countries = sorted(
+        [{"country": k, "count": v} for k, v in country_map.items()],
+        key=lambda x: (-x["count"], x["country"]),
+    )[:10]
+    statuses = await Inquiry.all().group_by("status").annotate(total=Count("id")).values("status", "total")
+    status_map = {row["status"] or "": row["total"] for row in statuses}
 
     return {
         "counts": {"products": product_count, "news": news_count,

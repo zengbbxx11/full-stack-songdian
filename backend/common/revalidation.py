@@ -9,7 +9,7 @@ from common.logger import get_logger
 logger = get_logger(__name__)
 
 
-async def revalidate_frontend(*, tags: list[str], paths: list[str]) -> None:
+async def revalidate_frontend(*, tags: list[str], paths: list[str], strict: bool = False) -> None:
     """Clear the additional Next.js cache layer without failing a CMS write."""
     if not settings.next_revalidate_url or not settings.revalidate_secret:
         return
@@ -23,4 +23,6 @@ async def revalidate_frontend(*, tags: list[str], paths: list[str]) -> None:
             )
             response.raise_for_status()
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Next.js cache revalidation failed: %s", exc)
+        logger.warning("Next.js cache revalidation failed: %s", type(exc).__name__)
+        if strict:
+            raise

@@ -63,13 +63,14 @@ def create_access_token(
     roles: list[str],
     permissions: list[str],
     fid: str | None = None,
+    session_version: int = 0,
 ) -> str:
     """签发 access token（2h）。``fid`` 与对应 refresh 共用以支持令牌族吊销。"""
     return _create_token(
         subject=str(user_id),
         scope="access",
         ttl=settings.access_token_ttl,
-        extra={"username": username, "roles": roles, "permissions": permissions},
+        extra={"username": username, "roles": roles, "permissions": permissions, "sv": session_version},
         fid=fid,
     )
 
@@ -78,13 +79,14 @@ def create_refresh_token(
     user_id: int,
     username: str,
     fid: str | None = None,
+    session_version: int = 0,
 ) -> str:
     """签发 refresh token（7d）。``fid`` 与对应 access 共用以支持令牌族吊销。"""
     return _create_token(
         subject=str(user_id),
         scope="refresh",
         ttl=settings.refresh_token_ttl,
-        extra={"username": username},
+        extra={"username": username, "sv": session_version},
         fid=fid,
     )
 
@@ -155,3 +157,15 @@ def get_jti(token: str) -> str | None:
         return payload.get("jti")
     except Exception:  # noqa: BLE001
         return None
+
+
+async def consume_family(fid: str) -> bool:
+    """Atomically revoke a refresh family; only one concurrent refresh can win."""
+    if not fid:
+        return False
+    try:
+        return bool(await get_redis().set(
+            cache_key("auth", "family", fid), "1", ex=settings.refresh_token_ttl, nx=True,
+        ))
+    except Exception:
+        return False

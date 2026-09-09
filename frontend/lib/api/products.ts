@@ -93,10 +93,11 @@ export interface ProductSlugEntry {
   slug: string;
   /** 主分类 slug；当前数据均带分类，此字段始终非空 */
   categorySlug: string | null;
+  lastModified?: string;
 }
 
 /** 获取全部已发布产品的 slug + 主分类 slug（用于 SSG / sitemap 生成 /products/{category}/{slug}）。 */
-export async function getAllProductSlugEntries(): Promise<ProductSlugEntry[]> {
+export async function getAllProductSlugEntries({ strict = false }: { strict?: boolean } = {}): Promise<ProductSlugEntry[]> {
   try {
     const list: ProductPageDTO[] = [];
     let page = 1;
@@ -116,8 +117,13 @@ export async function getAllProductSlugEntries(): Promise<ProductSlugEntry[]> {
       page += 1;
       if (data.list.length === 0) break;
     } while (list.length < total);
-    return list.map((p) => ({ slug: p.slug, categorySlug: p.category?.slug ?? null }));
-  } catch {
+    return list.map((p) => ({
+      slug: p.slug,
+      categorySlug: p.category?.slug ?? null,
+      lastModified: p.updated_time || undefined,
+    }));
+  } catch (error) {
+    if (strict) throw error;
     return [];
   }
 }

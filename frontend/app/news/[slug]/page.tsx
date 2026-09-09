@@ -1,7 +1,7 @@
 /*
  * 文件：app/news/[slug]/page.tsx（新闻文章详情 / News Detail）
  * 职责：单篇文章详情页，含面包屑、正文、标签、相关文章与 JSON-LD（articleSchema）。
- * 数据来源（WP REST API）：
+ * 数据来源（FastAPI）：
  *   - getPostBySlug(slug) → 单篇文章
  *   - getAllPostSlugs()   → 文章 slug 列表（用于 SSG 预渲染）
  *   - getPosts()          → 同类相关文章
@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPostBySlug, getAllPostSlugs, getPosts, getAdjacentPosts } from "@/lib/api/news";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -23,7 +24,7 @@ import { MEDIA } from "@/lib/media";
 // ISR 重新验证间隔（秒）：每 60 秒重新生成文章详情
 export const revalidate = 60;
 
-// 预生成所有文章静态路径（SSG）：从 WP 拉取全部文章 slug
+// 预生成所有已发布文章静态路径；构建时允许后端尚未启动。
 export async function generateStaticParams() {
   const slugs = await getAllPostSlugs();
   return slugs.map((slug) => ({ slug }));
@@ -38,7 +39,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-  if (!post) return { title: "Post Not Found" };
+  if (!post) notFound();
   const desc = post.excerpt?.slice(0, 160);
   const socialImage = post.featuredImage || MEDIA.ogImage;
   return {
@@ -48,7 +49,7 @@ export async function generateMetadata({
     openGraph: {
       title: post.title, description: desc,
       images: [{ url: socialImage, width: 1200, height: 630 }],
-      type: "article", publishedTime: post.date, modifiedTime: post.modified, authors: [post.author],
+      type: "article", publishedTime: post.date || undefined, modifiedTime: post.modified || undefined, authors: [post.author],
     },
     twitter: {
       card: "summary_large_image",
@@ -65,14 +66,7 @@ export default async function NewsDetailPage({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
 
-  if (!post) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Article Not Found</h1>
-        <Link href="/news" className="text-sm hover:underline" style={{ color: "#3E6AE1" }}>&larr; Back to News</Link>
-      </div>
-    );
-  }
+  if (!post) notFound();
 
   const breadcrumbs = generateBreadcrumbs([{ label: "News", href: "/news" }, { label: post.title }]);
 
@@ -83,15 +77,14 @@ export default async function NewsDetailPage({
   });
 
   // 获取同类相关文章（取首个分类，最多 4 篇，失败时忽略）
-  let relatedPosts: Awaited<ReturnType<typeof getPosts>> = { posts: [], pagination: { total: 0, totalPages: 0 } };
-  if (post.categories.length > 0) {
-    try { relatedPosts = await getPosts({ categoryId: post.categories[0].id, perPage: 4 }); } catch { /* ignore */ }
-  }
+  const [relatedPosts, { prev: prevPost, next: nextPost }] = await Promise.all([
+    post.categories.length > 0
+      ? getPosts({ categoryId: post.categories[0].id, perPage: 4 }).catch(() => ({ posts: [] }))
+      : Promise.resolve({ posts: [] }),
+    getAdjacentPosts(slug),
+  ]);
 
   const related = relatedPosts.posts.filter((p) => p.id !== post.id).slice(0, 3);
-
-  // 上一篇 / 下一篇（按发布时间降序定位相邻文章）
-  const { prev: prevPost, next: nextPost } = await getAdjacentPosts(slug);
 
   return (
     <>
@@ -119,7 +112,7 @@ export default async function NewsDetailPage({
           </h1>
 
           <div className="text-sm">
-            <time dateTime={post.date} className="text-gray-400">{formatDate(post.date)}</time>
+            <time dateTime={post.date || undefined} className="text-gray-400">{formatDate(post.date)}</time>
           </div>
         </div>
       </section>
@@ -136,6 +129,7 @@ export default async function NewsDetailPage({
                 alt={post.featuredImageAlt}
                 width={800}
                 height={400}
+                sizes="(max-width: 768px) calc(100vw - 48px), 720px"
                 className="w-full h-auto max-h-[360px] object-contain"
                 preload
               />

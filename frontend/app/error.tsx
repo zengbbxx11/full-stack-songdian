@@ -11,10 +11,10 @@ import Link from "next/link";
 
 export default function ErrorPage({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     console.error("Page error:", error);
@@ -45,7 +45,7 @@ export default function ErrorPage({
 
       <div className="flex gap-3">
         <button
-          onClick={reset}
+          onClick={retry}
           className="inline-flex items-center px-6 text-white text-sm font-medium rounded h-[42px] transition-colors"
           style={{
             backgroundColor: "#3E6AE1",

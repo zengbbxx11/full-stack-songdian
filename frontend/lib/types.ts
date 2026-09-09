@@ -95,7 +95,7 @@ export interface PostDetail {
   featuredImage: string | null;
   /** 特色图片 alt 文本 */
   featuredImageAlt: string;
-  /** 格式化后的发布日期 */
+  /** ISO 8601 发布日期；仅在显示时格式化 */
   date: string;
   /** ISO 8601 最后修改日期字符串 */
   modified: string;

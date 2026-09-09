@@ -3,15 +3,16 @@ import { createServer } from "node:http";
 const port = Number(process.env.MOCK_API_PORT || 8000);
 
 const server = createServer((request, response) => {
-  if (request.url === "/healthz" || request.url === "/readyz") {
+  const { pathname } = new URL(request.url || "/", "http://localhost");
+  if (pathname === "/healthz" || pathname === "/readyz") {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ status: "ok" }));
     return;
   }
 
-  const data = request.url?.includes("/search")
+  const data = pathname === "/api/v1/search"
     ? { items: [], total: 0, took_ms: 0, degraded: false, note: "CI mock" }
-    : request.url?.match(/\/api\/v1\/(products|news)$/)
+    : pathname.match(/^\/api\/v1\/(products|news)$/)
       ? { list: [], total: 0, page: 1, page_size: 50 }
       : [];
 

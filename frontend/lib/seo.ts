@@ -176,8 +176,8 @@ export function articleSchema(params: {
     headline: params.title,
     description: params.description,
     image: params.image || undefined,
-    datePublished: params.datePublished,
-    dateModified: params.dateModified,
+    datePublished: params.datePublished || undefined,
+    dateModified: params.dateModified || undefined,
     author: {
       "@type": "Person",
       name: params.author,

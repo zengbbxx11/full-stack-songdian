@@ -4,7 +4,7 @@
  * 数据来源：
  *   - getAllProductSlugEntries() → 产品 slug + 主分类 slug（动态 /products/[category]/[slug]）
  *   - getAllPostSlugs()          → 文章 slug（动态 /news/[slug]）
- * 渲染方式：Next.js Metadata Route，服务端异步生成（后端不可用时静默跳过动态部分）。
+ * 渲染方式：运行时 Metadata Route；后端失败不返回残缺的成功结果。
  * 是否含 client 组件：否。
  */
 
@@ -12,50 +12,43 @@ import type { MetadataRoute } from "next";
 import { getAllPostSlugs } from "@/lib/api/news";
 import { getAllProductSlugEntries } from "@/lib/api/products";
 
+// 镜像构建不依赖运行时 API；请求时必须取得完整动态 URL。
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const [entries, postSlugs] = await Promise.all([
+    getAllProductSlugEntries({ strict: true }),
+    getAllPostSlugs({ strict: true }),
+  ]);
 
   // 静态页面
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
-    { url: `${siteUrl}/about`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/products`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/news`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/solutions`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${siteUrl}/solutions/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/contact`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteUrl}/privacy-policy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
+    { url: siteUrl, changeFrequency: "daily", priority: 1.0 },
+    { url: `${siteUrl}/about`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${siteUrl}/products`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${siteUrl}/news`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${siteUrl}/solutions`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${siteUrl}/solutions/faq`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${siteUrl}/contact`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${siteUrl}/privacy-policy`, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   // 动态产品路由（规范嵌套地址 /products/{category}/{slug}）
-  let productRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const entries = await getAllProductSlugEntries();
-    productRoutes = entries
+  const productRoutes: MetadataRoute.Sitemap = entries
       .filter((e) => e.categorySlug)
       .map((e) => ({
         url: `${siteUrl}/products/${e.categorySlug}/${e.slug}`,
-        lastModified: new Date(),
+        lastModified: e.lastModified,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       }));
-  } catch {
-    // 后端不可用时静默跳过
-  }
-
-  // 动态文章路由（从 WordPress 获取）
-  let postRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const postSlugs = await getAllPostSlugs();
-    postRoutes = postSlugs.map((slug) => ({
+  // 新闻 API 未提供实际更新时间，省略可选 lastModified。
+  const postRoutes: MetadataRoute.Sitemap = postSlugs.map((slug) => ({
       url: `${siteUrl}/news/${slug}`,
-      lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
-  } catch {
-    // WordPress 不可用时静默跳过
-  }
 
   return [...staticRoutes, ...productRoutes, ...postRoutes];
 }

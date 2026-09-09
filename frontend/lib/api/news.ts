@@ -8,9 +8,11 @@
  */
 
 import type { PostSummary, PostDetail, WCProductCategory } from "@/lib/types";
+import { cache } from "react";
 import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
   apiFetch,
+  ApiError,
   toAbsoluteUrl,
   formatDate,
   type CategoryDTO,
@@ -61,8 +63,8 @@ export async function getPosts(params?: {
   return { posts, pagination: { total: data.total, totalPages } };
 }
 
-/** 按 slug 获取单篇文章详情；未找到或出错返回 null。 */
-export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
+// 仅真实不存在时返回 null；元数据与页面共享同一次详情读取。
+export const getPostBySlug = cache(async (slug: string): Promise<PostDetail | null> => {
   try {
     const data = await apiFetch<NewsDetailDTO>(
       `/api/v1/news/${encodeURIComponent(slug)}`,
@@ -70,13 +72,16 @@ export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
       { tags: ["news", `news:${slug}`] },
     );
     return toPostDetail(data);
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.code === "A020001")) {
+      return null;
+    }
+    throw error;
   }
-}
+});
 
 /** 获取全部已发布文章 slug（用于 SSG 预渲染 generateStaticParams 与 sitemap）。 */
-export async function getAllPostSlugs(): Promise<string[]> {
+export async function getAllPostSlugs({ strict = false }: { strict?: boolean } = {}): Promise<string[]> {
   try {
     const list: NewsPageDTO[] = [];
     let page = 1;
@@ -97,7 +102,8 @@ export async function getAllPostSlugs(): Promise<string[]> {
       if (data.list.length === 0) break;
     } while (list.length < total);
     return list.map((n) => n.slug);
-  } catch {
+  } catch (error) {
+    if (strict) throw error;
     return [];
   }
 }
@@ -175,8 +181,9 @@ function toPostDetail(n: NewsDetailDTO): PostDetail {
     excerpt: normalizePublicText(n.summary),
     featuredImage: toAbsoluteUrl(n.cover_image),
     featuredImageAlt: normalizePublicText(n.title),
-    date: formatDate(n.published_at || n.created_time || ""),
-    modified: n.created_time || n.published_at || "",
+    date: n.published_at || n.created_time || "",
+    // API 尚未提供实际更新时间，不能将创建时间冒充修改时间。
+    modified: "",
     author: n.author || "Admin",
     authorAvatar: "",
     categories: n.category

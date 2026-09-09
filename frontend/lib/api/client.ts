@@ -118,6 +118,10 @@ export async function apiFetch<T>(
     );
   }
 
+  if (!json || typeof json !== "object" || Array.isArray(json)) {
+    throw new ApiError(`后端接口响应格式不正确：${path}`, { path, status: res.status });
+  }
+
   if (!res.ok) {
     throw new ApiError(json.msg || `后端接口请求失败：${res.status} ${path}`, {
       path,

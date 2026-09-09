@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { search, type SearchResultItem } from "@/lib/api/search";
@@ -33,7 +33,7 @@ export default function InstantSearch({ className }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reqIdRef = useRef(0);
-  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const listboxId = useId();
 
   // 点击外部关闭
   useEffect(() => {
@@ -48,15 +48,15 @@ export default function InstantSearch({ className }: { className?: string }) {
 
   // 卸载清理
   useEffect(() => {
+    const request = reqIdRef;
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      request.current++;
     };
   }, []);
 
   // 搜索（竞态保护）
-  const runSearch = useCallback(async (q: string) => {
-    const reqId = ++reqIdRef.current;
+  const runSearch = useCallback(async (q: string, reqId: number) => {
     try {
       const res = await search(q, { type: "product", pageSize: 5 });
       if (reqId !== reqIdRef.current) return;
@@ -66,21 +66,22 @@ export default function InstantSearch({ className }: { className?: string }) {
       if (reqId !== reqIdRef.current) return;
       setItems([]);
       setError(true);
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = setTimeout(() => setError(false), 2500);
     } finally {
       if (reqId === reqIdRef.current) setLoading(false);
     }
   }, []);
 
   function handleChange(value: string) {
+    // 输入变化立即使旧响应失效，包括清空和下一次防抖尚未结束的时间窗。
+    const reqId = ++reqIdRef.current;
     setQuery(value);
     setActiveIndex(-1);
+    setItems([]);
+    setError(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const q = value.trim();
     if (!q) {
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       setItems([]);
       setLoading(false);
       setError(false);
@@ -90,7 +91,7 @@ export default function InstantSearch({ className }: { className?: string }) {
     setOpen(true);
     setLoading(true);
     debounceRef.current = setTimeout(() => {
-      void runSearch(q);
+      void runSearch(q, reqId);
     }, DEBOUNCE_MS);
   }
 
@@ -98,7 +99,7 @@ export default function InstantSearch({ className }: { className?: string }) {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
-    if (activeIndex >= 0 && items[activeIndex]) {
+    if (open && !loading && !error && activeIndex >= 0 && items[activeIndex]) {
       router.push(items[activeIndex].url);
     } else {
       router.push(`/search?q=${encodeURIComponent(q)}`);
@@ -107,15 +108,20 @@ export default function InstantSearch({ className }: { className?: string }) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (!open || items.length === 0) return;
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === "Escape") {
+      e.preventDefault(); // 原生 search 输入默认会清空关键词；此处只关闭建议框。
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+    if (!open || loading || error || items.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => (i + 1) % items.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((i) => (i - 1 + items.length) % items.length);
-    } else if (e.key === "Escape") {
-      setOpen(false);
+      setActiveIndex((i) => i <= 0 ? items.length - 1 : i - 1);
     }
   }
 
@@ -145,16 +151,17 @@ export default function InstantSearch({ className }: { className?: string }) {
             type="search"
             role="combobox"
             aria-autocomplete="list"
-            aria-expanded={showDropdown && items.length > 0}
-            aria-controls="instant-search-listbox"
+            aria-expanded={showDropdown}
+            aria-controls={showDropdown && !loading && !error && items.length > 0 ? listboxId : undefined}
             aria-activedescendant={
-              activeIndex >= 0 && items[activeIndex]
-                ? `instant-search-option-${items[activeIndex].id}`
+              showDropdown && !loading && !error && activeIndex >= 0 && items[activeIndex]
+                ? `${listboxId}-${items[activeIndex].id}`
                 : undefined
             }
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => { if (query.trim()) setOpen(true); }}
             placeholder="Search products"
             aria-label="Search products"
             autoComplete="off"
@@ -181,7 +188,10 @@ export default function InstantSearch({ className }: { className?: string }) {
 
           {/* 错误态 */}
           {!loading && error && (
-            <div className="px-4 py-6 text-center text-sm text-[#8E8E8E]">Search unavailable</div>
+            <div role="status" className="px-4 py-6 text-center text-sm text-[#8E8E8E]">
+              <p>Search unavailable</p>
+              <button type="button" onClick={() => handleChange(query)} className="mt-2 min-h-11 px-3 text-[var(--accent)] underline">Try again</button>
+            </div>
           )}
 
           {/* 空态 */}
@@ -192,7 +202,7 @@ export default function InstantSearch({ className }: { className?: string }) {
           {/* 结果列表：只显示主图 + 型号 */}
           {!loading && !error && items.length > 0 && (
             <ul
-              id="instant-search-listbox"
+              id={listboxId}
               role="listbox"
               aria-label="Product suggestions"
               className="max-h-[50vh] overflow-y-auto py-1"
@@ -202,7 +212,7 @@ export default function InstantSearch({ className }: { className?: string }) {
                 return (
                   <li
                     key={`product-${item.id}`}
-                    id={`instant-search-option-${item.id}`}
+                    id={`${listboxId}-${item.id}`}
                     role="option"
                     aria-selected={isActive}
                   >

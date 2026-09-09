@@ -11,7 +11,7 @@
  *   POST /admin/inquiries/{id}/follow-note  — 追加跟进
  */
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -71,6 +71,9 @@ export default function InquiriesPage() {
     open: boolean; target: Inquiry | null; note: string; status: InquiryStatus; country: string;
   }>({ open: false, target: null, note: "", status: "CONTACTING", country: "" });
   const [replySaving, setReplySaving] = useState(false);
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [replyError, setReplyError] = useState("");
+  const replyRequest = useRef(0);
 
   /* ── 状态切换确认 ── */
   const [statusConfirm, setStatusConfirm] = useState<{
@@ -119,20 +122,34 @@ export default function InquiriesPage() {
 
   /* ── 操作：打开回复/状态对话框 ── */
   async function openReply(i: Inquiry) {
-    setReply({ open: true, target: i, note: "", status: "CONTACTING", country: "" });
+    const requestId = ++replyRequest.current;
+    setReply({ open: true, target: i, note: "", status: i.status, country: i.country || "" });
+    setReplyLoading(true);
+    setReplyError("");
     try {
       const detail = await apiFetch<Inquiry>(`/admin/inquiries/${i.id}`);
+      if (requestId !== replyRequest.current) return;
       setReply((prev) => ({
         ...prev,
         note: detail.reply_note || "",
         status: detail.status,
         country: detail.country || "",
       }));
-    } catch { /* 详情拉取失败不阻塞，沿用列表数据 */ }
+    } catch (err) {
+      if (requestId === replyRequest.current) setReplyError(err instanceof Error ? err.message : "详情加载失败");
+    } finally {
+      if (requestId === replyRequest.current) setReplyLoading(false);
+    }
+  }
+
+  function closeReply() {
+    if (replySaving) return;
+    replyRequest.current++;
+    setReply((prev) => ({ ...prev, open: false }));
   }
 
   async function submitReply() {
-    if (!reply.target) return;
+    if (!reply.target || replyLoading || replyError || replySaving) return;
     setReplySaving(true);
     try {
       await apiFetch(`/admin/inquiries/${reply.target.id}/status`, {
@@ -460,16 +477,22 @@ export default function InquiriesPage() {
       {/* ──────────────────── 回复/跟进对话框 ──────────────────── */}
       {reply.open && reply.target && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !replySaving && setReply((p) => ({ ...p, open: false }))} />
-          <div className="relative w-full max-w-lg mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
-            <h3 className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">
+          <div className="absolute inset-0 bg-black/40" onClick={closeReply} />
+          <div role="dialog" aria-modal="true" aria-labelledby="inquiry-reply-title" className="relative w-full max-w-lg mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+            <h3 id="inquiry-reply-title" className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">
               跟进 {reply.target.name}
             </h3>
             <p className="mb-4 text-xs text-gray-400">{reply.target.email}</p>
-            <div className="space-y-4">
+            {replyLoading && <p role="status" className="mb-3 text-sm text-gray-500">正在加载询盘详情...</p>}
+            {replyError && <div role="alert" className="mb-3 text-sm text-red-600">
+              <p>详情加载失败，暂不能保存：{replyError}</p>
+              <button type="button" className="mt-2 underline" onClick={() => void openReply(reply.target!)}>重试加载</button>
+            </div>}
+            <fieldset disabled={replyLoading || !!replyError || replySaving} className="space-y-4 disabled:opacity-60">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">状态</label>
+                <label htmlFor="inquiry-reply-status" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">状态</label>
                 <select
+                  id="inquiry-reply-status"
                   value={reply.status}
                   onChange={(e) => setReply((p) => ({ ...p, status: e.target.value as InquiryStatus }))}
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
@@ -482,8 +505,9 @@ export default function InquiriesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">国家 <span className="text-xs text-gray-400 font-normal">（后台手动标记）</span></label>
+                <label htmlFor="inquiry-reply-country" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">国家 <span className="text-xs text-gray-400 font-normal">（后台手动标记）</span></label>
                 <input
+                  id="inquiry-reply-country"
                   type="text"
                   value={reply.country}
                   onChange={(e) => setReply((p) => ({ ...p, country: e.target.value }))}
@@ -492,8 +516,10 @@ export default function InquiriesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">备注 / 回复内容</label>
+                <label htmlFor="inquiry-reply-note" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">备注 / 回复内容</label>
                 <textarea
+                  id="inquiry-reply-note"
+                  maxLength={1000}
                   value={reply.note}
                   onChange={(e) => setReply((p) => ({ ...p, note: e.target.value }))}
                   rows={4}
@@ -501,12 +527,12 @@ export default function InquiriesPage() {
                   className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 />
               </div>
-            </div>
+            </fieldset>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" size="sm" onClick={() => setReply((p) => ({ ...p, open: false }))} disabled={replySaving}>
+              <Button variant="outline" size="sm" onClick={closeReply} disabled={replySaving}>
                 取消
               </Button>
-              <Button size="sm" onClick={submitReply} disabled={replySaving}>
+              <Button size="sm" onClick={submitReply} disabled={replySaving || replyLoading || !!replyError}>
                 {replySaving ? "保存中..." : "保存"}
               </Button>
             </div>

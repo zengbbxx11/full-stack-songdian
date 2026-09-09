@@ -1,4 +1,4 @@
-# 当前实现总览（2026-09-08）
+# 当前实现总览（2026-09-09）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -35,11 +35,15 @@
 - `ApiError` 保留 HTTP `status`、业务 `code`、请求 `path` 和原始 `cause`。
 - 产品详情仅将 HTTP 404 或业务码 `A010001` 视为不存在并进入标准 `notFound()`；网络、429、500、502 和非法响应显示可重试的暂不可用状态，不再伪装为 `Product Not Found`。
 - 产品详情使用 React `cache()` 去重；静态生成限制并发，避免批量预渲染时触发后端每 IP 限流。
+- 新闻详情同样区分不存在与服务故障，使用 React `cache()` 去重；错误边界通过 `retry()` 重新获取服务端数据。发布日期保留原始 ISO 时间，未知修改时间不写入元数据；sitemap 运行时完整读取公开 URL，失败时不返回缺失动态内容的成功结果，产品修改日期使用真实更新时间。
+- 官网服务端设置读取复用公共 API 客户端，遵循 `INTERNAL_API_URL`；浏览器仍使用公开地址。
 - 产品卡片和详情图库保留 `object-contain`，已移除额外大内边距，保证产品主体不裁切且不远离边框。
 
 ## 管理后台媒体与认证
 
 - 登录、刷新和退出只使用 HttpOnly Cookie；生产环境额外启用 `Secure`，浏览器 JavaScript 不读取或保存 JWT。
+- 同一页面的并发 401 合并刷新，退出等待进行中的刷新完成；暂时性刷新故障不会伪装为正常退出。后台页面校验 access scope 与必要声明，生产缺少 JWT 密钥时拒绝访问；失效会话可直接进入登录页。
+- 新闻管理使用管理员分页接口，包含草稿和定时内容。列表排序保留未显示项的位置及未保存草稿；批量写入最多并发 3 项，等待全部结果后报告失败并保留可重试项。仪表盘产品与新闻总数来自现有统计接口。
 - 后台媒体使用 `resolveMediaUrl()`：相对 `/uploads/...` 保持同源，由 Next.js rewrite 转发到后端；外部绝对 URL 原样保留。
 - 媒体库每条上传记录都可以通过 `GET /api/v1/admin/upload/{id}/usage` 查询引用明细，区分产品图库、产品封面和新闻封面，并从弹窗跳转到对应的产品/新闻编辑页；后端删除接口仍会阻止未确认的被引用素材删除。
 - 产品与新闻编辑表单上传图片时，会按 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入媒体库的 `Products / {slug}` 或 `News / {slug}` 子相册；未填写 slug 的上传进入“未分类”。相册只改变逻辑归属，不改变媒体 URL，文件本身仍由后端存储后端管理。
@@ -59,12 +63,13 @@
 ## 现有业务与官网能力
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
+- 询盘表单在相同内容失败重试时复用业务单号，成功或内容变化后更新单号；字段长度与后端对齐，数量和留言合并校验。单选项支持键盘操作，隐藏字段错误自动展开，提交期间禁止重复编辑。
 - 后台通知覆盖新询盘、超过 24 小时未跟进和 SMTP 失败，并通过 `NotificationReadState` 记录用户级已读状态。
 - 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。联合搜索在数据库分页前按“产品分组优先，新闻分组随后”排序，新闻组按 `created_time DESC, id DESC`；降级提示固定为英文 `Basic search mode`。
 - 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。
 - `/llms.txt` 作为实验性 AI 站点导览按小时再验证；它明确区分 2023 年成立的 Songdian Technology 法律实体与 2006 年开始的集团制造历史，不视为正式标准或排名保证。
 - 当前工厂视频仅在 About 页面展示，使用 WebP poster、`preload="none"` 和可选 WebM source；视频、poster 与默认 OG 图均属于随 frontend 镜像发布的静态源码资产。
-- 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图目前是 `ssr: false` 的客户端动态组件，并非滚动进入视口后才加载。
+- 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图在距视口 200px 时挂载客户端动态组件，保留手动加载入口和失败重试；可配置地址以文本节点写入地图弹窗。
 - 官网 Header 在 `lg` 断点显示桌面导航、搜索和报价 CTA，较窄视口使用移动菜单，避免平板端搜索框挤压导航；站内导航链接使用 `scroll={false}` 配合显式顶部重置，确保从任意滚动位置跳转到新页面都从首屏开始。About 页首屏顺序为 `Who We Are / Our Story`，`Our Journey` 位于下一段。
 - 首页 Hero 在 `xl`（≥1280px）宽屏使用上左对齐，内容仍沿 `site-container` 左侧基线；标题内容列放宽至 980px，避免 1920px 视口不必要的换行。底部 CTA 与 Scroll 提示避开固定 56px 询盘栏；平板和手机保留自然流式布局，并在 1024px、390px 视口验证无横向溢出。
 - 官网即时搜索聚焦时只显示一层品牌红边框，避免全局焦点环与输入框边框叠加；页脚四个社交图标统一占用 `44×44px` 槽位，链接状态不会改变图标间距。

@@ -8,6 +8,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
+    channel: process.env.E2E_BROWSER_CHANNEL,
     baseURL: process.env.E2E_FRONTEND_URL || "http://127.0.0.1:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { decodeJwt, jwtVerify } from "jose";
 
 /**
  * 管理后台路由守卫（security-audit F-08 / review #13）。
@@ -30,26 +30,25 @@ async function isTokenValid(token: string | undefined): Promise<boolean> {
   if (JWT_SECRET) {
     try {
       const secret = new TextEncoder().encode(JWT_SECRET);
-      await jwtVerify(token, secret, { algorithms: ["HS256"] });
-      return true;
+      const { payload } = await jwtVerify(token, secret, {
+        algorithms: ["HS256"], requiredClaims: ["exp", "sub"],
+      });
+      return payload.scope === "access";
     } catch {
       return false;
     }
   }
 
-  // 未配置 JWT_SECRET（仅本地开发）：降级为仅校验 exp 的存在性检查，并告警。
+  // 生产缺少密钥时拒绝访问；仅开发环境允许不验签的本地兼容模式。
+  if (process.env.NODE_ENV === "production") return false;
   console.warn(
     "[proxy] JWT_SECRET 未配置，token 仅做 exp 校验（不安全降级）。" +
       "生产环境请配置与后端一致的 JWT_SECRET 以启用签名验证。"
   );
   try {
-    const payload = token.split(".")[1];
-    if (!payload) return false;
-    const json = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-    );
-    if (!json.exp) return true;
-    return Date.now() < json.exp * 1000;
+    const payload = decodeJwt(token);
+    return payload.scope === "access" && typeof payload.sub === "string" &&
+      typeof payload.exp === "number" && Date.now() < payload.exp * 1000;
   } catch {
     return false;
   }
@@ -63,6 +62,8 @@ export async function proxy(req: NextRequest) {
   const token = req.cookies.get("access_token")?.value;
 
   if (isPublic) {
+    // 后端可能已撤销仍未到 exp 的会话；允许显示登录表单，避免来回重定向。
+    if (req.nextUrl.searchParams.get("expired") === "1") return NextResponse.next();
     // 已登录却访问登录页 → 跳回首页
     if (token && (await isTokenValid(token))) {
       return NextResponse.redirect(new URL("/", req.url));

@@ -13,7 +13,7 @@ async function setup(page: Page) {
     throw new Error("Settings fixtures may only run against a local admin server");
   }
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ sub: "settings-ui-test", exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ sub: "settings-ui-test", scope: "access", exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
   const signature = createHmac("sha256", testSecret).update(`${header}.${payload}`).digest("base64url");
   await page.context().addCookies([{
     name: "access_token", value: `${header}.${payload}.${signature}`,

@@ -6,7 +6,7 @@
  * 返回空对象时由调用方 fallback 到 content-data.ts 硬编码常量。
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE, apiFetch } from "./client";
 
 /**
  * 后端公开设置接口返回的联系信息和分析工具配置字段。
@@ -39,12 +39,8 @@ export function resolveGaId(settings: PublicSettings | null, fallback?: string):
  */
 export async function getPublicSettings(): Promise<PublicSettings> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/public/settings`, {
-      next: { revalidate: 300 }, // ISR 5分钟缓存
-    });
-    if (!res.ok) throw new Error("Failed to fetch settings");
-    const json = await res.json();
-    return json.code === "0" ? json.data : {};
+    const data = await apiFetch<PublicSettings>("/api/v1/public/settings", undefined, { revalidate: 300 });
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
   } catch {
     return {}; // 返回空对象，由调用方 fallback
   }

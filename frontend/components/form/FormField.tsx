@@ -66,6 +66,7 @@ export default function FormField({
           aria-invalid={hasError}
           aria-describedby={hasError ? `${registration.name}-error` : undefined}
           className={cn(
+            "min-h-11",
             hasError && "border-[#3E6AE1] focus-visible:border-[#3E6AE1] focus-visible:ring-[#3E6AE1]/20"
           )}
         />

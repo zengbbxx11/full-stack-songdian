@@ -55,8 +55,9 @@ export default function SignInForm() {
             <form onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div>
-                  <Label>用户名 <span className="text-error-500">*</span></Label>
+                  <Label htmlFor="signin-username">用户名 <span className="text-error-500">*</span></Label>
                   <Input
+                    id="signin-username" name="username" autoComplete="username"
                     placeholder="请输入用户名"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -64,16 +65,20 @@ export default function SignInForm() {
                   />
                 </div>
                 <div>
-                  <Label>密码 <span className="text-error-500">*</span></Label>
+                  <Label htmlFor="signin-password">密码 <span className="text-error-500">*</span></Label>
                   <div className="relative">
                     <Input
+                      id="signin-password" name="password" autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       placeholder="请输入密码"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
-                    <span
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                      aria-pressed={showPassword}
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                     >
@@ -82,12 +87,12 @@ export default function SignInForm() {
                       ) : (
                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
                       )}
-                    </span>
+                    </button>
                   </div>
                 </div>
 
                 {error && (
-                  <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+                  <div role="alert" className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
                     {error}
                   </div>
                 )}

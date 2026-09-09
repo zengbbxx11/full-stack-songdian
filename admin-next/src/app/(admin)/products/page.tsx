@@ -11,6 +11,8 @@ import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, apiFetchAllPages, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
+import { settleBatch } from "@/lib/batch";
+import { mergeVisibleOrder } from "@/lib/content-order";
 import type { Product, ProductCategory, Paginated } from "@/types";
 
 export default function ProductsPage() {
@@ -39,26 +41,22 @@ export default function ProductsPage() {
     return `/admin/products?${params}`;
   }, [keyword, categoryId]);
 
-  const { data: productsData, isLoading: productsLoading } = useSWR<Paginated<Product>>(productsKey, (path: string) => apiFetchAllPages<Product>(path));
+  const { data: productsData, isLoading: productsLoading, error: productsError } = useSWR<Paginated<Product>>(productsKey, (path: string) => apiFetchAllPages<Product>(path));
   const { data: catsData } = useSWR<Paginated<ProductCategory>>("/admin/categories?page_size=50", swrFetcher);
   const categories = catsData?.list ?? [];
 
-  const items = localItems ?? (productsData?.list ?? []).sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-  const [original, setOriginal] = useState<Product[] | null>(null);
+  const items = localItems ?? [...(productsData?.list ?? [])].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   const loading = productsLoading && !productsData;
+  const busy = saving || batchSaving;
 
-  React.useEffect(() => {
-    if (productsData?.list) {
-      const sorted = [...productsData.list].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-      setLocalItems(null);
-      setOriginal(sorted);
-      setDirty(false);
-      setSelectedIds(new Set());
-    }
-  }, [productsData]);
+  function resetListDraft() {
+    setLocalItems(null);
+    setSelectedIds(new Set());
+    setDirty(false);
+  }
 
   /* ── 选择逻辑 ── */
-  const allSelected = items.length > 0 && selectedIds.size === items.length;
+  const allSelected = items.length > 0 && items.every(item => selectedIds.has(item.id));
   function toggleSelectAll() {
     if (allSelected) setSelectedIds(new Set());
     else setSelectedIds(new Set(items.map(p => p.id)));
@@ -78,7 +76,8 @@ export default function ProductsPage() {
     if (!confirmTarget) return;
     try {
       await apiFetch(`/admin/products/${confirmTarget.id}`, { method: "DELETE" });
-      setLocalItems(prev => (prev ?? items).filter(p => p.id !== confirmTarget.id));
+      setSelectedIds(previous => new Set([...previous].filter(id => id !== confirmTarget.id)));
+      await mutate(productsKey);
       toast.success("产品已删除");
     } catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); }
     setConfirmOpen(false); setConfirmTarget(null);
@@ -89,14 +88,13 @@ export default function ProductsPage() {
     setBatchConfirm({ open: true, action, title, message });
   }
   async function executeBatch() {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || batchSaving) return;
     setBatchSaving(true);
     setBatchConfirm(p => ({ ...p, open: false }));
     const idList = Array.from(selectedIds);
     const total = idList.length;
-    let done = 0;
     try {
-      const updates = idList.map(async (id) => {
+      const results = await settleBatch(idList, async (id) => {
         if (batchConfirm.action === "publish") {
           await apiFetch(`/admin/products/${id}`, { method: "PUT", body: { status: "PUBLISHED" } });
         } else if (batchConfirm.action === "hide") {
@@ -104,15 +102,19 @@ export default function ProductsPage() {
         } else if (batchConfirm.action === "delete") {
           await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
         }
-        done++;
       });
-      await Promise.all(updates);
-      setSelectedIds(new Set());
-      mutate(productsKey);
+      const failedIds = idList.filter((_, index) => results[index].status === "rejected");
+      setSelectedIds(new Set(failedIds));
+      setLocalItems(null);
+      await mutate(productsKey);
       const label = batchConfirm.action === "delete" ? "已删除" : batchConfirm.action === "publish" ? "已发布" : "已隐藏";
-      toast.success(`${label} ${total} 个产品`);
+      if (failedIds.length) {
+        toast.error(`${label} ${total - failedIds.length}/${total} 个产品；失败 ${failedIds.length} 个，已保留选中项，可重试`);
+      } else {
+        toast.success(`${label} ${total} 个产品`);
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : `批量操作失败（已完成 ${done}/${total}）`);
+      toast.error(err instanceof Error ? err.message : "批量操作失败，请刷新列表确认结果");
     } finally {
       setBatchSaving(false);
     }
@@ -135,31 +137,25 @@ export default function ProductsPage() {
     try {
       const allResp = await apiFetchAllPages<Product>("/admin/products");
       const allProducts: Product[] = (allResp.list ?? []).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-      const visibleIdSet = new Set(items.map(p => p.id));
-      const newGlobalOrder: Product[] = []; let vi = 0;
-      for (const p of allProducts) {
-        if (visibleIdSet.has(p.id)) { newGlobalOrder.push(items[vi]); vi++; }
-        else newGlobalOrder.push(p);
+      const newGlobalOrder = mergeVisibleOrder(allProducts, items);
+      const currentRanks = new Map(allProducts.map(product => [product.id, product.sort_order]));
+      const updates = newGlobalOrder.map((product, rank) => ({ id: product.id, rank }))
+        .filter(({ id, rank }) => currentRanks.get(id) !== rank);
+      const results = await settleBatch(updates, ({ id, rank }) =>
+        apiFetch(`/admin/products/${id}`, { method: "PUT", body: { sort_order: rank } }),
+      );
+      const failures = results.filter(result => result.status === "rejected");
+      if (failures.length) {
+        toast.error(`排序保存失败 ${failures.length}/${updates.length} 条，未保存顺序已保留，请重试`);
+        return;
       }
-      const computed = new Map<number, number>(); const updates: Promise<unknown>[] = [];
-      for (let i = 0; i < newGlobalOrder.length; i++) {
-        const p = newGlobalOrder[i];
-        if (!visibleIdSet.has(p.id)) continue;
-        const leftSo = i > 0 ? (computed.get(newGlobalOrder[i - 1].id) ?? (newGlobalOrder[i - 1].sort_order ?? 0)) : null;
-        const rightSo = i < newGlobalOrder.length - 1 ? (newGlobalOrder[i + 1].sort_order ?? 0) : null;
-        const newSo = leftSo === null && rightSo === null ? 0 : leftSo === null ? rightSo! - 1 : rightSo === null ? leftSo + 1 : (leftSo + rightSo) / 2;
-        computed.set(p.id, newSo);
-        if (Math.abs((allProducts.find(ap => ap.id === p.id)?.sort_order ?? 0) - newSo) > 0.0001) {
-          updates.push(apiFetch(`/admin/products/${p.id}`, { method: "PUT", body: { sort_order: newSo } }).catch(() => { toast.error(`产品 ${p.id} 排序保存失败`); }));
-        }
-      }
-      await Promise.all(updates);
-      const refreshed = items.map(p => ({ ...p, sort_order: computed.get(p.id) ?? p.sort_order }));
-      setLocalItems(refreshed); setOriginal(refreshed); setDirty(false); mutate(productsKey);
+      setLocalItems(null); setDirty(false);
+      await mutate(productsKey);
+      toast.success("排序已保存");
     } catch (err) { toast.error(err instanceof Error ? err.message : "排序保存失败"); }
     finally { setSaving(false); }
   }
-  function handleCancelOrder() { setLocalItems(original ? [...original] : null); setDirty(false); }
+  function handleCancelOrder() { setLocalItems(null); setDirty(false); void mutate(productsKey); }
 
   /* ── SEO ── */
   async function handleSeoSave() {
@@ -190,8 +186,8 @@ export default function ProductsPage() {
         <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
           <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           <span className="text-sm text-amber-800 flex-1">您有未保存的排序更改，切换页面前请先保存或取消。</span>
-          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
-          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
+          <button disabled={busy} onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
+          <button disabled={busy} onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
         </div>
       )}
 
@@ -199,21 +195,21 @@ export default function ProductsPage() {
       {selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-900/20">
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">已选 {selectedIds.size} 个</span>
-          <button onClick={() => openBatchConfirm("publish", "批量发布", `确定将 ${selectedIds.size} 个产品标记为「已发布」吗？`)} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" disabled={batchSaving}>发布选中</button>
-          <button onClick={() => openBatchConfirm("hide", "批量隐藏", `确定将 ${selectedIds.size} 个产品标记为「草稿」吗？`)} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" disabled={batchSaving}>隐藏选中</button>
-          <button onClick={() => openBatchConfirm("delete", "批量删除", `确定要永久删除 ${selectedIds.size} 个产品吗？此操作不可撤销。`)} className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" disabled={batchSaving}>删除选中</button>
-          <button onClick={() => setSelectedIds(new Set())} className="ml-auto px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">取消选择</button>
+          <button onClick={() => openBatchConfirm("publish", "批量发布", `确定将 ${selectedIds.size} 个产品标记为「已发布」吗？`)} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" disabled={busy || dirty}>发布选中</button>
+          <button onClick={() => openBatchConfirm("hide", "批量隐藏", `确定将 ${selectedIds.size} 个产品标记为「草稿」吗？`)} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" disabled={busy || dirty}>隐藏选中</button>
+          <button onClick={() => openBatchConfirm("delete", "批量删除", `确定要永久删除 ${selectedIds.size} 个产品吗？此操作不可撤销。`)} className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" disabled={busy || dirty}>删除选中</button>
+          <button disabled={busy} onClick={() => setSelectedIds(new Set())} className="ml-auto px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">取消选择</button>
         </div>
       )}
 
       {/* 筛选栏 */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索产品..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:border-gray-700" />
-        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+        <input type="text" value={keyword} disabled={busy || dirty} onChange={e => { resetListDraft(); setKeyword(e.target.value); }} placeholder="搜索产品..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:border-gray-700" />
+        <select value={categoryId} disabled={busy || dirty} onChange={e => { resetListDraft(); setCategoryId(e.target.value); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
           <option value="">全部分类</option>
           {categories.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </select>
-        <button onClick={() => { setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ 清除筛选</button>
+        <button disabled={busy || dirty} onClick={() => { resetListDraft(); setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ 清除筛选</button>
       </div>
 
       {/* 产品表格 */}
@@ -221,7 +217,7 @@ export default function ProductsPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-2 py-3 w-8"><input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" /></th>
+              <th className="px-2 py-3 w-8"><input type="checkbox" aria-label="全选产品" disabled={busy || dirty} checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" /></th>
               <th className="px-2 py-3 w-8" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">产品</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
@@ -233,12 +229,14 @@ export default function ProductsPage() {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
             {loading ? (
               <tr><td colSpan={7} className="px-4 py-3"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-3/4" /></td></tr>
+            ) : productsError && !productsData ? (
+              <tr><td colSpan={7} role="alert" className="px-4 py-8 text-center text-red-600">产品加载失败 <button onClick={() => mutate(productsKey)} className="underline">重试</button></td></tr>
             ) : items.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">未找到产品</td></tr>
             ) : items.map((p, idx) => (
-              <tr key={p.id} draggable onDragStart={e => handleDragStart(e, idx)} onDragOver={handleDragOver} onDrop={e => handleDrop(e, idx)}
+              <tr key={p.id} draggable={!busy} onDragStart={e => handleDragStart(e, idx)} onDragEnd={() => setDragIdx(null)} onDragOver={handleDragOver} onDrop={e => handleDrop(e, idx)}
                 className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedIds.has(p.id) ? "bg-brand-50 dark:bg-brand-900/10" : ""} ${dragIdx === idx ? "opacity-50" : ""}`}>
-                <td className="px-2 py-3"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelectOne(p.id)} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" /></td>
+                <td className="px-2 py-3"><input type="checkbox" aria-label={`选择 ${p.title}`} disabled={busy || dirty} checked={selectedIds.has(p.id)} onChange={() => toggleSelectOne(p.id)} className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" /></td>
                 <td className="px-2 py-3">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
                     <circle cx="9" cy="5" r="1.5" fill="currentColor" /><circle cx="15" cy="5" r="1.5" fill="currentColor" />
@@ -255,7 +253,7 @@ export default function ProductsPage() {
                 <td className="px-4 py-3 text-gray-500">{p.category?.name || "-"}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : p.status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "SCHEDULED" ? "定时发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
                 <td className="px-4 py-3">
-                  <button onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
+                  <button disabled={busy || dirty} onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${p.seo_title ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"}`}>
                     {p.seo_title ? "已设置" : "未设置"}
                   </button>
@@ -264,7 +262,7 @@ export default function ProductsPage() {
                   <div className="flex gap-2">
                     <Link href={`/product-form?id=${p.id}`} className="text-brand-500 hover:text-brand-600 text-sm">编辑</Link>
                     <Link href={`/product-form?copy_from=${p.id}`} className="text-blue-500 hover:text-blue-600 text-sm">复制</Link>
-                    <button onClick={() => handleDelete(p.id, p.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
+                    <button disabled={busy || dirty} onClick={() => handleDelete(p.id, p.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
                   </div>
                 </td>
               </tr>

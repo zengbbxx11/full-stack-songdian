@@ -5,7 +5,7 @@
  * - 鉴权令牌：仅由浏览器自动携带的 HttpOnly Cookie 提供，JavaScript 不接触 JWT。
  * - 路径前缀：自动补齐 /api/v1（传入 /admin/xxx 或 /products 均可）。
  * - 响应信封：后端统一返回 { code, msg, data }，code !== "0" 视为业务错误并抛出 ApiError。
- * - 401 处理：调用 Cookie 刷新接口一次；失败后跳转 /signin。
+ * - 401 处理：合并 Cookie 刷新并重试一次；失效会话跳转 /signin，暂时性故障保留错误。
  */
 
 /** 将媒体地址解析为后台同源 URL；完整外部地址保持不变。 */
@@ -59,6 +59,31 @@ type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | object | null;
 };
 
+let refreshPromise: Promise<boolean> | null = null;
+let sessionGeneration = 0;
+let loggingOut = false;
+
+async function refreshSession(generation: number): Promise<boolean> {
+  if (loggingOut) return false;
+  // 旧请求的 401 可能晚于刷新响应到达；直接使用已经轮换的 Cookie 重试。
+  if (generation !== sessionGeneration) return true;
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const response = await fetch(`${API_PREFIX}/admin/refresh`, {
+        method: "POST", headers: { Accept: "application/json" }, credentials: "same-origin",
+      });
+      if (!response.ok && response.status !== 401) {
+        throw new ApiError(response.status, "会话刷新暂时失败，请重试");
+      }
+      const payload = await response.json().catch(() => null);
+      const refreshed = response.ok && (payload?.code === "0" || payload?.code === 0);
+      if (refreshed) sessionGeneration++;
+      return refreshed;
+    })().finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
 /**
  * 统一请求方法。
  *
@@ -71,6 +96,17 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: ApiFetchOptions = {}
 ): Promise<T> {
+  const pathname = new URL(resolveUrl(path), "http://internal.local").pathname;
+  const isLogout = pathname === `${API_PREFIX}/admin/logout`;
+  const isSessionEndpoint = ["login", "refresh", "logout"].some(
+    action => pathname === `${API_PREFIX}/admin/${action}`,
+  );
+  if (isLogout) {
+    loggingOut = true;
+    // 确保刷新响应不会在退出响应之后重新写入登录 Cookie。
+    try { await refreshPromise; } catch { /* 仍应尝试退出 */ }
+  }
+  const generation = sessionGeneration;
   // 自动序列化普通对象 body 为 JSON。
   let body: BodyInit | null | undefined = options.body as BodyInit | null | undefined;
   const headers = new Headers(options.headers);
@@ -82,18 +118,16 @@ export async function apiFetch<T = unknown>(
   const request = () => fetch(resolveUrl(path), {
     ...options, body, headers, credentials: "same-origin",
   });
-  let res = await request();
+  let res: Response;
+  try {
+    res = await request();
+  } finally {
+    if (isLogout) loggingOut = false;
+  }
 
   // access Cookie 过期时仅刷新一次，避免循环；刷新令牌本身只存在于 HttpOnly Cookie。
-  const isSessionEndpoint = path.includes("/admin/refresh") || path.includes("/admin/logout");
   if (res.status === 401 && !isSessionEndpoint) {
-    const refresh = await fetch(`${API_PREFIX}/admin/refresh`, {
-      method: "POST", headers: { Accept: "application/json" }, credentials: "same-origin",
-    });
-    if (refresh.ok) {
-      const refreshPayload = await refresh.json().catch(() => null);
-      if (refreshPayload?.code === "0" || refreshPayload?.code === 0) res = await request();
-    }
+    if (await refreshSession(generation)) res = await request();
   }
 
   // 401：刷新失败或仍未登录，跳回登录页（登录页自身不跳转，便于展示错误）。
@@ -101,7 +135,7 @@ export async function apiFetch<T = unknown>(
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/signin")) {
       // A hard navigation intentionally clears protected-page client state after refresh failure.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = "/signin";
+      window.location.href = "/signin?expired=1";
     }
     let message = "登录已过期，请重新登录";
     try {
@@ -138,7 +172,7 @@ export async function apiFetch<T = unknown>(
   }
 
   // 解包：返回信封中的 data；无 data 字段时返回整个对象（兼容个别直接返回对象的接口）。
-  return (payload?.data ?? payload) as T;
+  return (payload && typeof payload === "object" && "data" in payload ? payload.data : payload) as T;
 }
 
 /** 拉取所有分页，供后台需要全量排序/统计的功能使用。后端单页上限为 50。 */

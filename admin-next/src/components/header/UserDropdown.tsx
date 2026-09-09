@@ -2,9 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { apiFetch } from "@/lib/api-client";
+import { useToast } from "@/context/ToastContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const toast = useToast();
   const [profile, setProfile] = useState<{ username: string; email: string | null } | null>(null);
 
   useEffect(() => {
@@ -58,8 +61,16 @@ export default function UserDropdown() {
 
         <button
           type="button"
+          disabled={loggingOut}
           onClick={async () => {
-            try { await apiFetch("/admin/logout", { method: "POST" }); } catch { /* ignore */ }
+            setLoggingOut(true);
+            try {
+              await apiFetch("/admin/logout", { method: "POST" });
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "退出失败，请重试");
+              setLoggingOut(false);
+              return;
+            }
             // Use a hard navigation so the route guard reads the cleared HttpOnly cookies.
             // A prefetched/soft /signin navigation can reuse the redirect cached while logged in.
             window.location.replace("/signin");

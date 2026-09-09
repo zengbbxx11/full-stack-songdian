@@ -9,25 +9,23 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 interface CountryItem { country: string; count: number; }
 interface StatsData {
+  counts: { products: number; news: number; categories: number; inquiries: number };
   inquiry_countries: CountryItem[];
   inquiry_status: Record<string, number>;
 }
 
 export default function EcommerceMetrics() {
-  // 计数用独立端点（保证可用）
-  const { data: productsData, isLoading: pL } = useSWR<Paginated<unknown>>("/products?page_size=1", swrFetcher);
-  const { data: newsData, isLoading: nL } = useSWR<Paginated<unknown>>("/news?page_size=1", swrFetcher);
   const { data: catsData, isLoading: cL } = useSWR<Paginated<ProductCategory>>("/admin/categories?page_size=50", swrFetcher);
   const { data: inquiriesData, isLoading: iL } = useSWR<Paginated<Inquiry>>("/admin/inquiries?page_size=8", swrFetcher);
   // 统计走新端点
-  const { data: stats, isLoading: sL } = useSWR<StatsData>("/admin/stats", swrFetcher);
+  const { data: stats, isLoading: sL, error: statsError, mutate: reloadStats } = useSWR<StatsData>("/admin/stats", swrFetcher);
 
-  const loading = pL || nL || cL || iL || sL;
+  const loading = cL || iL || sL;
 
-  const products = productsData?.total ?? 0;
-  const news = newsData?.total ?? 0;
-  const categories = catsData?.list?.length ?? 0;
-  const inquiries = inquiriesData?.total ?? 0;
+  const products = stats?.counts?.products;
+  const news = stats?.counts?.news;
+  const categories = stats?.counts?.categories;
+  const inquiries = stats?.counts?.inquiries;
 
   const countries = stats?.inquiry_countries ?? [];
   const statusDist = stats?.inquiry_status ?? {};
@@ -53,6 +51,7 @@ export default function EcommerceMetrics() {
 
   return (
     <div className="space-y-6">
+      {statsError && <p role="alert" className="text-sm text-red-600">统计加载失败 <button onClick={() => reloadStats()} className="underline">重试</button></p>}
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map(card => (
@@ -60,7 +59,7 @@ export default function EcommerceMetrics() {
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
               <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${card.color}`}>
-                {loading ? <div className="h-4 w-8 animate-pulse rounded bg-white/40" /> : <span className="text-lg font-bold text-white">{card.value}</span>}
+                {loading ? <div className="h-4 w-8 animate-pulse rounded bg-white/40" /> : <span className="text-lg font-bold text-white">{card.value ?? "—"}</span>}
               </span>
             </div>
           </div>

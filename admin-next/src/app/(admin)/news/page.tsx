@@ -10,7 +10,9 @@ import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, swrFetcher } from "@/lib/api-client";
+import { apiFetch, apiFetchAllPages } from "@/lib/api-client";
+import { settleBatch } from "@/lib/batch";
+import { mergeVisibleOrder } from "@/lib/content-order";
 import type { NewsItem, Paginated } from "@/types";
 
 export default function NewsPage() {
@@ -23,25 +25,14 @@ export default function NewsPage() {
   const [search, setSearch] = useState("");
   const [localItems, setLocalItems] = useState<NewsItem[] | null>(null);
 
-  const newsKey = "/news?page_size=50";
-  const { data, isLoading } = useSWR<Paginated<NewsItem>>(newsKey, swrFetcher);
+  const newsKey = "/admin/news?page_size=50";
+  const { data, isLoading, error } = useSWR<Paginated<NewsItem>>(newsKey, apiFetchAllPages<NewsItem>);
 
-  const items = localItems ?? (data?.list ?? []).sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-  const [original, setOriginal] = useState<NewsItem[] | null>(null);
+  const items = localItems ?? [...(data?.list ?? [])].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   const loading = isLoading && !data;
 
-  // 当 SWR 数据变化时重置本地状态
-  React.useEffect(() => {
-    if (data?.list) {
-      const sorted = [...data.list].sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
-      setLocalItems(null);
-      setOriginal(sorted);
-      setDirty(false);
-    }
-  }, [data]);
-
   const filtered = search.trim()
-    ? items.filter(i => i.title.toLowerCase().includes(search.toLowerCase()))
+    ? items.filter(i => i.title.toLowerCase().includes(search.trim().toLowerCase()))
     : items;
 
   function handleDelete(id: number, title: string) {
@@ -52,10 +43,10 @@ export default function NewsPage() {
     if (!deleteConfirm) return;
     try {
       await apiFetch(`/admin/news/${deleteConfirm.id}`, { method: "DELETE" });
-      setLocalItems(prev => (prev ?? items).filter(n => n.id !== deleteConfirm.id));
+      setLocalItems(null);
       setDeleteConfirm(null);
       toast.success("文章已删除");
-      mutate(newsKey);
+      await mutate(newsKey);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "删除失败");
     }
@@ -70,10 +61,10 @@ export default function NewsPage() {
   function handleDrop(e: React.DragEvent, targetIdx: number) {
     e.preventDefault();
     if (dragIdx === null || dragIdx === targetIdx) return;
-    const reordered = [...items];
+    const reordered = [...filtered];
     const [moved] = reordered.splice(dragIdx, 1);
     reordered.splice(targetIdx, 0, moved);
-    setLocalItems(reordered);
+    setLocalItems(mergeVisibleOrder(items, reordered));
     setDragIdx(null);
     setDirty(true);
   }
@@ -82,17 +73,21 @@ export default function NewsPage() {
   async function handleSaveOrder() {
     setSaving(true);
     try {
-      await Promise.all(items.map((n, i) =>
+      const results = await settleBatch(items, (n, i) =>
         apiFetch(`/admin/news/${n.id}`, {
           method: "PUT",
           body: { sort_order: i },
-        }).catch((err) => {
-          toast.error(`新闻 ${n.title} 排序保存失败：${err instanceof Error ? err.message : "未知错误"}`);
         })
-      ));
-      setOriginal([...items]);
+      );
+      const failed = results.filter(result => result.status === "rejected");
+      if (failed.length) {
+        toast.error(`排序保存失败 ${failed.length}/${items.length} 条，未保存顺序已保留，请重试`);
+        return;
+      }
       setDirty(false);
-      mutate(newsKey);
+      setLocalItems(null);
+      await mutate(newsKey);
+      toast.success("排序已保存");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "排序保存失败");
     } finally {
@@ -102,8 +97,9 @@ export default function NewsPage() {
 
   // 取消排序，恢复到原始顺序
   function handleCancelOrder() {
-    setLocalItems(original ? [...original] : null);
+    setLocalItems(null);
     setDirty(false);
+    void mutate(newsKey);
   }
 
   function handleDragOver(e: React.DragEvent) { e.preventDefault(); }
@@ -125,6 +121,7 @@ export default function NewsPage() {
       <div className="mb-4">
         <input
           type="text"
+          disabled={saving}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索文章..."
@@ -137,8 +134,8 @@ export default function NewsPage() {
         <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
           <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           <span className="text-sm text-amber-800 flex-1">您有未保存的排序更改，切换页面前请先保存或取消。</span>
-          <button onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
-          <button onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
+          <button disabled={saving} onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
+          <button disabled={saving} onClick={handleSaveOrder} className="px-4 py-1.5 text-sm font-medium text-white bg-brand-500 rounded hover:bg-brand-600">保存排序</button>
         </div>
       )}
       <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
@@ -157,19 +154,22 @@ export default function NewsPage() {
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
                   <td className="px-2 py-3"><div className="w-4 h-4 rounded animate-pulse bg-gray-100 dark:bg-gray-800" /></td>
-                  <td className="px-4 py-3"><div className="h-4 rounded animate-pulse bg-gray-100 dark:bg-gray-800" style={{ width: `${60 + Math.random() * 30}%`, animationDelay: `${i * 0.1}s` }} /></td>
+                  <td className="px-4 py-3"><div className="h-4 rounded animate-pulse bg-gray-100 dark:bg-gray-800" style={{ width: `${60 + (i % 3) * 10}%`, animationDelay: `${i * 0.1}s` }} /></td>
                   <td className="px-4 py-3"><div className="h-5 w-16 rounded animate-pulse bg-gray-100 dark:bg-gray-800" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-24 rounded animate-pulse bg-gray-100 dark:bg-gray-800" /></td>
                   <td className="px-4 py-3"><div className="h-4 w-16 rounded animate-pulse bg-gray-100 dark:bg-gray-800" /></td>
                 </tr>
               ))
+            ) : error && !data ? (
+              <tr><td colSpan={5} role="alert" className="px-4 py-8 text-center text-red-600">新闻加载失败 <button onClick={() => mutate(newsKey)} className="underline">重试</button></td></tr>
             ) : filtered.length === 0 ? (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">{search ? "No matching articles" : "No articles found"}</td></tr>
             ) : filtered.map((n, idx) => (
               <tr
                 key={n.id}
-                draggable
+                draggable={!saving}
                 onDragStart={e => handleDragStart(e, idx)}
+                onDragEnd={() => setDragIdx(null)}
                 onDragOver={handleDragOver}
                 onDrop={e => handleDrop(e, idx)}
                 className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${dragIdx === idx ? "opacity-50 bg-blue-50 dark:bg-blue-900/10" : ""}`}
@@ -187,7 +187,7 @@ export default function NewsPage() {
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <Link href={`/news-form?id=${n.id}`} className="text-brand-500 hover:text-brand-600 text-sm">编辑</Link>
-                    <button onClick={() => handleDelete(n.id, n.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
+                    <button disabled={saving || dirty} onClick={() => handleDelete(n.id, n.title)} className="text-red-500 hover:text-red-600 text-sm">删除</button>
                   </div>
                 </td>
               </tr>

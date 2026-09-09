@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -35,6 +35,8 @@ const PIN_SVG = `
 
 export default function ContactMap({ lat, lng, address, zoom = 17 }: ContactMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -76,15 +78,26 @@ export default function ContactMap({ lat, lng, address, zoom = 17 }: ContactMapP
         popupAnchor: [0, -46],
       });
 
+      // 地址来自后台设置，必须作为文本插入，不能直接拼接进 Leaflet HTML。
+      const popup = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = "Songdian Technology";
+      popup.append(title, document.createElement("br"), document.createTextNode(address));
       L.marker([lat, lng], { icon, title: "Songdian Technology" })
         .addTo(map)
-        .bindPopup(`<strong>Songdian Technology</strong><br>${address}`);
+        .bindPopup(popup);
 
       // 外层用 aspect-ratio，初始化瞬间高度可能尚未算好，修正一次避免灰块
       const fix = () => map?.invalidateSize();
       raf = requestAnimationFrame(fix);
       timer = window.setTimeout(fix, 200);
-    })();
+    })().catch(() => {
+      if (!cancelled) {
+        map?.remove();
+        map = null;
+        setFailed(true);
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -92,7 +105,16 @@ export default function ContactMap({ lat, lng, address, zoom = 17 }: ContactMapP
       if (timer) window.clearTimeout(timer);
       if (map) map.remove();
     };
-  }, [lat, lng, zoom, address]);
+  }, [lat, lng, zoom, address, attempt]);
+
+  if (failed) {
+    return (
+      <div role="status" className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-gray-600">
+        <p>Map unavailable. You can use the navigation links above.</p>
+        <button type="button" className="min-h-11 rounded-lg border border-gray-300 px-5 py-2" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}>Try again</button>
+      </div>
+    );
+  }
 
   return (
     <div

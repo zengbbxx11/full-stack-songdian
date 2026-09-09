@@ -116,7 +116,7 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 | 产品/新闻卡片图片 | `SafeImage` 默认 `loading="lazy"` | `preload={true}` 只给首屏候选；失败时渲染占位 |
 | 首页非首屏图片 | `next/image` 默认懒加载或显式 `loading="lazy"` | 配合 `sizes` 减少不必要的下载尺寸 |
 | About 时间轴、证书画廊 | `next/dynamic` 代码分包 | 当前是组件动态分包，不等同于滚动进入视口才加载 |
-| Contact Leaflet 地图 | `next/dynamic({ ssr: false })` | 只在浏览器端加载，不进入服务端 HTML；目前不是 IntersectionObserver 视口懒加载 |
+| Contact Leaflet 地图 | IntersectionObserver + `next/dynamic({ ssr: false })` | 距视口 200px 时才挂载地图组件并加载瓦片；保留固定占位和手动加载入口 |
 | About 工厂视频 | `<video preload="none">` | 展示 poster，用户点击播放后才请求视频数据 |
 | 首页异步数据区块 | `Suspense` Streaming SSR | 是服务端流式渲染，不等同于图片懒加载；关键文字仍可被搜索引擎读取 |
 

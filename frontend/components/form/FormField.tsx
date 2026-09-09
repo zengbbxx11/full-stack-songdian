@@ -49,6 +49,9 @@ export default function FormField({
           {...registration}
           rows={rows}
           placeholder={placeholder}
+          aria-required={required}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? `${registration.name}-error` : undefined}
           className={cn(
             hasError && "border-[#3E6AE1] focus-visible:border-[#3E6AE1] focus-visible:ring-[#3E6AE1]/20"
           )}
@@ -59,6 +62,9 @@ export default function FormField({
           type={type}
           {...registration}
           placeholder={placeholder}
+          aria-required={required}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? `${registration.name}-error` : undefined}
           className={cn(
             hasError && "border-[#3E6AE1] focus-visible:border-[#3E6AE1] focus-visible:ring-[#3E6AE1]/20"
           )}
@@ -66,7 +72,7 @@ export default function FormField({
       )}
 
       {hasError && (
-        <p className="text-sm" style={{ color: "#3E6AE1" }}>{error?.message}</p>
+        <p id={`${registration.name}-error`} role="alert" className="text-sm text-red-700">{error?.message}</p>
       )}
     </div>
   );

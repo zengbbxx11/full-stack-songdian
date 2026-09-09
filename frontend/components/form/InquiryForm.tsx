@@ -3,7 +3,7 @@
 /**
  * 询盘表单（完整版，components/form 目录）
  * ------------------------------------------------------------------
- * 客户端组件。基于 react-hook-form + zod 校验 + next-safe-form 提交。
+ * 客户端组件。基于 react-hook-form + zod 校验，提交 FastAPI。
  *
  * 设计目标：降低客户填表成本、提升填表欲望。
  *  - 仅 4 项必填（姓名 / 邮箱 / 产品类型 / 需求），其余设为可选并折叠收起；
@@ -13,10 +13,10 @@
  *  - 提交成功改为页面内成功态，替代原生 alert。
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { inquirySchema, inquiryMessage, type InquiryFormValues } from "@/lib/inquiry-form";
 import FormField from "./FormField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,20 +35,6 @@ const cameraCategories = [
   { label: "Custom OEM/ODM", value: "custom-oem-odm-project" },
 ];
 
-// zod 校验规则：仅核心 4 项必填，其余可选，最大程度降低填写负担
-const inquirySchema = z.object({
-  fullName: z.string().min(2, "Please enter your name (at least 2 characters)"),
-  email: z.string().email("Please enter a valid email address"),
-  productInterest: z.string().min(1, "Please select a product type"),
-  message: z.string().min(10, "Please describe your needs (at least 10 characters)"),
-  phone: z.string().optional(),
-  company: z.string().optional(),
-  country: z.string().max(100, "Country / region is too long").optional(),
-  quantity: z.string().optional(),
-});
-
-type InquiryFormValues = z.infer<typeof inquirySchema>;
-
 const TRUST_ITEMS = [
   { icon: Clock, text: "Reply within 24h" },
   { icon: BadgeCheck, text: "Free, no-obligation quote" },
@@ -65,6 +51,8 @@ function createInquiryRequestId(): string {
 export default function InquiryForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pendingRequest = useRef<{ fingerprint: string; id: string } | null>(null);
+  const sending = useRef(false);
 
   const {
     register,
@@ -88,11 +76,10 @@ export default function InquiryForm() {
 
   // 提交处理：POST 到后端 /api/v1/inquiries，后端落 PG 库并 SMTP 发信
   const onSubmit = async (values: InquiryFormValues) => {
+    if (sending.current) return;
+    sending.current = true;
     setError(null);
     try {
-      // 生成业务单号：优先 crypto.randomUUID（HTTPS/localhost 才可用），
-      // HTTP（如 IP 直连）下 fallback 到时间戳+随机串，避免 randomUUID is not a function
-      const bizReqNo = createInquiryRequestId();
       const attribution = readFirstAttribution();
       const sourceProduct = (
         new URLSearchParams(window.location.search).get("product") || ""
@@ -101,9 +88,7 @@ export default function InquiryForm() {
         name: values.fullName,
         email: values.email,
         product_interest: values.productInterest,
-        message: values.quantity
-          ? `[数量需求: ${values.quantity}]\n\n${values.message}`
-          : values.message,
+        message: inquiryMessage(values),
         phone: values.phone || null,
         company: values.company || null,
         country: values.country || null,
@@ -116,8 +101,14 @@ export default function InquiryForm() {
         utm_campaign: attribution?.utm_campaign || null,
         utm_term: attribution?.utm_term || null,
         utm_content: attribution?.utm_content || null,
-        biz_req_no: bizReqNo,
       };
+
+      // 响应丢失并不代表未入库；相同内容重试必须复用后端幂等键。
+      const fingerprint = JSON.stringify(body);
+      if (pendingRequest.current?.fingerprint !== fingerprint) {
+        pendingRequest.current = { fingerprint, id: createInquiryRequestId() };
+      }
+      body.biz_req_no = pendingRequest.current.id;
 
       const res = await fetch(
         `${API_BASE}/api/v1/inquiries`,
@@ -133,9 +124,17 @@ export default function InquiryForm() {
         msg?: string;
       };
       if (!res.ok || String(json.code) !== "0") {
-        throw new Error(json.msg || "Submission failed. Please try again.");
+        const message = String(json.code) === "A040001"
+          ? "Please check your email address and try again."
+          : String(json.code) === "A040002"
+            ? "Please check your requirements (up to 2,000 characters including quantity)."
+            : res.status === 429
+              ? "Too many attempts. Please wait a moment and try again."
+              : "Submission failed. Your details are still here — please try again.";
+        throw new Error(message);
       }
 
+      pendingRequest.current = null;
       setSubmitted(true);
       reset();
 
@@ -143,10 +142,12 @@ export default function InquiryForm() {
       trackEvent("contact_submit", { page: window.location.pathname });
     } catch (err) {
       setError(
-        err instanceof Error
+        err instanceof Error && !(err instanceof TypeError)
           ? err.message
           : "Network error. Please check your connection and try again."
       );
+    } finally {
+      sending.current = false;
     }
   };
 
@@ -154,7 +155,7 @@ export default function InquiryForm() {
   if (submitted) {
     return (
       <Card className="w-full border-[var(--border)]" style={{ borderRadius: "12px" }}>
-        <CardContent className="py-12 md:py-16 text-center px-6">
+        <CardContent role="status" tabIndex={-1} ref={(element) => element?.focus()} className="py-12 md:py-16 text-center px-6">
           <div
             className="w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center"
             style={{ backgroundColor: "#EFF3FF" }}
@@ -180,7 +181,8 @@ export default function InquiryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} data-clarity-mask="true">
+    <form onSubmit={(event) => { void handleSubmit(onSubmit)(event); }} noValidate data-clarity-mask="true" aria-busy={isSubmitting}>
+      <fieldset disabled={isSubmitting} className="min-w-0">
       <Card className="w-full border-[var(--border)]" style={{ borderRadius: "12px" }}>
         <CardHeader>
           <CardTitle className="text-xl font-bold text-gray-900">Send an Inquiry</CardTitle>
@@ -207,33 +209,35 @@ export default function InquiryForm() {
               name="productInterest"
               render={({ field, fieldState }) => (
                 <div className="space-y-2">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span id="product-interest-label" className="text-sm font-medium text-gray-700">
                     What are you looking for? <span style={{ color: "#3E6AE1" }}>*</span>
                   </span>
-                  <div role="radiogroup" className="flex flex-wrap gap-2">
+                  <div role="radiogroup" aria-labelledby="product-interest-label" aria-required="true" aria-invalid={Boolean(fieldState.error)} aria-describedby={fieldState.error ? "product-interest-error" : undefined} className="flex flex-wrap gap-2">
                     {cameraCategories.map((cat) => {
                       const active = field.value === cat.value;
                       return (
-                        <button
+                        <label
                           key={cat.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          onClick={() => field.onChange(cat.value)}
-                          className={cn(
-                            "min-h-11 touch-manipulation px-3.5 py-2 text-sm rounded-full border transition-colors active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30",
+                          className="relative cursor-pointer"
+                        >
+                          <input type="radio" name={field.name} value={cat.value} checked={active}
+                            onChange={() => field.onChange(cat.value)} onBlur={field.onBlur}
+                            ref={cat === cameraCategories[0] ? field.ref : undefined}
+                            className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                          <span className={cn(
+                            "inline-flex min-h-11 touch-manipulation px-3.5 py-2 text-sm rounded-full border transition-colors active:scale-[0.98] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--accent)]/50",
                             active
                               ? "border-[var(--accent)] bg-[#fdeced] text-[var(--accent)] font-medium"
                               : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
-                          )}
-                        >
+                          )}>
                           {cat.label}
-                        </button>
+                          </span>
+                        </label>
                       );
                     })}
                   </div>
                   {fieldState.error && (
-                    <p className="text-sm" style={{ color: "#3E6AE1" }}>{fieldState.error.message}</p>
+                    <p id="product-interest-error" role="alert" className="text-sm text-red-700">{fieldState.error.message}</p>
                   )}
                 </div>
               )}
@@ -269,7 +273,7 @@ export default function InquiryForm() {
             />
 
             {/* 可选信息折叠：核心表单保持简短，降低「看起来很长」的心理负担 */}
-            <details className="group rounded-md border border-dashed border-gray-200 px-4 py-2">
+            <details open={Boolean(errors.phone || errors.company || errors.country || errors.quantity) || undefined} className="group rounded-md border border-dashed border-gray-200 px-4 py-2">
               <summary className="min-h-11 touch-manipulation text-sm font-medium text-gray-600 cursor-pointer select-none list-none flex items-center justify-between">
                 <span>Add more details (optional)</span>
                 <span className="text-gray-400 text-xs group-open:hidden">Show</span>
@@ -310,7 +314,7 @@ export default function InquiryForm() {
             </details>
 
             {error && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+              <div role="alert" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200">
                 {error}
               </div>
             )}
@@ -337,6 +341,7 @@ export default function InquiryForm() {
           </div>
         </CardContent>
       </Card>
+      </fieldset>
     </form>
   );
 }

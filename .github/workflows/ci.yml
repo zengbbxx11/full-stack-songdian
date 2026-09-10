@@ -189,6 +189,9 @@ jobs:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       INTERNAL_API_URL: http://127.0.0.1:8000
       BACKEND_PROXY_URL: http://127.0.0.1:8000
+      # Allow backend content writes to invalidate the running Next.js ISR cache.
+      NEXT_REVALIDATE_URL: http://127.0.0.1:3000/api/revalidate
+      REVALIDATE_SECRET: e2e-revalidate-secret
       E2E_ADMIN_PASSWORD: Songdian@2026
     steps:
       - uses: actions/checkout@v4

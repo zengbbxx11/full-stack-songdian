@@ -15,6 +15,7 @@ import { API_BASE, apiFetch } from "./client";
 export interface PublicSettings {
   ga_id?: string;
   clarity_id?: string;
+  google_verification?: string;
   company_email?: string;
   company_phone?: string;
   company_whatsapp?: string;
@@ -39,7 +40,7 @@ export function resolveGaId(settings: PublicSettings | null, fallback?: string):
  */
 export async function getPublicSettings(): Promise<PublicSettings> {
   try {
-    const data = await apiFetch<PublicSettings>("/api/v1/public/settings", undefined, { revalidate: 300 });
+    const data = await apiFetch<PublicSettings>("/api/v1/public/settings", undefined, { revalidate: 300, tags: ["public-settings"] });
     return data && typeof data === "object" && !Array.isArray(data) ? data : {};
   } catch {
     return {}; // 返回空对象，由调用方 fallback

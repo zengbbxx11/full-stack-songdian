@@ -15,8 +15,10 @@ import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
-import { apiFetch, resolveMediaUrl } from "@/lib/api-client";
-import type { ProductCategory, Paginated } from "@/types";
+import { apiFetch, apiFetchAllPages, resolveMediaUrl } from "@/lib/api-client";
+import type { ProductCategory } from "@/types";
+import { publicationTime, toLocalDateTime } from "@/lib/content-time";
+import { useSWRConfig } from "swr";
 import ContentWorkflowPanel from "@/components/content/ContentWorkflowPanel";
 
 interface GalleryItem { id: number; image_url: string; alt: string | null; sort_order: number; }
@@ -25,13 +27,19 @@ interface AttributeItem { id: number; name: string; slug: string; value: string;
 export default function ProductFormPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading...</div>}>
-      <ProductFormInner />
+      <ProductFormRoute />
     </Suspense>
   );
 }
 
+function ProductFormRoute() {
+  const params = useSearchParams();
+  return <ProductFormInner key={`${params.get("id") || "new"}:${params.get("copy_from") || ""}`} />;
+}
+
 function ProductFormInner() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const params = useSearchParams();
   const id = params.get("id");
   const copyFrom = params.get("copy_from");
@@ -46,12 +54,14 @@ function ProductFormInner() {
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
-  const toast = useToast();
+  const { error: showError } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmCallback, setConfirmCallback] = useState<(() => Promise<void>) | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [loadError, setLoadError] = useState("");
+  const [loadedKey, setLoadedKey] = useState("");
 
   function openConfirm(title: string, message: string, cb: () => Promise<void>) {
     setConfirmTitle(title);
@@ -64,19 +74,19 @@ function ProductFormInner() {
     try {
       if (confirmCallback) await confirmCallback();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "删除失败");
+      showError(err instanceof Error ? err.message : "删除失败");
     }
     setConfirmOpen(false);
   }
 
   const loadCats = useCallback(async () => {
     try {
-      const d = await apiFetch<Paginated<ProductCategory>>("/admin/categories?page_size=50");
+      const d = await apiFetchAllPages<ProductCategory>("/admin/categories");
       setCats(d.list || []);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载分类失败");
+      showError(err instanceof Error ? err.message : "加载分类失败");
     }
-  }, [toast]);
+  }, [showError]);
 
   useEffect(() => { loadCats(); }, [loadCats]);
 
@@ -84,18 +94,25 @@ function ProductFormInner() {
   useEffect(() => {
     const sourceId = id || copyFrom;
     if (!sourceId) return;
+    let active = true;
     apiFetch<Record<string, unknown>>(`/admin/products/${sourceId}`).then((p) => {
+      if (!active) return;
+      setLoadError("");
+      setLoadedKey((id || copyFrom) + ":" + reloadKey);
       const title = copyFrom ? `Copy of ${String(p.title || "")}` : String(p.title || "");
       const slug = copyFrom ? "" : String(p.slug || "");
       const category = p.category as { id?: number } | undefined;
-      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: category?.id ? String(category.id) : "", stock_status: String(p.stock_status || "instock"), status: copyFrom ? "DRAFT" : String(p.status || "DRAFT"), published_at: copyFrom || !p.published_at ? "" : String(p.published_at).substring(0, 16), cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
+      setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: category?.id ? String(category.id) : "", stock_status: String(p.stock_status || "instock"), status: copyFrom ? "DRAFT" : String(p.status || "DRAFT"), published_at: copyFrom ? "" : toLocalDateTime(String(p.published_at || "")), cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
     }).catch((err: unknown) => {
+      if (!active) return;
       const msg: string = err instanceof Error ? err.message : "Unknown error";
-      toast.error("加载产品失败：" + msg);
+      setLoadError(msg);
+      showError("加载产品失败：" + msg);
     });
-  }, [id, copyFrom, toast, reloadKey]);
+    return () => { active = false; };
+  }, [id, copyFrom, showError, reloadKey]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File, productSlug?: string): Promise<string> {
@@ -123,7 +140,7 @@ function ProductFormInner() {
         });
         setGalleries(prev => [...prev, { id: newG.id, image_url: newG.image_url, alt: newG.alt, sort_order: newG.sort_order }]);
       }
-    } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
+    } catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
     finally { setUploading(false); e.target.value = ""; }
   }
 
@@ -138,7 +155,7 @@ function ProductFormInner() {
       });
       setAttrs(prev => [...prev, { id: res.id, name: res.name, slug: res.slug, value: res.value }]);
       setNewAttr({ name: "", value: "" });
-    } catch (err) { toast.error(err instanceof Error ? err.message : "添加失败"); }
+    } catch (err) { showError(err instanceof Error ? err.message : "添加失败"); }
   }
 
   // 删除规格属性
@@ -163,19 +180,24 @@ function ProductFormInner() {
     try {
       const url = await uploadImage(file, form.slug);
       setForm(prev => ({ ...prev, cover_image: url }));
-    } catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
+    } catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
     e.target.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    if (saving || ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey)) return;
+    setSaving(true);
     try {
+      if (!form.title.trim() || !form.slug.trim() || !form.category_id) throw new Error("请填写标题、别名并选择分类");
       const payload: Record<string, unknown> = { ...form, category_id: form.category_id ? Number(form.category_id) : null };
+      payload.published_at = publicationTime(form.published_at, form.status);
       if (!payload.published_at) delete payload.published_at;
       if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/products", { method: "POST", body: payload });
+      await mutate(key => typeof key === "string" && (key.startsWith("/admin/products?") || key === "/admin/products" || key === "/admin/stats"), undefined, { revalidate: true });
       router.push("/products");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); }
+    } catch (err) { showError(err instanceof Error ? err.message : "保存失败"); }
     finally { setSaving(false); }
   }
 
@@ -184,12 +206,18 @@ function ProductFormInner() {
       setDeleting(true);
       try {
         await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
-        router.push("/products");
+        await mutate(key => typeof key === "string" && (key.startsWith("/admin/products?") || key === "/admin/products" || key === "/admin/stats"), undefined, { revalidate: true });
+      router.push("/products");
       } finally {
         setDeleting(false);
       }
     });
   }
+
+  if ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey) return <div className="p-6" role={loadError ? "alert" : "status"}>
+    <p>{loadError ? "内容加载失败：" + loadError : "正在加载内容..."}</p>
+    {loadError && <button type="button" className="mt-3 underline" onClick={() => { setLoadError(""); setReloadKey(value => value + 1); }}>重新加载</button>}
+  </div>;
 
   return (
     <div className="max-w-4xl">
@@ -197,7 +225,10 @@ function ProductFormInner() {
         {isCopy ? "复制产品" : isEdit ? "编辑产品" : "新建产品"}
       </h2>
 
+      {isCopy && <p className="mb-4 text-sm text-amber-700">复制基本信息、封面及 SEO；图库和规格不会自动复制，请保存后进入编辑页添加。</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
+        <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
+        <fieldset disabled={saving || deleting} className="space-y-6">
         {/* 基本信息 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">基本信息</h3>
@@ -218,9 +249,9 @@ function ProductFormInner() {
               <Input value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} placeholder="DC105" />
             </div>
             <div>
-              <Label>Category</Label>
-              <select value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                <option value="">无</option>
+              <Label htmlFor="product-category">分类 *</Label>
+              <select id="product-category" required value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                <option value="">请选择分类</option>
                 {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -232,13 +263,13 @@ function ProductFormInner() {
             </div>
             <div>
               <Label>Status</Label>
-              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+              <select aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                 <option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option>
               </select>
             </div>
             <div>
-              <Label>发布时间</Label>
-              <Input type="datetime-local" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} />
+              <Label htmlFor="publication-time">发布时间</Label>
+              <Input id="publication-time" type="datetime-local" step={1} value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} />
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
@@ -247,21 +278,22 @@ function ProductFormInner() {
 
         {/* SEO 元数据 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
-          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">SEO 元数据 <span className="text-xs text-gray-400 font-normal">（选填，留空则自动使用标题和简介）</span></h3>
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">SEO 元数据 <span className="text-xs text-gray-400 font-normal">（选填，用于官网页面及分享元数据）</span></h3>
+          <p className="text-xs text-gray-500">保存后更新官网元数据，不改变正文中的产品名称。页面标题会自动追加品牌名；草稿仍需通过预览查看。</p>
           <div>
-            <Label>SEO 标题 <span className="text-xs text-gray-400 font-normal">（推荐 60 字符以内，留空则用产品标题）</span></Label>
+            <Label htmlFor="product-seo-title">SEO 标题 <span className="text-xs text-gray-400 font-normal">（推荐 60 字符以内，留空则用产品标题）</span></Label>
             <div className="relative">
-              <Input value={form.seo_title} onChange={e => setForm({...form, seo_title: e.target.value})} placeholder="比产品标题更精炼的 SEO 标题，如：4K Action Camera OEM Manufacturer | Songdian" maxLength={120} />
+              <Input id="product-seo-title" value={form.seo_title} onChange={e => setForm({...form, seo_title: e.target.value})} placeholder="填写准确的产品页面标题，无需追加品牌名" maxLength={120} />
               <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${form.seo_title.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_title.length}/120</span>
             </div>
           </div>
           <div>
-            <Label>SEO 描述 <span className="text-xs text-gray-400 font-normal">（推荐 120-160 字符，留空则用简介截取）</span></Label>
+            <Label htmlFor="product-seo-description">SEO 描述 <span className="text-xs text-gray-400 font-normal">（参考长度 120-160 字符）</span></Label>
             <div className="relative">
               <textarea
-                value={form.seo_description} onChange={e => setForm({...form, seo_description: e.target.value})}
+                id="product-seo-description" value={form.seo_description} onChange={e => setForm({...form, seo_description: e.target.value})}
                 rows={3} maxLength={300}
-                placeholder="吸引用户点击的 meta 描述，含核心关键词和卖点。如：Songdian is a leading OEM digital camera manufacturer offering custom design, competitive pricing, and fast delivery. Contact us for a quote."
+                placeholder="准确概括本产品；留空时使用产品名、公司介绍和简介生成默认描述"
                 className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               />
               <span className={`absolute right-2 bottom-2 text-xs ${form.seo_description.length > 160 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_description.length}/300</span>
@@ -295,8 +327,9 @@ function ProductFormInner() {
           </div>
         </div>
 
-        {/* 产品画廊（编辑/复制模式） */}
-        {(isEdit || isCopy) && (
+        {isEdit && <p className="text-sm text-gray-500">图库与规格的添加、删除会立即保存；取消编辑不会撤销这些操作。</p>}
+        {/* 产品画廊 */}
+        {isEdit && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -340,7 +373,7 @@ function ProductFormInner() {
         )}
 
         {/* 规格（编辑/复制模式） */}
-        {(isEdit || isCopy) && (
+        {isEdit && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
             <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">规格参数</h3>
 
@@ -384,6 +417,7 @@ function ProductFormInner() {
             <Button type="submit" disabled={saving}>{saving ? "保存中..." : "保存产品"}</Button>
           </div>
         </div>
+        </fieldset>
       </form>
 
       <ConfirmDialog

@@ -6,7 +6,7 @@ import json
 from fastapi import APIRouter, Depends, Request
 
 from common.audit import audit
-from common.tasks import transactional_write
+from common.tasks import enqueue, transactional_write
 from common.deps import get_current_user, require_permission
 from common.enums import SmtpStatus
 from common.redis_client import cache_key, get_redis
@@ -32,6 +32,7 @@ PUBLIC_SETTING_KEYS = {
     "site_name",
     "ga_id",
     "clarity_id",
+    "google_verification",
 }
 PUBLIC_SETTINGS_TTL = 300  # 缓存 5 分钟
 
@@ -40,7 +41,7 @@ SMTP_PASSWORD_MASK = "******"
 
 # SMTP 配置 key 的默认元信息（惰性创建：不依赖 SEED_ON_START，保证设置页始终有邮件通知面板）
 _SMTP_DEFAULTS = [
-    ("smtp_host", "", "SMTP 服务器", "如 smtp.qq.com（留空 = 询盘仅落库，不发邮件）"),
+    ("smtp_host", "", "SMTP 服务器", "如 smtp.qq.com；留空使用部署环境配置，均未配置时不发送邮件"),
     ("smtp_port", "587", "SMTP 端口", "常用 587（STARTTLS）或 465"),
     ("smtp_user", "", "SMTP 账号", "如 3932182720@qq.com"),
     ("smtp_password", "", "SMTP 授权码", "QQ 邮箱授权码（非登录密码）；显示为 ******，留空不修改"),
@@ -56,11 +57,8 @@ _GENERAL_DEFAULTS = [
 
 
 async def _invalidate_public_settings_cache() -> None:
-    """清理公开设置缓存，让后台修改在下一次官网请求时可见。"""
-    try:
-        await get_redis().delete(cache_key("public", "settings"))
-    except Exception:  # noqa: BLE001 - 缓存失效失败不应阻断配置保存
-        pass
+    """与配置同事务记录刷新任务，提交后清理 Redis 和官网缓存。"""
+    await enqueue("content_cache", {"resource": "settings"})
 
 
 async def ensure_admin_settings() -> None:
@@ -121,6 +119,7 @@ async def list_settings(
 
 @router.put("/admin/settings/{key}", summary="更新系统设置")
 @audit(action="settings.update", resource="setting:{key}")
+@transactional_write
 async def update_setting(
     key: str,
     request: Request,

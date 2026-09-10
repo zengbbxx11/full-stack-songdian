@@ -57,6 +57,7 @@ export interface Product {
 
 /** 新闻（对应后台新闻列表/详情中的字段子集）。 */
 export interface NewsItem {
+  category?: { id: number; name: string } | null;
   id: number;
   title: string;
   slug: string;

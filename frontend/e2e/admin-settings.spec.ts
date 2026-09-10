@@ -21,7 +21,7 @@ async function setup(page: Page) {
   }]);
   const state = {
     values: {
-      ga_id: "", clarity_id: "", company_email: "contact@example.com",
+      ga_id: "", clarity_id: "", company_email: "contact@example.com", company_logo: "/legacy-logo.svg",
       smtp_host: "smtp.example.com", smtp_password: "******",
     } as Record<string, string>,
     writes: [] as Record<string, string>[],
@@ -82,6 +82,8 @@ async function setup(page: Page) {
 test("saved plain values survive navigation and reload; only edited fields are sent", async ({ page }) => {
   const state = await setup(page);
   await page.goto(`${adminBase}/settings`);
+  await expect(page.getByLabel("company_logo", { exact: true })).toBeDisabled();
+  await expect(page.getByText("未接入官网", { exact: true })).toBeVisible();
   await expect(page.getByLabel("联系邮箱", { exact: true })).toHaveValue("contact@example.com");
   await expect(page.getByLabel("SMTP 授权码", { exact: true })).toHaveAttribute("type", "password");
   await expect(page.getByText("已配置（不显示明文）；不修改或留空均保留原值")).toBeVisible();
@@ -98,6 +100,28 @@ test("saved plain values survive navigation and reload; only edited fields are s
   await expect(page.getByLabel("Google Analytics ID", { exact: true })).toHaveValue("G-SAVED123");
   await expect(page.getByLabel("Microsoft Clarity 项目 ID", { exact: true })).toHaveValue("clarity123");
   await expect(page.getByRole("button", { name: "保存修改", exact: true })).toBeDisabled();
+});
+
+test("successful SMTP test with null data reports success", async ({ page }) => {
+  await setup(page);
+  await page.goto(`${adminBase}/settings`);
+  await page.getByRole("button", { name: "测试发送", exact: true }).click();
+  await expect(page.getByText("测试邮件已发送，请查收收件箱", { exact: true })).toBeVisible();
+});
+
+test("mobile and tablet navigation close the drawer after choosing a destination", async ({ page }) => {
+  await setup(page);
+  for (const width of [390, 820]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${adminBase}/settings`);
+    await page.getByRole("button", { name: "切换侧边栏", exact: true }).click();
+    await expect(page.locator("aside")).toHaveClass(/translate-x-0/);
+    await page.setViewportSize({ width: width + 10, height: 900 });
+    await expect(page.locator("aside")).not.toHaveClass(/-translate-x-full/);
+    await page.locator("aside").getByRole("link", { name: "账号", exact: true }).click();
+    await expect(page).toHaveURL(`${adminBase}/account`);
+    await expect(page.locator("aside")).toHaveClass(/-translate-x-full/);
+  }
 });
 
 test("fresh reads update cached fields without overwriting an unsaved edit", async ({ page }) => {

@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleMobileSidebar } = useSidebar();
   const pathname = usePathname();
   const isActive = useCallback((path: string) => path === pathname, [pathname]);
 
@@ -82,7 +82,7 @@ const AppSidebar: React.FC = () => {
     >
       {/* Logo */}
       <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
-        <Link href="/">
+        <Link href="/" onClick={() => { if (isMobileOpen) toggleMobileSidebar(); }}>
           {isExpanded || isHovered || isMobileOpen ? (
             <>
               <Image className="dark:hidden" src="/images/logo/logo.svg" alt="Logo" width={150} height={40} />
@@ -102,6 +102,7 @@ const AppSidebar: React.FC = () => {
               <li key={nav.name}>
                 <Link
                   href={nav.path}
+                  onClick={() => { if (isMobileOpen) toggleMobileSidebar(); }}
                   className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"}`}
                 >
                   <span className={isActive(nav.path) ? "menu-item-icon-active" : "menu-item-icon-inactive"}>

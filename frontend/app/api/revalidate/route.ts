@@ -1,8 +1,8 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import type { NextRequest } from "next/server";
 
-const ALLOWED_TAGS = /^(products|product-categories|product:[a-z0-9-]+|news|news-categories|news:[a-z0-9-]+)$/;
-const ALLOWED_PATHS = new Set(["/", "/products", "/news", "/sitemap.xml"]);
+const ALLOWED_TAGS = /^(public-settings|products|product-categories|product:[a-z0-9-]+|news|news-categories|news:[a-z0-9-]+)$/;
+const ALLOWED_PATHS = new Set(["/", "/products", "/news", "/sitemap.xml", "/contact", "/privacy-policy"]);
 
 export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;

@@ -4,7 +4,7 @@
  * - isExpanded：桌面端侧边栏是否完全展开（290px）
  * - isHovered：鼠标是否悬停在缩起的侧边栏上（触发临时展开）
  * - isMobileOpen：移动端抽屉是否打开
- * 窗口 resize 到 <991px 时自动切换到移动端模式。
+ * 与布局 lg 断点一致：小于 1024px 使用抽屉。
  */
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -44,7 +44,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
+      const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       if (!mobile) {
         setIsMobileOpen(false);

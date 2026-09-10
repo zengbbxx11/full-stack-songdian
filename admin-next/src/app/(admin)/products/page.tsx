@@ -254,8 +254,8 @@ export default function ProductsPage() {
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : p.status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "SCHEDULED" ? "定时发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
                 <td className="px-4 py-3">
                   <button disabled={busy || dirty} onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${p.seo_title ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"}`}>
-                    {p.seo_title ? "已设置" : "未设置"}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${(p.seo_title || p.seo_description) ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"}`}>
+                    {(p.seo_title || p.seo_description) ? "已设置" : "未设置"}
                   </button>
                 </td>
                 <td className="px-4 py-3">
@@ -275,21 +275,21 @@ export default function ProductsPage() {
       {/* SEO 快速编辑弹窗 */}
       {seoEdit.open && seoEdit.target && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" })} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => { if (!seoSaving) setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" }); }} />
           <div className="relative w-full max-w-lg mx-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
             <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">SEO 设置 — {seoEdit.target.title}</h3>
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SEO 标题 <span className="text-xs text-gray-400">（推荐 60 字以内）</span></label>
                 <div className="relative">
-                  <input value={seoEdit.seoTitle} onChange={e => setSeoEdit(p => ({ ...p, seoTitle: e.target.value }))} placeholder="留空则自动使用产品标题" maxLength={120} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                  <input aria-label="SEO 标题" disabled={seoSaving} value={seoEdit.seoTitle} onChange={e => setSeoEdit(p => ({ ...p, seoTitle: e.target.value }))} placeholder="留空使用产品标题，无需追加品牌名" maxLength={120} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
                   <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${seoEdit.seoTitle.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{seoEdit.seoTitle.length}/120</span>
                 </div>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SEO 描述 <span className="text-xs text-gray-400">（推荐 120-160 字）</span></label>
                 <div className="relative">
-                  <textarea value={seoEdit.seoDesc} onChange={e => setSeoEdit(p => ({ ...p, seoDesc: e.target.value }))} rows={4} maxLength={300} placeholder="留空则自动使用产品简介截取前 160 字符" className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                  <textarea aria-label="SEO 描述" disabled={seoSaving} value={seoEdit.seoDesc} onChange={e => setSeoEdit(p => ({ ...p, seoDesc: e.target.value }))} rows={4} maxLength={300} placeholder="留空则使用产品名、公司介绍和简介生成默认描述" className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
                   <span className={`absolute right-2 bottom-2 text-xs ${seoEdit.seoDesc.length > 160 ? "text-amber-500" : "text-gray-400"}`}>{seoEdit.seoDesc.length}/300</span>
                 </div>
               </div>

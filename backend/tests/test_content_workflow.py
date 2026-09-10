@@ -99,3 +99,31 @@ def test_preview_token_rejects_expired_signature(monkeypatch):
     token = create_preview_token("news", 1)
     with pytest.raises(BizException):
         decode_preview_token(token)
+
+
+@pytest.mark.parametrize("resource,category", [("news", "news-categories"), ("products", "product-categories")])
+def test_withdrawn_content_remains_manageable_but_not_public(client, resource, category):
+    # The real admin list route must exist; frontend response mocks cannot prove this.
+    assert client.get(f"/api/v1/admin/{resource}").status_code in (401, 403)
+    _login(client)
+    slug = f"withdraw-{uuid.uuid4().hex[:10]}"
+    created = client.post(f"/api/v1/admin/{resource}", json={
+        "title": "Withdrawn content", "slug": slug, "summary": "Fixture",
+        "content_html": "<p>Still editable</p>", "status": "PUBLISHED",
+        "category_id": client.get(f"/api/v1/{category}").json()["data"][0]["id"],
+    }).json()
+    assert created["code"] == "0", created
+    item_id = created["data"]["id"]
+    path = f"/api/v1/admin/{resource}/{item_id}"
+    assert client.get(f"/api/v1/{resource}/{slug}").json()["code"] == "0"
+    assert client.put(path, json={"status": "DRAFT"}).json()["code"] == "0"
+    listing = client.get(f"/api/v1/admin/{resource}", params={"status": "DRAFT"}).json()
+    assert listing["code"] == "0", listing
+    assert any(row["id"] == item_id for row in listing["data"]["list"])
+    assert client.get(path).json()["data"]["content_html"] == "<p>Still editable</p>"
+    assert client.get(f"/api/v1/{resource}/{slug}").json()["code"] != "0"
+    assert not any(row["id"] == item_id for row in client.get(f"/api/v1/{resource}").json()["data"]["list"])
+    token = client.post(path + "/preview-token").json()["data"]["token"]
+    assert client.get(f"/api/v1/preview/{token}").json()["data"]["content"]["title"] == "Withdrawn content"
+    assert client.delete(path).json()["code"] == "0"
+    assert not any(row["id"] == item_id for row in client.get(f"/api/v1/admin/{resource}").json()["data"]["list"])

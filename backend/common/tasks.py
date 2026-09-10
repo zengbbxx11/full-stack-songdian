@@ -91,6 +91,10 @@ async def _execute(job: BackgroundJob) -> bool:
 
         redis = get_redis()
         resource = job.payload["resource"]
+        if resource == "settings":
+            await redis.delete(cache_key("public", "settings"))
+            await revalidate_frontend(tags=["public-settings"], paths=["/", "/contact", "/privacy-policy"], strict=True)
+            return True
         slugs = job.payload["slugs"]
         await redis.delete_prefix(cache_key(resource, "list", ""))
         await redis.delete_prefix(cache_key("search", ""))

@@ -38,6 +38,18 @@ async def list_news(
     return Result.ok(PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump())
 
 
+@router.get("/admin/news", summary="后台新闻分页列表")
+async def list_news_admin(
+    req: PageRequest = Depends(),
+    category_id: int | None = Query(default=None),
+    status: str | None = Query(default=None),
+    keyword: str | None = Query(default=None),
+    _user: AdminUser = Depends(require_permission("news:read")),
+) -> Result:
+    items, total = await services.list_news(req, category_id, status, keyword)
+    return Result.ok(PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump())
+
+
 @router.get("/news/{slug}", summary="新闻详情")
 async def get_detail(slug: str) -> Result:
     vo = await services.get_news_detail(slug)

@@ -46,6 +46,7 @@ import AttributionTracker from "@/components/AttributionTracker";
 import WebVitalsReporter from "@/components/WebVitalsReporter";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
+import { getPublicSettings } from "@/lib/api/settings";
 import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
 import "./globals.css";
 
@@ -73,7 +74,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
  * Child pages can extend or override individual fields via their own `metadata` export.
  * Includes Open Graph, Twitter Card, robots, and alternates for SEO best practices.
  */
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   // Page title: "Songdian Technology — OEM / ODM Digital Camera Manufacturer"
@@ -156,6 +157,15 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || undefined,
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getPublicSettings();
+  // 后台明确留空表示删除验证码；未配置此项时兼容已有环境变量部署。
+  const google = Object.hasOwn(settings, "google_verification")
+    ? settings.google_verification?.trim()
+    : process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION;
+  return { ...baseMetadata, verification: { google: google || undefined } };
+}
 
 /**
  * Viewport configuration — 独立于 Metadata 导出（Next.js 16 推荐）

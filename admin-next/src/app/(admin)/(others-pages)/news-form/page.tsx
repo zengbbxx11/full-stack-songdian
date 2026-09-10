@@ -15,39 +15,66 @@ import Button from "@/components/ui/button/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
 import { useToast } from "@/context/ToastContext";
-import { apiFetch, resolveMediaUrl } from "@/lib/api-client";
-import type { NewsItem } from "@/types";
+import { apiFetch, apiFetchAllPages, resolveMediaUrl } from "@/lib/api-client";
+import type { NewsCategory, NewsItem } from "@/types";
+import { publicationTime, toLocalDateTime } from "@/lib/content-time";
+import { useSWRConfig } from "swr";
 import ContentWorkflowPanel from "@/components/content/ContentWorkflowPanel";
 
 export default function NewsFormPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading...</div>}>
-      <NewsFormInner />
+      <NewsFormRoute />
     </Suspense>
   );
 }
 
+function NewsFormRoute() {
+  const params = useSearchParams();
+  return <NewsFormInner key={params.get("id") || "new"} />;
+}
+
 function NewsFormInner() {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const params = useSearchParams();
   const id = params.get("id");
   const isEdit = !!id;
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "" });
-  const toast = useToast();
+  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "", category_id: "" });
+  const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [categoryError, setCategoryError] = useState("");
+  const { error: showError, success: showSuccess } = useToast();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [loadError, setLoadError] = useState("");
+  const [loadedKey, setLoadedKey] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    apiFetchAllPages<NewsCategory>("/admin/news-categories").then(data => {
+      if (active) { setCategories(data.list); setCategoryError(""); }
+    }).catch(() => { if (active) setCategoryError("分类加载失败，请重新加载页面后重试"); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
+    let active = true;
     apiFetch<NewsItem>(`/admin/news/${id}`).then((p) => {
-      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: typeof p.published_at === "string" ? p.published_at.substring(0, 16) : "" });
+      if (!active) return;
+      setLoadError("");
+      setLoadedKey(id + ":" + reloadKey);
+      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: toLocalDateTime(p.published_at), category_id: p.category ? String(p.category.id) : "" });
     }).catch((err: unknown) => {
+      if (!active) return;
       const msg: string = err instanceof Error ? err.message : "Unknown error";
-      toast.error("加载文章失败：" + msg);
+      setLoadError(msg);
+      showError("加载文章失败：" + msg);
     });
-  }, [id, toast, reloadKey]);
+    return () => { active = false; };
+  }, [id, showError, reloadKey]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File, newsSlug?: string): Promise<string> {
@@ -64,20 +91,25 @@ function NewsFormInner() {
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
     try { const url = await uploadImage(file, form.slug); setForm(prev => ({ ...prev, cover_image: url })); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "上传失败"); }
+    catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
     e.target.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    if (saving || (id && loadedKey !== id + ":" + reloadKey)) return;
+    setSaving(true);
     try {
       // 如果未填写发布时间则从请求体中移除，避免空字符串导致后端 Pydantic 校验失败
-      const payload: Record<string, unknown> = { ...form };
+      if (!form.title.trim() || !form.slug.trim() || !form.category_id) throw new Error("请填写标题、别名并选择分类");
+      const payload: Record<string, unknown> = { ...form, category_id: Number(form.category_id) };
+      payload.published_at = publicationTime(form.published_at, form.status);
       if (!payload.published_at) delete payload.published_at;
       if (isEdit) await apiFetch(`/admin/news/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/news", { method: "POST", body: payload });
+      await mutate(key => typeof key === "string" && (key.startsWith("/admin/news?") || key === "/admin/news" || key === "/admin/stats"), undefined, { revalidate: true });
       router.push("/news");
-    } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); } finally { setSaving(false); }
+    } catch (err) { showError(err instanceof Error ? err.message : "保存失败"); } finally { setSaving(false); }
   }
 
   function handleDelete() {
@@ -87,22 +119,35 @@ function NewsFormInner() {
   async function handleConfirmDelete() {
     setDeleteConfirm(false);
     setDeleting(true);
-    try { await apiFetch(`/admin/news/${id}`, { method: "DELETE" }); toast.success("文章已删除"); router.push("/news"); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); setDeleting(false); }
+    try { await apiFetch(`/admin/news/${id}`, { method: "DELETE" }); showSuccess("文章已删除"); await mutate(key => typeof key === "string" && (key.startsWith("/admin/news?") || key === "/admin/news" || key === "/admin/stats"), undefined, { revalidate: true });
+      router.push("/news"); }
+    catch (err) { showError(err instanceof Error ? err.message : "删除失败"); setDeleting(false); }
   }
+
+  if (id && loadedKey !== id + ":" + reloadKey) return <div className="p-6" role={loadError ? "alert" : "status"}>
+    <p>{loadError ? "内容加载失败：" + loadError : "正在加载内容..."}</p>
+    {loadError && <button type="button" className="mt-3 underline" onClick={() => { setLoadError(""); setReloadKey(value => value + 1); }}>重新加载</button>}
+  </div>;
 
   return (
     <div className="max-w-3xl">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">{isEdit ? "编辑新闻" : "新建文章"}</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
+        <fieldset disabled={saving || deleting} className="space-y-6">
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">文章信息</h3>
+          {categoryError && <p role="alert" className="text-red-600">{categoryError}</p>}
+          <div><Label htmlFor="news-category">分类 *</Label><select id="news-category" required value={form.category_id} onChange={e => setForm(prev => ({ ...prev, category_id: e.target.value }))} className="h-11 w-full rounded-lg border border-gray-300 px-3 dark:bg-gray-900 dark:border-gray-700">
+            <option value="">请选择分类</option>
+            {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div><Label>标题 *</Label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="文章标题" /></div>
             <div><Label>别名 *</Label><Input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} placeholder="文章别名" /></div>
             <div><Label>作者</Label><Input value={form.author} onChange={e => setForm({...form, author: e.target.value})} placeholder="作者名称" /></div>
-            <div><Label>状态</Label><select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option></select></div>
-            <div><Label>发布时间</Label><Input type="datetime-local" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
+            <div><Label>状态</Label><select aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option></select></div>
+            <div><Label htmlFor="publication-time">发布时间</Label><Input id="publication-time" type="datetime-local" step={1} value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
           <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入文章内容..." /></div>
@@ -136,6 +181,7 @@ function NewsFormInner() {
             <Button type="submit" disabled={saving}>{saving ? "保存中..." : "保存"}</Button>
           </div>
         </div>
+        </fieldset>
       </form>
       <ConfirmDialog
         open={deleteConfirm}

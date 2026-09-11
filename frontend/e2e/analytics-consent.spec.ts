@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoHydrated } from "./hydration";
+
 // Allow an installed Chrome/Edge locally; CI keeps Playwright's default Chromium.
 test.use({ channel: process.env.E2E_BROWSER_CHANNEL });
 
@@ -38,7 +40,7 @@ test("Clarity and GA require consent; Clarity stops, resumes and loads only once
     requests++;
     return route.fulfill({ contentType: "application/javascript", body: clarityStub });
   });
-  await page.goto("/about");
+  await gotoHydrated(page, "/about");
   await expect(page.getByRole("button", { name: "Accept all", exact: true })).toBeVisible();
   expect(requests).toBe(0);
   await expect(page.locator('script[src*="googletagmanager"]')).toHaveCount(0);
@@ -77,7 +79,7 @@ test("old consent is not reused for the newly added session replay", async ({ pa
   await page.addInitScript(() => localStorage.setItem("sd-cookie-consent", JSON.stringify({
     necessary: true, analytics: true, ts: Date.now(), v: 1,
   })));
-  await page.goto("/about");
+  await gotoHydrated(page, "/about");
   await expect(page.getByRole("button", { name: "Accept all", exact: true })).toBeVisible();
   await expect(page.locator("#microsoft-clarity")).toHaveCount(0);
 });
@@ -90,7 +92,7 @@ test("withdrawing while Clarity downloads discards the queued grant", async ({ p
     await gate;
     await route.fulfill({ contentType: "application/javascript", body: clarityStub });
   });
-  await page.goto("/about");
+  await gotoHydrated(page, "/about");
   await page.getByRole("button", { name: "Accept all", exact: true }).click();
   await expect(page.locator("#microsoft-clarity")).toHaveCount(1);
   await openPreferences(page);

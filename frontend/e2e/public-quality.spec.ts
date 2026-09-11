@@ -1,7 +1,9 @@
 import { expect, request as playwrightRequest, test } from "@playwright/test";
 
+import { gotoHydrated } from "./hydration";
+
 test("missing news uses the standard noindex boundary", async ({ page }) => {
-  await page.goto(`/news/quality-missing-${Date.now()}`);
+  await gotoHydrated(page, `/news/quality-missing-${Date.now()}`);
   await expect(page.locator('meta[name="robots"][content*="noindex"]')).not.toHaveCount(0);
   await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
 });
@@ -30,7 +32,7 @@ test("published news emits ISO dates and sitemap excludes drafts", async ({ page
       expect(result.code).toBe("0");
       ids.push(result.data.id);
     }
-    await page.goto(`/news/${slugs[0]}`);
+    await gotoHydrated(page, `/news/${slugs[0]}`);
     await expect(page.locator("h1")).toHaveText("Quality regression article");
     await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute("content", /^2026-08-01T12:30:00/);
     await expect(page.locator('meta[property="article:modified_time"]')).toHaveCount(0);
@@ -54,7 +56,7 @@ test("map requests wait until the map approaches the viewport", async ({ page })
   await page.setViewportSize({ width: 390, height: 844 });
   let tileRequests = 0;
   await page.route("https://server.arcgisonline.com/**", route => { tileRequests++; return route.abort(); });
-  await page.goto("/contact");
+  await gotoHydrated(page, "/contact");
   await page.getByRole("button", { name: "Reject", exact: true }).click();
   await expect(page.locator("[data-map-state]")).toHaveAttribute("data-map-state", "deferred");
   expect(tileRequests).toBe(0);
@@ -70,7 +72,7 @@ for (const width of [390, 768, 1440]) {
     // No test analytics or third-party map traffic.
     await page.route("https://server.arcgisonline.com/**", route => route.abort());
     for (const route of ["/", "/products", "/news", "/about", "/solutions", "/solutions/faq", "/contact", "/search?q=camera"]) {
-      await page.goto(route);
+      await gotoHydrated(page, route);
       await expect(page.locator("main")).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, route).toBeLessThanOrEqual(1);

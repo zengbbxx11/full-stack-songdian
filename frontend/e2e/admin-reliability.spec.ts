@@ -1,6 +1,8 @@
 import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoHydrated } from "./hydration";
+
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const secret = process.env.JWT_SECRET || "settings-ui-test-secret-not-for-production";
 
@@ -36,7 +38,7 @@ test("news management loads drafts and all pages; filtered sorting preserves hid
       }
     } else await route.fulfill({ json: { code: "0", data: { list: [], total: 0 } } });
   });
-  await page.goto(`${adminBase}/news`);
+  await gotoHydrated(page, `${adminBase}/news`);
   await expect(page.locator("tbody tr")).toHaveCount(55);
   expect(pages).toContain(2);
   await expect(page.getByText("草稿", { exact: true })).toBeVisible();
@@ -78,7 +80,7 @@ test("batch publication waits for slow writes and retains only failed selections
       }
     } else await route.fulfill({ json: { code: "0", data: { list: [], total: 0 } } });
   });
-  await page.goto(`${adminBase}/products`);
+  await gotoHydrated(page, `${adminBase}/products`);
   await page.getByRole("checkbox", { name: "全选产品" }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await page.getByRole("button", { name: "发布选中" }).click();
@@ -94,9 +96,9 @@ test("batch publication waits for slow writes and retains only failed selections
 
 test("refresh-scoped tokens cannot enter protected pages and expired-session login avoids redirect loops", async ({ page }) => {
   await signInFixture(page, "refresh");
-  await page.goto(`${adminBase}/news`);
+  await gotoHydrated(page, `${adminBase}/news`);
   await expect(page).toHaveURL(/\/signin/);
   await signInFixture(page);
-  await page.goto(`${adminBase}/signin?expired=1`);
+  await gotoHydrated(page, `${adminBase}/signin?expired=1`);
   await expect(page.getByPlaceholder("请输入用户名")).toBeVisible();
 });

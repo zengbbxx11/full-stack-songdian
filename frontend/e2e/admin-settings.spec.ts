@@ -1,6 +1,8 @@
 import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoHydrated, waitForHydration } from "./hydration";
+
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const testSecret = process.env.JWT_SECRET || "settings-ui-test-secret-not-for-production";
 
@@ -81,7 +83,7 @@ async function setup(page: Page) {
 
 test("saved plain values survive navigation and reload; only edited fields are sent", async ({ page }) => {
   const state = await setup(page);
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await expect(page.getByLabel("company_logo", { exact: true })).toBeDisabled();
   await expect(page.getByText("未接入官网", { exact: true })).toBeVisible();
   await expect(page.getByLabel("联系邮箱", { exact: true })).toHaveValue("contact@example.com");
@@ -97,6 +99,7 @@ test("saved plain values survive navigation and reload; only edited fields are s
   await page.getByRole("link", { name: "设置", exact: true }).click();
   await expect(page.getByLabel("Google Analytics ID", { exact: true })).toHaveValue("G-SAVED123");
   await page.reload();
+  await waitForHydration(page);
   await expect(page.getByLabel("Google Analytics ID", { exact: true })).toHaveValue("G-SAVED123");
   await expect(page.getByLabel("Microsoft Clarity 项目 ID", { exact: true })).toHaveValue("clarity123");
   await expect(page.getByRole("button", { name: "保存修改", exact: true })).toBeDisabled();
@@ -104,7 +107,7 @@ test("saved plain values survive navigation and reload; only edited fields are s
 
 test("successful SMTP test with null data reports success", async ({ page }) => {
   await setup(page);
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await page.getByRole("button", { name: "测试发送", exact: true }).click();
   await expect(page.getByText("测试邮件已发送，请查收收件箱", { exact: true })).toBeVisible();
 });
@@ -113,7 +116,7 @@ test("mobile and tablet navigation close the drawer after choosing a destination
   await setup(page);
   for (const width of [390, 820]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`${adminBase}/settings`);
+    await gotoHydrated(page, `${adminBase}/settings`);
     await page.getByRole("button", { name: "切换侧边栏", exact: true }).click();
     await expect(page.locator("aside")).toHaveClass(/translate-x-0/);
     await page.setViewportSize({ width: width + 10, height: 900 });
@@ -126,7 +129,7 @@ test("mobile and tablet navigation close the drawer after choosing a destination
 
 test("fresh reads update cached fields without overwriting an unsaved edit", async ({ page }) => {
   const state = await setup(page);
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await expect(page.getByLabel("联系邮箱", { exact: true })).toHaveValue("contact@example.com");
   await page.getByRole("link", { name: "账号", exact: true }).click();
   await expect(page).toHaveURL(`${adminBase}/account`);
@@ -151,7 +154,7 @@ test("fresh reads update cached fields without overwriting an unsaved edit", asy
 test("plain values can be cleared but blank secrets are preserved and new secrets become masked", async ({ page }) => {
   const state = await setup(page);
   state.values.ga_id = "G-EXISTING";
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await page.getByLabel("Google Analytics ID", { exact: true }).fill("");
   await page.getByLabel("SMTP 授权码", { exact: true }).fill("");
   await page.getByRole("button", { name: "保存修改", exact: true }).click();
@@ -162,6 +165,7 @@ test("plain values can be cleared but blank secrets are preserved and new secret
   await expect(page.getByLabel("SMTP 授权码", { exact: true })).toHaveValue("******");
   expect(state.writes[1]).toEqual({ smtp_password: "new-test-secret" });
   await page.reload();
+  await waitForHydration(page);
   await expect(page.getByLabel("Google Analytics ID", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("SMTP 授权码", { exact: true })).toHaveValue("******");
 });
@@ -170,7 +174,7 @@ test("load errors are explicit and retry restores saved values", async ({ page }
   const state = await setup(page);
   state.failRead = true;
   state.values.ga_id = "G-EXISTING";
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await expect(page.getByRole("alert").filter({ hasText: "设置加载失败" })).toBeVisible();
   await expect(page.getByLabel("Google Analytics ID", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "保存修改", exact: true })).toBeDisabled();
@@ -181,7 +185,7 @@ test("load errors are explicit and retry restores saved values", async ({ page }
 
 test("failed writes keep drafts; failed readback keeps the successfully saved value", async ({ page }) => {
   const state = await setup(page);
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await page.getByLabel("Google Analytics ID", { exact: true }).fill("G-RETRY");
   state.failWrite = true;
   await page.getByRole("button", { name: "保存修改", exact: true }).click();
@@ -202,11 +206,12 @@ test("failed writes keep drafts; failed readback keeps the successfully saved va
 test("SMTP test shares the save path even when sending fails", async ({ page }) => {
   const state = await setup(page);
   state.failTest = true;
-  await page.goto(`${adminBase}/settings`);
+  await gotoHydrated(page, `${adminBase}/settings`);
   await page.getByLabel("SMTP 服务器", { exact: true }).fill("smtp.updated.example.com");
   await page.getByRole("button", { name: "测试发送", exact: true }).click();
   await expect(page.getByText("测试邮件发送失败", { exact: true })).toBeVisible();
   expect(state.writes).toEqual([{ smtp_host: "smtp.updated.example.com" }]);
   await page.reload();
+  await waitForHydration(page);
   await expect(page.getByLabel("SMTP 服务器", { exact: true })).toHaveValue("smtp.updated.example.com");
 });

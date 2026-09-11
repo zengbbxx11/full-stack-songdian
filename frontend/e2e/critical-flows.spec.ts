@@ -1,11 +1,15 @@
 import { expect, request as playwrightRequest, test } from "@playwright/test";
 
+import { gotoHydrated, waitForHydration } from "./hydration";
+
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const apiBase = process.env.E2E_API_URL || "http://127.0.0.1:8000";
 const adminPassword = process.env.E2E_ADMIN_PASSWORD || "Songdian@2026";
 
 async function loginAdmin(page: import("@playwright/test").Page) {
-  await page.goto(`${adminBase}/signin`);
+  // 必须等注水：未注水时点"登录"会走浏览器原生表单 GET 提交，
+  // 把用户名密码拼进 URL 而不是调用登录接口。
+  await gotoHydrated(page, `${adminBase}/signin`);
   await page.getByPlaceholder("请输入用户名").fill("admin");
   await page.getByPlaceholder("请输入密码").fill(adminPassword);
   await page.getByRole("button", { name: "登录" }).click();
@@ -15,11 +19,14 @@ async function loginAdmin(page: import("@playwright/test").Page) {
 test("administrator session survives refresh and logout protects the dashboard", async ({ page }) => {
   await loginAdmin(page);
   await page.reload();
+  // reload() 也在 load 时返回，需再等一次注水：否则"用户菜单"点不开，
+  // 下拉里的"退出登录"永远不出现（曾表现为 45s 超时）。
+  await waitForHydration(page);
   await expect(page).not.toHaveURL(/signin/);
   await page.getByRole("button", { name: "用户菜单" }).click();
   await page.getByText("退出登录").click();
   await expect(page).toHaveURL(/signin/);
-  await page.goto(adminBase);
+  await gotoHydrated(page, adminBase);
   await expect(page).toHaveURL(/signin/);
 });
 
@@ -27,7 +34,7 @@ test("visitor submits an inquiry and it appears in admin", async ({ page }) => {
   const email = `playwright-${Date.now()}@example.com`;
   // 必须等注水完成再交互：dev 首次编译 /contact 较慢时，早于注水的点击会被丢弃，
   // 表现为「点了提交但没有任何请求、也没有报错」，是此前偶发失败的真实原因。
-  await page.goto("/contact", { waitUntil: "networkidle" });
+  await gotoHydrated(page, "/contact");
   await page.getByRole("radio", { name: "Custom OEM/ODM" }).click();
   await page.getByLabel(/Full Name/).fill("Playwright Buyer");
   await page.getByLabel(/Email/).fill(email);
@@ -36,7 +43,7 @@ test("visitor submits an inquiry and it appears in admin", async ({ page }) => {
   await expect(page.getByText("Thank you — we've got it!")).toBeVisible();
 
   await loginAdmin(page);
-  await page.goto(`${adminBase}/inquiries`);
+  await gotoHydrated(page, `${adminBase}/inquiries`);
   await expect(page.locator("table").getByText(email, { exact: true })).toBeVisible();
 });
 
@@ -79,7 +86,7 @@ test("scheduled news stays private but is available through a signed preview", a
 
     const tokenResponse = await admin.post(`/api/v1/admin/news/${created.data.id}/preview-token`);
     const token = (await tokenResponse.json()).data.token;
-    await page.goto(`/preview/${encodeURIComponent(token)}`);
+    await gotoHydrated(page, `/preview/${encodeURIComponent(token)}`);
     await expect(page.getByRole("heading", { name: "Private Scheduled E2E Article" })).toBeVisible();
     await expect(page.getByText("Signed preview body")).toBeVisible();
     const robots = await page.locator('meta[name="robots"]').getAttribute("content");

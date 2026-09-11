@@ -1,6 +1,8 @@
 import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoHydrated } from "./hydration";
+
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const items = [1, 2].map(id => ({ id, name: `Customer ${id}`, email: `fixture${id}@example.test`,
   message: "Fixture inquiry", status: "QUOTED", country: `Country ${id}`, tags: [], follow_notes: [], smtp_status: "PENDING" }));
@@ -31,7 +33,7 @@ test("switching inquiries discards the previous detail and saves only the curren
     if (route.request().method() !== "GET") writes.push({ path, body: route.request().postDataJSON() });
     await route.fulfill({ json: { code: "0", data } });
   });
-  await page.goto(`${adminBase}/inquiries`);
+  await gotoHydrated(page, `${adminBase}/inquiries`);
   const oldRequest = page.waitForRequest(request => request.url().endsWith("/inquiries/1"));
   await page.locator("tr").filter({ hasText: "Customer 1" }).getByRole("button", { name: "跟进", exact: true }).click();
   await oldRequest;
@@ -65,7 +67,7 @@ test("failed detail loads cannot erase existing notes; retry restores the comple
     }
     await route.fulfill({ json: { code: "0", data: path.endsWith("/users") ? [] : { list: items, total: items.length } } });
   });
-  await page.goto(`${adminBase}/inquiries`);
+  await gotoHydrated(page, `${adminBase}/inquiries`);
   await page.locator("tr").filter({ hasText: "Customer 1" }).getByRole("button", { name: "跟进", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("alert")).toContainText("详情加载失败");

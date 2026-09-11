@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { gotoHydrated, waitForHydration } from "./hydration";
+
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const apiBase = process.env.E2E_API_URL || "http://127.0.0.1:8000";
 test.use({ timezoneId: "Asia/Shanghai" });
@@ -27,7 +29,7 @@ for (const resource of ["news", "products"] as const) {
           categoryId = createdCategory.data.id;
         }
       }
-      await page.goto(`${adminBase}/${route}`);
+      await gotoHydrated(page, `${adminBase}/${route}`);
       await page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true }).fill(title);
       await page.getByPlaceholder(isNews ? "文章别名" : "dc105-4k-digital-camera", { exact: true }).fill(slug);
       const category = page.locator(isNews ? "#news-category" : "#product-category");
@@ -115,6 +117,7 @@ for (const resource of ["news", "products"] as const) {
         await page.locator('input[type="file"][multiple]').setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
         await expect(page.getByRole("img", { name: "fixture.png", exact: true })).toBeVisible();
         await page.reload();
+        await waitForHydration(page);
         await expect(page.getByText("Fixture sensor", { exact: true })).toBeVisible();
         await expect(page.getByRole("img", { name: "fixture.png", exact: true })).toBeVisible();
         const attrRow = page.locator("div").filter({ has: page.getByText("Fixture sensor", { exact: true }) }).filter({ has: page.getByRole("button", { name: "删除", exact: true }) }).last();
@@ -139,7 +142,7 @@ for (const resource of ["news", "products"] as const) {
       await save.click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
       expect(new Date((await adminDetail()).published_at).toISOString()).toBe(`${day}T00:30:00.000Z`);
-      await page.goto(`${adminBase}/${route}?id=${id}`);
+      await gotoHydrated(page, `${adminBase}/${route}?id=${id}`);
       await expect(page.getByLabel("发布时间", { exact: true })).toHaveValue(`${day}T08:30`);
       await expect(page.getByRole("button", { name: "恢复", exact: true }).first()).toBeVisible();
       page.once("dialog", dialog => dialog.accept());

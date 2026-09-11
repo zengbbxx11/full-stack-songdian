@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { inquiryMessage, inquirySchema } from "../lib/inquiry-form";
 
+import { gotoHydrated } from "./hydration";
+
 test.use({ channel: process.env.E2E_BROWSER_CHANNEL });
 
 test("inquiry validation matches backend lengths and includes quantity in the message limit", () => {
@@ -17,7 +19,7 @@ test("inquiry validation matches backend lengths and includes quantity in the me
 });
 
 async function fillInquiry(page: Page) {
-  await page.goto("/contact?product=fixture-camera");
+  await gotoHydrated(page, "/contact?product=fixture-camera");
   const reject = page.getByRole("button", { name: "Reject", exact: true });
   await reject.click();
   await page.getByRole("radio", { name: "Custom OEM/ODM" }).check();

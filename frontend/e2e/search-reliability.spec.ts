@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-// 打开首页并等到注水稳定后再交互。
+import { gotoHydrated } from "./hydration";
+
+// 打开首页并等 React 注水完成后再交互。
 // 直接 page.goto("/") 后马上 fill()，在 dev 首次编译较慢时 React 尚未注水，
 // 输入不会触发防抖搜索请求，表现为「填了内容却没有任何请求、也没有报错」——
 // 这是本文件三条用例失败的真实原因（不是拦截失效，也不是后端问题）。
-const openHomeHydrated = (page: import("@playwright/test").Page) =>
-  page.goto("/", { waitUntil: "networkidle" });
+// 注意：不能用 waitUntil: "networkidle" 代替，dev 下网络静默早于注水完成。
+const openHomeHydrated = (page: import("@playwright/test").Page) => gotoHydrated(page, "/");
 
 const result = (title: string) => ({ code: "0", data: {
   items: [{ id: 1, kind: "product", title, slug: title.toLowerCase(), summary: "", rank: 1, cover_image: null }],

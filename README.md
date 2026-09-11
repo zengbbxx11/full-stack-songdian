@@ -105,6 +105,13 @@ npm run lint
 npm run build
 ```
 
+`npm run test:e2e` 需要三个服务同时可达（后端 `:8000`、官网 `:3000`、后台 `:3001`），并通过
+`E2E_FRONTEND_URL=http://localhost:3000`、`E2E_ADMIN_URL=http://localhost:3001` 指定地址
+（本地 dev 模式下用 `localhost`，`127.0.0.1` 会因 `/_next/*` 同源校验被拒导致页面不注水；
+CI 用生产构建启动，不受此限制，故不设这两个变量）。
+交互用例通过 `frontend/e2e/hydration.ts` 的 `gotoHydrated()` 等待 React 注水，新增用例必须沿用；
+完整约定见 [frontend/AGENTS.md](./frontend/AGENTS.md) 的「E2E 测试（Playwright）」章节。
+
 ## 核心数据流
 
 - 官网产品、新闻、搜索与询盘通过 FastAPI `/api/v1` 接口访问。
@@ -138,7 +145,7 @@ npm run build
 - 在生产环境执行 `DROP SCHEMA` 或删除 `pg_data`。
 - 把 `db/` 快照导入生产数据库。
 - 把公网 `3000`、`3001`、`8000` 端口直接暴露。
-- 在生产启用 `dangerouslyAllowLocalIP` 对应环境变量。
+- 在生产启用 `dangerouslyAllowLocalIP` 对应环境变量（`ALLOW_LOCAL_IMAGE_OPTIMIZATION`）。该开关已由 `NODE_ENV !== "production"` 硬门槛兜底，生产构建恒为 `false`；不要移除该门槛，也不要为了让本地图片显示而改模板默认值。
 - 临时向运行中的容器复制缺失静态资产来掩盖 CI 构建问题。
 
 详细的手动更新顺序、完整 SHA 核对、OpenResty、HTTPS、备份恢复和上线检查见 [deploy-guide.md](./deploy-guide.md)。

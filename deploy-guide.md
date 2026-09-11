@@ -340,7 +340,7 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 | `SEED_CONTENT_CATEGORIES` | 生产保持 `false`；设为 `true` 才额外写入演示分类，绝不删除或覆盖现有产品、新闻及分类 |
 | `CORS_ORIGINS` | 官网 + 后台公网域名，逗号分隔，**禁用通配** |
 | `NEXT_PUBLIC_API_URL` | 浏览器直连的 API 地址（走 OpenResty 反代） |
-| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 仅限本地开发允许图片优化器访问 loopback/局域网地址；生产必须不设置或保持 `false` |
+| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 仅限本地开发允许图片优化器访问 loopback/局域网地址；生产必须不设置或保持 `false`。已由 `NODE_ENV !== "production"` 硬门槛兜底：生产构建即使显式设为 `true` 也恒为 `false`，无需依赖运维纪律 |
 | `TRUSTED_PROXIES` | 留空时自动识别 Docker 网桥网关；仅自定义反代拓扑时填写可信代理 IP，禁止使用通配符 |
 
 > ⚠️ `.env` 含密钥，已被根目录 `.gitignore` 忽略，绝不入库。

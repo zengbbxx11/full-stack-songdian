@@ -4,6 +4,8 @@
 
 > 2026-08-19 更新：`lib/api/client.ts` 已使用结构化 `ApiError`；产品详情只把 HTTP 404 / `A010001` 当作不存在，服务故障进入可重试错误页。`/preview/[token]` 为 `no-store` / `noindex` 签名预览。产品图保持 `object-contain` 且不得恢复大内边距。生产由 Compose/GHCR 部署。
 
+> 2026-09-11 更新：Next.js 升至 **16.3.4**（`frontend` 与 `admin-next` 同步）。新增 **E2E 注水约定** —— 交互用例必须用 `e2e/hydration.ts` 的 `gotoHydrated()`，详见下方「E2E 测试（Playwright）」章节。`ALLOW_LOCAL_IMAGE_OPTIMIZATION` 增加 `NODE_ENV !== "production"` 生产硬门槛。
+
 ---
 
 ## 项目定位
@@ -243,6 +245,68 @@ npm run dev → http://localhost:3000
 
 ---
 
+## E2E 测试（Playwright）
+
+套件在 `e2e/`（12 个 spec），入口 `npm run test:e2e`。**必须三个服务齐活**：后端 `:8000`、官网 `:3000`、后台 `:3001`。
+
+```bash
+NODE_OPTIONS= \
+  E2E_FRONTEND_URL=http://localhost:3000 \
+  E2E_ADMIN_URL=http://localhost:3001 \
+  E2E_API_URL=http://127.0.0.1:8000 \
+  ./node_modules/.bin/playwright test --reporter=line
+```
+
+> ⚠️ **本地 dev 模式**下用例地址要用 `localhost`，不要用 `127.0.0.1`：Next 16 的开发服务器对 `/_next/*`
+> 做同源校验，`Origin: http://127.0.0.1:3000` 的 chunk 请求返回 **403** → JS 不加载 → 页面不注水 →
+> 交互用例静默全挂。**CI 不受影响**：CI 用 `npm run start`（生产构建）启动，那里 `127.0.0.1` 是正常的，
+> `playwright.config.ts` 的默认 `baseURL` 也保持 `127.0.0.1:3000`。后端 `E2E_API_URL` 两种模式都用 `127.0.0.1`。
+
+### 交互用例必须等 React 注水（重要约定）
+
+`page.goto()` / `page.reload()` 在 **window load** 就返回。此时 SSR 产出的 DOM 已可读写
+（`fill()` 能成功、元素能点到），但 **React 还没接管事件处理器**。若紧接着 `click()` / `check()`，
+操作会打在“没有事件处理器”的 DOM 上，产生**假失败**：操作无效、无网络请求、无任何报错。
+dev 首次编译慢或多进程并发（`workers: 2`）时稳定复现。
+
+因此新增/修改用例时：
+
+- 用 `e2e/hydration.ts` 的 `gotoHydrated(page, url)` 代替裸 `page.goto()`；
+- `page.reload()` 之后补一行 `await waitForHydration(page)`；
+- **不要用 `waitUntil: "networkidle"` 代替** —— dev 下网络静默会早于注水完成，不可靠。
+
+```ts
+import { gotoHydrated, waitForHydration } from "./hydration";
+
+await gotoHydrated(page, "/contact");   // 打开并等注水
+await page.getByRole("button").click(); // 此时交互才安全
+```
+
+典型症状（见到就往这个方向查，**别去查服务端**）：
+
+| 症状 | 说明 |
+|------|------|
+| 点登录后 URL 变成 `/signin?username=…&password=…` | `<button type="submit">` 尚未被 React 接管，浏览器走了**原生表单 GET 提交** |
+| checkbox 勾了但“发布选中”按钮不出现 | 只改了 DOM，React 状态没更新 |
+| 移动端抽屉不收起、下拉菜单不弹出 | 同上 |
+| 搜索 `waitForRequest` 超时 | 防抖逻辑未接管，压根不发请求 |
+
+注水判定式（本机实测，注水耗时约 350ms）：`document.body` 上出现 `__reactProps$…` / `__reactFiber$…`。
+
+### 夹具必须清理
+
+用例用固定标题建内容（产品/新闻/询盘），**必须在 `finally` 中删除**。否则残留的已发布内容
+会真实出现在官网上，且下一轮同标题会触发 `getByRole` 的 strict mode violation。
+注意定时发布（`SCHEDULED`）的夹具若不清理，计划时间一到会被调度器真正发布。
+
+### 其他注意
+
+- `playwright.config.ts` 已固定 `workers: 2`；本机常有 3 个 dev server 并存，调高并行会因机器过载出现 teardown 超时（不是用例失败）。
+- 套件启动/结束会清理 `test-results/`，失败用例的 trace/video 体积很大，跑前建议先手动清空该目录。
+- 管理端是 HttpOnly Cookie 认证：登录响应体**不含 token**，需从 `Set-Cookie` 取；`admin` 连续 5 次密码错会锁定 15 分钟。
+
+---
+
 ## 生产部署
 
 | 项目 | 值 |
@@ -291,6 +355,8 @@ P0 级审计修复（相关行为已合入当前代码）：
 - `scripts/generate-og-assets.mjs` 通过 `npm run generate:social-assets` 生成默认 OG JPEG 与 `public/Video/factory-poster.webp`。
 - About 页工厂视频使用 `preload="none"`、WebP poster 和可选 WebM source；MP4 为兼容回退。视频与 poster 都是随 frontend 镜像发布的静态源码资产。
 - `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 仅用于本地 loopback/局域网图片调试；生产环境必须关闭或不设置。
+  该开关在 `next.config.ts` 里已被 `NODE_ENV !== "production"` 硬门槛包住：**生产构建即使显式设为 `true` 也恒为 `false`**。
+  本地若 `NEXT_PUBLIC_API_URL` 指向 loopback 而开关没开，开发模式启动时会打印可操作告警（`[next.config]` 前缀）。
 
 ## 官网界面与导航优化（2026-09-01）
 

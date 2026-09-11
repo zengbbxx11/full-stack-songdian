@@ -5,6 +5,8 @@
 
 > 2026-08-19 更新：产品/新闻表单共享 `src/components/content/ContentWorkflowPanel.tsx`，支持状态、定时发布、版本恢复和短期预览。媒体 URL 必须经 `resolveMediaUrl()`；相对 `/uploads/...` 保持同源并由 rewrite 转发，禁止在组件中硬编码后端主机。
 
+> 2026-09-11 更新：Next.js 升至 **16.3.4**。`src/app/layout.tsx` 的 `<html>` 已加 `suppressHydrationWarning`（原因见雷区 ⑨）。后台相关 E2E 用例位于 `../frontend/e2e/`，不在本目录（见雷区 ⑩）。
+
 ---
 
 ## 项目定位
@@ -85,6 +87,8 @@ admin-next/src/
 6. **中文注释不能写进 JSDoc `/** */`**：Rust 写的 `next-code-frame` 按 byte 索引定位 JSDoc 字符串，遇 UTF-8 多字节字符会 panic（`end byte index X is not a char boundary`）。统一用 `//` 行注释写中文。
 7. **React 19 禁止 useEffect 同步 setState**：lint 规则 `react-hooks/set-state-in-effect`。prop 变化时重置子组件 state 用 `key={prop}` 强制重挂载，而非 useEffect+setState。
 8. **`.next/dev` 缓存写冲突（Turbopack 整组 500）**：浏览器报 `An unexpected Turbopack error`、dev 日志出现 `Persisting failed: Another write batch or compaction is already active` / `拒绝访问 (os error 5)`，是**两个 next dev 进程抢写同一 `.next/dev` 缓存**所致，整个 `(admin)` 路由组页面一起 500（仅 `/signin` 因重定向才返回 307）。修法三板斧：① `netstat -ano | grep ":3001 "` 拿 PID → `taskkill /F /PID <pid>` 杀冲突进程（**注意别误杀 :3000 的 frontend**）；② `rm -rf .next/dev` 清空缓存；③ 单进程重起（Node 24 直调 next bin）。
+9. **`<html>` 上的 `suppressHydrationWarning` 不要删**（`src/app/layout.tsx`）：浏览器扩展会在 React 加载前给 `<html>` 写入 `data-theme`、行内 `style` 等属性，导致 React 报「服务端渲染与客户端属性不一致」的 hydration mismatch 告警。该 prop 只抑制 `<html>` **自身属性**的告警，不会掩盖子树的真实 mismatch。排查此类报错时先全仓库搜那串值（往往代码里根本没有），再用干净浏览器对比；官网 `frontend/app/layout.tsx` 早已有同一属性，属项目内一致约定。
+10. **管理后台的 E2E 用例不在本目录**：全部在 `../frontend/e2e/`（同一个 Playwright 套件，如 `admin-reliability`、`admin-settings`、`admin-data`）。跑法、地址约定与「必须等待 React 注水」的要求见 `../frontend/AGENTS.md` 的「E2E 测试（Playwright）」章节 —— 后台页面同样是客户端渲染，交互前不等注水会静默失败。
 
 ---
 

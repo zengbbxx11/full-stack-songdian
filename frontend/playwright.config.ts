@@ -5,7 +5,8 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
-  // E2E fixtures share one SQLite backend; keep the default deterministic.
+  // 用例夹具共享同一个后端数据库（本地与 CI 均为 PostgreSQL），且本机常同时跑 3 个 dev server；
+  // 并行度过高会因机器过载出现 teardown 超时（不是用例失败），故固定为 2。
   workers: 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",

@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-- Next.js 16.3、React 19.2、TypeScript
+- Next.js 16.3.4、React 19.2、TypeScript
 - Tailwind CSS 4、Geist variable font
 - React Server Components、Streaming SSR、Suspense、ISR
 - React Hook Form、Zod、Lucide React
@@ -36,6 +36,25 @@ npm run build
 
 涉及交互、响应式或路由行为时再运行 `npm run test:e2e`。
 
+### E2E 测试前置
+
+Playwright 用例需要三个服务同时可达：后端 `:8000`、官网 `:3000`、后台 `:3001`（后台相关用例在同一个套件里）。运行前设置：
+
+```bash
+NODE_OPTIONS= \
+  E2E_FRONTEND_URL=http://localhost:3000 \
+  E2E_ADMIN_URL=http://localhost:3001 \
+  E2E_API_URL=http://127.0.0.1:8000 \
+  ./node_modules/.bin/playwright test --reporter=line
+```
+
+两条硬性约定：
+
+- **本地 dev 模式下用例地址用 `localhost`**。Next 16 开发服务器对 `/_next/*` 做同源校验，`Origin: http://127.0.0.1:3000` 的 chunk 请求返回 403，导致 JS 不加载、页面不注水、交互用例静默失败。CI 用 `npm run start`（生产构建）启动，不受此限制，`playwright.config.ts` 的默认 `baseURL` 保持 `127.0.0.1:3000`；后端地址两种模式都用 `127.0.0.1`。
+- **交互用例必须等待 React 注水**。`page.goto()` / `page.reload()` 在 window load 就返回，此时 DOM 可读写但事件处理器尚未挂载；直接点击会「操作无效、无请求、无报错」。统一使用 `e2e/hydration.ts` 的 `gotoHydrated()`，`reload()` 后补 `waitForHydration()`；不要用 `waitUntil: "networkidle"` 代替。
+
+完整约定（含典型症状对照表与夹具清理要求）见 [AGENTS.md](./AGENTS.md) 的「E2E 测试（Playwright）」章节。
+
 ## 常用命令
 
 | 命令 | 用途 |
@@ -61,7 +80,7 @@ npm run build
 | `NEXT_PUBLIC_API_URL` | 浏览器访问的公开 API 地址 | 生产使用 HTTPS API 域名；属于构建期变量 |
 | `INTERNAL_API_URL` | Server Components/构建阶段访问后端 | Compose 中通常为 `http://backend:8000` |
 | `NEXT_PUBLIC_IMAGE_HOST` | `next/image` 允许的远程图片主机 | 只填主机名，不带协议和路径 |
-| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 允许图片优化器访问本地/局域网地址 | 仅本地开发可设 `true`；生产必须关闭或不设置 |
+| `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 允许图片优化器访问本地/局域网地址 | 仅本地开发可设 `true`；生产必须关闭或不设置。已被 `NODE_ENV !== "production"` 硬门槛包住，生产构建恒为 `false` |
 | `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名 |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认描述 | 避免与公开公司事实漂移 |
 | `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID 兜底 | 后台缺少 ga_id 或接口失败时使用；后台明确留空时关闭 GA |
@@ -75,6 +94,8 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 ```
 
 修改后重启开发服务器。生产启用此项会扩大服务端图片请求范围，因此禁止开启。
+
+生产安全兜底：`next.config.ts` 把该开关与 `NODE_ENV !== "production"` 做了**与运算**，所以生产构建即使显式设置了 `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 也恒为 `false`。此外，开发模式下若 `NEXT_PUBLIC_API_URL` 指向 loopback/局域网地址而开关未开，启动时会打印一条 `[next.config]` 前缀的可操作告警——因为这种情况的失败表现为「图片全空白」，`/_next/image` 返回 `400 "url" parameter is not allowed`，很容易被误判成图片丢失。
 
 ## Google Analytics 与 Microsoft Clarity
 
@@ -226,6 +247,9 @@ public/og/                     默认社交分享图
 public/Video/                  工厂 MP4 与 poster
 scripts/generate-og-assets.mjs 社交图与 poster 生成脚本
 scripts/verify-seo.mjs          SEO/GEO 契约校验
+e2e/                            Playwright 用例（12 个 spec）
+e2e/hydration.ts               注水等待 helper：gotoHydrated() / waitForHydration()
+playwright.config.ts           E2E 配置（workers: 2，testDir: e2e）
 next.config.ts                 图片优化、远程主机与生产配置
 proxy.ts                       产品 URL 规范化重定向
 ```
@@ -244,6 +268,13 @@ proxy.ts                       产品 URL 规范化重定向
 ### 后端图片在本地无法由 `next/image` 加载
 
 确认图片主机和 API 地址正确。本地确实需要访问 loopback/局域网地址时，再设置 `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 并重启；生产不要开启。
+
+判定方法：直接请求优化器端点，返回 `400 "url" parameter is not allowed` 即为此项未开（此时直连后端 `/uploads/...` 本身是 200，说明文件没丢）：
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" \
+  "http://localhost:3000/_next/image?url=<URL 编码后的后端图片地址>&w=1536&q=75"
+```
 
 ### 构建时后端不可用
 

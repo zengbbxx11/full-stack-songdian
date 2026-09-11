@@ -1,4 +1,4 @@
-# 当前实现总览（2026-09-09）
+# 当前实现总览（2026-09-11）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -85,6 +85,9 @@
 
 - 生产要求真实 Redis（`REDIS_REQUIRED=true`）；`/readyz` 同时探测 PostgreSQL 和 Redis，任一关键依赖不可用即阻止发布。
 - CI 运行后端 Ruff/pytest、前后台 lint/build、SEO 校验、真实 PostgreSQL/Redis 迁移测试、Playwright 关键链路、Lighthouse 阈值与依赖审计。
+- 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（12 个 spec，44 个用例），管理后台用例也在同一套件内。
+- **E2E 交互用例统一等待 React 注水**：`page.goto()` / `page.reload()` 在 window load 就返回，此时 DOM 可读写但事件处理器尚未挂载，直接交互会产生「操作无效、无请求、无报错」的假失败。用例通过 `frontend/e2e/hydration.ts` 的 `gotoHydrated()` 打开页面、`waitForHydration()` 在 `reload()` 后补等待；不使用 `waitUntil: "networkidle"`（开发模式下网络静默早于注水完成）。用例在本地 dev 模式下使用 `localhost` 而非 `127.0.0.1`（Next 开发服务器对 `/_next/*` 的同源校验会对后者返回 403，导致页面不注水）；CI 以生产构建（`next start`）启动服务，不受此限制。`playwright.config.ts` 固定 `workers: 2`，避免本机多 dev server 并存时因机器过载出现 teardown 超时。用例夹具必须在 `finally` 中清理，避免残留内容进入官网或污染下一轮断言。
+- 官网图片优化器访问 loopback/局域网地址由 `ALLOW_LOCAL_IMAGE_OPTIMIZATION` 控制，且与 `NODE_ENV !== "production"` 做与运算：**生产构建即使显式设为 `true` 也恒为 `false`**，本地开发指向 loopback 后端而未开启时启动告警。
 - Web Vitals 仅在用户同意 Analytics 且 GA4 已配置时上报 LCP、CLS、INP、FCP 与 TTFB，不增加身份信息采集。
 - 生产发布先备份 PostgreSQL 与 `uploads_data`，再运行迁移、切换三个应用并冒烟；应用镜像可自动回滚，数据库迁移不会自动反向回滚。
 - 生产数据和运行时上传媒体不进入 Git；静态工厂视频属于前端源码资产，随镜像发布。

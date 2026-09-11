@@ -16,7 +16,7 @@
 
 | 层 | 技术 |
 |----|------|
-| 框架 | Next.js 16.3.0（App Router + Turbopack）+ React 19 |
+| 框架 | Next.js 16.3.4（App Router + Turbopack）+ React 19 |
 | 语言 | TypeScript（strict） |
 | 样式 | Tailwind CSS v4 + 暗色模式 |
 | 后端 | 项目 FastAPI 后端（`../backend/`，端口 8000） |
@@ -44,6 +44,10 @@ npm run dev        # http://localhost:3001
 
 > ⚠️ 本机必须用 Node 24.18.0，启动命令：
 > `"/c/Program Files/nodejs/node.exe" node_modules/next/dist/bin/next dev -p 3001`
+
+后台相关 E2E 用例位于 `../frontend/e2e/`（不是本目录）。交互用例必须用 `e2e/hydration.ts` 的
+`gotoHydrated()` 等待 React 注水，否则会「操作无效、无请求、无报错」的假失败；
+跑法与完整约定见 [`../frontend/AGENTS.md`](../frontend/AGENTS.md) 的「E2E 测试（Playwright）」章节。
 
 ---
 

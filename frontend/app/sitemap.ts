@@ -18,8 +18,9 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
   const [entries, postSlugs] = await Promise.all([
-    getAllProductSlugEntries({ strict: true }),
-    getAllPostSlugs({ strict: true }),
+    // Sitemap URLs must reflect newly published records immediately; regular page data uses ISR.
+    getAllProductSlugEntries({ strict: true, revalidate: false }),
+    getAllPostSlugs({ strict: true, revalidate: false }),
   ]);
 
   // 静态页面

@@ -81,7 +81,10 @@ export const getPostBySlug = cache(async (slug: string): Promise<PostDetail | nu
 });
 
 /** 获取全部已发布文章 slug（用于 SSG 预渲染 generateStaticParams 与 sitemap）。 */
-export async function getAllPostSlugs({ strict = false }: { strict?: boolean } = {}): Promise<string[]> {
+export async function getAllPostSlugs({
+  strict = false,
+  revalidate = 60,
+}: { strict?: boolean; revalidate?: number | false } = {}): Promise<string[]> {
   try {
     const list: NewsPageDTO[] = [];
     let page = 1;
@@ -94,7 +97,7 @@ export async function getAllPostSlugs({ strict = false }: { strict?: boolean } =
           page_size: 50,
           status: "PUBLISHED",
         },
-        { tags: ["news"] },
+        { revalidate, tags: ["news"] },
       );
       list.push(...data.list);
       total = data.total;

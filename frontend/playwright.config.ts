@@ -5,6 +5,8 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
+  // E2E fixtures share one SQLite backend; keep the default deterministic.
+  workers: 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {

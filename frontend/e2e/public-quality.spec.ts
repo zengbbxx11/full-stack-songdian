@@ -12,6 +12,9 @@ test("published news emits ISO dates and sitemap excludes drafts", async ({ page
   const admin = await playwrightRequest.newContext({ baseURL: adminBase });
   const ids: number[] = [];
   try {
+    // Prime the sitemap cache before changing content to cover publish freshness.
+    const initialSitemap = await request.get("/sitemap.xml");
+    expect(initialSitemap.ok()).toBeTruthy();
     const login = await admin.post("/api/v1/admin/login", { data: { username: "admin", password: process.env.E2E_ADMIN_PASSWORD || "Songdian@2026" } });
     expect((await login.json()).code).toBe("0");
     const categories = await (await admin.get("/api/v1/admin/news-categories?page_size=50")).json();
@@ -28,7 +31,7 @@ test("published news emits ISO dates and sitemap excludes drafts", async ({ page
       ids.push(result.data.id);
     }
     await page.goto(`/news/${slugs[0]}`);
-    await expect(page.getByRole("heading", { name: "Quality regression article", exact: true })).toBeVisible();
+    await expect(page.locator("h1")).toHaveText("Quality regression article");
     await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute("content", /^2026-08-01T12:30:00/);
     await expect(page.locator('meta[property="article:modified_time"]')).toHaveCount(0);
     await expect(page.locator("time").first()).toHaveAttribute("datetime", /^2026-08-01T12:30:00/);

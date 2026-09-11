@@ -10,3 +10,10 @@ node_modules/
 Dockerfile
 .dockerignore
 README.md
+
+# E2E 用例不进生产镜像：admin-data.spec.ts 跨项目 import 了 ../../admin-next/src/lib/*，
+# 而镜像构建上下文只有 frontend/ 本身，缺少该目录会让 next build 的类型检查
+# 直接报 TS2307 失败（本地能过是因为 monorepo 兄弟目录恰好存在）。
+e2e/
+playwright-report/
+test-results/

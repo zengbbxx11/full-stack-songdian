@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from common.audit import audit
 from common.deps import require_permission
-from common.ratelimit import ip_rate_limit
 from common.result import PageRequest, PageResponse, Result
 from content.models import AdminUser
 from inquiry import services
@@ -48,9 +47,9 @@ async def mark_notifications_read(
 @router.post("/inquiries", summary="提交询盘")
 async def submit(
     data: InquirySubmitRequest,
-    request: Request,
-    _rl=Depends(ip_rate_limit),
 ) -> Result:
+    # 限流由 ApiSecurityMiddleware 统一对 /api/v1/ 生效（含单 IP 配额）。
+    # 此处不再挂 Depends(ip_rate_limit)，否则同一 IP 的额度会被中间件与路由各扣一次。
     vo = await services.submit_inquiry(data)
     return Result.ok(vo.model_dump(mode="json"))
 

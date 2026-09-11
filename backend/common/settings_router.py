@@ -9,6 +9,7 @@ from common.audit import audit
 from common.tasks import enqueue, transactional_write
 from common.deps import get_current_user, require_permission
 from common.enums import SmtpStatus
+from common.exceptions import ErrorCode, resolve_error
 from common.redis_client import cache_key, get_redis
 from common.result import Result
 from common.settings_model import Setting
@@ -38,6 +39,17 @@ PUBLIC_SETTINGS_TTL = 300  # 缓存 5 分钟
 
 # SMTP 密码占位符：GET 脱敏返回、PUT 传回时保留原值
 SMTP_PASSWORD_MASK = "******"
+
+
+def _fail(code: str) -> Result:
+    """按错误码注册表构造失败结果。
+
+    直接 ``Result.fail(code, msg)`` 需要手写文案，容易与注册表漂移；
+    这里统一经 ``resolve_error`` 取 (msg, msgI18n)，并让 ``Result.fail`` 自动补 traceId/timestamp。
+    """
+    _status, msg, i18n = resolve_error(code)
+    return Result.fail(code, msg, i18n)
+
 
 # SMTP 配置 key 的默认元信息（惰性创建：不依赖 SEED_ON_START，保证设置页始终有邮件通知面板）
 _SMTP_DEFAULTS = [
@@ -129,15 +141,15 @@ async def update_setting(
 
     需要 `settings:update` RBAC 权限。
     从请求体 JSON 中读取 `value` 字段，写入 Setting 表对应 key 的行。
-    若 key 不存在则返回 A010001 错误。
-    操作会被写入审计日志（@audit 装饰器）��
+    若 key 不存在则返回 A070001 错误。
+    操作会被写入审计日志（@audit 装饰器）。
     """
     # 从请求体读取 value
     body = await request.json()
     value = body.get("value", "")
     setting = await Setting.get_or_none(key=key)
     if setting is None:
-        return Result(code="A010001", msg="配置项不存在", data=None)
+        return _fail(ErrorCode.A070001)
     # SMTP 密码：前端回传掩码时保留原值（未修改授权码）
     if key == "smtp_password" and value in ("", None, SMTP_PASSWORD_MASK):
         value = setting.value
@@ -192,5 +204,6 @@ async def test_smtp(
     if status == SmtpStatus.SENT:
         return Result.ok(msg="测试邮件已发送，请查收收件箱")
     if status == SmtpStatus.PENDING:
-        return Result(code="A010002", msg="SMTP 未配置，请先填写 SMTP 服务器/账号/收件人并保存", data=None)
-    return Result(code="A010003", msg="测试邮件发送失败，请检查 SMTP 配置（授权码/端口/SSL）", data=None)
+        # 经统一错误码解析返回，保证 traceId/timestamp 与语义一致（不再复用产品错误码）。
+        return _fail(ErrorCode.A070002)
+    return _fail(ErrorCode.A070003)

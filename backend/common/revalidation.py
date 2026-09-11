@@ -23,6 +23,14 @@ async def revalidate_frontend(*, tags: list[str], paths: list[str], strict: bool
             )
             response.raise_for_status()
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Next.js cache revalidation failed: %s", type(exc).__name__)
+        # 只记录异常类名（如 "HTTPStatusError"）无法区分「密钥不匹配(401)」还是
+        # 「对端不可达/被代理劫持(502)」，排查成本很高。这里补上目标地址与状态码。
+        # 典型场景：本地把 NEXT_REVALIDATE_URL 写成 localhost，httpx(trust_env=True)
+        # 在装有系统代理的机器上会得到 502，任务只能不断退避重试，官网缓存迟迟不刷新。
+        detail = settings.next_revalidate_url
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status is not None:
+            detail += f" -> HTTP {status}"
+        logger.warning("Next.js cache revalidation failed: %s (%s)", type(exc).__name__, detail)
         if strict:
             raise

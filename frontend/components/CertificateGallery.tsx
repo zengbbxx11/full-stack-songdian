@@ -7,7 +7,7 @@
  * 是否为客户端组件：是（需要 onClick / 键盘事件 / 动态遮罩状态）。
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 
 /** 单张证书的数据结构，与 content-data.ts 中 certificationImages 的字段保持一致 */
@@ -24,11 +24,20 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
   // 当前在 Lightbox 中展示的证书下标；null 表示遮罩层关闭
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+  const isOpen = activeIndex !== null;
+  // 弹层容器（用于 Tab 焦点陷阱）与打开前的触发元素（关闭后还原焦点）
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+
   const close = useCallback(() => setActiveIndex(null), []);
 
-  // 键盘交互 + 背景滚动锁定：仅在 Lightbox 打开时生效
+  // 打开时移入焦点，关闭时还原；随后处理键盘交互 + 背景滚动锁定
   useEffect(() => {
-    if (activeIndex === null) return;
+    if (!isOpen) return;
+
+    // 记录触发元素并把焦点移入弹层，避免焦点留在被遮罩的背景上
+    const opener = openerRef.current;
+    dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -37,6 +46,24 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
         setActiveIndex((i) => (i === null ? i : (i + 1) % items.length));
       } else if (e.key === "ArrowLeft") {
         setActiveIndex((i) => (i === null ? i : (i - 1 + items.length) % items.length));
+      } else if (e.key === "Tab") {
+        // 焦点陷阱：把 Tab 循环限制在弹层内，不让焦点跑到被遮罩的页面元素上
+        const focusables = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          ) ?? []
+        ).filter((el) => !el.hasAttribute("disabled"));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const focused = document.activeElement;
+        if (e.shiftKey && (focused === first || !dialogRef.current?.contains(focused))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && focused === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -47,8 +74,10 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
+      // 还原焦点到触发键，保证键盘用户不会丢失当前上下文
+      opener?.focus();
     };
-  }, [activeIndex, close, items.length]);
+  }, [isOpen, close, items.length]);
 
   const active = activeIndex !== null ? items[activeIndex] : null;
 
@@ -60,7 +89,11 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
           <button
             key={cert.src}
             type="button"
-            onClick={() => setActiveIndex(i)}
+            onClick={() => {
+              // 记录触发元素，弹层关闭后把焦点还原回来
+              openerRef.current = document.activeElement as HTMLElement | null;
+              setActiveIndex(i);
+            }}
             aria-label={`View ${cert.title} certificate in full size`}
             className="group flex touch-manipulation flex-col overflow-hidden border border-[var(--border)] bg-white text-left transition-all hover:border-[var(--accent)] hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             style={{ borderRadius: "12px", transitionDuration: "0.33s" }}
@@ -89,6 +122,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
       {/* Lightbox 全屏透明遮罩层 */}
       {active && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`${active.title} certificate preview`}

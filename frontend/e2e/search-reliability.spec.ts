@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+// 打开首页并等到注水稳定后再交互。
+// 直接 page.goto("/") 后马上 fill()，在 dev 首次编译较慢时 React 尚未注水，
+// 输入不会触发防抖搜索请求，表现为「填了内容却没有任何请求、也没有报错」——
+// 这是本文件三条用例失败的真实原因（不是拦截失效，也不是后端问题）。
+const openHomeHydrated = (page: import("@playwright/test").Page) =>
+  page.goto("/", { waitUntil: "networkidle" });
+
 const result = (title: string) => ({ code: "0", data: {
   items: [{ id: 1, kind: "product", title, slug: title.toLowerCase(), summary: "", rank: 1, cover_image: null }],
   total: 1, took_ms: 1, degraded: false,
@@ -12,7 +19,7 @@ test("cleared queries discard late responses and pending queries cannot select o
     if (new URL(route.request().url()).searchParams.get("q") === "old") await gate;
     await route.fulfill({ json: result("Old") });
   });
-  await page.goto("/");
+  await openHomeHydrated(page);
   const input = page.getByRole("combobox", { name: "Search products" }).filter({ visible: true });
   const request = page.waitForRequest(url => url.url().includes("q=old"));
   await input.fill("old");
@@ -34,7 +41,7 @@ test("search errors persist until retry and Escape closes an empty popup", async
   await page.route("**/api/v1/search?**", route => failed
     ? route.fulfill({ status: 503, json: { code: "B999001" } })
     : route.fulfill({ json: result("Recovered") }));
-  await page.goto("/");
+  await openHomeHydrated(page);
   const input = page.getByRole("combobox", { name: "Search products" }).filter({ visible: true });
   await input.fill("camera");
   await expect(page.getByText("Search unavailable", { exact: true })).toBeVisible();
@@ -55,7 +62,7 @@ test("ArrowUp selects the last suggestion and Escape clears its active descendan
   await page.route("**/api/v1/search?**", route => route.fulfill({ json: {
     code: "0", data: { ...result("First").data, items: [result("First").data.items[0], { ...result("Last").data.items[0], id: 2 }] },
   } }));
-  await page.goto("/");
+  await openHomeHydrated(page);
   const input = page.getByRole("combobox", { name: "Search products" }).filter({ visible: true });
   await input.fill("camera");
   await expect(page.getByRole("option")).toHaveCount(2);

@@ -57,18 +57,15 @@ function buildTree(albums: Album[]): TreeAlbum[] {
   return walk(null, 0);
 }
 
-function usageLabel(item: UsageItem): string {
-  const map: Record<string, string> = { product_gallery: "产品图库", product_cover: "产品封面", news_cover: "新闻封面" };
-  return `${map[item.type] ?? item.type}: ${item.name}`;
-}
+// 引用类型 → 中文标签（列表与弹窗共用，避免两处映射漂移）
+const USAGE_TYPE_LABEL: Record<UsageItem["type"], string> = {
+  product_gallery: "产品图库",
+  product_cover: "产品封面",
+  news_cover: "新闻封面",
+};
 
-function usageTypeLabel(type: UsageItem["type"]): string {
-  const map: Record<UsageItem["type"], string> = {
-    product_gallery: "产品图库",
-    product_cover: "产品封面",
-    news_cover: "新闻封面",
-  };
-  return map[type];
+function usageLabel(item: UsageItem): string {
+  return `${USAGE_TYPE_LABEL[item.type] ?? item.type}: ${item.name}`;
 }
 
 function usageEditHref(item: UsageItem): string {
@@ -234,7 +231,54 @@ export default function MediaPage() {
       setConfirm({ title: "确认删除", message: `确定删除 "${rec.title || rec.file_name}" 吗？`, onConfirm: () => { handleDelete(rec, false); setConfirm(null); } });
     }
   };
-  const handleBatchDelete = async () => { const ids = Array.from(selectedIds); let f = 0; for (const id of ids) { try { await apiFetch(`/admin/upload/${id}?force=true`, { method: "DELETE" }); } catch { f++; } } toast.success(`Deleted ${ids.length - f}/${ids.length}`); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); clearSelection(); };
+  // 批量删除执行体：仅对确认过的"被引用"素材使用 force，未引用项走普通删除（后端仍会拦截误删）
+  const runBatchDelete = async (ids: number[], forceIds: Set<number>) => {
+    let failed = 0;
+    for (const id of ids) {
+      try { await apiFetch(`/admin/upload/${id}?force=${forceIds.has(id)}`, { method: "DELETE" }); }
+      catch { failed++; }
+    }
+    if (failed > 0) toast.error(`批量删除完成：成功 ${ids.length - failed}/${ids.length}，${failed} 项失败`);
+    else toast.success(`已删除 ${ids.length} 项`);
+    await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
+    clearSelection();
+  };
+  // 批量删除入口：先逐项查询引用，把"仍被引用"的素材明确列出，避免像过去那样静默强制删除
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    // 引用查询复用缓存；单项失败时保守按"未引用"处理，交由后端删除接口兜底
+    const inUse: { id: number; usage: UsageInfo }[] = [];
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const cached = usageCache.get(id);
+        const usage = cached ?? await apiFetch<UsageInfo>(`/admin/upload/${id}/usage`);
+        if (!cached) setUsageCache((prev) => new Map(prev).set(id, usage));
+        if (usage.in_use) inUse.push({ id, usage });
+      } catch { /* 忽略：按未引用处理 */ }
+    }));
+    const forceIds = new Set(inUse.map((x) => x.id));
+    const safeCount = ids.length - forceIds.size;
+    setConfirm({
+      title: forceIds.size > 0 ? "批量删除提醒" : "批量删除",
+      message: forceIds.size > 0 ? (
+        <div>
+          <p className="mb-2">选中的 {ids.length} 个素材中有 <strong>{forceIds.size}</strong> 个仍被内容引用，强制删除可能导致内容展示异常：</p>
+          <ul className="list-disc pl-4 text-xs space-y-0.5 text-gray-500 dark:text-gray-400 max-h-40 overflow-y-auto">
+            {inUse.map(({ id, usage }) => {
+              const rec = records.find((r) => r.id === id);
+              return <li key={id}>{rec?.title || rec?.file_name || `#${id}`} —— {usage.items.map(usageLabel).join("、")}</li>;
+            })}
+          </ul>
+          <p className="mt-2 text-sm font-medium">{safeCount > 0 ? `其余 ${safeCount} 个未被引用将直接删除。` : ""}是否仍要删除全部？</p>
+        </div>
+      ) : (
+        <p>确定删除选中的 {ids.length} 个文件吗？此操作不可撤销。</p>
+      ),
+      confirmText: forceIds.size > 0 ? "仍要删除全部" : `删除 ${ids.length} 项`,
+      onConfirm: () => { void runBatchDelete(ids, forceIds); setConfirm(null); },
+    });
+  };
   const copyUrl = (url: string) => { navigator.clipboard.writeText(url); toast.success("Copied!"); };
 
   // 懒加载引用信息（hover 触发，已缓存则直接返回）
@@ -347,7 +391,7 @@ export default function MediaPage() {
             <FolderIcon className="w-3 h-3 inline mr-1" />
             自动归类
           </button>
-          {selectedIds.size > 0 && (<><span className="text-xs text-gray-500 ml-2">已选择 {selectedIds.size} 项</span><button onClick={() => setConfirm({ title: "批量删除", message: `删除选中 ${selectedIds.size} 个文件？不可撤销。`, confirmText: `删除 ${selectedIds.size} 项`, onConfirm: () => { handleBatchDelete(); setConfirm(null); } })} className="px-3 py-2 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"><TrashBinIcon className="w-3.5 h-3.5 inline mr-1" /> 批量删除</button></>)}
+          {selectedIds.size > 0 && (<><span className="text-xs text-gray-500 ml-2">已选择 {selectedIds.size} 项</span><button onClick={() => void handleBatchDelete()} className="px-3 py-2 text-xs rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400"><TrashBinIcon className="w-3.5 h-3.5 inline mr-1" /> 批量删除</button></>)}
         </div>
 
         {total === 0 && !isLoading && (
@@ -442,7 +486,7 @@ export default function MediaPage() {
                   <ul className="max-h-72 space-y-2 overflow-y-auto">
                     {usageModal.info.items.map((item, index) => (
                       <li key={`${item.type}-${item.id}-${index}`} className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
-                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">{usageTypeLabel(item.type)}</span>
+                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">{USAGE_TYPE_LABEL[item.type]}</span>
                         <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
                         <Link href={usageEditHref(item)} className="shrink-0 text-xs font-medium text-brand-500 hover:text-brand-600">查看内容</Link>
                       </li>

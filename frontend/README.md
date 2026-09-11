@@ -63,11 +63,10 @@ npm run build
 | `NEXT_PUBLIC_IMAGE_HOST` | `next/image` 允许的远程图片主机 | 只填主机名，不带协议和路径 |
 | `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 允许图片优化器访问本地/局域网地址 | 仅本地开发可设 `true`；生产必须关闭或不设置 |
 | `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名 |
-| `NEXT_PUBLIC_SITE_NAME` | 站点名称 | 用于 metadata |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认描述 | 避免与公开公司事实漂移 |
 | `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID 兜底 | 后台缺少 ga_id 或接口失败时使用；后台明确留空时关闭 GA |
 | `NEXT_PUBLIC_GOOGLE_VERIFICATION` | Search Console 验证码 | 可选 |
-| `NEXT_PUBLIC_ISR_REVALIDATE` | 默认 ISR 时间 | 单位为秒 |
+| `REVALIDATE_SECRET` | `/api/revalidate` 校验的共享密钥 | 必须与后端 `REVALIDATE_SECRET` 一致，否则内容发布后不会即时刷新官网缓存 |
 
 本地后端图片使用 loopback 或局域网 IP 且 `next/image` 拒绝请求时，才临时设置：
 

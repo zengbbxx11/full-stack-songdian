@@ -37,6 +37,9 @@ const NEXT_STATUS: Record<InquiryStatus, InquiryStatus[]> = {
   LOST: [],
 };
 
+/** 取某状态的合法流转目标；未知状态（后端新增枚举时）返回空数组，避免前端抛错。 */
+const nextStatusesOf = (status: InquiryStatus): InquiryStatus[] => NEXT_STATUS[status] ?? [];
+
 const STATUS_LABEL: Record<InquiryStatus, string> = {
   NEW: "新询盘",
   CONTACTING: "联系中",
@@ -67,9 +70,10 @@ export default function InquiriesPage() {
   );
 
   /* ── 回复/操作对话框 ── */
+  // baseStatus 记录服务端确认的当前状态，用于推导“合法流转目标”（与后端 _ALLOWED_TRANSITIONS 对齐）
   const [reply, setReply] = useState<{
-    open: boolean; target: Inquiry | null; note: string; status: InquiryStatus; country: string;
-  }>({ open: false, target: null, note: "", status: "CONTACTING", country: "" });
+    open: boolean; target: Inquiry | null; note: string; status: InquiryStatus; baseStatus: InquiryStatus; country: string;
+  }>({ open: false, target: null, note: "", status: "CONTACTING", baseStatus: "CONTACTING", country: "" });
   const [replySaving, setReplySaving] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
   const [replyError, setReplyError] = useState("");
@@ -123,7 +127,7 @@ export default function InquiriesPage() {
   /* ── 操作：打开回复/状态对话框 ── */
   async function openReply(i: Inquiry) {
     const requestId = ++replyRequest.current;
-    setReply({ open: true, target: i, note: "", status: i.status, country: i.country || "" });
+    setReply({ open: true, target: i, note: "", status: i.status, baseStatus: i.status, country: i.country || "" });
     setReplyLoading(true);
     setReplyError("");
     try {
@@ -133,6 +137,7 @@ export default function InquiriesPage() {
         ...prev,
         note: detail.reply_note || "",
         status: detail.status,
+        baseStatus: detail.status,
         country: detail.country || "",
       }));
     } catch (err) {
@@ -165,7 +170,7 @@ export default function InquiriesPage() {
       }
       await mutate();
       toast.success("已保存");
-      setReply({ open: false, target: null, note: "", status: "CONTACTING", country: "" });
+      setReply({ open: false, target: null, note: "", status: "CONTACTING", baseStatus: "CONTACTING", country: "" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "保存失败");
     } finally {
@@ -497,12 +502,16 @@ export default function InquiriesPage() {
                   onChange={(e) => setReply((p) => ({ ...p, status: e.target.value as InquiryStatus }))}
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 >
-                  <option value="NEW">NEW — 新询盘</option>
-                  <option value="CONTACTING">CONTACTING — 已联系</option>
-                  <option value="QUOTED">QUOTED — 已报价</option>
-                  <option value="DEAL">DEAL — 成交</option>
-                  <option value="LOST">LOST — 丢单</option>
+                  {/* 仅展示当前状态与合法流转目标，避免出现后端必然拒绝的选项 */}
+                  {[reply.baseStatus, ...nextStatusesOf(reply.baseStatus)].map((s) => (
+                    <option key={s} value={s}>
+                      {s} — {STATUS_LABEL[s]}{s === reply.baseStatus ? "（当前）" : ""}
+                    </option>
+                  ))}
                 </select>
+                {nextStatusesOf(reply.baseStatus).length === 0 && (
+                  <p className="mt-1 text-xs text-gray-400">该询盘已是终态，不可回退；保存仅更新备注与国家。</p>
+                )}
               </div>
               <div>
                 <label htmlFor="inquiry-reply-country" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">国家 <span className="text-xs text-gray-400 font-normal">（后台手动标记）</span></label>

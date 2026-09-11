@@ -29,6 +29,27 @@ def _resolve_ip(kwargs: dict) -> str | None:
     return "unknown"
 
 
+def _format_resource(resource: str, kwargs: dict) -> str:
+    """用端点参数解析 ``resource`` 模板中的 ``{name}`` 占位符。
+
+    创建类端点没有顶层 ``slug`` 参数（slug 在请求体 ``data`` 中），此前无法解析会退化成
+    字面量 ``product:{slug}``。这里把请求体字段作为补充解析来源；显式入参优先级更高，
+    仍无法解析时保留原始模板，不阻断审计写入。
+    """
+    context = dict(kwargs)
+    data = kwargs.get("data")
+    model_dump = getattr(data, "model_dump", None)
+    if callable(model_dump):
+        try:
+            context = {**model_dump(), **context}
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("审计资源模板解析请求体失败（忽略）：%s", exc)
+    try:
+        return resource.format(**context)
+    except (KeyError, IndexError, ValueError):  # noqa: BLE001
+        return resource
+
+
 def audit(action: str, resource: str):
     """装饰异步函数：执行后写审计日志。失败也记 FAIL。"""
 
@@ -46,13 +67,8 @@ def audit(action: str, resource: str):
                 raise exc
             finally:
                 try:
-                    # 资源描述支持 {name} 占位符，用端点参数格式化（如 role:{code}）；
-                    # 占位符无法解析时保留原始模板字符串，不阻断审计写入。
-                    formatted_resource = resource
-                    try:
-                        formatted_resource = resource.format(**kwargs)
-                    except (KeyError, IndexError, ValueError):  # noqa: BLE001
-                        pass
+                    # 资源描述支持 {name} 占位符，用端点参数与请求体字段格式化（如 product:{slug}）。
+                    formatted_resource = _format_resource(resource, kwargs)
                     from content.models import AuditLog
 
                     await AuditLog.create(

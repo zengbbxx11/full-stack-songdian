@@ -193,11 +193,11 @@ npm run dev → http://localhost:3000
 | 变量 | 用途 | 默认值 |
 |------|------|--------|
 | `NEXT_PUBLIC_API_URL` | FastAPI 后端地址 | `http://localhost:8000` |
-| `NEXT_PUBLIC_ISR_REVALIDATE` | ISR 重新验证间隔（秒） | `60` |
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4 测量 ID；仅用户接受「分析」Cookie 后才加载，未配置则零追踪 | （可选） |
 | `NEXT_PUBLIC_SITE_URL` | 前端站点地址 | `http://localhost:3000` |
-| `NEXT_PUBLIC_SITE_NAME` | 站点名称（SEO） | `Songdian Technology...` |
+| `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认站点描述（SEO） | `Songdian Technology...` |
 | `NEXT_PUBLIC_IMAGE_HOST` | Next.js 图片优化允许的后端主机（不含协议） | `api.zsaki.icu` |
+| `REVALIDATE_SECRET` | 与后端共享的 ISR 按需刷新密钥；校验 `/api/revalidate` | 与后端一致 |
 
 > SMTP 已迁移到 FastAPI 后端和管理后台“系统设置”；frontend 不配置 SMTP 口令。
 > SMTP 主机、端口、口令和询盘收件地址由后端/管理后台“系统设置”维护。未配置时询盘仍保存到 PostgreSQL；frontend 不使用或保存任何 SMTP 配置。

@@ -2,7 +2,7 @@
 
 设计约束（§3.5.1 错误码全量注册表）：
 - A=业务错误（HTTP 200，业务语义失败）/ B=系统错误（HTTP 5xx）/ C=客户端错误（HTTP 4xx）。
-- 模块编码：01=产品 02=新闻 03=搜索 04=询盘 05=内容 06=迁移 99=全局。
+- 模块编码：01=产品 02=新闻 03=搜索 04=询盘 05=内容 06=迁移 07=设置 99=全局。
 - ``register_exception_handlers(app)`` 拦截 ``BizException`` 与校验错误，统一包成 ``Result``。
 """
 from __future__ import annotations
@@ -34,6 +34,9 @@ class ErrorCode:
     A050003 = "A050003"
     A060001 = "A060001"
     A060002 = "A060002"
+    A070001 = "A070001"
+    A070002 = "A070002"
+    A070003 = "A070003"
     B999001 = "B999001"
     C400001 = "C400001"
     C401001 = "C401001"
@@ -56,6 +59,9 @@ _ERROR_REGISTRY: Final[dict] = {
     ErrorCode.A050003: (200, "无权限操作", {"zh-CN": "无权访问该资源", "en-US": "No permission"}),
     ErrorCode.A060001: (200, "迁移批次不存在", {"zh-CN": "批次不存在", "en-US": "Migration batch not found"}),
     ErrorCode.A060002: (200, "迁移校验失败", {"zh-CN": "数据校验未通过", "en-US": "Migration validation failed"}),
+    ErrorCode.A070001: (200, "配置项不存在", {"zh-CN": "配置项不存在", "en-US": "Setting not found"}),
+    ErrorCode.A070002: (200, "SMTP 未配置", {"zh-CN": "SMTP 未配置，请先填写 SMTP 服务器/账号/收件人并保存", "en-US": "SMTP not configured"}),
+    ErrorCode.A070003: (200, "测试邮件发送失败", {"zh-CN": "测试邮件发送失败，请检查 SMTP 配置（授权码/端口/SSL）", "en-US": "Test email sending failed"}),
     ErrorCode.B999001: (500, "系统内部错误", {"zh-CN": "系统繁忙，请稍后再试", "en-US": "System busy, please retry later"}),
     ErrorCode.C400001: (400, "参数校验失败", {"zh-CN": "请求参数错误", "en-US": "Invalid request parameters"}),
     ErrorCode.C401001: (401, "未登录", {"zh-CN": "请先登录", "en-US": "Please login first"}),

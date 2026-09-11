@@ -1,5 +1,32 @@
 import type { NextConfig } from "next";
 
+// 仅本地开发允许图片优化器取 loopback/局域网图片。
+// 生产构建（NODE_ENV=production）恒为 false，避免误把该开关带进生产。
+const allowLocalImageOptimization =
+  process.env.NODE_ENV !== "production" &&
+  process.env.ALLOW_LOCAL_IMAGE_OPTIMIZATION === "true";
+
+// 本地开发最容易踩的坑：NEXT_PUBLIC_API_URL 指向 loopback 后端，却没开
+// ALLOW_LOCAL_IMAGE_OPTIMIZATION。此时图片优化器会拒绝全部后端图片
+// （/_next/image 返回 400 "url" parameter is not allowed），页面只表现为
+// 图片空白，不报错也看不到原因，很容易被误判成「图片丢了」。
+// 这里在开发模式提前给出可操作提示。
+const LOOPBACK_API_RE =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
+
+if (
+  process.env.NODE_ENV !== "production" &&
+  !allowLocalImageOptimization &&
+  LOOPBACK_API_RE.test(process.env.NEXT_PUBLIC_API_URL ?? "")
+) {
+  console.warn(
+    "[next.config] NEXT_PUBLIC_API_URL 指向本地/局域网地址，但 " +
+      "ALLOW_LOCAL_IMAGE_OPTIMIZATION 未开启：官网所有后端图片（/_next/image）" +
+      "都会返回 400 并显示为空白。请在 frontend/.env.local 设置 " +
+      "ALLOW_LOCAL_IMAGE_OPTIMIZATION=true 后重启开发服务器。",
+  );
+}
+
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
@@ -41,7 +68,7 @@ const nextConfig: NextConfig = {
     // 允许优化本机回环地址的图片 —— 仅本地开发需要（图片优化器由服务端取图，
     // 放开本地 IP 会扩大 SSRF 面）。生产部署使用 HTTPS API 域名，必须保持关闭。
     // 本地在 .env.local 中设置 ALLOW_LOCAL_IMAGE_OPTIMIZATION=true 开启。
-    dangerouslyAllowLocalIP: process.env.ALLOW_LOCAL_IMAGE_OPTIMIZATION === "true",
+    dangerouslyAllowLocalIP: allowLocalImageOptimization,
     // 外部图片优化的缓存时长（秒）
     minimumCacheTTL: 3600,
     // 根据实际布局断点优化响应式图片尺寸

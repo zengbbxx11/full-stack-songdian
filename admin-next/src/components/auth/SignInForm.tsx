@@ -30,8 +30,12 @@ export default function SignInForm() {
         body: JSON.stringify({ username, password }),
         credentials: "same-origin",
       });
-      const json = await res.json();
-      if (json.code !== "0") throw new Error(json.msg || "登录失败");
+      // 登录接口不使用 apiFetch：此时尚无会话，401 自动刷新/跳转逻辑不适用。
+      // 但需自行兜底非 JSON 响应，否则后端异常时会抛出难以理解的解析错误。
+      const json = (await res.json().catch(() => null)) as { code?: string; msg?: string } | null;
+      if (!res.ok || !json || json.code !== "0") {
+        throw new Error(json?.msg || "登录失败，请稍后重试");
+      }
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");

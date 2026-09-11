@@ -34,6 +34,8 @@ export async function generateMetadata({
   return {
     title: query ? `Search: ${query}` : "Search",
     description: query ? `Search results for "${query}"` : "Search products and news.",
+    // 显式声明自身的规范 URL，避免继承根布局的首页 canonical
+    alternates: { canonical: "/search" },
     robots: { index: false, follow: true },
   };
 }

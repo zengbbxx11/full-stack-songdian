@@ -76,7 +76,8 @@ test("failed detail loads cannot erase existing notes; retry restores the comple
   failed = false;
   await dialog.getByRole("button", { name: "重试加载" }).click();
   await expect(dialog.getByLabel("备注 / 回复内容")).toHaveValue("Existing note");
-  await expect(dialog.getByLabel("状态", { exact: true })).toHaveValue("QUOTED");
+  // 状态控件已是自绘下拉（SelectField 触发器按钮），当前值暴露在 data-value 而非 input.value。
+  await expect(dialog.getByLabel("状态", { exact: true })).toHaveAttribute("data-value", "QUOTED");
   await expect(dialog.getByRole("button", { name: "保存", exact: true })).toBeEnabled();
   await expect(dialog.getByLabel("备注 / 回复内容")).toHaveAttribute("maxlength", "1000");
 });

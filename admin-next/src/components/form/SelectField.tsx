@@ -59,6 +59,30 @@ function parseOptions(children: React.ReactNode): OptionItem[] {
 
 const MENU_MAX_HEIGHT = 264;
 
+interface MenuPos {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+}
+
+/**
+ * 依据触发器位置计算弹出位置；触发器完全离开视口时返回 null（浮层失去锚点，应关闭）。
+ * 纯函数（模块级），供「打开菜单」与「滚动/resize 后重定位」共用，避免两份逻辑漂移。
+ */
+function menuPosForRect(rect: DOMRect): MenuPos | null {
+  if (rect.bottom <= 0 || rect.top >= window.innerHeight) return null;
+  const spaceBelow = window.innerHeight - rect.bottom - 8;
+  const spaceAbove = rect.top - 8;
+  // 下方空间不足且上方更宽裕时向上弹出。
+  const placeAbove = spaceBelow < Math.min(MENU_MAX_HEIGHT, 160) && spaceAbove > spaceBelow;
+  const maxHeight = Math.max(120, Math.min(MENU_MAX_HEIGHT, placeAbove ? spaceAbove : spaceBelow));
+  return placeAbove
+    ? { left: rect.left, width: rect.width, bottom: window.innerHeight - rect.top + 4, maxHeight }
+    : { left: rect.left, width: rect.width, top: rect.bottom + 4, maxHeight };
+}
+
 /**
  * 统一风格的下拉选择（自绘 listbox）。
  *
@@ -87,13 +111,7 @@ export default function SelectField({
 
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(selectedIndex);
-  const [menuPos, setMenuPos] = React.useState<{
-    left: number;
-    width: number;
-    top?: number;
-    bottom?: number;
-    maxHeight: number;
-  } | null>(null);
+  const [menuPos, setMenuPos] = React.useState<MenuPos | null>(null);
 
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const menuRef = React.useRef<HTMLUListElement>(null);
@@ -109,17 +127,9 @@ export default function SelectField({
   function openMenu(direction?: 1 | -1) {
     const el = buttonRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom - 8;
-    const spaceAbove = rect.top - 8;
-    // 下方空间不足且上方更宽裕时向上弹出。
-    const placeAbove = spaceBelow < Math.min(MENU_MAX_HEIGHT, 160) && spaceAbove > spaceBelow;
-    const maxHeight = Math.max(120, Math.min(MENU_MAX_HEIGHT, placeAbove ? spaceAbove : spaceBelow));
-    setMenuPos(
-      placeAbove
-        ? { left: rect.left, width: rect.width, bottom: window.innerHeight - rect.top + 4, maxHeight }
-        : { left: rect.left, width: rect.width, top: rect.bottom + 4, maxHeight },
-    );
+    const pos = menuPosForRect(el.getBoundingClientRect());
+    if (!pos) return;
+    setMenuPos(pos);
     setHighlight(selectedIndex >= 0 ? selectedIndex : direction === -1 ? Math.max(options.length - 1, 0) : 0);
     setOpen(true);
   }
@@ -184,7 +194,14 @@ export default function SelectField({
     }
   }
 
-  // 打开时：点击外部 / 滚动 / 尺寸变化即关闭，避免浮层与触发器错位。
+  // 打开时的浮层行为：
+  // - 点击触发器/菜单之外 → 关闭；
+  // - 滚动：**选项列表自身的滚动必须忽略**——capture 阶段能收到子元素滚动事件，而列表高度被
+  //   视口压缩（overflow-auto + maxHeight）时，点选靠下的选项需要先滚动列表；原实现把这次
+  //   滚动当成页面滚动直接关闭菜单，选项节点随之卸载（e2e 报 "element was detached"，
+  //   真实用户则表现为"长列表一滚动就消失"）；
+  // - 其它滚动 / resize：按触发器新位置重新定位（浮层 fixed，跟随触发器），而不是关闭；
+  //   仅当触发器完全离开视口（浮层失去锚点）时才关闭。
   React.useEffect(() => {
     if (!open) return;
     function onPointerDown(event: MouseEvent) {
@@ -193,8 +210,30 @@ export default function SelectField({
       if (menuRef.current?.contains(target)) return;
       setOpen(false);
     }
-    function onViewportChange() {
-      setOpen(false);
+    function syncPosition() {
+      const el = buttonRef.current;
+      if (!el) return;
+      const pos = menuPosForRect(el.getBoundingClientRect());
+      if (!pos) {
+        setOpen(false);
+        return;
+      }
+      // 位置未变化时不触发重渲染（滚动事件可能高频触发）。
+      setMenuPos((prev) =>
+        prev &&
+        prev.left === pos.left &&
+        prev.width === pos.width &&
+        prev.top === pos.top &&
+        prev.bottom === pos.bottom &&
+        prev.maxHeight === pos.maxHeight
+          ? prev
+          : pos,
+      );
+    }
+    function onViewportChange(event: Event) {
+      const target = event.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) return;
+      syncPosition();
     }
     document.addEventListener("mousedown", onPointerDown);
     window.addEventListener("scroll", onViewportChange, true);

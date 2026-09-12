@@ -1,10 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { gotoHydrated, waitForHydration } from "./hydration";
 
 const adminBase = process.env.E2E_ADMIN_URL || "http://127.0.0.1:3001";
 const apiBase = process.env.E2E_API_URL || "http://127.0.0.1:8000";
 test.use({ timezoneId: "Asia/Shanghai" });
+
+/**
+ * 打开自绘下拉（admin SelectField：触发器按钮 + Portal listbox）。
+ * 先断言 aria-expanded 再取选项，并把选项限定在对应 listbox 作用域内，
+ * 避免页面上其它下拉的 role=option 相互干扰。
+ */
+async function openListbox(page: Page, trigger: Locator, listboxName: string): Promise<Locator> {
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  return page.getByRole("listbox", { name: listboxName, exact: true });
+}
 
 for (const resource of ["news", "products"] as const) {
   test(`${resource}: create, publish, withdraw, preview, schedule, restore and delete`, async ({ page, request }) => {
@@ -32,16 +43,15 @@ for (const resource of ["news", "products"] as const) {
       await gotoHydrated(page, `${adminBase}/${route}`);
       await page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true }).fill(title);
       await page.getByPlaceholder(isNews ? "文章别名" : "dc105-4k-digital-camera", { exact: true }).fill(slug);
-      // 分类/状态已改为自绘 listbox（非原生 select）：展开后点击选项。
-      const category = page.locator(isNews ? "#news-category" : "#product-category");
-      await category.click();
-      const categoryOptions = page.getByRole("option");
+      // 分类/状态已改为自绘 listbox（非原生 select）：展开后在对应 listbox 内点选项。
+      const category = await openListbox(page, page.locator(isNews ? "#news-category" : "#product-category"), "options");
+      const categoryOptions = category.getByRole("option");
       await expect(categoryOptions).not.toHaveCount(1);
       await categoryOptions.nth(1).click();
       await page.locator("textarea").first().fill("Lifecycle fixture summary");
       await page.locator('[contenteditable="true"]').fill("Lifecycle fixture body");
-      await page.getByLabel("内容状态").click();
-      await page.getByRole("option", { name: "已发布", exact: true }).click();
+      const statusListbox = await openListbox(page, page.getByRole("button", { name: "内容状态", exact: true }), "内容状态 options");
+      await statusListbox.getByRole("option", { name: "已发布", exact: true }).click();
       if (!isNews) {
         await page.locator("#product-seo-title").fill(`SEO ${title}`);
         await page.locator("#product-seo-description").fill("Custom product SEO description");
@@ -100,9 +110,9 @@ for (const resource of ["news", "products"] as const) {
         }
       }
       await page.locator("tr").filter({ hasText: title }).getByRole("link", { name: "编辑", exact: true }).click();
-      await expect(page.getByLabel("内容状态")).toHaveAttribute("data-value", "PUBLISHED");
-      await page.getByLabel("内容状态").click();
-      await page.getByRole("option", { name: "草稿", exact: true }).click();
+      await expect(page.getByRole("button", { name: "内容状态", exact: true })).toHaveAttribute("data-value", "PUBLISHED");
+      const draftListbox = await openListbox(page, page.getByRole("button", { name: "内容状态", exact: true }), "内容状态 options");
+      await draftListbox.getByRole("option", { name: "草稿", exact: true }).click();
       await save.click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
       const row = page.locator("tr").filter({ hasText: title });
@@ -142,8 +152,8 @@ for (const resource of ["news", "products"] as const) {
       await popup.close();
       // Asia/Shanghai 08:30 must be persisted as 00:30 UTC, not as 08:30 UTC.
       const day = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-      await page.getByLabel("内容状态").click();
-      await page.getByRole("option", { name: "定时发布", exact: true }).click();
+      const scheduleListbox = await openListbox(page, page.getByRole("button", { name: "内容状态", exact: true }), "内容状态 options");
+      await scheduleListbox.getByRole("option", { name: "定时发布", exact: true }).click();
       await page.getByLabel("发布时间", { exact: true }).fill(`${day}T08:30`);
       await save.click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
@@ -153,15 +163,21 @@ for (const resource of ["news", "products"] as const) {
       await expect(page.getByRole("button", { name: "恢复", exact: true }).first()).toBeVisible();
       page.once("dialog", dialog => dialog.accept());
       await page.getByRole("button", { name: "恢复", exact: true }).last().click();
-      await expect(page.getByLabel("内容状态")).toHaveAttribute("data-value", "PUBLISHED");
+      await expect(page.getByRole("button", { name: "内容状态", exact: true })).toHaveAttribute("data-value", "PUBLISHED");
       await page.getByRole("button", { name: isNews ? "删除" : "删除产品", exact: true }).click();
       await page.getByRole("dialog").getByRole("button", { name: "删除", exact: true }).click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
       await expect(page.locator("tr").filter({ hasText: title })).toHaveCount(0);
       expect((await (await request.get(`${apiBase}/api/v1/${resource}/${slug}`)).json()).code).not.toBe("0");
     } finally {
-      if (id) await page.request.delete(`${adminBase}/api/v1/admin/${resource}/${id}`);
-      if (categoryId) await page.request.delete(`${adminBase}/api/v1/admin/categories/${categoryId}`);
+      // 清理不参与断言：用例失败后时间预算可能已耗尽，逐条容错，避免再抛一条误导性超时错误。
+      // 分类删除在"仍有未删除内容"时会被后端拒绝（HTTP 200 + code=C400001），同样不视为用例失败。
+      try {
+        if (id) await page.request.delete(`${adminBase}/api/v1/admin/${resource}/${id}`);
+      } catch { /* 清理失败不掩盖原始失败原因 */ }
+      try {
+        if (categoryId) await page.request.delete(`${adminBase}/api/v1/admin/categories/${categoryId}`);
+      } catch { /* 同上 */ }
     }
   });
 }

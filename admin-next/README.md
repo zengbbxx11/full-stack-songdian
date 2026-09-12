@@ -214,3 +214,4 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - **分类删除需先迁移**：分类下仍有内容时 `DELETE` 会被拒绝（`C400001` + 关联数量），后台产品分类页提供「迁移并删除」入口（`POST /admin/categories/{id}/migrate-and-delete`）；新闻分类迁移接口为 `POST /admin/news-categories/{id}/migrate-and-delete`，后端已就绪但后台暂无独立管理页。
 - **相册计数口径**：媒体库侧边栏显示 `GET /admin/albums` 返回的 `total_count`（含全部子相册），`count` 为直系数量；按相册筛选上传记录时后端同样包含子相册，因此“显示的数量”与“点进去的列表条数”必须一致。
 - **审计日志搜索走后端**：`/admin/audit-logs` 的搜索词必须作为 `keyword` 参数传给后端（分页前过滤、返回过滤后 `total`），搜索条件变化时回到第一页；不要在浏览器里过滤当前页。
+- **表单下拉为自绘组件 `components/form/SelectField.tsx`**：触发器按钮 + Portal listbox，视觉与 `InputField` 同源，对外 props 兼容原生 `<select>`。当前值在触发器的 `data-value` 上；选项列表内部滚动不会关闭菜单，页面滚动时菜单跟随触发器重新定位，触发器移出视口才关闭（新增下拉一律用它，不要回退原生 `<select>`）。

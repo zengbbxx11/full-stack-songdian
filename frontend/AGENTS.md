@@ -263,6 +263,22 @@ NODE_OPTIONS= \
 > 交互用例静默全挂。**CI 不受影响**：CI 用 `npm run start`（生产构建）启动，那里 `127.0.0.1` 是正常的，
 > `playwright.config.ts` 的默认 `baseURL` 也保持 `127.0.0.1:3000`。后端 `E2E_API_URL` 两种模式都用 `127.0.0.1`。
 
+### 本地环境对齐（缺失会造成「与代码无关」的环境性失败）
+
+CI 的 `e2e` 作业对后端/官网/后台三个进程注入同一组变量，本地手工跑必须对齐，否则出现假失败：
+
+- **同一 `JWT_SECRET`**：`inquiry-editor` / `admin-settings` 等 mock 型用例用**测试进程**的 `JWT_SECRET`
+  伪造 HttpOnly Cookie，后台 `proxy.ts` 用同一密钥验签。不一致时后台页面被重定向到 `/signin`，
+  表现为「找不到列表行/按钮」（登录态其实没问题）。CI 三个进程共用作业级 `JWT_SECRET`，天然一致。
+- **revalidate 接线**：后端设置 `NEXT_REVALIDATE_URL`（指向官网 `/api/revalidate`）与和官网一致的
+  `REVALIDATE_SECRET`，否则内容变更后官网 ISR 不刷新，`content-lifecycle` 的 metadata / noindex
+  断言会一直读到旧页面（错误形态：Expected 值停留在修改前）。
+- **系统代理机器给后端进程加 `NO_PROXY=localhost,127.0.0.1`**：httpx(trust_env) 会把发往
+  `localhost:3000` 的 revalidate 请求交给系统代理而失败（`backend/common/revalidation.py` 的日志
+  有记录），表现为官网缓存迟迟不刷新。CI 无代理，不受影响。
+
+自绘下拉（SelectField）的交互与断言约定见下方「自绘下拉与 e2e 约定（2026-09-12）」。
+
 ### 交互用例必须等 React 注水（重要约定）
 
 `page.goto()` / `page.reload()` 在 **window load** 就返回。此时 SSR 产出的 DOM 已可读写
@@ -373,6 +389,12 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **分析同意可撤回**：同意状态的唯一来源是 `lib/consent.ts`。撤回时除写 `localStorage` 外必须调用 `syncAnalyticsConsent()`（写入 GA 禁用标记并发送 Consent 拒绝信号）并派发变更事件；`trackEvent()` 必须先读同意状态。组件**不得**只判断 `typeof window.gtag === "function"` 决定是否发送。
 - **产品 URL 规范化在运行时解析**：`proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical`（60 秒短缓存，只缓存后端的明确响应），后端返回 404 时不回退静态映射，避免把已下架产品重定向到旧分类地址。`lib/generated/canonical-map.ts` 仅作后端不可达兜底；搜索接口返回的 `url` 已是规范嵌套地址，禁止在前端重新拼接扁平路径。
 - **列表分页 canonical**：产品与新闻列表页按有效 `page` 生成自身 canonical（保留 `category` 参数、`page=1` 去掉该参数）；非数字或 <1 的页码按首页处理；超出总页数时 canonical 回落首页并输出 `robots: noindex`。新增列表页时不要写死 canonical。
+
+## 自绘下拉与 e2e 约定（2026-09-12）
+
+- 管理后台表单下拉统一用 `admin-next/src/components/form/SelectField`（触发器按钮 + Portal listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。当前值暴露在触发器的 `data-value`，**不是** `input.value`——e2e 断言用 `toHaveAttribute("data-value", ...)`，不要用 `toHaveValue`。
+- 滚动行为：**选项列表内部滚动不会关闭菜单**；页面等外部滚动按触发器新位置重新定位，仅当触发器完全离开视口才关闭。修改该行为必须同步跑 `e2e/content-lifecycle.spec.ts`——曾因「点选项前的列表滚动被当成页面滚动而关闭菜单」导致 CI 里选项 detached 超时。
+- e2e 打开下拉用 `getByRole("button", { name: ... })` 定位触发器（菜单展开后 `aria-label="X options"` 的 listbox 会被 `getByLabel("X")` 子串误命中，造成 strict mode violation）；先断言 `aria-expanded="true"`，再在 `getByRole("listbox", { name: "X options" })` 作用域内点选项。禁止 sleep / force click / 降低断言。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

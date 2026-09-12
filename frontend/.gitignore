@@ -49,3 +49,5 @@ next-env.d.ts
 /public/Video/*
 !/public/Video/SongdianFactoryVideo.mp4
 !/public/Video/factory-poster.webp
+
+test-results.old*/

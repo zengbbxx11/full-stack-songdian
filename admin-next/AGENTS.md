@@ -151,6 +151,7 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **分类删除先迁移**：分类下仍有内容时 `DELETE` 返回 `C400001` 与关联数量；`categories/page.tsx` 提供「迁移并删除」（`POST /admin/categories/{id}/migrate-and-delete`）。新闻分类迁移接口为 `POST /admin/news-categories/{id}/migrate-and-delete`，后台暂无独立管理页。
 - **相册计数用 `total_count`**：媒体库侧边栏展示含全部子相册的合计；按相册筛选记录时后端已包含子相册，显示数量与列表条数必须一致。`count` 仅供需要“直系数”的场景使用。
 - **列表分页**：审计日志按 `keyword` 走服务端过滤并回到第一页；媒体库与列表页的筛选条件变化时同样重置页码。
+- **表单下拉统一用 `SelectField`**（`components/form/SelectField.tsx`，自绘 listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。滚动行为三原则：**选项列表内部滚动不关闭菜单**（点选靠下选项时的列表滚动不得关闭）、页面等外部滚动按触发器新位置**重定位**（位置未变不重渲染）、仅当触发器完全离开视口才**关闭**。当前值暴露在触发器 `data-value`，不是 `input.value`。修改滚动/定位行为必须同步跑 `frontend/e2e/content-lifecycle.spec.ts`——曾因「点选项前的列表滚动被当成页面滚动关闭菜单」导致 CI 里选项 detached 超时。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

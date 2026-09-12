@@ -103,14 +103,13 @@ services:
       # 上传文件数据卷：挂到独立数据目录 uploads_data/（与代码模块 uploads/ 分离，
       # 否则卷会遮住镜像里的 uploads/models.py 等代码 → Module not found）
       - uploads_data:/app/backend/uploads_data
-    # 迁移由 migrate 一次性服务显式执行；这里只同步内置**图片资产目录**并启动 uvicorn。
-    # 注意：uploads/ 目录同时包含 uploads/*.py 等源码模块，绝不能整体复制到公开媒体目录，
-    # 否则源码会通过 /uploads/ 暴露；此处仅复制图片子目录，并清理媒体根目录残留的代码文件。
-    command: >
-      sh -c "mkdir -p uploads_data &&
-      for d in products news 2026; do [ -d uploads/$d ] && cp -rn uploads/$d uploads_data/ || true; done &&
-      find uploads_data -maxdepth 1 -type f \( -name '*.py' -o -name '*.pyc' -o -name '*.pyo' -o -name '*.pyd' -o -name '*.sh' -o -name '*.env' -o -name '*.ini' -o -name '*.toml' -o -name '*.cfg' -o -name '*.sql' -o -name '*.log' -o -name '*.md' \) -delete || true &&
-      exec sh ./scripts/start.sh"
+    # 迁移由 migrate 一次性服务显式执行。启动前的资产准备（同步镜像内置图片目录到媒体卷、
+    # 清理媒体根目录残留的代码文件，防源码经 /uploads/ 暴露）放在 scripts/start.sh 内执行：
+    # compose 的字符串 command 会对 $ 与括号做插值/shlex 处理，`$$d`、`\( \)` 这类转义
+    # 在「compose 插值 → 外层 /bin/sh -c → 内层 dash」的多层传递中容易被吞掉，
+    # 曾导致生产容器 `sh: 1: Syntax error: "(" unexpected` 启动失败。
+    # 使用脚本文件后只受一层 shell 解析，且可本地 `sh -n` 校验。
+    command: sh ./scripts/start.sh
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/readyz'); sys.exit(0)"]
       interval: 30s

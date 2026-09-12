@@ -462,7 +462,7 @@ curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/users/list"
 | 5 | frontend | 依赖 backend `/readyz` 探活 → `next start -p 3000` |
 | 6 | admin-next | 依赖 backend `/readyz` 探活 → `next start -p 3001` |
 
-**关键：aerich upgrade 独立执行**——发布脚本先备份，再通过 `docker compose --profile tools run --rm migrate` 运行迁移；只有迁移成功才切换应用镜像。backend 启动时只同步内置**图片**资源（`uploads/products|news|2026`）并清理媒体目录中残留的代码文件，然后启动 Uvicorn。不要删除 `pg_data` 或重置 schema。
+**关键：aerich upgrade 独立执行**——发布脚本先备份，再通过 `docker compose --profile tools run --rm migrate` 运行迁移；只有迁移成功才切换应用镜像。backend 启动时由 `scripts/start.sh` 同步内置**图片**资源（`uploads/products|news|2026`）并清理媒体目录中残留的代码文件，然后启动 Uvicorn。不要删除 `pg_data` 或重置 schema。
 
 ---
 
@@ -775,7 +775,7 @@ curl -I https://admin.zsaki.icu/signin
 | PG 版本 | 锁定 **18 线**（`postgres:18-bookworm`，官方镜像、无 zhparser） |
 | ⚠️ **PG18 卷挂载点** | 卷必须挂 `/var/lib/postgresql`（内部按 major 版本分子目录）。挂旧路径 `/var/lib/postgresql/data` 会报「18+ images require...」启动失败（postgres:18 镜像新约定） |
 | ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
-| 图片自动同步 | backend 启动命令**只**把 `uploads/products`、`uploads/news`、`uploads/2026` 图片目录 `cp -rn` 到 `uploads_data/`（`-n` 不覆盖运营上传文件，幂等），再清理媒体根目录残留的 `.py` / `.env` / `.sh` 等代码与配置文件；git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷。⚠️ **不得改回整体复制 `uploads/.`**——`uploads/` 同时是代码模块目录，整体复制会把 `models.py` 等源码暴露到公开的 `/uploads/` 路径 |
+| 图片自动同步 | backend 启动脚本 `scripts/start.sh` **只**把 `uploads/products`、`uploads/news`、`uploads/2026` 图片目录 `cp -rn` 到 `uploads_data/`（`-n` 不覆盖运营上传文件，幂等），再清理媒体根目录残留的 `.py` / `.env` / `.sh` 等代码与配置文件；git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷。⚠️ 同步逻辑必须放在脚本文件内，**不要写进 compose 的字符串 command**——compose 对 `$` 与括号做插值/shlex 处理，转义在多层 shell 传递中会被吞掉（曾导致容器 `sh: 1: Syntax error: "(" unexpected`）；也**不得改回整体复制 `uploads/.`**——`uploads/` 同时是代码模块目录，整体复制会把 `models.py` 等源码暴露到公开的 `/uploads/` 路径 |
 | 媒体目录后缀防线 | 即使媒体卷中残留在代码文件，`backend/main.py` 的 `_MediaStaticFiles` 也会对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404，避免源码经 `/uploads/` 被下载 |
 | 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env） |
 | 图片域名 | `frontend/next.config.ts` 生产环境默认仅允许 `api.zsaki.icu` 的 HTTPS 上传资源；API 域名变更时需同步修改并重建 |

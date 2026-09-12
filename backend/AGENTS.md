@@ -165,6 +165,6 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 产品规范路径由 `GET /products/{slug}/canonical` 提供（仅未删除且已发布的产品），分类以产品当前归属为准；不要在别处重建静态映射作为唯一事实源。
 - 删除分类前必须检查未删除的关联内容，存在则拒绝并返回数量（`C400001`，`data.conflict=true`）；跨分类迁移与删除必须在同一事务内完成。
 - 媒体引用统计必须覆盖产品和新闻正文（`content_html`），URL 比较统一走 `_normalize_media_url`，避免仅正文引用的图片被误删。
-- 媒体静态目录必须保持后缀黑名单（`_MediaStaticFiles`），并保持 compose 只同步 `uploads/*` 的图片子目录——禁止整体复制 `uploads/`（该目录含源码模块）。
+- 媒体静态目录必须保持后缀黑名单（`_MediaStaticFiles`），并保持 `backend/scripts/start.sh` 只同步 `uploads/*` 的图片子目录——禁止整体复制 `uploads/`（该目录含源码模块），也禁止把这类同步逻辑写进 compose 的字符串 command（`$` 与括号转义会被 compose/shlex 吞掉，曾导致容器启动失败）。
 - 内容详情缓存的回填必须经过 `common/cache_version.py` 的版本校验；新增读回填路径时不要绕过 `get_content_version`。
 - 审计日志关键字过滤必须在分页前于数据库完成，并返回过滤后的 `total`。

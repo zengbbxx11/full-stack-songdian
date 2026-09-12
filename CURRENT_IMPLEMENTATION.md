@@ -112,7 +112,7 @@
 ## 一致性与运维修复（2026-09-12）
 
 - 产品 URL 规范化改为运行时数据驱动：`frontend/proxy.ts` 调 `GET /api/v1/products/{slug}/canonical` 取当前分类后 308；改分类即时生效，仅当后端以业务码 `A010001`（未发布/不存在）明确响应时才不回退旧映射（否则会把已下架产品重定向到旧分类地址）。后端不可达、或后端尚未提供该接口（未知路由返回 `C404001`）时仍走构建期 `lib/generated/canonical-map.ts` 兜底，避免灰度/回滚期间旧扁平地址断链；生成脚本按 `page_size=50` 翻页取全量（后端单页上限 50）。
-- 媒体静态目录纵深防御：Compose 启动只把 `uploads/products|news|2026` 图片目录同步进 `uploads_data`，并清理媒体根目录残留的 `.py` / `.env` 等代码与配置文件；`main.py` 的 `_MediaStaticFiles` 对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404。
+- 媒体静态目录纵深防御：backend 容器启动脚本 `scripts/start.sh` 在 uvicorn 之前把 `uploads/products|news|2026` 图片目录同步进 `uploads_data`，并清理媒体根目录残留的 `.py` / `.env` 等代码与配置文件（同步逻辑放在脚本文件内而非 compose 字符串 command——compose 对 `$` 与括号做插值/shlex 处理会吞掉转义，曾导致生产容器 `sh: 1: Syntax error: "(" unexpected`）；`main.py` 的 `_MediaStaticFiles` 对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404。
 - 分类删除一致性：存在未删除关联内容时拒绝删除并返回关联数量（`C400001`，`data.conflict=true`）；另提供 `POST /admin/categories/{id}/migrate-and-delete` 与 `POST /admin/news-categories/{id}/migrate-and-delete`，在同一事务内迁移内容后软删分类。后台产品分类页提供「迁移并删除」入口；新闻分类迁移接口已就绪，后台暂无独立管理页。
 - 内容缓存加入版本号（`common/cache_version.py`）：读详情前取「资源级 + slug 级」版本快照，回填缓存前复读校验，版本变化即放弃回填；写入递增 slug 级版本，分类等批次变更递增资源级版本。Redis 不可用时静默退化为无版本校验，纯 Redis 实现，无数据库迁移。
 - 封面上传纳入保存忙碌态：产品/新闻表单上传期间禁用保存按钮与表单字段，并用递增请求序号保证连续选择时只接受最后一次上传结果。

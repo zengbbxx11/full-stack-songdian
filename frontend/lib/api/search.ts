@@ -60,7 +60,13 @@ export async function search(
     title: normalizePublicText(it.title),
     summary: normalizePublicSummary(it.summary),
     slug: it.slug,
-    url: it.kind === "product" ? `/products/${it.slug}` : `/news/${it.slug}`,
+    // 后端已返回规范 URL（产品为 /products/{category}/{slug}）；异常缺省时回退本地拼接。
+    url:
+      typeof it.url === "string" && it.url.startsWith("/")
+        ? it.url
+        : it.kind === "product"
+          ? `/products/${it.slug}`
+          : `/news/${it.slug}`,
     rank: it.rank,
     coverImage: toAbsoluteUrl(it.cover_image),
     sku: it.sku ?? null,

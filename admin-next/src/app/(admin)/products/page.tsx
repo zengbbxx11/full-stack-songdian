@@ -9,6 +9,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import SelectField from "@/components/form/SelectField";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, apiFetchAllPages, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
 import { settleBatch } from "@/lib/batch";
@@ -204,11 +205,25 @@ export default function ProductsPage() {
 
       {/* 筛选栏 */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <input type="text" value={keyword} disabled={busy || dirty} onChange={e => { resetListDraft(); setKeyword(e.target.value); }} placeholder="搜索产品..." className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 dark:bg-gray-800 dark:border-gray-700" />
-        <select value={categoryId} disabled={busy || dirty} onChange={e => { resetListDraft(); setCategoryId(e.target.value); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+        <input
+          type="text"
+          value={keyword}
+          disabled={busy || dirty}
+          onChange={e => { resetListDraft(); setKeyword(e.target.value); }}
+          placeholder="搜索产品..."
+          className="h-9 w-64 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+        />
+        <SelectField
+          selectSize="sm"
+          className="w-44"
+          aria-label="按分类筛选"
+          value={categoryId}
+          disabled={busy || dirty}
+          onChange={e => { resetListDraft(); setCategoryId(e.target.value); }}
+        >
           <option value="">全部分类</option>
           {categories.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
-        </select>
+        </SelectField>
         <button disabled={busy || dirty} onClick={() => { resetListDraft(); setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ 清除筛选</button>
       </div>
 

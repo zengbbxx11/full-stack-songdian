@@ -7,10 +7,12 @@
 "use client";
 // 后台预览使用运行时上传地址；保留原生 img，避免把任意媒体源交给图片优化代理。
 /* eslint-disable @next/next/no-img-element */
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import DateTimeField from "@/components/form/DateTimeField";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import SelectField from "@/components/form/SelectField";
 import Button from "@/components/ui/button/Button";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import RichTextEditor from "@/components/form/RichTextEditor";
@@ -42,6 +44,9 @@ function NewsFormInner() {
   const isEdit = !!id;
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverUploadSeq = useRef(0);
   const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "", category_id: "" });
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [categoryError, setCategoryError] = useState("");
@@ -88,16 +93,26 @@ function NewsFormInner() {
     return result.url;
   }
 
+  // 上传封面图：纳入忙碌态 + 请求序号，旧请求不会覆盖新选择，上传期间禁止保存。
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    try { const url = await uploadImage(file, form.slug); setForm(prev => ({ ...prev, cover_image: url })); }
-    catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
+    const file = e.target.files?.[0];
     e.target.value = "";
+    if (!file) return;
+    const seq = ++coverUploadSeq.current;
+    setCoverUploading(true);
+    try {
+      const url = await uploadImage(file, form.slug);
+      if (seq === coverUploadSeq.current) setForm(prev => ({ ...prev, cover_image: url }));
+    } catch (err) {
+      if (seq === coverUploadSeq.current) showError(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      if (seq === coverUploadSeq.current) setCoverUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (saving || (id && loadedKey !== id + ":" + reloadKey)) return;
+    if (saving || coverUploading || (id && loadedKey !== id + ":" + reloadKey)) return;
     setSaving(true);
     try {
       // 如果未填写发布时间则从请求体中移除，避免空字符串导致后端 Pydantic 校验失败
@@ -134,20 +149,24 @@ function NewsFormInner() {
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">{isEdit ? "编辑新闻" : "新建文章"}</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
-        <fieldset disabled={saving || deleting} className="space-y-6">
+        <fieldset disabled={saving || deleting || coverUploading} className="space-y-6">
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">文章信息</h3>
           {categoryError && <p role="alert" className="text-red-600">{categoryError}</p>}
-          <div><Label htmlFor="news-category">分类 *</Label><select id="news-category" required value={form.category_id} onChange={e => setForm(prev => ({ ...prev, category_id: e.target.value }))} className="h-11 w-full rounded-lg border border-gray-300 px-3 dark:bg-gray-900 dark:border-gray-700">
-            <option value="">请选择分类</option>
-            {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select></div>
+          <div><Label htmlFor="news-category">分类 *</Label>
+            <SelectField id="news-category" required value={form.category_id} onChange={e => setForm(prev => ({ ...prev, category_id: e.target.value }))}>
+              <option value="">请选择分类</option>
+              {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </SelectField>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div><Label>标题 *</Label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="文章标题" /></div>
             <div><Label>别名 *</Label><Input value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} placeholder="文章别名" /></div>
             <div><Label>作者</Label><Input value={form.author} onChange={e => setForm({...form, author: e.target.value})} placeholder="作者名称" /></div>
-            <div><Label>状态</Label><select aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"><option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option></select></div>
-            <div><Label htmlFor="publication-time">发布时间</Label><Input id="publication-time" type="datetime-local" step={1} value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
+            <div><Label>状态</Label>
+              <SelectField aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})}><option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option></SelectField>
+            </div>
+            <div><Label htmlFor="publication-time">发布时间</Label><DateTimeField id="publication-time" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
           <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入文章内容..." /></div>
@@ -167,7 +186,10 @@ function NewsFormInner() {
             {form.cover_image ? <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-20 object-cover rounded-lg border" alt="Cover" /> : <div className="w-32 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>}
             <div className="flex-1 space-y-3">
               <Input value={form.cover_image} onChange={e => setForm({...form, cover_image: e.target.value})} placeholder="/uploads/news/x/cover.webp" />
-              <label className="inline-flex items-center px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">上传图片<input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" /></label>
+              <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 ${coverUploading ? "opacity-50 pointer-events-none" : ""}`}>
+                {coverUploading ? "上传中..." : "上传图片"}
+                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" disabled={coverUploading} />
+              </label>
             </div>
           </div>
         </div>
@@ -178,7 +200,7 @@ function NewsFormInner() {
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除"}</Button>}</div>
           <div className="flex gap-3">
             <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
-            <Button type="submit" disabled={saving}>{saving ? "保存中..." : "保存"}</Button>
+            <Button type="submit" disabled={saving || coverUploading}>{saving ? "保存中..." : coverUploading ? "封面上传中..." : "保存"}</Button>
           </div>
         </div>
         </fieldset>

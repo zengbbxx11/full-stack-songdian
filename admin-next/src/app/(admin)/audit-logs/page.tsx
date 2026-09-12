@@ -4,7 +4,7 @@
  * 数据源：GET /api/v1/admin/audit-logs（分页 + RBAC 保护）。
  */
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import useSWR from "swr";
 import { swrFetcher } from "@/lib/api-client";
 import type { Paginated } from "@/types";
@@ -30,13 +30,25 @@ const ACTION_LABELS: Record<string, string> = {
 export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("");
+  // 防抖后的关键字：与页码一起拼进请求，检索交由后端在分页前完成（覆盖全部记录）。
+  const [keyword, setKeyword] = useState("");
 
-  const key = `/admin/audit-logs?page=${page}&page_size=50`;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setKeyword(filter.trim());
+      // 搜索条件变化时回到第 1 页，避免停留在越界页导致"无匹配"。
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filter]);
+
+  const key = `/admin/audit-logs?page=${page}&page_size=50${
+    keyword ? `&keyword=${encodeURIComponent(keyword)}` : ""
+  }`;
   const { data, isLoading } = useSWR<Paginated<AuditLog>>(key, swrFetcher);
 
   const items = data?.list ?? [];
   const total = data?.total ?? 0;
-  const filtered = filter ? items.filter(i => i.action.includes(filter) || i.username.includes(filter) || i.resource.includes(filter)) : items;
 
   function formatTime(t: string) {
     return new Date(t).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -74,10 +86,10 @@ export default function AuditLogsPage() {
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}><td colSpan={6} className="px-4 py-3"><div className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" style={{ width: "60%" }} /></td></tr>
               ))
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{filter ? "无匹配记录" : "暂无操作记录"}</td></tr>
+            ) : items.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{keyword ? "无匹配记录" : "暂无操作记录"}</td></tr>
             ) : (
-              filtered.map(log => (
+              items.map(log => (
                 <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatTime(log.created_time)}</td>
                   <td className="px-4 py-3 font-medium text-gray-800 dark:text-white/90 text-xs">{log.username}</td>

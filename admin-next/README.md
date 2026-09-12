@@ -21,7 +21,7 @@
 | 样式 | Tailwind CSS v4 + 暗色模式 |
 | 后端 | 项目 FastAPI 后端（`../backend/`，端口 8000） |
 | 认证 | Cookie-only JWT：HttpOnly `access_token` / `refresh_token`，浏览器 JavaScript 不读取令牌 |
-| 路由守卫 | Next.js `proxy.ts`（Edge Runtime 校验 `access_token` 签名） |
+| 路由守卫 | Next.js `proxy.ts`（Edge Runtime 校验 `access_token` 签名；失效时用 `refresh_token` 静默续期后放行原页面） |
 | 数据获取 | SWR (v2) + 全局 `SWRProvider`，`swrFetcher` 封装 `apiFetch` |
 | 图标 | 内联 SVG 组件（`src/icons/generated.tsx`） |
 
@@ -102,7 +102,7 @@ admin-next/
 │   │   ├── ThemeContext.tsx       # 暗色模式
 │   │   └── SWRProvider.tsx        # SWR 全局配置（注入 fetcher + 关闭聚焦重校）
 │   ├── icons/                    # SVG 图标
-│   └── proxy.ts             # 路由守卫（token 校验 + 未登录重定向）
+│   └── proxy.ts             # 路由守卫（token 校验 + refresh 静默续期 + 未登录重定向）
 └── public/images/                # 静态资源
 ```
 
@@ -116,14 +116,14 @@ admin-next/
 | Dashboard | 四大统计卡片（产品/新闻/分类/询盘数量） |
 | 产品管理 | 搜索/分类筛选、拖拽排序、新增/编辑/删除，**富文本编辑器**编辑产品详情 |
 | 新闻管理 | 拖拽排序、新增/编辑/删除，**富文本编辑器**编辑内容，**发布时间编辑** |
-| 分类管理 | 查看分类及产品计数 |
+| 分类管理 | 查看分类及产品计数；分类下仍有内容时删除会被拒绝，可改用「迁移并删除」把内容转到目标分类后再删除 |
 | 内容发布工作流 | DRAFT / SCHEDULED / PUBLISHED、发布时间校验、到期发布、版本历史、恢复和 15 分钟签名预览 |
 | 询盘 CRM | 查看来源/UTM 归因，更新状态、分配负责人、记录跟进时间和跟进备注 |
 | 通知中心 | 30 秒轮询新询盘、超时未跟进和 SMTP 失败通知，支持逐条或全部标记已读 |
-| 媒体管理 | 图片上传、Products/News 子相册归档、查看引用位置、删除风险提示、复制 URL |
+| 媒体管理 | 图片上传、Products/News 子相册归档（侧边栏显示含子相册的合计数量）、查看引用位置、删除风险提示、复制 URL |
 | 用户管理 | 用户列表、创建、删除和重置密码 |
 | 系统设置 | 站点设置和询盘 SMTP 配置，支持普通字段回显、敏感授权码脱敏和测试发送 |
-| 审计日志 | 查看管理员操作记录 |
+| 审计日志 | 查看管理员操作记录；搜索条件提交到后端，在分页前按用户/操作/资源过滤并返回过滤后总数 |
 | 账号设置 | 修改用户名、修改密码 |
 | 暗色模式 | 全局切换 |
 
@@ -155,7 +155,7 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 不读取或保存 JWT 到 `localStorage`；浏览器同源请求自动携带 HttpOnly Cookie。
 - **数据获取统一用 SWR + 共享 api-client**：根布局已用 `SWRProvider` 注入全局 `fetcher`（`swrFetcher`，复用 `apiFetch` 鉴权 + 信封解包）。所有列表页（products / news / categories / inquiries / media）均已迁移为 `useSWR(path)` 拉取，本地派生用 `useMemo`，变更后 `mutate()` 重校（不再手写 `useEffect+setState` 样板）。共享类型集中在 `src/types/index.ts`。
 - 媒体库（`/media`）已改为 API 驱动：通过 `GET /api/v1/admin/upload/records` 分页获取上传记录，上传仍走 `POST /api/v1/admin/upload`。
-- 媒体库每条素材支持“查看使用情况”：调用 `GET /api/v1/admin/upload/{id}/usage`，展示产品图库、产品封面和新闻封面的引用数量与名称，并可跳转到对应编辑页；引用信息按素材缓存，删除前仍由后端执行引用保护。
+- 媒体库每条素材支持“查看使用情况”：调用 `GET /api/v1/admin/upload/{id}/usage`，展示产品图库、产品封面、新闻封面，以及产品和新闻正文中引用图片的引用数量与名称（正文引用类型为 `product_content` / `news_content`），并可跳转到对应编辑页；引用信息按素材缓存，删除前仍由后端执行引用保护。
 - 产品/新闻编辑页上传封面或图库图片时，会通过 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入 `Products / {slug}` 或 `News / {slug}` 子相册。没有 slug 时进入“未分类”；相册只是管理归属，不会改写返回的媒体 URL。
 - 媒体库的“同步引用图片”用于补齐历史内容中尚未建立 `UploadRecord` 的引用，“自动归类”用于按已有媒体 URL 路径整理未分类素材；两者都不会移动物理文件。
 - 底层统一请求入口 `lib/api-client.ts` 的 `apiFetch<T>(path, options: ApiFetchOptions)`：统一请求同源 `/api/v1`、解包 `{code,data}` 信封、`body` 支持普通对象（自动 `JSON.stringify`）；401 时只调用一次刷新接口并重试一次。一次性调用才直接 `fetch`。
@@ -192,8 +192,9 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 
 - 认证始终为 Cookie-only：登录/刷新响应体不包含 JWT，客户端不读取或持久化访问令牌。
 - `resolveMediaUrl()` 对 `/uploads/...` 保持同源，Next.js rewrite 再根据 `BACKEND_PROXY_URL` 转发；外部绝对 URL 原样使用。组件不得拼接 `NEXT_PUBLIC_API_URL` 或 `localhost:8000`。
-- 媒体列表中的“查看使用情况”是显式点击动作，引用明细来自后端 `/admin/upload/{id}/usage`；“使用中”标签显示引用数量，“未使用”状态仅表示当前未匹配产品/新闻封面或图库引用。
+- 媒体列表中的“查看使用情况”是显式点击动作，引用明细来自后端 `/admin/upload/{id}/usage`；“使用中”标签显示引用数量，“未使用”表示当前未匹配产品/新闻的封面、图库**或正文**引用。
 - 产品/新闻封面上传提示会实时显示目标子相册；产品使用 `Products / 产品 slug`，新闻使用 `News / 新闻 slug`。上传接口仍按年份/UUID 保存物理文件，子相册是 `UploadRecord.album_id` 的逻辑组织。
+- 封面上传纳入保存忙碌态：上传期间保存按钮与表单字段禁用，并用递增请求序号保证**连续选择图片时只接受最后一次**上传结果，避免“保存成功却没换图”。
 - 产品、新闻列表展示当前状态和计划发布时间；编辑页的 `ContentWorkflowPanel` 负责状态选择、时间校验、版本查看/恢复与预览入口。
 - 草稿预览会打开官网 `/preview/[token]`，令牌短期有效且不可用于正式公开 URL；恢复历史版本后应刷新编辑数据与版本列表。
 - 本地启动端口应使用 `npm run dev -- -p 3001`；若脚本未透传参数，可用 `npx next dev -p 3001`。`npm run dev -- -p 3001` 不应被写成 `npm run dev -- 3001`，后者会被 Next.js 解释为项目目录。
@@ -204,3 +205,12 @@ Next.js 通过 `next.config.ts` 中的 `rewrites()` 将请求代理到后端：
 - 删除或未设置内容封面时，官网会显式回退到 1200×630 的默认品牌图，不会输出空的 Twitter 图片数组。
 - 修改封面、产品 SEO 字段、新闻标题或摘要后，后端会清理内容缓存并触发官网 ISR revalidation；社交 metadata 随详情页重新生成。
 - 社交平台可能继续显示自己的历史抓取缓存。官网更新成功后如仍看到旧图，应使用相应平台的重新抓取工具，不要反复上传重复媒体。
+
+## 会话、表单与列表约定（2026-09-12）
+
+- **入口静默续期**：`src/proxy.ts` 在 `access_token` 失效时直接用 `refresh_token` 调后端 `/api/v1/admin/refresh`，把响应中的 `Set-Cookie` 写回并放行到原目标页面（同一 refresh 会话并发去重，避免单次使用令牌被并发消耗）。只有 refresh 真正失效或后端不可达才跳 `/signin?expired=1`。不要改成“缺少 access 就直接重定向登录页”。
+- **登录表单必须显式 POST**：`components/auth/SignInForm.tsx` 的 `<form>` 保持 `method="post" action="/signin"`，保证脚本未接管时原生提交也不会把用户名/口令写进 URL。
+- **封面上传阻塞保存**：产品/新闻表单以 `coverUploading` + 递增 `useRef` 序号管理封面上传；上传期间禁用保存与字段，旧响应不得覆盖新选择。
+- **分类删除需先迁移**：分类下仍有内容时 `DELETE` 会被拒绝（`C400001` + 关联数量），后台产品分类页提供「迁移并删除」入口（`POST /admin/categories/{id}/migrate-and-delete`）；新闻分类迁移接口为 `POST /admin/news-categories/{id}/migrate-and-delete`，后端已就绪但后台暂无独立管理页。
+- **相册计数口径**：媒体库侧边栏显示 `GET /admin/albums` 返回的 `total_count`（含全部子相册），`count` 为直系数量；按相册筛选上传记录时后端同样包含子相册，因此“显示的数量”与“点进去的列表条数”必须一致。
+- **审计日志搜索走后端**：`/admin/audit-logs` 的搜索词必须作为 `keyword` 参数传给后端（分页前过滤、返回过滤后 `total`），搜索条件变化时回到第一页；不要在浏览器里过滤当前页。

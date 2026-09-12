@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -129,8 +129,28 @@ app.include_router(settings_router)   # /api/v1/admin/settings（系统设置）
 app.include_router(preview_router)    # /api/v1/preview/{token}（短期签名草稿预览）
 
 # ── 静态文件服务：让前端能通过 /uploads/xxx.jpg 访问后端存的产品/新闻图片 ──
+class _MediaStaticFiles(StaticFiles):
+    """媒体静态目录：拒绝公开任何代码 / 配置 / 文档文件，防止源码经 /uploads/ 泄露。
+
+    纵深防御：即便持久化媒体卷中因历史原因残留了 .py/.env 等文件（或部署脚本误复制），
+    此处的后缀黑名单也会让它们返回 404，而不会作为静态资源被下载。
+    """
+
+    _BLOCKED_SUFFIXES = (
+        ".py", ".pyc", ".pyo", ".pyd", ".sh", ".env", ".ini",
+        ".toml", ".cfg", ".sql", ".log", ".md", ".lock",
+        # 浏览器可能按内容嗅探执行的类型（历史残留文件兜底）。
+        ".html", ".htm", ".svg", ".js", ".mjs", ".css", ".xml", ".map",
+    )
+
+    async def get_response(self, path: str, scope):  # type: ignore[override]
+        if path.lower().endswith(self._BLOCKED_SUFFIXES):
+            raise HTTPException(status_code=404)
+        return await super().get_response(path, scope)
+
+
 MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
-app.mount(settings.media_url, StaticFiles(directory=str(MEDIA_ROOT)), name="uploads")
+app.mount(settings.media_url, _MediaStaticFiles(directory=str(MEDIA_ROOT)), name="uploads")
 
 
 async def _database_is_ready() -> bool:

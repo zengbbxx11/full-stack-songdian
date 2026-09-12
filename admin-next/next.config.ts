@@ -12,6 +12,10 @@ const backendProxyUrl =
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
+  // 本地开发允许经 127.0.0.1 / localhost 访问：Next 15.2+ 会把与 dev server
+  // 自身主机名不一致的来源判为跨源并拦掉 HMR WebSocket(/\_next/hmr)，导致页面
+  // 无法完成注水——表现为下拉框/按钮点击无反应（随访问主机不同而时好时坏）。
+  allowedDevOrigins: ["localhost", "127.0.0.1", "localhost:3001", "127.0.0.1:3001"],
   // 锁定本子项目根目录，避免上级 lockfile 被 Turbopack 误判为 workspace 根。
   turbopack: { root: __dirname },
   async rewrites() {

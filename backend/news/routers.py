@@ -18,6 +18,7 @@ from content_revision.services import create_preview_token
 from news import services
 from news.schemas import (
     NewsCategoryCreate,
+    NewsCategoryMigrateRequest,
     NewsCategoryReorderReq,
     NewsCategoryUpdate,
     NewsCreateRequest,
@@ -200,3 +201,17 @@ async def delete_news_category(
 ) -> Result:
     await services.delete_news_category(news_category_id, operator=current_user.username)
     return Result.ok(msg="已删除")
+
+
+@router.post("/admin/news-categories/{news_category_id}/migrate-and-delete", summary="迁移新闻后删除分类")
+@audit(action="news.category.migrate_delete", resource="news:category:{news_category_id}")
+async def migrate_and_delete_news_category(
+    news_category_id: int,
+    data: NewsCategoryMigrateRequest,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("news:category:delete")),
+) -> Result:
+    result = await services.migrate_and_delete_news_category(
+        news_category_id, data.target_category_id, operator=current_user.username
+    )
+    return Result.ok(result)

@@ -40,6 +40,8 @@ class SearchItemVO(BaseModel):
     summary: str
     slug: str
     url: str
+    # 产品所属分类 slug（新闻为 None）；用于生成规范嵌套 URL。
+    category_slug: str | None = None
     rank: float = 0.0
     cover_image: str | None = None
     created_time: datetime | None = None

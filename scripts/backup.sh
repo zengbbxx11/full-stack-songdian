@@ -18,7 +18,14 @@ COMPOSE_PROJECT="songdian-b2b"
 # ── 初始化 ──────────────────────────────────────────────────────────────
 mkdir -p "$BACKUP_DIR"
 LOG_FILE="$BACKUP_DIR/backup.log"
-DATE=$(date +%Y%m%d)
+# 唯一批次号：日期_时刻[_发布号]。数据库与媒体备份共用同一批次，避免同日多次部署
+# 用 mv 覆盖同名文件而丢失较早的恢复点（例如当天迁移/误操作前的重要备份）。
+STAMP="$(date +%Y%m%d_%H%M%S)"
+if [ -n "${RELEASE_ID:-}" ]; then
+    # 清理发布号中的非文件名安全字符，避免路径异常。
+    SAFE_RELEASE_ID="$(printf '%s' "$RELEASE_ID" | tr -c 'A-Za-z0-9._-' '_')"
+    STAMP="${STAMP}_${SAFE_RELEASE_ID}"
+fi
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 log() { echo "[$TIMESTAMP] $*" | tee -a "$LOG_FILE"; }
@@ -47,8 +54,8 @@ log "========== 备份开始 =========="
 # ────────────────────────────────────────────────────────────────────────
 # 1. PostgreSQL 全量备份（pg_dump + gzip）
 # ────────────────────────────────────────────────────────────────────────
-PG_FILE="$BACKUP_DIR/db_${DATE}.sql.gz"
-PG_TMP=$(mktemp "$BACKUP_DIR/.db_${DATE}.XXXXXX")
+PG_FILE="$BACKUP_DIR/db_${STAMP}.sql.gz"
+PG_TMP=$(mktemp "$BACKUP_DIR/.db_${STAMP}.XXXXXX")
 
 log "→ PostgreSQL 备份：$PG_FILE"
 if docker compose exec -T postgres pg_dump -U "$PG_USER" -d "$PG_DB" 2>/tmp/pg_dump_err.log | gzip > "$PG_TMP" && gzip -t "$PG_TMP"; then
@@ -65,8 +72,8 @@ fi
 # ────────────────────────────────────────────────────────────────────────
 # 2. 上传文件备份（挂载 uploads_data 卷 → tar.gz）
 # ────────────────────────────────────────────────────────────────────────
-UPLOADS_FILE="$BACKUP_DIR/uploads_${DATE}.tar.gz"
-UPLOADS_TMP=$(mktemp "$BACKUP_DIR/.uploads_${DATE}.XXXXXX")
+UPLOADS_FILE="$BACKUP_DIR/uploads_${STAMP}.tar.gz"
+UPLOADS_TMP=$(mktemp "$BACKUP_DIR/.uploads_${STAMP}.XXXXXX")
 
 log "→ uploads 备份：$UPLOADS_FILE"
 if docker run --rm \
@@ -88,15 +95,19 @@ fi
 # ────────────────────────────────────────────────────────────────────────
 log "→ 清理过期备份（${RETENTION_DAYS} 天前，保留每月 1 号）"
 
-# 数据库备份清理
+# 数据库备份清理（文件名形如 db_YYYYmmdd[_HHMMSS][_批次].sql.gz；每月 1 号长期保留）
+# ⚠️ 模式必须是 6 个 ? + "01"：? 只吃 YYYYMM 六位，后两位留给"01"（=每月 1 号）。
+# 写成 8 个 ? 会匹配不上任何真实文件名，导致每月 1 号的备份也被当作过期删除。
 find "$BACKUP_DIR" -name "db_*.sql.gz" -mtime "+${RETENTION_DAYS}" \
+    ! -name "db_??????01_*.sql.gz" \
     ! -name "db_??????01.sql.gz" \
     -print -delete 2>/dev/null | while read -r f; do
     log "  - 删除过期：$(basename "$f")"
 done
 
-# uploads 备份清理
+# uploads 备份清理（文件名形如 uploads_YYYYmmdd[_HHMMSS][_批次].tar.gz；每月 1 号长期保留）
 find "$BACKUP_DIR" -name "uploads_*.tar.gz" -mtime "+${RETENTION_DAYS}" \
+    ! -name "uploads_??????01_*.tar.gz" \
     ! -name "uploads_??????01.tar.gz" \
     -print -delete 2>/dev/null | while read -r f; do
     log "  - 删除过期：$(basename "$f")"

@@ -75,7 +75,7 @@ npm run dev → http://localhost:3000
 |------|---------|------|
 | `/` | FastAPI + content-data.ts | ISR 60s + Streaming（4 个 Suspense 边界） |
 | `/products` | FastAPI 产品列表 + 分类筛选 | ISR 60s |
-| `/products/[...slug]` | FastAPI 产品详情 + 相册 | ISR 60s + Suspense；规范地址 `/products/{category}/{slug}`，旧扁平地址经 `proxy.ts` 308 重定向 |
+| `/products/[...slug]` | FastAPI 产品详情 + 相册 | ISR 60s + Suspense；规范地址 `/products/{category}/{slug}`，旧扁平地址与错误分类段由 `proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical` 解析后 308 |
 | `/news` | FastAPI 新闻列表 | ISR 60s |
 | `/news/[slug]` | FastAPI 新闻详情 | ISR 60s |
 | `/about` | content-data.ts 静态内容 | Static |
@@ -97,7 +97,7 @@ npm run dev → http://localhost:3000
 | `/products/{slug}` | `/products/{category}/{slug}` | 产品 URL 规范化（SEO 权重集中到分类嵌套地址） | `proxy.ts`（边缘中间件） |
 | `/products/{wrongCategory}/{slug}` | `/products/{真实分类}/{slug}` | 分类段错误同样 308 到规范地址 | `proxy.ts`（边缘中间件） |
 
-> 注：路由级重定向在 `next.config.ts`；**产品 URL 规范化的 308 在根目录 `proxy.ts`**（因本环境页面级 `redirect()` 不生效，见 README「已知注意事项」）。
+> 注：路由级重定向在 `next.config.ts`；**产品 URL 规范化的 308 在根目录 `proxy.ts`**（因本环境页面级 `redirect()` 不生效，见 README「已知注意事项」）。规范路径**运行时**取自后端 `GET /api/v1/products/{slug}/canonical`（含产品当前分类，带 60 秒短缓存；后端明确 404 时不回退静态映射），`lib/generated/canonical-map.ts` 仅在后端不可达时兜底。
 
 ### 错误处理 & 加载状态
 
@@ -139,11 +139,12 @@ npm run dev → http://localhost:3000
 | `components/ContactMapLoader.tsx` | 客户端加载器，`next/dynamic({ ssr:false })` 按需引入 Leaflet，不进首屏 bundle |
 | `components/StatsBand.tsx` | 首页深色数据带（服务端输出真实经营指标，避免首屏动画运行时） |
 | `components/InstantSearch.tsx` | 顶部即时搜索（combobox/listbox ARIA 语义、键盘可选、单层聚焦边框） |
-| `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`） |
+| `components/CookieConsent.tsx` | Cookie 同意横幅（底部横向条幅；同意后才注入 GA；偏好存 `localStorage`；撤回时经 `lib/consent.ts` 立即停用已加载的 GA） |
+| `lib/consent.ts` | 分析同意状态单一来源：`hasAnalyticsConsent()` / `syncAnalyticsConsent()`（停用 GA、派发同意变更事件）与存储 key / 同意版本 |
 | `components/CookieSettingsTrigger.tsx` | 页脚「Cookie Settings」重开入口（派发 `cookie-settings:open` 事件） |
 | `components/ProductViewTracker.tsx` | 产品详情页 GA4 `product_view` 事件打点（客户端组件，useEffect 触发） |
 | `components/CtaButton.tsx` | 转化型 CTA 客户端包装：`InteractiveHoverButton` + `onClick` + GA4 `cta_click` 事件 |
-| `lib/analytics.ts` | GA4 事件追踪 — `trackEvent()` 安全封装（无 gtag 时静默跳过） |
+| `lib/analytics.ts` | GA4 事件追踪 — `trackEvent()` 安全封装：先读当前同意状态，未同意或无 gtag 时静默跳过（撤回同意后即使 gtag 仍在也不发送） |
 | `components/HomeCtaSection.tsx` | 首页底部转化 CTA 区块（客户端组件，承载 InteractiveHoverButton） |
 | `components/ui/interactive-hover-button.tsx` | Magic UI 风格交互悬停按钮（dot 展开 + 文字滑出 + 箭头滑入；纯 CSS 过渡，`fill` 自定义悬停色） |
 
@@ -210,7 +211,7 @@ npm run dev → http://localhost:3000
 
 - **Logo**：`public/logo.png`（本地）
 - **产品图 / 文章图**：通过 FastAPI 后端管理（管理后台上传，`/uploads/` 提供静态文件服务）
-- **媒体引用查询**：管理后台调用 `GET /api/v1/admin/upload/{id}/usage` 展示产品图库、产品封面和新闻封面的使用位置；被引用素材删除前由后端拦截确认。
+- **媒体引用查询**：管理后台调用 `GET /api/v1/admin/upload/{id}/usage` 展示产品图库、产品封面、新闻封面，以及产品和新闻**正文**中引用图片的使用位置（URL 已按归一化形式比较）；被引用素材删除前由后端拦截确认，仅被正文引用的图片同样受保护。
 - **上传归档**：产品表单通过 `product:{slug}` 归入 `Products / {slug}`，新闻表单通过 `news:{slug}` 归入 `News / {slug}`；slug 为空时进入“未分类”。这是媒体库相册归属，物理文件仍由后端按其存储策略保存，不能据此拼接 URL。
 - **OG 图**：`lib/media.ts` 配置
 - **产品相册**：附属于产品，管理后台表单管理
@@ -286,7 +287,7 @@ await page.getByRole("button").click(); // 此时交互才安全
 
 | 症状 | 说明 |
 |------|------|
-| 点登录后 URL 变成 `/signin?username=…&password=…` | `<button type="submit">` 尚未被 React 接管，浏览器走了**原生表单 GET 提交** |
+| 点登录后整页跳转且没有发出登录请求 | `<button type="submit">` 尚未被 React 接管，浏览器走了**原生表单提交**（`admin-next` 登录表单已显式 `method="post"`，凭据不会进入 URL；旧版本未声明 method，会以 GET 把口令写进查询串） |
 | checkbox 勾了但“发布选中”按钮不出现 | 只改了 DOM，React 状态没更新 |
 | 移动端抽屉不收起、下拉菜单不弹出 | 同上 |
 | 搜索 `waitForRequest` 超时 | 防抖逻辑未接管，压根不发请求 |
@@ -340,7 +341,7 @@ await page.getByRole("button").click(); // 此时交互才安全
 
 P0 级审计修复（相关行为已合入当前代码）：
 - **产品 SEO**：`ProductDetail` 类型新增 `seoTitle` / `seoDescription` 字段。产品详情页 `generateMetadata` 优先读这两个字段，空则回退原有的 title/content_html 截取。Open Graph 同步使用 SEO 值。
-- **GA4 事件追踪**：新增 5 个自定义事件 —— `cta_click`（CtaButton + HomeCtaSection）、`product_view`（ProductViewTracker）、`contact_submit`（InquiryForm）。`lib/analytics.ts` 安全封装，无 GA ID 或未同意 Cookie 时静默跳过。
+- **GA4 事件追踪**：新增 5 个自定义事件 —— `cta_click`（CtaButton + HomeCtaSection）、`product_view`（ProductViewTracker）、`contact_submit`（InquiryForm）。`lib/analytics.ts` 安全封装，无 GA ID 或未同意 Cookie 时静默跳过；撤回同意后立即停止发送并停用已加载的 GA（见 `lib/consent.ts`）。
 - **FAQ 嵌入能力**：`lib/content-data.ts` 的 FAQ 条目支持可选 `productCategories: string[]` 字段。
 
 ## 生产构建与 HTTP 兼容修复（2026-08-01）
@@ -366,6 +367,12 @@ P0 级审计修复（相关行为已合入当前代码）：
 - Footer 的 Facebook、YouTube、Instagram、TikTok 统一使用 `44×44px` 图标槽位；无链接平台也必须占位并提示 `coming soon`，不得让图标间距随链接状态改变。
 - 首页 Hero 在 `xl`（≥1280px）宽屏使用上左布局，沿 `site-container` 左侧对齐，标题列放宽至 `980px`；`Explore Products` / `Get a Quote` 必须避开固定 56px 询盘栏。
 - Hero 的 Scroll 提示按视口高度安全定位，避免内容撑高时落入底部浮层；本次回归覆盖 1920×920、1440×900、1024×768 和 390×844。
+
+## 同意、规范化 URL 与分页约定（2026-09-12）
+
+- **分析同意可撤回**：同意状态的唯一来源是 `lib/consent.ts`。撤回时除写 `localStorage` 外必须调用 `syncAnalyticsConsent()`（写入 GA 禁用标记并发送 Consent 拒绝信号）并派发变更事件；`trackEvent()` 必须先读同意状态。组件**不得**只判断 `typeof window.gtag === "function"` 决定是否发送。
+- **产品 URL 规范化在运行时解析**：`proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical`（60 秒短缓存，只缓存后端的明确响应），后端返回 404 时不回退静态映射，避免把已下架产品重定向到旧分类地址。`lib/generated/canonical-map.ts` 仅作后端不可达兜底；搜索接口返回的 `url` 已是规范嵌套地址，禁止在前端重新拼接扁平路径。
+- **列表分页 canonical**：产品与新闻列表页按有效 `page` 生成自身 canonical（保留 `category` 参数、`page=1` 去掉该参数）；非数字或 <1 的页码按首页处理；超出总页数时 canonical 回落首页并输出 `robots: noindex`。新增列表页时不要写死 canonical。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -7,10 +7,12 @@
 "use client";
 // 后台预览使用运行时上传地址；保留原生 img，避免把任意媒体源交给图片优化代理。
 /* eslint-disable @next/next/no-img-element */
-import React, { Suspense, useEffect, useState, useCallback } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import DateTimeField from "@/components/form/DateTimeField";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import SelectField from "@/components/form/SelectField";
 import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -53,6 +55,9 @@ function ProductFormInner() {
   const [attrs, setAttrs] = useState<AttributeItem[]>([]);
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
   const [uploading, setUploading] = useState(false);
+  // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverUploadSeq = useRef(0);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
   const { error: showError } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -174,19 +179,26 @@ function ProductFormInner() {
     });
   }
 
-  // 上传封面图
+  // 上传封面图：纳入忙碌态 + 请求序号，旧请求不会覆盖新选择，上传期间禁止保存。
   async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const seq = ++coverUploadSeq.current;
+    setCoverUploading(true);
     try {
       const url = await uploadImage(file, form.slug);
-      setForm(prev => ({ ...prev, cover_image: url }));
-    } catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
-    e.target.value = "";
+      if (seq === coverUploadSeq.current) setForm(prev => ({ ...prev, cover_image: url }));
+    } catch (err) {
+      if (seq === coverUploadSeq.current) showError(err instanceof Error ? err.message : "上传失败");
+    } finally {
+      if (seq === coverUploadSeq.current) setCoverUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (saving || ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey)) return;
+    if (saving || coverUploading || ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey)) return;
     setSaving(true);
     try {
       if (!form.title.trim() || !form.slug.trim() || !form.category_id) throw new Error("请填写标题、别名并选择分类");
@@ -228,7 +240,7 @@ function ProductFormInner() {
       {isCopy && <p className="mb-4 text-sm text-amber-700">复制基本信息、封面及 SEO；图库和规格不会自动复制，请保存后进入编辑页添加。</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
-        <fieldset disabled={saving || deleting} className="space-y-6">
+        <fieldset disabled={saving || deleting || coverUploading} className="space-y-6">
         {/* 基本信息 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">基本信息</h3>
@@ -250,26 +262,26 @@ function ProductFormInner() {
             </div>
             <div>
               <Label htmlFor="product-category">分类 *</Label>
-              <select id="product-category" required value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+              <SelectField id="product-category" required value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})}>
                 <option value="">请选择分类</option>
                 {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </SelectField>
             </div>
             <div>
               <Label>Stock</Label>
-              <select value={form.stock_status} onChange={e => setForm({...form, stock_status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+              <SelectField value={form.stock_status} onChange={e => setForm({...form, stock_status: e.target.value})}>
                 <option value="instock">有货</option><option value="outofstock">缺货</option>
-              </select>
+              </SelectField>
             </div>
             <div>
               <Label>Status</Label>
-              <select aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+              <SelectField aria-label="内容状态" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
                 <option value="DRAFT">草稿</option><option value="SCHEDULED">定时发布</option><option value="PUBLISHED">已发布</option>
-              </select>
+              </SelectField>
             </div>
             <div>
               <Label htmlFor="publication-time">发布时间</Label>
-              <Input id="publication-time" type="datetime-local" step={1} value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} />
+              <DateTimeField id="publication-time" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} />
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
@@ -319,9 +331,9 @@ function ProductFormInner() {
             )}
             <div className="flex-1 space-y-3">
               <Input value={form.cover_image} onChange={e => setForm({...form, cover_image: e.target.value})} placeholder="/uploads/products/x/cover.webp" />
-              <label className="inline-flex items-center px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800">
-                上传图片
-                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+              <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 ${coverUploading ? "opacity-50 pointer-events-none" : ""}`}>
+                {coverUploading ? "上传中..." : "上传图片"}
+                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" disabled={coverUploading} />
               </label>
             </div>
           </div>
@@ -414,7 +426,7 @@ function ProductFormInner() {
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除产品"}</Button>}</div>
           <div className="flex gap-3">
             <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
-            <Button type="submit" disabled={saving}>{saving ? "保存中..." : "保存产品"}</Button>
+            <Button type="submit" disabled={saving || coverUploading}>{saving ? "保存中..." : coverUploading ? "封面上传中..." : "保存产品"}</Button>
           </div>
         </div>
         </fieldset>

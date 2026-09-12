@@ -11,30 +11,64 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { superMeta } from "next-super-meta";
-import { getProducts, getProductCategories } from "@/lib/api/products";
+import { getProducts, getProductCategories, PRODUCTS_PER_PAGE } from "@/lib/api/products";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import HorizontalScrollArea from "@/components/HorizontalScrollArea";
 
-export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string }> }): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string; page?: string }> }): Promise<Metadata> {
   const sp = await searchParams;
   const slug = sp.category;
   const cats = await getProductCategories().catch(() => []);
   const cat = slug ? cats.find((c) => c.slug.toLowerCase() === slug.toLowerCase()) : undefined;
-  if (!cat) {
-    return superMeta({
-      title: "Digital Camera Products for OEM & ODM",
-      description: "Explore OEM and ODM digital cameras manufactured by Songdian Technology, a digital camera factory specializing in camera development and manufacturing.",
-      url: "/products",
-    });
+
+  // 页码规范化：非数字 / <1 一律按首页处理（canonical 去掉 page=1）。
+  const requested = Number(sp.page);
+  const requestedPage = Number.isInteger(requested) && requested > 1 ? requested : 1;
+
+  // 有效页码 >1 时必须声明自身 canonical（保留分类）；超范围页回退首页并 noindex。
+  // 与页面组件共用同一次 getProducts 请求（Next 对同一 fetch 去重）。
+  let canonicalPage = requestedPage;
+  let outOfRange = false;
+  if (requestedPage > 1) {
+    try {
+      const { pagination } = await getProducts({
+        page: requestedPage,
+        perPage: PRODUCTS_PER_PAGE,
+        category: cat?.id,
+      });
+      if (!pagination || requestedPage > pagination.totalPages) {
+        canonicalPage = 1;
+        outOfRange = true;
+      }
+    } catch {
+      canonicalPage = 1;
+      outOfRange = true;
+    }
   }
-  return superMeta({
-    title: `${cat.name} Cameras for OEM & ODM`,
-    description: `Browse ${cat.name.toLowerCase()} cameras manufactured by Songdian Technology, an OEM/ODM digital camera factory.`,
-    url: `/products?category=${cat.slug}`,
-  });
+
+  const params = new URLSearchParams();
+  if (cat) params.set("category", cat.slug);
+  if (canonicalPage > 1) params.set("page", String(canonicalPage));
+  const query = params.toString();
+  const canonicalUrl = query ? `/products?${query}` : "/products";
+
+  const meta = cat
+    ? await superMeta({
+        title: `${cat.name} Cameras for OEM & ODM`,
+        description: `Browse ${cat.name.toLowerCase()} cameras manufactured by Songdian Technology, an OEM/ODM digital camera factory.`,
+        url: canonicalUrl,
+      })
+    : await superMeta({
+        title: "Digital Camera Products for OEM & ODM",
+        description: "Explore OEM and ODM digital cameras manufactured by Songdian Technology, a digital camera factory specializing in camera development and manufacturing.",
+        url: canonicalUrl,
+      });
+
+  // 超范围页码：声明首页为规范页并禁止索引，避免低质重复页。
+  return outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成产品列表，平衡实时性与性能
@@ -46,7 +80,9 @@ interface ProductsPageProps {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = await searchParams;
-  const currentPage = Number(params.page) || 1;
+  // 与 generateMetadata 保持同一归一化口径：非整数 / <1 一律按首页处理。
+  const requestedPage = Number(params.page);
+  const currentPage = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
   const categorySlug = params.category || undefined;
 
   // 先取分类列表，再把 slug 解析为后端数字分类 ID（getProducts 需要 ID）

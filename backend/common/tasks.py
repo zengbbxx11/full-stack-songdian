@@ -86,6 +86,7 @@ async def _execute(job: BackgroundJob) -> bool:
             raise RuntimeError("SMTP delivery failed")
         return True
     if job.kind == "content_cache":
+        from common.cache_version import bump_content_version, bump_resource_version
         from common.redis_client import cache_key, get_redis
         from common.revalidation import revalidate_frontend
 
@@ -102,9 +103,14 @@ async def _execute(job: BackgroundJob) -> bool:
         if job.payload["categories"]:
             await redis.delete_prefix(cache_key(resource, "detail", ""))
             await redis.delete(cache_key(resource, "categories"))
+            # P2-13：批次失效递增资源级版本，阻止并发旧请求回填任意详情缓存。
+            await bump_resource_version(resource)
         else:
             for slug in slugs:
-                await redis.delete(cache_key(resource, "detail", slug))
+                # 版本化详情键带 :v{n} 后缀，按前缀清空该 slug 的全部版本缓存。
+                await redis.delete_prefix(cache_key(resource, "detail", slug, ""))
+                # P2-13：递增 slug 级版本，使并发旧请求的回填落到不再被读取的旧键。
+                await bump_content_version(resource, slug)
         plural = "products" if resource == "product" else "news"
         tags = [plural, *(f"{resource}:{slug}" for slug in slugs)]
         if job.payload["categories"]:

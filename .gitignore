@@ -20,6 +20,9 @@ dev.db
 # WorkBuddy 本地项目数据（会话记忆/工作日志），保留在本地，不上传仓库
 .workbuddy/
 
+# CodeBuddy 本地项目数据（会话计划 plans/、本机设置 settings.local.json），保留在本地，不上传仓库
+.codebuddy/
+
 # Local uploads backup (large binary assets, excluded)
 uploads_bak_*/
 

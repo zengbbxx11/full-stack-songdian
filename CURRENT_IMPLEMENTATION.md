@@ -45,10 +45,12 @@
 
 - 登录、刷新和退出只使用 HttpOnly Cookie；生产环境额外启用 `Secure`，浏览器 JavaScript 不读取或保存 JWT。
 - 同一页面的并发 401 合并刷新，退出等待进行中的刷新完成；暂时性刷新故障不会伪装为正常退出。后台页面校验 access scope 与必要声明，生产缺少 JWT 密钥时拒绝访问；失效会话可直接进入登录页。
+- access Cookie 失效但 7 天有效的 refresh Cookie 仍在时，页面入口会直接向后端换取新会话并把 `Set-Cookie` 写回响应，放行到原目标页面（同一 refresh 会话并发去重）；仅 refresh 真正失效或后端不可达才跳登录页并带 `expired=1`。
+- 登录表单显式声明 `method="post" action="/signin"`：脚本未加载或尚未被 React 接管时，浏览器原生提交也走 POST，用户名与口令不会进入 URL、历史记录或访问日志。
 - 新闻管理使用管理员分页接口，包含草稿和定时内容。列表排序保留未显示项的位置及未保存草稿；批量写入最多并发 3 项，等待全部结果后报告失败并保留可重试项。仪表盘产品与新闻总数来自现有统计接口。
 - 后台媒体使用 `resolveMediaUrl()`：相对 `/uploads/...` 保持同源，由 Next.js rewrite 转发到后端；外部绝对 URL 原样保留。
-- 媒体库每条上传记录都可以通过 `GET /api/v1/admin/upload/{id}/usage` 查询引用明细，区分产品图库、产品封面和新闻封面，并从弹窗跳转到对应的产品/新闻编辑页；后端删除接口仍会阻止未确认的被引用素材删除。
-- 产品与新闻编辑表单上传图片时，会按 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入媒体库的 `Products / {slug}` 或 `News / {slug}` 子相册；未填写 slug 的上传进入“未分类”。相册只改变逻辑归属，不改变媒体 URL，文件本身仍由后端存储后端管理。
+- 媒体库每条上传记录都可以通过 `GET /api/v1/admin/upload/{id}/usage` 查询引用明细，覆盖产品图库、产品封面、新闻封面，以及产品和新闻正文（`content_html`）中的 `<img>` 引用（对应 `product_content` / `news_content` 类型）；比较前统一归一化媒体 URL，同一图片的相对/绝对地址都能命中，并从弹窗跳转到对应的产品/新闻编辑页；后端删除接口仍会阻止未确认的被引用素材删除。
+- 产品与新闻编辑表单上传图片时，会按 `categorize=product:{slug}` / `categorize=news:{slug}` 自动归入媒体库的 `Products / {slug}` 或 `News / {slug}` 子相册；未填写 slug 的上传进入“未分类”。相册只改变逻辑归属，不改变媒体 URL，文件本身仍由后端存储后端管理。侧边栏相册计数为**子树合计**：`GET /admin/albums` 同时返回直系 `count` 与含全部子相册的 `total_count`，界面显示后者；按相册筛选上传记录时同样包含其全部子相册，避免“大类恒显示 0”和“显示数量与列表不一致”。
 - 媒体库提供“同步引用图片”和“自动归类”：前者为已有产品/新闻引用但缺少 `UploadRecord` 的 URL 补齐记录，后者仅按既有媒体 URL 路径规则整理未分类记录。
 - 禁止在组件中重新拼接 `http://localhost:8000`，否则会破坏 Windows、Docker 和生产域名兼容性。
 - 产品/新闻编辑页包含内容状态、发布时间、版本历史、恢复和短期预览入口。
@@ -68,10 +70,12 @@
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
 - 询盘表单在相同内容失败重试时复用业务单号，成功或内容变化后更新单号；字段长度与后端对齐，数量和留言合并校验。单选项支持键盘操作，隐藏字段错误自动展开，提交期间禁止重复编辑。
+- 公开 `POST /inquiries` 只返回最小回执（`biz_req_no`、`received`、`status=RECEIVED`、`submitted_at`），不返回姓名/邮箱/留言、`smtp_status`、标签、负责人 ID 与跟进记录；同一 `biz_req_no` 内容一致的重复提交幂等返回同一回执，内容不一致返回 `C400001` 且不回显既有询盘。内部 CRM 字段只在后台接口可见。
 - 后台询盘跟进表单等待完整详情后才允许编辑与保存，读取失败提供重试；关闭或切换记录会使旧响应失效，避免备注、状态和国家串入另一条询盘。备注输入遵循后端 1,000 字符限制。
 - 后台通知覆盖新询盘、超过 24 小时未跟进和 SMTP 失败，并通过 `NotificationReadState` 记录用户级已读状态。
-- 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。联合搜索在数据库分页前按“产品分组优先，新闻分组随后”排序，新闻组按 `created_time DESC, id DESC`；降级提示固定为英文 `Basic search mode`。
-- 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。
+- 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。联合搜索在数据库分页前按“产品分组优先，新闻分组随后”排序，新闻组按 `created_time DESC, id DESC`；降级提示固定为英文 `Basic search mode`。产品结果直接返回规范嵌套 URL（`/products/{category}/{slug}`）并附带 `category_slug`，分类缺失时回退扁平地址，前端不再自行拼接产品路径。
+- 审计日志关键字搜索在**分页前**于数据库过滤 `username` / `action` / `resource` 并返回过滤后的 `total`，后台不再只过滤当前页。
+- 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。产品与新闻列表页按有效 `page` 生成自身 canonical（保留分类参数、`page=1` 去掉该参数），非法或非数字页码按首页处理，超出总页数时回落到首页并输出 `robots: noindex`。
 - `/llms.txt` 作为实验性 AI 站点导览按小时再验证；它明确区分 2023 年成立的 Songdian Technology 法律实体与 2006 年开始的集团制造历史，不视为正式标准或排名保证。
 - 当前工厂视频仅在 About 页面展示，使用 WebP poster、`preload="none"` 和可选 WebM source；视频、poster 与默认 OG 图均属于随 frontend 镜像发布的静态源码资产。
 - 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图在距视口 200px 时挂载客户端动态组件，保留手动加载入口和失败重试；可配置地址以文本节点写入地图弹窗。
@@ -88,14 +92,14 @@
 - 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（12 个 spec，44 个用例），管理后台用例也在同一套件内。
 - **E2E 交互用例统一等待 React 注水**：`page.goto()` / `page.reload()` 在 window load 就返回，此时 DOM 可读写但事件处理器尚未挂载，直接交互会产生「操作无效、无请求、无报错」的假失败。用例通过 `frontend/e2e/hydration.ts` 的 `gotoHydrated()` 打开页面、`waitForHydration()` 在 `reload()` 后补等待；不使用 `waitUntil: "networkidle"`（开发模式下网络静默早于注水完成）。用例在本地 dev 模式下使用 `localhost` 而非 `127.0.0.1`（Next 开发服务器对 `/_next/*` 的同源校验会对后者返回 403，导致页面不注水）；CI 以生产构建（`next start`）启动服务，不受此限制。`playwright.config.ts` 固定 `workers: 2`，避免本机多 dev server 并存时因机器过载出现 teardown 超时。用例夹具必须在 `finally` 中清理，避免残留内容进入官网或污染下一轮断言。
 - 官网图片优化器访问 loopback/局域网地址由 `ALLOW_LOCAL_IMAGE_OPTIMIZATION` 控制，且与 `NODE_ENV !== "production"` 做与运算：**生产构建即使显式设为 `true` 也恒为 `false`**，本地开发指向 loopback 后端而未开启时启动告警。
-- Web Vitals 仅在用户同意 Analytics 且 GA4 已配置时上报 LCP、CLS、INP、FCP 与 TTFB，不增加身份信息采集。
-- 生产发布先备份 PostgreSQL 与 `uploads_data`，再运行迁移、切换三个应用并冒烟；应用镜像可自动回滚，数据库迁移不会自动反向回滚。
+- Web Vitals 仅在用户同意 Analytics 且 GA4 已配置时上报 LCP、CLS、INP、FCP 与 TTFB，不增加身份信息采集；撤回同意后 `trackEvent()` 会先读当前同意状态，并立即停用已加载的 GA（禁用标记 + Consent 拒绝信号），再次接受后恢复。
+- 生产发布先备份 PostgreSQL 与 `uploads_data`，再运行迁移、切换三个应用并冒烟；应用镜像可自动回滚，数据库迁移不会自动反向回滚。备份文件名带时分秒与可选发布号（`db_YYYYmmdd_HHMMSS[_RELEASE_ID].sql.gz` 与同名 uploads 包），同日多次部署不会互相覆盖。
 - 生产数据和运行时上传媒体不进入 Git；静态工厂视频属于前端源码资产，随镜像发布。
 
 ## 后端可靠性修复（2026-09-08）
 
 - 产品 SEO、新闻封面已纳入创建/更新；未提交的字段保留，显式 null/空字符串按字段语义清空，标签用空数组清空。
-- 询盘幂等以数据库唯一约束为准；询盘和邮件任务同事务创建。接口先返回 PENDING，后台每 5 秒轮询，SMTP 未配置时每 5 分钟延后且不消耗失败次数；已发生失败最多尝试 5 次，指数退避，最终 FAILED 保留供处理。
+- 询盘幂等以数据库唯一约束为准；询盘和邮件任务同事务创建。记录以 `smtp_status=PENDING` 落库并立即返回，后台每 5 秒轮询，SMTP 未配置时每 5 分钟延后且不消耗失败次数；已发生失败最多尝试 5 次，指数退避，最终 FAILED 保留供处理。（2026-09-12 起公开响应改为最小回执、不再回显 `smtp_status`，见下方「一致性与运维修复」。）
 - 产品/新闻修改、版本记录、搜索向量和缓存失效任务同事务提交。提交后立即尝试失效 Redis 与 ISR；失败留在任务表重试。分类变更同时清除嵌入分类信息的详情缓存，内容变更清除搜索缓存。
 - CRM 跟进、分配、状态和标签更新通过事务及行锁保护；字段定向保存，避免旧对象覆盖跟进记录。
 - 产品/新闻恢复已发布或定时版本、修改已发布内容需要 publish 权限；产品图库/规格写入遵守相同边界。用户管理改为 role:update 权限。
@@ -104,11 +108,20 @@
 - 上传最多读取单文件限额 + 1 字节，再校验内容；文件写入移入线程。SMTP 支持 465 SSL、587 STARTTLS 及逗号分隔收件人。
 - CI 增加真实 PostgreSQL/Redis 事务、并发、任务租约与迁移兼容性检查。实现细节和运行边界见 reports/backend-review-2026-09-08.md。
 
+## 一致性与运维修复（2026-09-12）
+
+- 产品 URL 规范化改为运行时数据驱动：`frontend/proxy.ts` 调 `GET /api/v1/products/{slug}/canonical` 取当前分类后 308；改分类即时生效，仅当后端以业务码 `A010001`（未发布/不存在）明确响应时才不回退旧映射（否则会把已下架产品重定向到旧分类地址）。后端不可达、或后端尚未提供该接口（未知路由返回 `C404001`）时仍走构建期 `lib/generated/canonical-map.ts` 兜底，避免灰度/回滚期间旧扁平地址断链；生成脚本按 `page_size=50` 翻页取全量（后端单页上限 50）。
+- 媒体静态目录纵深防御：Compose 启动只把 `uploads/products|news|2026` 图片目录同步进 `uploads_data`，并清理媒体根目录残留的 `.py` / `.env` 等代码与配置文件；`main.py` 的 `_MediaStaticFiles` 对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404。
+- 分类删除一致性：存在未删除关联内容时拒绝删除并返回关联数量（`C400001`，`data.conflict=true`）；另提供 `POST /admin/categories/{id}/migrate-and-delete` 与 `POST /admin/news-categories/{id}/migrate-and-delete`，在同一事务内迁移内容后软删分类。后台产品分类页提供「迁移并删除」入口；新闻分类迁移接口已就绪，后台暂无独立管理页。
+- 内容缓存加入版本号（`common/cache_version.py`）：读详情前取「资源级 + slug 级」版本快照，回填缓存前复读校验，版本变化即放弃回填；写入递增 slug 级版本，分类等批次变更递增资源级版本。Redis 不可用时静默退化为无版本校验，纯 Redis 实现，无数据库迁移。
+- 封面上传纳入保存忙碌态：产品/新闻表单上传期间禁用保存按钮与表单字段，并用递增请求序号保证连续选择时只接受最后一次上传结果。
+- 新增回归测试 `backend/tests/test_media_albums.py`（相册子树计数、按子树筛选、rollup 口径，共 3 项）；后端全量 `pytest tests/ -q` **132 项通过**。
+
 ## 发布前必须确认
 
 1. 所有新增源码、迁移、测试、预览和内容工作流文件已纳入同一个 commit；不得只提交已跟踪文件。
 2. `.env`、`.env.local`、Cookie、数据库、上传卷和运行日志不得进入发布 commit。
-3. 产品或分类 slug 变化后运行 `npm run gen:map` 并提交规范 URL 映射。
+3. 产品 URL 规范化由 `frontend/proxy.ts` 在运行时调用 `GET /api/v1/products/{slug}/canonical` 解析当前分类，后台改分类无需重新生成映射；`npm run gen:map` 只在需要刷新“后端不可达”时的过渡兜底映射时手动执行，产物可一并提交，不属于发布前置条件。
 4. 在 GitHub Actions Variables 配置生产 `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST`；根目录 `.env` 不会改写已经构建好的 GHCR 前端镜像。
 5. GitHub Actions 的 `CI` 中 `backend`、`frontend`、`admin`、`compose`、`migration`、`e2e`，以及同一 commit 的 `images` 矩阵三项均成功后，才允许发布；`images` 被跳过时不能部署。
 6. 从 GitHub commit 详情页复制 40 位完整 SHA；手动发布时在服务器执行 `git pull --ff-only origin master` 后，用 `git rev-parse HEAD` 与目标 SHA 核对一致，再执行 `scripts/deploy.sh`。

@@ -17,6 +17,7 @@ import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import SelectField from "@/components/form/SelectField";
 import { Modal } from "@/components/ui/modal";
 import { FolderIcon, PlusIcon, TrashBinIcon } from "@/icons";
 
@@ -26,7 +27,9 @@ interface UploadRecord {
   uploaded_by: string | null; album_id: number | null; title: string | null; created_time: string | null;
 }
 interface Album {
-  id: number; name: string; slug: string; sort_order: number; count: number;
+  id: number; name: string; slug: string; sort_order: number;
+  // count：直系素材数；total_count：含全部子相册的合计（侧边栏展示用）。
+  count: number; total_count?: number;
   parent_id: number | null; created_time: string | null;
 }
 interface TreeAlbum extends Album { children: TreeAlbum[]; depth: number }
@@ -114,7 +117,9 @@ function AlbumNode({
             <FolderIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{album.name}</span>
           </span>
-          <span className="text-[10px] tabular-nums shrink-0 mr-1">{album.count}</span>
+          <span className="text-[10px] tabular-nums shrink-0 mr-1" title={`含子相册共 ${album.total_count ?? album.count} 个素材（直系 ${album.count} 个）`}>
+            {album.total_count ?? album.count}
+          </span>
         </button>
         {/* Hover 操作 */}
         <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded px-1 mr-4">
@@ -319,8 +324,10 @@ export default function MediaPage() {
     } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); }
   };
   const deleteAlbum = async (a: Album) => {
-    const childCount = a.count; // 注意：count 只含直系素材，不含子相册素材（后端聚合只按 album_id 分组）
-    setConfirm({ title: "删除相册", message: `确定删除「${a.name}」吗？其中的 ${childCount} 个素材将变为"未分类"，所有子相册也将被级联删除。`, confirmText: "删除相册",
+    // total_count 含子相册素材（后端已按子树合计）；删除父相册会级联删除整棵子树，
+    // 因此这里展示的是"本次操作影响到的素材总数"，避免只报直系数造成低估。
+    const affected = a.total_count ?? a.count;
+    setConfirm({ title: "删除相册", message: `确定删除「${a.name}」吗？其中的 ${affected} 个素材将变为"未分类"，所有子相册也将被级联删除。`, confirmText: "删除相册",
       onConfirm: async () => { try { await apiFetch(`/admin/albums/${a.id}`, { method: "DELETE" }); toast.success("已删除"); if (selectedAlbumId === a.id) setSelectedAlbumId(null); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); } catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); } setConfirm(null); } });
   };
 
@@ -334,7 +341,7 @@ export default function MediaPage() {
           <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="新建相册"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
         </div>
         <ul className="space-y-0.5">
-          <li><button onClick={() => selectAlbum(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.reduce((s,a)=>s+a.count,0)+uncategorized : 0}</span></button></li>
+          <li><button onClick={() => selectAlbum(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.filter((a) => a.parent_id === null).reduce((s, a) => s + (a.total_count ?? a.count), 0) + uncategorized : 0}</span></button></li>
           {uncategorized > 0 && (
             <li><button onClick={() => selectAlbum(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />未分类</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
           )}
@@ -353,10 +360,16 @@ export default function MediaPage() {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx={11} cy={11} r={8}/><path d="m21 21-4.3-4.3" strokeLinecap="round"/></svg>
             <input type="text" placeholder="搜索..." value={keyword} onChange={(e) => changeKeyword(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
           </div>
-          <select value={uploadAlbumId ?? ""} onChange={(e) => setUploadAlbumId(e.target.value ? Number(e.target.value) : null)} className="text-xs border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-2 max-w-[140px]">
+          <SelectField
+            selectSize="sm"
+            className="max-w-[140px]"
+            aria-label="上传到相册"
+            value={uploadAlbumId ?? ""}
+            onChange={(e) => setUploadAlbumId(e.target.value ? Number(e.target.value) : null)}
+          >
             <option value="">无相册</option>
             {albums.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          </SelectField>
           <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer ${uploading ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-brand-500 text-white hover:bg-brand-600"}`}>
             {uploading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> 上传中...</> : <><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round"/></svg> 上传</>}
             <input type="file" accept="image/*" multiple onChange={handleUpload} className="hidden" disabled={uploading} />
@@ -506,10 +519,14 @@ export default function MediaPage() {
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label><input type="text" value={albumForm.name} onChange={(e) => setAlbumForm({ ...albumForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="相册名称" autoFocus /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">别名（可选）</label><input type="text" value={albumForm.slug} onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="url-友好别名" /></div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">父级相册</label>
-              <select value={albumForm.parent_id} onChange={(e) => setAlbumForm({ ...albumForm, parent_id: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30">
+              <SelectField
+                aria-label="父级相册"
+                value={albumForm.parent_id}
+                onChange={(e) => setAlbumForm({ ...albumForm, parent_id: e.target.value })}
+              >
                 <option value="">无（根级）</option>
                 {albums.filter((a) => a.id !== albumModal.editing?.id).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+              </SelectField>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6"><button onClick={() => setAlbumModal({ open: false, editing: null })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">取消</button><button onClick={saveAlbum} className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">{albumModal.editing ? "保存" : "创建"}</button></div>

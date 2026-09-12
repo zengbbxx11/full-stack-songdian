@@ -60,11 +60,15 @@ class AlbumVO(BaseModel):
     slug: str
     sort_order: float = 0.0
     parent_id: int | None = None
+    # 直系素材数（仅 album_id == 本相册）。
     count: int = 0
+    # 子树合计：本相册 + 所有子相册的素材数（媒体库侧边栏展示用，
+    # 否则 Products / News 这类"大类"因其图片挂在子相册下会一直显示 0）。
+    total_count: int = 0
     created_time: datetime | None = None
 
     @classmethod
-    def from_model(cls, album, count: int = 0) -> AlbumVO:
+    def from_model(cls, album, count: int = 0, total_count: int | None = None) -> AlbumVO:
         return cls(
             id=album.id,
             name=album.name,
@@ -72,6 +76,7 @@ class AlbumVO(BaseModel):
             sort_order=album.sort_order or 0.0,
             parent_id=getattr(album, "parent_id", None),
             count=count,
+            total_count=count if total_count is None else total_count,
             created_time=album.created_time,
         )
 

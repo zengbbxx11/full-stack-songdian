@@ -64,12 +64,12 @@ NODE_OPTIONS= \
 | `npm run start` | 启动生产构建 |
 | `npm run lint` | ESLint 校验 |
 | `npm run verify:seo` | 检查 SEO/GEO 代码契约与关键静态资产 |
-| `npm run gen:map` | 从后端生成产品 canonical 路径映射 |
+| `npm run gen:map` | 从后端生成产品 canonical 路径映射（仅作“后端不可达”时的兜底） |
 | `npm run generate:social-assets` | 生成默认 OG 图和工厂视频 poster |
 | `npm run lighthouse` | 执行 Lighthouse CI 与预算断言 |
 | `npm run test:e2e` | Playwright 端到端测试 |
 
-`npm run gen:map` 需要后端 API 可达。生成的 `lib/generated/canonical-map.ts` 必须随产品分类/slug 变化一起提交。
+产品 308 规范化**不依赖**这份映射：`proxy.ts` 在运行时调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品当前分类，后台改分类后即时生效。`npm run gen:map` 需要后端 API 可达，产物 `lib/generated/canonical-map.ts` 只在后端不可达时兜底，属可选维护项（脚本按 `page_size=50` 翻页拉取全量产品）。
 
 ## 环境变量
 
@@ -103,7 +103,7 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 
 官网挂载后通过公开设置接口读取配置，请求最多等待 5 秒。后台保存会清理公开设置缓存，已打开的网页需完整刷新才能读取新 ID；后续修改 ID 无需重新构建前端。
 
-两个工具共享 Analytics Cookie 选择。新增会话回放后同意版本提升为 2，旧访客会重新看到提示。Clarity 仅在同意后向 head 异步插入脚本，广告存储始终拒绝；撤回同意时发送 Consent V2 拒绝信号并停止记录，再次同意会恢复。询盘表单包含 `data-clarity-mask="true"`，管理后台不加载 Clarity。
+两个工具共享 Analytics Cookie 选择，当前同意状态与停用逻辑集中在 `lib/consent.ts`（`hasAnalyticsConsent` / `syncAnalyticsConsent`）。新增会话回放后同意版本提升为 2，旧访客会重新看到提示。Clarity 仅在同意后向 head 异步插入脚本，广告存储始终拒绝；撤回同意时发送 Consent V2 拒绝信号并停止记录，再次同意会恢复。**GA 同样可撤回**：撤回时立即写入 GA 禁用标记并发送 Consent 拒绝信号，`lib/analytics.ts` 的 `trackEvent()` 也会先读同意状态，因此已加载的 GA 不会再收到事件；再次同意后恢复。询盘表单包含 `data-clarity-mask="true"`，管理后台不加载 Clarity。
 
 首次部署后打开设置页保存 Clarity ID，在官网接受 Analytics Cookie，再到 Clarity 检查安装和会话。Clarity 项目侧请开启要求 Cookie 同意的设置。开发测试应拦截第三方请求，避免向真实项目发送测试流量。
 
@@ -242,7 +242,7 @@ lib/api/                       FastAPI 客户端
 lib/content-data.ts            共享公司事实与静态内容
 lib/media.ts                   静态媒体路径
 lib/seo.ts                     JSON-LD 与 SEO 工具
-lib/generated/                 canonical 路径映射
+lib/generated/                 canonical 路径映射（后端不可达时的兜底）
 public/og/                     默认社交分享图
 public/Video/                  工厂 MP4 与 poster
 scripts/generate-og-assets.mjs 社交图与 poster 生成脚本
@@ -251,13 +251,13 @@ e2e/                            Playwright 用例（12 个 spec）
 e2e/hydration.ts               注水等待 helper：gotoHydrated() / waitForHydration()
 playwright.config.ts           E2E 配置（workers: 2，testDir: e2e）
 next.config.ts                 图片优化、远程主机与生产配置
-proxy.ts                       产品 URL 规范化重定向
+proxy.ts                       产品 URL 规范化重定向（运行时调后端 canonical 接口）
 ```
 
 ## 发布检查
 
 1. 源 banner 或社交设计变化时运行 `npm run generate:social-assets`。
-2. 产品分类或 slug 变化时运行 `npm run gen:map` 并提交输出。
+2. 产品分类或 slug 变化**不需要**重建映射（运行时按后端数据解析）；仅在希望刷新兜底映射时运行 `npm run gen:map` 并提交输出。
 3. 依次运行 lint、SEO 校验和生产构建。
 4. 确认 poster 与默认 OG 图未被 `.gitignore` 排除。
 5. 在生产构建中检查 `/llms.txt`、社交 metadata、视频 poster 和 MP4 Range 响应。
@@ -278,7 +278,7 @@ curl -o /dev/null -w "%{http_code}\n" \
 
 ### 构建时后端不可用
 
-首页和列表页对内容 API 有降级处理，但 canonical map 生成仍需要后端。正式发布前应在后端可达时刷新映射并提交。
+首页和列表页对内容 API 有降级处理，生产构建不依赖 `gen:map` 产物（产品规范化在运行时由 `proxy.ts` 调后端解析，构建期映射仅作兜底）。若要在发布前刷新兜底映射，则需后端可达。
 
 ### 视频本机正常、部署后 poster 404
 

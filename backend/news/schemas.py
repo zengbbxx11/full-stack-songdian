@@ -100,6 +100,12 @@ class NewsCategoryUpdate(BaseModel):
     sort_order: float | None = None
 
 
+class NewsCategoryMigrateRequest(BaseModel):
+    """删除新闻分类前，把关联新闻迁移到目标分类。"""
+
+    target_category_id: int
+
+
 class NewsCategoryReorderReq(BaseModel):
     """拖拽排序：按目标顺序传入新闻分类 id 数组。"""
 

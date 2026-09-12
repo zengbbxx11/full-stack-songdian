@@ -112,10 +112,11 @@ async def verify() -> None:
             AsyncMock(side_effect=AssertionError("No real SMTP")),
         ):
             results = await asyncio.gather(*(submit_inquiry(request) for _ in range(8)))
-        ids = {result.id for result in results}
-        assert len(ids) == 1
-        inquiry_id = ids.pop()
+        # 公开提交只返回最小回执；幂等由「同一 biz_req_no 仅一行」验证。
+        assert {result.biz_req_no for result in results} == {slug}
+        assert all(result.received for result in results)
         assert await Inquiry.filter(biz_req_no=slug).count() == 1
+        inquiry_id = (await Inquiry.get(biz_req_no=slug)).id
         assert await BackgroundJob.filter(kind="inquiry_mail").count() >= 1
         await asyncio.gather(
             *(

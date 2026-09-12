@@ -1,6 +1,6 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-> 当前状态（2026-09-01）：最新迁移为 `15_20260826110000_add_content_sort_order.py`。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。媒体接口支持引用查询、历史引用同步和按 URL 路径自动归类。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+> 当前状态（2026-09-12）：最新迁移为 `16_20260908090000_backend_reliability.py`（持久化后台任务表 `t_background_job` + 账户 `session_version`）。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。媒体接口支持引用查询（含正文引用）、历史引用同步和按 URL 路径自动归类；公开询盘只返回最小回执，产品规范路径由 `GET /products/{slug}/canonical` 运行时提供。本轮这些一致性修复均为应用层改动，**未新增迁移**。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
@@ -81,7 +81,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
   （含 `Product.tags`、`t_upload_record`、`search_vector`），**无需跑 aerich 迁移**。
 - 搜索引擎在 SQLite 下走 **LIKE 降级（BD-01）**，公开提示为英文 `Basic search mode`。
 - Redis 未配置时自动降级为**进程内内存字典**，缓存/限流/幂等/权限均不报错。
-- SMTP 未配置时询盘仅持久化，`smtp_status` 保持 PENDING（BD-02/MOCK）。
+- SMTP 未配置时询盘仅持久化，`smtp_status` 保持 PENDING（BD-02/MOCK）；该字段只在后台接口可见——公开 `POST /inquiries` 返回最小回执（`biz_req_no` / `received` / `status` / `submitted_at`）。
 
 ---
 
@@ -120,8 +120,10 @@ python -m seed.seed_data
 - **全文检索索引自愈**：见上方 §3「GIN 索引启动自愈」。搜索命中 GIN 索引，
   数据量增大后由 PostgreSQL 规划器自动从顺序扫描切到 `Bitmap Index Scan`，无需手动干预。
 
-> 图片优化边界：当前 `/uploads/*` 由后端 `StaticFiles` 直出原图（无 CDN / 无 `Cache-Control`
-> / 无预裁剪），属下一阶段优化项，不影响上述两项已落地收益。
+> 图片优化边界：当前 `/uploads/*` 由后端 `_MediaStaticFiles` 直出原图（无 CDN / 无 `Cache-Control`
+> / 无预裁剪），属下一阶段优化项，不影响上述两项已落地收益。该静态类对 `.py` / `.pyc` / `.pyo`
+> / `.pyd` / `.env` / `.sh` / `.ini` / `.toml` / `.cfg` / `.sql` / `.log` / `.md` / `.lock` 等后缀
+> 统一返回 404，纵深防御媒体卷中残留的代码或配置文件被下载。
 
 ---
 
@@ -151,20 +153,22 @@ pytest tests/ -q
 
 | 模块 | 方法 | 路径 |
 | --- | --- | --- |
-| M1 产品 | GET | /products、/products/{slug}、/product-categories |
+| M1 产品 | GET | /products、/products/{slug}、/products/{slug}/canonical（规范路径，供官网边缘层 308 解析）、/product-categories |
 | M1 产品 | POST/PUT/DELETE | /admin/products、/admin/products/{id}、/admin/products/{id}/gallery、/admin/products/{id}/attributes |
 | M1 产品 | GET | /admin/categories（分类列表含产品计数） |
+| M1 产品 | POST/DELETE | /admin/categories/{id}/migrate-and-delete（事务内迁移产品后删除分类）；删除分类在仍有未删除产品时返回 `C400001` 与关联数量 |
 | M2 新闻 | GET | /news、/news/{slug}、/news-categories |
 | M2 新闻 | POST/PUT/DELETE | /admin/news、/admin/news/{id} |
+| M2 新闻 | POST/DELETE | /admin/news-categories/{id}/migrate-and-delete（事务内迁移新闻后删除分类）；删除分类在仍有未删除新闻时返回 `C400001` 与关联数量 |
 | M3 搜索 | GET | /search?q=&type=&page=&page_size= |
 | M4 询盘 | POST | /inquiries |
 | M4 询盘 | GET/PUT/POST/DELETE | /admin/inquiries、/admin/inquiries/{id}、状态、分配、跟进记录 |
 | M5 内容 | POST | /admin/login、/admin/logout、/admin/refresh（令牌族轮换） |
 | M5 内容 | GET/PUT | /admin/profile（查看/修改当前用户信息） |
-| M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs |
+| M5 内容 | GET/POST/PUT | /admin/roles、/admin/roles/{id}/permissions、/admin/audit-logs（`keyword` 在分页前过滤 username/action/resource，`total` 为过滤后总数） |
 | M5 内容 | GET/POST/PUT/DELETE | /admin/users、/admin/users/list、/admin/stats |
 | 设置 | GET/PUT/POST | /public/settings、/admin/settings、/admin/settings/smtp/test |
-| 上传/媒体库 | GET/POST/PUT/DELETE | /admin/upload、/admin/upload/batch、/admin/upload/records、/admin/upload/{id}/usage、/admin/upload/sync、/admin/upload/auto-categorize、/admin/albums |
+| 上传/媒体库 | GET/POST/PUT/DELETE | /admin/upload、/admin/upload/batch、/admin/upload/records、/admin/upload/{id}/usage、/admin/upload/sync、/admin/upload/auto-categorize、/admin/albums（返回直系 `count` 与含全部子相册的 `total_count`；按 `album_id` 筛选记录时包含其全部子相册） |
 | 系统 | GET | /healthz、/readyz |
 
 ---
@@ -180,7 +184,7 @@ pytest tests/ -q
 
 ### 媒体引用与归档
 
-- `GET /admin/upload/{id}/usage` 返回素材被产品图库、产品封面和新闻封面引用的数量与明细；被引用素材通过删除接口删除时需要显式 `force=true`，否则后端拒绝操作。
+- `GET /admin/upload/{id}/usage` 返回素材被产品图库、产品封面、新闻封面以及**产品和新闻正文（`content_html`）**引用的数量与明细（正文引用对应 `product_content` / `news_content` 类型）；比较前统一归一化媒体 URL，因此同一图片的相对/绝对地址都能命中。被引用素材通过删除接口删除时需要显式 `force=true`，否则后端拒绝操作。
 - `POST /admin/upload/sync` 扫描产品/新闻中已引用但尚未建立 `UploadRecord` 的 URL，补齐媒体库记录；`POST /admin/upload/auto-categorize` 仅整理未分类记录，不移动物理文件。
 - 产品/新闻表单可传 `categorize=product:{slug}` 或 `categorize=news:{slug}`，后端自动创建或复用 `Products / {slug}`、`News / {slug}` 子相册。相册是逻辑归档，LocalStorageBackend 仍按年份/UUID 保存文件并返回 `/uploads/{year}/{uuid}.ext` URL。
 
@@ -277,7 +281,7 @@ WP 迁移残留表（迁移 `4_20260728150403_update`）；修复 admin-next 两
 - 产品、新闻、分类的列表与详情缓存会在写入后失效，slug 变更会清理旧 slug；`/readyz` 会区分真实 Redis 与降级缓存。
 - `inquiry` 已支持 `country`、`region`、`landing_page`、`source_product`、`referrer` 和 `utm_*` 归因字段；后台可按来源产品、国家和 UTM 查询。
 - `content` 中的 `NotificationReadState` 支持后台新询盘、超时未跟进、SMTP 失败通知的用户级已读状态。
-- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新迁移为 `backend/migrations/models/15_20260826110000_add_content_sort_order.py`。12 号迁移提供内容工作流，13、14 号迁移做公开文案纠错，15 号迁移补齐产品和新闻排序字段。
+- 迁移由部署阶段独立执行，应用容器启动命令不再隐式执行 Aerich；当前最新迁移为 `backend/migrations/models/16_20260908090000_backend_reliability.py`。12 号迁移提供内容工作流，13、14 号迁移做公开文案纠错，15 号迁移补齐产品和新闻排序字段，16 号迁移增加持久化后台任务表与账户 `session_version`。其后的内容缓存版本号、相册计数口径、审计日志关键字搜索等改动均为纯应用层实现，不需要新迁移。
 
 ### 与旧版段落的更正
 

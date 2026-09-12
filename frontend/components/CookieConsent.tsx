@@ -17,10 +17,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getPublicSettingsClient, resolveGaId } from "@/lib/api/settings";
 import { safeClarityId, syncClarityConsent } from "@/lib/clarity";
-
-const STORAGE_KEY = "sd-cookie-consent";
-// Clarity adds session replay: ask returning visitors to review the expanded scope.
-const CONSENT_VERSION = 2;
+import {
+  CONSENT_CHANGED_EVENT,
+  CONSENT_STORAGE_KEY as STORAGE_KEY,
+  CONSENT_VERSION,
+  syncAnalyticsConsent,
+} from "@/lib/consent";
 
 type ConsentState = {
   necessary: true;
@@ -131,8 +133,11 @@ export default function CookieConsent() {
     } catch {
       // 隐私模式等写入失败：仍按本次选择更新内存态
     }
+    // 撤回时立即停用已加载的 GA；重新接受时恢复开关（覆盖“接受→拒绝→继续操作”）。
+    syncAnalyticsConsent(analytics, gaId);
     setConsent(next);
     setShow(false);
+    window.dispatchEvent(new CustomEvent(CONSENT_CHANGED_EVENT, { detail: { analytics } }));
   }
 
   if (!mounted) return null;

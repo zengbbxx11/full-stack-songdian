@@ -130,6 +130,19 @@ class CategoryVO(BaseModel):
 CategoryTreeVO = CategoryVO  # 分类为单级，树即扁平列表
 
 
+class ProductCanonicalVO(BaseModel):
+    """产品规范路径（供边缘层 308 依据**当前**产品数据解析，替代人工重建静态映射）。"""
+
+    slug: str
+    category_slug: str | None = None
+    canonical_path: str
+
+    @classmethod
+    def from_model(cls, m, category_slug: str | None) -> ProductCanonicalVO:  # type: ignore[valid-type]
+        path = f"/products/{category_slug}/{m.slug}" if category_slug else f"/products/{m.slug}"
+        return cls(slug=m.slug, category_slug=category_slug, canonical_path=path)
+
+
 # ───────────────────────── 分类写/排序 DTO（T02）─────────────────────────
 class CategoryCreate(BaseModel):
     """创建产品分类。"""
@@ -145,6 +158,12 @@ class CategoryUpdate(BaseModel):
     name: str | None = None
     slug: str | None = None
     sort_order: float | None = None
+
+
+class CategoryMigrateRequest(BaseModel):
+    """删除分类前，把关联产品迁移到目标分类。"""
+
+    target_category_id: int
 
 
 class ReorderReq(BaseModel):

@@ -47,7 +47,14 @@ def submit(client, **extra):
     data.update(extra)
     response = client.post("/api/v1/inquiries", json=data)
     assert response.json()["code"] == "0", response.text
-    return response.json()["data"]
+    receipt = response.json()["data"]
+    assert receipt["received"] is True
+
+    # 公开接口只返回最小回执，需要在库中解析内部 id 供后续后台用例使用。
+    async def _resolve_id():
+        return (await Inquiry.get(biz_req_no=receipt["biz_req_no"])).id
+
+    return {"id": client.portal.call(_resolve_id), **receipt}
 
 
 def test_seo_partial_updates_and_explicit_clear(client):
@@ -103,11 +110,12 @@ def test_submit_enqueues_once_without_waiting_for_smtp(client, monkeypatch):
     first = submit(client, biz_req_no=biz)
     second = submit(client, biz_req_no=biz)
     assert first["id"] == second["id"]
-    assert first["smtp_status"] == "PENDING"
+    assert first["biz_req_no"] == second["biz_req_no"] == biz
     mail.assert_not_awaited()
 
     async def check():
         assert await Inquiry.filter(biz_req_no=biz).count() == 1
+        assert (await Inquiry.get(biz_req_no=biz)).smtp_status == "PENDING"
         assert await BackgroundJob.filter(kind="inquiry_mail").count() == 1
         await tasks.process_jobs()
         assert (await Inquiry.get(id=first["id"])).smtp_status == "SENT"

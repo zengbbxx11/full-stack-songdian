@@ -25,6 +25,7 @@ from inquiry.schemas import (
     FollowNoteRequest,
     InquiryAssignRequest,
     InquiryDetailVO,
+    InquiryReceiptVO,
     InquiryStatusRequest,
     InquirySubmitRequest,
     InquiryVO,
@@ -49,14 +50,32 @@ def _validate_inquiry_request(data: InquirySubmitRequest) -> None:
         raise BizException(ErrorCode.A040002)
 
 
-async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
+# 幂等重试时必须保持一致的提交字段。
+# 不含 country/tags/status：这些字段后台可后续人工修改，不应让合法重试被误判为不一致。
+_SUBMISSION_FIELDS = ("name", "email", "phone", "company", "product_interest", "message")
+
+
+def _matches_existing(existing: Inquiry, data: InquirySubmitRequest) -> bool:
+    """校验同一 biz_req_no 的重复提交内容是否一致（None 与空串视为等价）。"""
+    return all(
+        (getattr(existing, field) or "").strip() == (getattr(data, field) or "").strip()
+        for field in _SUBMISSION_FIELDS
+    )
+
+
+async def submit_inquiry(data: InquirySubmitRequest) -> InquiryReceiptVO:
     # 业务校验先行：非法输入直接走 A040001/A040002（HTTP 200），不污染幂等键。
     _validate_inquiry_request(data)
 
     # The database unique constraint is authoritative, even after Redis eviction/restart.
     existing = await Inquiry.get_or_none(biz_req_no=data.biz_req_no)
     if existing is not None:
-        return InquiryVO.from_model(existing)
+        # 公开接口仅返回最小回执；内容不一致时拒绝。
+        # 正常客户端在内容变化时会生成新的幂等键（见 InquiryForm 的 fingerprint 逻辑），
+        # 因此不会命中该分支；此处仅拦截"复用他人业务单号"的探测行为。
+        if not _matches_existing(existing, data):
+            raise BizException(ErrorCode.C400001, "该业务单号已提交过不同内容的询盘")
+        return InquiryReceiptVO.from_model(existing)
     from tortoise.transactions import in_transaction
     try:
         async with in_transaction():
@@ -69,8 +88,10 @@ async def submit_inquiry(data: InquirySubmitRequest) -> InquiryVO:
         existing = await Inquiry.get_or_none(biz_req_no=data.biz_req_no)
         if existing is None:
             raise
-        return InquiryVO.from_model(existing)
-    return InquiryVO.from_model(inquiry)
+        if not _matches_existing(existing, data):
+            raise BizException(ErrorCode.C400001, "该业务单号已提交过不同内容的询盘")
+        return InquiryReceiptVO.from_model(existing)
+    return InquiryReceiptVO.from_model(inquiry)
 
 
 async def list_inquiries(

@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import SelectField from "@/components/form/SelectField";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, apiFetchAllPages } from "@/lib/api-client";
@@ -44,6 +45,11 @@ export default function CategoriesPage() {
   // 删除确认
   const [deleteTarget, setDeleteTarget] = useState<Cat | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // 迁移并删除（分类下仍有产品时的安全删除路径）
+  const [migrateTarget, setMigrateTarget] = useState<Cat | null>(null);
+  const [migrateToId, setMigrateToId] = useState("");
+  const [migrating, setMigrating] = useState(false);
 
   // 拖拽排序
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -155,6 +161,29 @@ export default function CategoriesPage() {
     }
   }
 
+  // 迁移分类下的产品到目标分类后删除源分类（关联内容存在时的安全删除路径）
+  async function confirmMigrate() {
+    if (!migrateTarget || !migrateToId) {
+      toast.error("请选择目标分类");
+      return;
+    }
+    setMigrating(true);
+    try {
+      await apiFetch(`/admin/categories/${migrateTarget.id}/migrate-and-delete`, {
+        method: "POST",
+        body: { target_category_id: Number(migrateToId) },
+      });
+      toast.success("已迁移并删除分类");
+      setMigrateTarget(null);
+      setMigrateToId("");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "迁移失败");
+    } finally {
+      setMigrating(false);
+    }
+  }
+
   // 拖拽开始
   function handleDragStart(e: React.DragEvent, index: number) {
     setDragIdx(index);
@@ -259,6 +288,14 @@ export default function CategoriesPage() {
                         <button onClick={() => openEdit(c)} className="text-sm text-brand-500 hover:text-brand-600">
                           编辑
                         </button>
+                        {c.count > 0 && (
+                          <button
+                            onClick={() => { setMigrateTarget(c); setMigrateToId(""); }}
+                            className="text-sm text-amber-600 hover:text-amber-700"
+                          >
+                            迁移
+                          </button>
+                        )}
                         <button
                           onClick={() => setDeleteTarget(c)}
                           className="text-sm text-red-500 hover:text-red-600"
@@ -323,11 +360,44 @@ export default function CategoriesPage() {
         </div>
       </Modal>
 
+      {/* 迁移并删除 */}
+      <Modal isOpen={migrateTarget != null} onClose={() => { setMigrateTarget(null); setMigrateToId(""); }}>
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-gray-900">
+          <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">迁移并删除分类</h3>
+          <p className="mb-4 text-sm text-gray-500">
+            将「{migrateTarget?.name}」下的 {migrateTarget?.count ?? 0} 个产品迁移到目标分类后删除该分类。
+          </p>
+          <div>
+            <Label>目标分类 *</Label>
+            <SelectField
+              aria-label="目标分类"
+              value={migrateToId}
+              onChange={(e) => setMigrateToId(e.target.value)}
+            >
+              <option value="">请选择目标分类</option>
+              {items
+                .filter((c) => c.id !== migrateTarget?.id)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+            </SelectField>
+          </div>
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={() => { setMigrateTarget(null); setMigrateToId(""); }}>
+              取消
+            </Button>
+            <Button size="sm" onClick={confirmMigrate} disabled={migrating || !migrateToId}>
+              {migrating ? "迁移中..." : "迁移并删除"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* 删除确认 */}
       <ConfirmDialog
         open={deleteTarget != null}
         title="删除分类"
-        message={`确定删除「${deleteTarget?.name}」吗？此操作不可撤销。`}
+        message={`确定删除「${deleteTarget?.name}」吗？若该分类下仍有产品，删除会被拒绝，请改用「迁移」先转移内容。`}
         confirmText="删除"
         loading={deleting}
         onConfirm={confirmDelete}

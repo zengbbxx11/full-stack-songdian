@@ -32,12 +32,16 @@ for (const resource of ["news", "products"] as const) {
       await gotoHydrated(page, `${adminBase}/${route}`);
       await page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true }).fill(title);
       await page.getByPlaceholder(isNews ? "文章别名" : "dc105-4k-digital-camera", { exact: true }).fill(slug);
+      // 分类/状态已改为自绘 listbox（非原生 select）：展开后点击选项。
       const category = page.locator(isNews ? "#news-category" : "#product-category");
-      await expect(category.locator("option")).not.toHaveCount(1);
-      await category.selectOption({ index: 1 });
+      await category.click();
+      const categoryOptions = page.getByRole("option");
+      await expect(categoryOptions).not.toHaveCount(1);
+      await categoryOptions.nth(1).click();
       await page.locator("textarea").first().fill("Lifecycle fixture summary");
       await page.locator('[contenteditable="true"]').fill("Lifecycle fixture body");
-      await page.getByLabel("内容状态").selectOption("PUBLISHED");
+      await page.getByLabel("内容状态").click();
+      await page.getByRole("option", { name: "已发布", exact: true }).click();
       if (!isNews) {
         await page.locator("#product-seo-title").fill(`SEO ${title}`);
         await page.locator("#product-seo-description").fill("Custom product SEO description");
@@ -96,8 +100,9 @@ for (const resource of ["news", "products"] as const) {
         }
       }
       await page.locator("tr").filter({ hasText: title }).getByRole("link", { name: "编辑", exact: true }).click();
-      await expect(page.getByLabel("内容状态")).toHaveValue("PUBLISHED");
-      await page.getByLabel("内容状态").selectOption("DRAFT");
+      await expect(page.getByLabel("内容状态")).toHaveAttribute("data-value", "PUBLISHED");
+      await page.getByLabel("内容状态").click();
+      await page.getByRole("option", { name: "草稿", exact: true }).click();
       await save.click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
       const row = page.locator("tr").filter({ hasText: title });
@@ -107,7 +112,7 @@ for (const resource of ["news", "products"] as const) {
       expect(await (await request.get("/sitemap.xml")).text()).not.toContain(slug);
       await expect.poll(async () => (await request.get(publicPath)).text()).toContain('content="noindex"');
       await row.getByRole("link", { name: "编辑", exact: true }).click();
-      await expect(page.getByLabel("内容状态")).toHaveValue("DRAFT");
+      await expect(page.getByLabel("内容状态")).toHaveAttribute("data-value", "DRAFT");
       await expect(page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true })).toHaveValue(title);
       if (!isNews) {
         await page.getByPlaceholder("名称（如：传感器）").fill("Sensor");
@@ -137,7 +142,8 @@ for (const resource of ["news", "products"] as const) {
       await popup.close();
       // Asia/Shanghai 08:30 must be persisted as 00:30 UTC, not as 08:30 UTC.
       const day = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-      await page.getByLabel("内容状态").selectOption("SCHEDULED");
+      await page.getByLabel("内容状态").click();
+      await page.getByRole("option", { name: "定时发布", exact: true }).click();
       await page.getByLabel("发布时间", { exact: true }).fill(`${day}T08:30`);
       await save.click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);
@@ -147,7 +153,7 @@ for (const resource of ["news", "products"] as const) {
       await expect(page.getByRole("button", { name: "恢复", exact: true }).first()).toBeVisible();
       page.once("dialog", dialog => dialog.accept());
       await page.getByRole("button", { name: "恢复", exact: true }).last().click();
-      await expect(page.getByLabel("内容状态")).toHaveValue("PUBLISHED");
+      await expect(page.getByLabel("内容状态")).toHaveAttribute("data-value", "PUBLISHED");
       await page.getByRole("button", { name: isNews ? "删除" : "删除产品", exact: true }).click();
       await page.getByRole("dialog").getByRole("button", { name: "删除", exact: true }).click();
       await expect(page).toHaveURL(`${adminBase}/${resource}`);

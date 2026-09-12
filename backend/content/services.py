@@ -9,7 +9,7 @@ import uuid
 import asyncio
 from tortoise.transactions import in_transaction
 from tortoise.functions import Count
-from tortoise.expressions import F
+from tortoise.expressions import F, Q
 from common.tasks import transactional_write
 from datetime import UTC, datetime
 
@@ -246,8 +246,21 @@ _AUDIT_ORDER_WHITELIST = {
 }
 
 
-async def list_audit_logs(req: PageRequest) -> tuple[list[AuditPageVO], int]:
+async def list_audit_logs(req: PageRequest, keyword: str | None = None) -> tuple[list[AuditPageVO], int]:
+    """审计日志分页查询。
+
+    keyword 在**分页前**于数据库过滤 username/action/resource，并返回过滤后的总数，
+    避免此前"只搜当前页"导致其他页存在匹配记录时误报"无匹配"。
+    """
     q = AuditLog.all()
+    if keyword:
+        kw = keyword.strip()
+        if kw:
+            q = q.filter(
+                Q(username__icontains=kw)
+                | Q(action__icontains=kw)
+                | Q(resource__icontains=kw)
+            )
     # 必须约束为真实存在的字段，否则 Tortoise order_by 抛 FieldError → 500。
     order_by = req.order_by or "-created_time"
     if order_by.lstrip("-") not in _AUDIT_ORDER_WHITELIST:

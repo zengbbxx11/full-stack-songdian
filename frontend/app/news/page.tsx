@@ -8,18 +8,47 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { superMeta } from "next-super-meta";
-import { getPosts } from "@/lib/api/news";
+import { getPosts, NEWS_PER_PAGE } from "@/lib/api/news";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SpotlightCard from "@/components/SpotlightCard";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 
-export const metadata = await superMeta({
-  title: "Camera Manufacturing News & Insights",
-  description: `Industry insights, product announcements, and camera manufacturing expertise from ${COMPANY.name}. Stay informed on the latest from Songdian Technology.`,
-  url: "/news",
-});
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
+  const sp = await searchParams;
+
+  // 页码规范化：非数字 / <1 一律按首页处理（canonical 去掉 page=1）。
+  const requested = Number(sp.page);
+  const requestedPage = Number.isInteger(requested) && requested > 1 ? requested : 1;
+
+  // 有效页码 >1 时声明自身 canonical；超范围页回退首页并 noindex。
+  // 与页面组件共用同一次 getPosts 请求（Next 对同一 fetch 去重）。
+  let canonicalPage = requestedPage;
+  let outOfRange = false;
+  if (requestedPage > 1) {
+    try {
+      const { pagination } = await getPosts({ page: requestedPage, perPage: NEWS_PER_PAGE });
+      if (!pagination || requestedPage > pagination.totalPages) {
+        canonicalPage = 1;
+        outOfRange = true;
+      }
+    } catch {
+      canonicalPage = 1;
+      outOfRange = true;
+    }
+  }
+
+  const meta = await superMeta({
+    title: "Camera Manufacturing News & Insights",
+    description: `Industry insights, product announcements, and camera manufacturing expertise from ${COMPANY.name}. Stay informed on the latest from Songdian Technology.`,
+    url: canonicalPage > 1 ? `/news?page=${canonicalPage}` : "/news",
+  });
+
+  // 超范围页码：声明首页为规范页并禁止索引，避免低质重复页。
+  return outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
+}
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成新闻列表，平衡实时性与性能
 export const revalidate = 60;
@@ -30,7 +59,9 @@ interface NewsPageProps {
 
 export default async function NewsPage({ searchParams }: NewsPageProps) {
   const params = await searchParams;
-  const currentPage = Number(params.page) || 1;
+  // 与 generateMetadata 保持同一归一化口径：非整数 / <1 一律按首页处理。
+  const requestedPage = Number(params.page);
+  const currentPage = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
 
   // 接口失败时优雅降级：渲染友好提示而非整页崩溃
   let posts: Awaited<ReturnType<typeof getPosts>>["posts"] = [];

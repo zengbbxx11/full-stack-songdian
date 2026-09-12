@@ -360,11 +360,12 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 
 ## 五、构建并启动（Docker Compose 全栈）
 
-> ⚠️ **前端构建前置（产品 URL 规范映射）**：`frontend/proxy.ts` 依赖 `frontend/lib/generated/canonical-map.ts`。发布前在本地刷新并一并 push：
+> ℹ️ **产品 URL 规范化已改为运行时数据驱动，不再是构建前置**：`frontend/proxy.ts` 在边缘层调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品**当前**分类并做 308，后台修改分类后即时生效。后端明确返回 404（未发布/不存在）时不再回退旧映射，交由页面渲染 404。
+> `frontend/lib/generated/canonical-map.ts` 仅作为“后端不可达”时的过渡兜底。若确实要刷新它（例如批量调整过分类），在后端可达时手动执行即可，不是发布必做项：
 > ```bash
 > cd frontend && npm run gen:map && git add lib/generated/canonical-map.ts && git commit -m "chore: refresh product canonical map" && cd ..
-> git push
 > ```
+> 注意 `scripts/gen-canonical-map.mjs` 现在按 `page_size=50` 翻页拉取全量产品（后端单页上限为 50）。
 
 ### 5.1 本地或隔离环境首次构建
 
@@ -410,11 +411,18 @@ curl -s http://127.0.0.1:8000/readyz
 # 4) 产品列表（确认表已建好；已有服务器应仍返回原有业务数据）
 curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1" | python3 -m json.tool | head -5
 
-# 5) 询盘 CRM 字段存在（NEW/CONTACTING/QUOTED/DEAL/LOST 五态管线已就绪）
+# 5) 询盘公开回执（最小响应：仅 biz_req_no/received/status，绝不含内部 CRM 字段）
 curl -s -X POST http://127.0.0.1:8000/api/v1/inquiries \
   -H "Content-Type: application/json" \
   -d '{"name":"Test","email":"t@t.com","message":"deploy check","biz_req_no":"deploy-check-1"}' \
-  | python3 -m json.tool | grep -E '"status"|"assigned_user_id"|"tags"'
+  | python3 -m json.tool | grep -E '"biz_req_no"|"received"|"status"'
+
+# 5b) 同一业务单号提交**不同内容** → 拒绝（C400001），且不回显已有询盘内容
+curl -s -X POST http://127.0.0.1:8000/api/v1/inquiries \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"t@t.com","message":"different content","biz_req_no":"deploy-check-1"}' \
+  | python3 -m json.tool | grep -E '"code"'
+# → "code": "C400001"
 
 # 6) 官网前端（容器内 localhost:3000 可达）
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/
@@ -434,8 +442,8 @@ curl -s -c "$COOKIE_JAR" -X POST https://admin.zsaki.icu/api/v1/admin/login \
 curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/stats"
 # → {"code":"0","data":{"counts":{...},"inquiry_countries":[...],"inquiry_status":{...}}}
 
-# 审计日志
-curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/audit-logs?page_size=1"
+# 审计日志（keyword 在分页前于数据库过滤 username/action/resource，total 为过滤后总数）
+curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/audit-logs?page_size=1&keyword=admin"
 # → {"code":"0","data":{"list":[...],"total":...}}
 
 # 用户列表
@@ -454,7 +462,7 @@ curl -s -b "$COOKIE_JAR" "https://admin.zsaki.icu/api/v1/admin/users/list"
 | 5 | frontend | 依赖 backend `/readyz` 探活 → `next start -p 3000` |
 | 6 | admin-next | 依赖 backend `/readyz` 探活 → `next start -p 3001` |
 
-**关键：aerich upgrade 独立执行**——发布脚本先备份，再通过 `docker compose --profile tools run --rm migrate` 运行迁移；只有迁移成功才切换应用镜像。backend 启动时只同步内置资源并启动 Uvicorn。不要删除 `pg_data` 或重置 schema。
+**关键：aerich upgrade 独立执行**——发布脚本先备份，再通过 `docker compose --profile tools run --rm migrate` 运行迁移；只有迁移成功才切换应用镜像。backend 启动时只同步内置**图片**资源（`uploads/products|news|2026`）并清理媒体目录中残留的代码文件，然后启动 Uvicorn。不要删除 `pg_data` 或重置 schema。
 
 ---
 
@@ -549,9 +557,9 @@ sudo ufw enable
 | 后端就绪 | `curl -s http://127.0.0.1:8000/readyz` | 生产要求 DB 与真实 Redis 均正常；任一异常返回 503，本地内存缓存模式显示 `degraded` |
 | 产品列表 | `curl -s "http://127.0.0.1:8000/api/v1/products?page_size=1"` | 返回数据 |
 | SEO 字段 | 同上接口返回 JSON 含 `seo_title` / `seo_description` 键 | 字段存在（NULL 正常） |
-| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera&type=all&page_size=50"` | 产品分组在前；新闻分组按时间倒序；降级提示无中文 |
+| 搜索 | `curl -s "http://127.0.0.1:8000/api/v1/search?q=camera&type=all&page_size=50"` | 产品分组在前；新闻分组按时间倒序；降级提示无中文；产品 `url` 为规范嵌套地址 `/products/{category}/{slug}` 且带 `category_slug` |
 | Dashboard stats | 携带 `admin.zsaki.icu` 的 HttpOnly 会话 Cookie 调 `GET /api/v1/admin/stats` | 返回 counts + inquiry_countries + inquiry_status |
-| 审计日志 | 携带 `admin.zsaki.icu` 的 HttpOnly 会话 Cookie 调 `GET /api/v1/admin/audit-logs?page_size=1` | 返回 list + total |
+| 审计日志 | 携带 `admin.zsaki.icu` 的 HttpOnly 会话 Cookie 调 `GET /api/v1/admin/audit-logs?page_size=1&keyword=admin` | 返回 list + total；`keyword` 在分页前过滤 username/action/resource |
 
 ### 9.3 前端层（服务器内部）
 
@@ -617,7 +625,7 @@ docker compose ps                       # 当前状态一览
 | **审计日志** | 36 处操作自动记录，后台侧边栏 → 审计日志查看 |
 | **GA4 事件** | `cta_click` / `product_view` / `contact_submit` 三个转化事件已埋点；优先在管理后台“设置”中配置 `ga_id`，`NEXT_PUBLIC_GA_ID` 仅作为兼容兜底 |
 | **Redis 缓存** | 产品列表(5min) / 分类(30min) / 新闻列表(5min) 自动缓存，写操作自动失效 |
-| **备份** | `scripts/backup.sh` 覆盖 PG + uploads，配置 cron 每日凌晨 3 点执行 |
+| **备份** | `scripts/backup.sh` 覆盖 PG + uploads，按批次号命名（同日多次不互相覆盖），支持 `RELEASE_ID`；配置 cron 每日凌晨 3 点执行 |
 
 ### 在线设置与回显验收
 
@@ -654,22 +662,32 @@ crontab -e
 
 | 数据 | 文件名格式 | 方式 |
 |------|-----------|------|
-| PostgreSQL | `db_YYYYMMDD.sql.gz` | `docker compose exec -T postgres pg_dump \| gzip` |
-| 上传文件 | `uploads_YYYYMMDD.tar.gz` | `docker run` 挂载 `uploads_data` 卷 → tar |
+| PostgreSQL | `db_YYYYmmdd_HHMMSS[_RELEASE_ID].sql.gz` | `docker compose exec -T postgres pg_dump \| gzip` |
+| 上传文件 | `uploads_YYYYmmdd_HHMMSS[_RELEASE_ID].tar.gz` | `docker run` 挂载 `uploads_data` 卷 → tar |
 
-**保留策略**：`find -mtime +7` 删除 7 天前文件，但每月 1 号的备份**长期保留**（不自动清理）。
+**批次号**：数据库与媒体备份共用同一 `STAMP`（`date +%Y%m%d_%H%M%S`）。设置 `RELEASE_ID` 环境变量会在批次号后追加发布标识（非法字符会被替换为 `_`），便于把备份与某次发布对应起来：
+
+```bash
+RELEASE_ID=v1.4.2 COMPOSE_DIR=/home/ubuntu/full-stack-songdian BACKUP_DIR=/home/ubuntu/backups bash scripts/backup.sh
+```
+
+同日多次部署（例如当天第二次发布）会生成不同文件名，**不再相互覆盖**，可保留当天每次发布前的恢复点。
+
+**保留策略**：`find -mtime +7` 删除 7 天前文件，但每月 1 号的备份**长期保留**（不自动清理）。清理规则同时匹配新命名（`db_??????01_*.sql.gz`：6 个 `?` 对应 `YYYYMM`，后两位留给 `01`）与历史遗留的旧命名（`db_??????01.sql.gz`），因此升级脚本后旧的 `db_YYYYMMDD.sql.gz` 仍按原规则处理。⚠️ 模式里的 `?` 个数必须是 **6**：写成 8 个会匹配不上任何真实文件名，导致每月 1 号的备份被当作过期删除。
 
 > 备份脚本的上传卷名与 Compose 的 `name: songdian-b2b` 一致。若将来修改 Compose 项目名，需同步修改 `scripts/backup.sh` 内的 `COMPOSE_PROJECT`，再先手动跑一次备份验证。
 
 **恢复：**
 
 ```bash
-# PostgreSQL 恢复
-gunzip -c /home/ubuntu/backups/db_YYYYMMDD.sql.gz | docker compose exec -T postgres psql -U songdian -d songdian_b2b
+# PostgreSQL 恢复（文件名替换为实际批次，例如 db_20260912_031500.sql.gz）
+gunzip -c /home/ubuntu/backups/db_YYYYmmdd_HHMMSS.sql.gz | docker compose exec -T postgres psql -U songdian -d songdian_b2b
 
 # uploads 恢复（解压到卷）
-docker run --rm -v songdian-b2b_uploads_data:/data alpine sh -c "cd /data && tar xzf -" < /home/ubuntu/backups/uploads_YYYYMMDD.tar.gz
+docker run --rm -v songdian-b2b_uploads_data:/data alpine sh -c "cd /data && tar xzf -" < /home/ubuntu/backups/uploads_YYYYmmdd_HHMMSS.tar.gz
 ```
+
+> 若同一批次的数据库与媒体都要回滚，请使用**同一个 `STAMP`**（例如 `20260912_031500`）的两个文件，避免数据库回滚到较早时点而媒体仍是较晚状态。
 
 ---
 
@@ -757,18 +775,19 @@ curl -I https://admin.zsaki.icu/signin
 | PG 版本 | 锁定 **18 线**（`postgres:18-bookworm`，官方镜像、无 zhparser） |
 | ⚠️ **PG18 卷挂载点** | 卷必须挂 `/var/lib/postgresql`（内部按 major 版本分子目录）。挂旧路径 `/var/lib/postgresql/data` 会报「18+ images require...」启动失败（postgres:18 镜像新约定） |
 | ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
-| 图片自动同步 | backend 启动命令 `cp -rn uploads/. uploads_data/`（`-n` 不覆盖运营上传文件，幂等）：git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷 |
+| 图片自动同步 | backend 启动命令**只**把 `uploads/products`、`uploads/news`、`uploads/2026` 图片目录 `cp -rn` 到 `uploads_data/`（`-n` 不覆盖运营上传文件，幂等），再清理媒体根目录残留的 `.py` / `.env` / `.sh` 等代码与配置文件；git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷。⚠️ **不得改回整体复制 `uploads/.`**——`uploads/` 同时是代码模块目录，整体复制会把 `models.py` 等源码暴露到公开的 `/uploads/` 路径 |
+| 媒体目录后缀防线 | 即使媒体卷中残留在代码文件，`backend/main.py` 的 `_MediaStaticFiles` 也会对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404，避免源码经 `/uploads/` 被下载 |
 | 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env） |
 | 图片域名 | `frontend/next.config.ts` 生产环境默认仅允许 `api.zsaki.icu` 的 HTTPS 上传资源；API 域名变更时需同步修改并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | HTTPS | 管理后台必须配置域名和 Let’s Encrypt 证书；生产 Secure Cookie 不支持 IP/HTTP 登录 |
 | 数据导入 | 新环境见「六、生产初始化」：只运行迁移和最小种子；开发 SQL/CSV 快照禁止导入生产 |
-| 迁移链说明 | aerich 迁移 0-15；10 号迁移收敛历史重复外键，11 号增加询盘归因与通知已读状态，12 号增加内容状态/发布时间/版本记录，13、14 号规范公开文案，15 号补齐产品/新闻排序字段。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
+| 迁移链说明 | aerich 迁移 0-16；10 号迁移收敛历史重复外键，11 号增加询盘归因与通知已读状态，12 号增加内容状态/发布时间/版本记录，13、14 号规范公开文案，15 号补齐产品/新闻排序字段，16 号增加持久化后台任务表与账户 `session_version`。已有云库不重放已记录版本，禁止删除 `pg_data` 或执行 `DROP SCHEMA` |
 | 后端镜像 PATH | Dockerfile 里 `ENV PATH="/app/backend/.venv/bin:$PATH"`——新版 uv 的 `uv sync` 默认装进 `.venv`（`--system` 已移除），不加 PATH 则 `aerich`/`uvicorn` not found |
 | 数据库 URL | compose 里 `DATABASE_URL` 用 **`postgres://`** 前缀——Tortoise-ORM(asyncpg) 不认 `postgresql://`，会报 `Unknown DB scheme` |
 | 构建无需后端在线 | frontend 首页 `NewsSection` 已加 `.catch()` 兜底：`docker compose build` 时后端未启动也**不会**因预渲染 404 失败（降级为空数据，运行时正常拉取） |
 | 数据库升级 | 升 PG 大版本时注意迁移 `pg_data` 卷（先备份再升）；Redis 升级注意 `redis_data` 兼容 |
-| 前端 URL 规范映射 | `frontend/lib/generated/canonical-map.ts` 由 `npm run gen:map` 生成并随仓库提交；产品/分类变动后需重新生成+提交，再 `docker compose build`，否则产品 308 重定向用旧映射 |
+| 前端 URL 规范映射 | 运行时由 `frontend/proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical` 解析产品**当前**分类后 308，后台改分类即时生效、**无需重建镜像**；`frontend/lib/generated/canonical-map.ts` 仅作为后端不可达时的兜底，可按需 `npm run gen:map` 刷新（脚本按 `page_size=50` 翻页取全量产品） |
 | postcss 构建报错 | 若 `next build` 报 `Module not found: Can't resolve 'postcss'`，是 `node_modules/postcss` 被装成空目录所致；`rm -rf node_modules/postcss && npm install` 补全即可（本地 dev/CI 均可能遇到） |
 | Next 16.3 构建 | `next.config.ts` **不要写 `eslint: {}`**（Next 16 已移除该键，type check 报错）；`useSearchParams()` 页面必须包 `<Suspense>`，否则静态生成报 CSR bailout |
 | 询盘邮件通知 | SMTP 配置可**在线改**：管理后台 → 设置 →「邮件通知（询盘 SMTP）」分组（`t_setting` 表存储，保存即生效，无需重启）。字段：smtp_host/port/user/password（脱敏 `******`）/发件人/收件人；「测试发送」按钮可校验。旧 `.env` 的 `SMTP_*` 仍兼容（库值非空时优先）。⚠️ **SMTP key 惰性创建**：`GET /admin/settings` 时 `ensure_smtp_settings()` 自动 `get_or_create`——与 `SEED_ON_START` 开关**解耦**（生产 `SEED_ON_START=false` 时 key 也能出现；**勿依赖 run_seed 创建**，否则设置页无 SMTP 面板） |
@@ -787,7 +806,7 @@ curl -I https://admin.zsaki.icu/signin
 - 发布冒烟至少覆盖官网产品详情、产品 CTA 询盘、后台登录、通知下拉框和询盘归因字段；回滚使用上一个已记录的镜像 SHA。
 - 生产数据库和运行时上传媒体不由 Git checkout 或镜像构建覆盖；工厂展示视频属于前端静态源码资产，会随前端镜像发布。备份和恢复必须针对 PostgreSQL/上传媒体卷单独执行。
 
-本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-15` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`，13、14 号迁移纠正公开文案，15 号迁移补齐产品/新闻 `sort_order` 字段。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
+本文件早期示例中的 `aerich 迁移 0-10` 已由当前迁移链 `0-16` 取代；11 号迁移包含询盘归因字段和通知已读状态表，12 号迁移包含产品/新闻发布状态、`published_at` 与 `ContentRevision`，13、14 号迁移纠正公开文案，15 号迁移补齐产品/新闻 `sort_order` 字段，16 号迁移新增后台任务表 `t_background_job` 与账户 `session_version`。更新已有环境时只执行 `aerich upgrade`，不要删除 `pg_data`、上传卷或导入 `db/` 快照。
 
 ## 2026-08-19 内容工作流发布补充
 

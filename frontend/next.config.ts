@@ -30,6 +30,10 @@ if (
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
+  // 本地开发允许经 127.0.0.1 / localhost 访问：Next 15.2+ 会把与 dev server
+  // 自身主机名不一致的来源判为跨源并拦掉 HMR WebSocket(/\_next/hmr)，导致页面
+  // 无法完成注水（E2E 默认使用 127.0.0.1，会因注水超时而假失败）。
+  allowedDevOrigins: ["localhost", "127.0.0.1", "localhost:3000", "127.0.0.1:3000"],
   images: {
     // 启用 AVIF + WebP 现代图片格式 — 比 JPEG/PNG 小 30-50%，弱网体验显著提升
     formats: ["image/avif", "image/webp"],

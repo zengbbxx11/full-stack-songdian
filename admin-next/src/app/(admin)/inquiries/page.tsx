@@ -15,6 +15,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import SelectField from "@/components/form/SelectField";
 import Button from "@/components/ui/button/Button";
 import { apiFetch, apiFetchAllPages, swrFetcher } from "@/lib/api-client";
 import type { AdminUser, Inquiry, InquiryStatus, FollowNote, Paginated } from "@/types";
@@ -496,11 +497,10 @@ export default function InquiriesPage() {
             <fieldset disabled={replyLoading || !!replyError || replySaving} className="space-y-4 disabled:opacity-60">
               <div>
                 <label htmlFor="inquiry-reply-status" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">状态</label>
-                <select
+                <SelectField
                   id="inquiry-reply-status"
                   value={reply.status}
                   onChange={(e) => setReply((p) => ({ ...p, status: e.target.value as InquiryStatus }))}
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 >
                   {/* 仅展示当前状态与合法流转目标，避免出现后端必然拒绝的选项 */}
                   {[reply.baseStatus, ...nextStatusesOf(reply.baseStatus)].map((s) => (
@@ -508,7 +508,7 @@ export default function InquiriesPage() {
                       {s} — {STATUS_LABEL[s]}{s === reply.baseStatus ? "（当前）" : ""}
                     </option>
                   ))}
-                </select>
+                </SelectField>
                 {nextStatusesOf(reply.baseStatus).length === 0 && (
                   <p className="mt-1 text-xs text-gray-400">该询盘已是终态，不可回退；保存仅更新备注与国家。</p>
                 )}

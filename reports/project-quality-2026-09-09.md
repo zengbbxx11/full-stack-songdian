@@ -62,3 +62,8 @@
 | verify:seo | 通过 |
 
 浏览器使用本机 Edge 无头模式（Playwright 项目名仍为 chromium），因为默认 Chromium 二进制未安装；没有以跳过用例代替验证。最终检查没有关闭规则或忽略类型错误。临时服务仅用于本地隔离验证，结束后关闭。截图已用于人工查看；Playwright 的后续运行可能覆盖 test-results，不将其作为持久交付物。
+
+## 后续更新（2026-09-12）
+
+- 「保留的实现与后续工作」中"产品及分类 slug 对规范路径映射的影响仍按既有生成流程维护；未来可专项改进动态失效"已在该批次之后完成：`frontend/proxy.ts` 改为运行时调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品当前分类并 308，后台改分类即时生效；`lib/generated/canonical-map.ts` 仅作后端不可达时的兜底映射。
+- 后端用例数在本批新增回归后由 121 增至 132（`pytest tests/ -q`），最新行为与验证结果以 [`../CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 为准。

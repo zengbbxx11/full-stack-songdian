@@ -190,7 +190,13 @@ async def auto_categorize(
 async def list_albums(
     _user: AdminUser = Depends(require_permission("media:upload")),
 ) -> Result:
-    """列出全部相册，并附带各相册与未分类素材数量（单条聚合查询）。"""
+    """列出全部相册，并附带各相册与未分类素材数量（单条聚合查询）。
+
+    每个相册返回两个计数：
+    - ``count``：直系素材数（仅 album_id == 本相册）；
+    - ``total_count``：子树合计（本相册 + 全部子相册），供媒体库侧边栏展示——
+      Products / News 这类大类的图片挂在子相册下，只用直系数会一直显示 0。
+    """
     albums = await services.list_albums()
     # 聚合统计：各相册素材数 + 未分类数（album_id IS NULL）
     agg = (
@@ -207,7 +213,13 @@ async def list_albums(
             uncategorized = row.get("total", 0)
         else:
             counts[aid] = row.get("total", 0)
-    data = [AlbumVO.from_model(a, count=counts.get(a.id, 0)).model_dump(mode="json") for a in albums]
+    totals = services.rollup_album_totals(albums, counts)
+    data = [
+        AlbumVO.from_model(
+            a, count=counts.get(a.id, 0), total_count=totals.get(a.id, 0)
+        ).model_dump(mode="json")
+        for a in albums
+    ]
     return Result.ok({"list": data, "total": len(data), "uncategorized": uncategorized})
 
 

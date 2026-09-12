@@ -75,14 +75,16 @@ backend/
 |------|------|------|
 | `/products` `/product-categories` | 公开 | 产品列表/分类（分页、筛选、搜索） |
 | `/products/{slug}` | 公开 | 产品详情 |
+| `/products/{slug}/canonical` | 公开 | 产品规范路径（含当前分类），供官网 `proxy.ts` 边缘层 308 解析；未发布/不存在返回 404 |
 | `/news` `/news-categories` | 公开 | 新闻列表/分类 |
 | `/news/{slug}` | 公开 | 新闻详情 |
 | `/search` | 公开 | 联合全文搜索 |
-| `/inquiries` | 公开(POST) | 提交询盘（幂等 biz_req_no + IP 限流） |
+| `/inquiries` | 公开(POST) | 提交询盘（幂等 biz_req_no + IP 限流）；**只返回最小回执**（biz_req_no/received/status/submitted_at），同一单号内容不一致返回 `C400001` |
 | `/admin/inquiries/{id}/assign` | JWT+RBAC | 分配/取消分配销售人员（2026-07 CRM 新增） |
 | `/admin/inquiries/{id}/follow-note` | JWT+RBAC | 追加跟进记录（2026-07 CRM 新增） |
 | `/admin/login` `/admin/refresh` | — | 登录/刷新令牌（**注意：路径无 `/auth` 段**） |
 | `/admin/products` `/admin/news` `/admin/categories` `/admin/users` `/admin/users/list` `/admin/roles` `/admin/inquiries` `/admin/upload` `/admin/settings` `/admin/stats` `/admin/audit-logs` | JWT+RBAC | 后台 CRUD 与管理 |
+| `/admin/categories/{id}/migrate-and-delete`、`/admin/news-categories/{id}/migrate-and-delete` | JWT+RBAC | 事务内迁移内容后删除分类；直接删除在仍有未删除内容时返回 `C400001` + 关联数量 |
 
 ---
 
@@ -134,7 +136,7 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **产品列表缓存**：`product/services.py` 产品列表（5min TTL）+ 产品分类（30min TTL）Cache-Aside Redis 缓存。`news/services.py` 新闻列表同模式。
 - **Dashboard 统计**：`content/services.py` 新增 `get_dashboard_stats()`，返回产品/新闻/分类计数 + 询盘国家分布 + 询盘状态分布。路由 `GET /admin/stats`。
 - **用户管理**：`content/services.py` 新增 `list_users` / `create_user`（统一 admin 角色）/ `delete_user`（admin 账号受保护）/ `reset_password`。路由 `GET/POST/DELETE /admin/users` + `PUT .../reset-password`。
-- **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页+搜索）。
+- **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页 + `keyword` 服务端搜索）。`keyword` 在分页前于数据库过滤 `username` / `action` / `resource`，`total` 为过滤后总数。
 - **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
 - **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA 与站点验证配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
 - **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT 并收敛历史外键，迁移 11 增加询盘归因与通知已读状态，迁移 12 增加内容状态、发布时间和版本表。生产由独立 Compose `migrate` profile 显式执行 `aerich upgrade`，backend 应用容器不自动迁移。
@@ -148,7 +150,7 @@ P0 级审计修复（相关行为已合入当前代码）：
 
 ## 2026-09-08 可靠性约定
 
-- 询盘入库和邮件任务同事务提交；接口返回 PENDING，worker 异步发送，最多 5 次失败尝试。不得恢复为请求内等待 SMTP。
+- 询盘入库和邮件任务同事务提交；记录以 `smtp_status=PENDING` 落库后由 worker 异步发送，最多 5 次失败尝试。不得恢复为请求内等待 SMTP，也不得把 `smtp_status` 等内部字段放回公开提交响应（公开接口只返回最小回执）。
 - 内容写入、搜索向量、版本、缓存失效任务同事务；提交后尝试失效，失败由任务表重试。
 - PostgreSQL 编辑与 CRM 跟进使用事务行锁；不要对旧对象全字段保存覆盖并发修改。
 - SEO/封面/标签等局部更新必须区分未提交与显式清空。
@@ -156,3 +158,13 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 改密递增 session_version，使旧 access/refresh 均失效；刷新族使用原子 SET NX 消费。权限读取数据库。
 - 新增模型模块 common.task_model，生产启动前必须先执行迁移 16。
 - 常规验证：pytest -q、ruff check .；PostgreSQL 并发验证：python -m scripts.verify_reliability，仅可对 backend_qa_* 或 *_ci 临时库运行。
+
+## 2026-09-12 一致性约定
+
+- 公开提交接口一律返回最小回执，内部 CRM 字段（跟进记录、负责人、标签、处理状态、`smtp_status`）只经后台接口暴露；同一幂等键提交内容不一致时拒绝，不回显既有内容。
+- 产品规范路径由 `GET /products/{slug}/canonical` 提供（仅未删除且已发布的产品），分类以产品当前归属为准；不要在别处重建静态映射作为唯一事实源。
+- 删除分类前必须检查未删除的关联内容，存在则拒绝并返回数量（`C400001`，`data.conflict=true`）；跨分类迁移与删除必须在同一事务内完成。
+- 媒体引用统计必须覆盖产品和新闻正文（`content_html`），URL 比较统一走 `_normalize_media_url`，避免仅正文引用的图片被误删。
+- 媒体静态目录必须保持后缀黑名单（`_MediaStaticFiles`），并保持 compose 只同步 `uploads/*` 的图片子目录——禁止整体复制 `uploads/`（该目录含源码模块）。
+- 内容详情缓存的回填必须经过 `common/cache_version.py` 的版本校验；新增读回填路径时不要绕过 `get_content_version`。
+- 审计日志关键字过滤必须在分页前于数据库完成，并返回过滤后的 `total`。

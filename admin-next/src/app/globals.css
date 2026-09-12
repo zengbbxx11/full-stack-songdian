@@ -280,11 +280,13 @@
 }
 
 @layer utilities {
-  /* For Remove Date Icon */
+  /* For Remove Date Icon（统一改用自定义日历图标，见 InputField） */
   input[type="date"]::-webkit-inner-spin-button,
   input[type="time"]::-webkit-inner-spin-button,
+  input[type="datetime-local"]::-webkit-inner-spin-button,
   input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator {
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     display: none;
     -webkit-appearance: none;
   }

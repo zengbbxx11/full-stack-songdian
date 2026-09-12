@@ -132,4 +132,26 @@ class InquiryDetailVO(InquiryVO):
         return cls(**data)
 
 
+class InquiryReceiptVO(BaseModel):
+    """公开提交最小回执（仅供匿名提交与幂等重试使用）。
+
+    公开接口绝不返回内部 CRM 字段（follow_notes / assigned_user_id / tags /
+    处理状态等），避免客户凭 biz_req_no 反复获取销售人员的内部跟进信息。
+    """
+
+    biz_req_no: str
+    received: bool = True
+    status: str = "RECEIVED"
+    submitted_at: datetime | None = None
+
+    @classmethod
+    def from_model(cls, m) -> InquiryReceiptVO:
+        return cls(
+            biz_req_no=m.biz_req_no,
+            received=True,
+            status="RECEIVED",
+            submitted_at=m.created_time,
+        )
+
+
 InquiryPageVO = InquiryVO

@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from common.audit import audit
 from common.config import settings
@@ -121,9 +121,10 @@ async def bind_permissions(
 @router.get("/admin/audit-logs", summary="审计日志查询")
 async def list_audit_logs(
     req: PageRequest = Depends(),
+    keyword: str | None = Query(default=None, max_length=100, description="按用户名/动作/资源模糊匹配"),
     _user: AdminUser = Depends(require_permission("audit:read")),
 ) -> Result:
-    items, total = await services.list_audit_logs(req)
+    items, total = await services.list_audit_logs(req, keyword)
     return Result.ok(
         PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump()
     )

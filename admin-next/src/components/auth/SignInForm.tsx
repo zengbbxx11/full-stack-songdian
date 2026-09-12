@@ -56,7 +56,12 @@ export default function SignInForm() {
             </p>
           </div>
           <div>
-            <form onSubmit={handleSubmit}>
+            {/*
+              安全兜底：显式声明 method="post" + action，使脚本加载失败 / React 尚未接管时
+              原生提交也走 POST，凭据绝不会出现在 URL 查询串（历史记录 / 访问日志）中。
+              正常路径由 onSubmit 的 preventDefault() 接管，保持既有异步登录流程。
+            */}
+            <form method="post" action="/signin" onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div>
                   <Label htmlFor="signin-username">用户名 <span className="text-error-500">*</span></Label>

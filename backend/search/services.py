@@ -51,17 +51,28 @@ async def _cache_set(key: str, vo: SearchPageVO) -> None:
 
 
 def _rows_to_vos(rows: list[dict]) -> list[SearchItemVO]:
-    """把原始查询行（dict）映射为 SearchItemVO。"""
-    return [
-        SearchItemVO(
-            id=r["id"], kind=r["kind"], title=r["title"], summary=r["summary"] or "",
-            slug=r["slug"],
-            url=f"/{ 'products' if r['kind'] == 'product' else 'news' }/{r['slug']}",
-            rank=float(r["rank"] or 0.0), cover_image=r["cover_image"],
-            created_time=r["created_time"],
+    """把原始查询行（dict）映射为 SearchItemVO。
+
+    产品直接输出**规范嵌套 URL**（/products/{category}/{slug}）；分类缺失时回退扁平地址，
+    新闻始终为 /news/{slug}。避免前端再自行拼接扁平路径导致规范化 404。
+    """
+    items: list[SearchItemVO] = []
+    for r in rows:
+        kind = r["kind"]
+        category_slug = r.get("category_slug")
+        if kind == "product":
+            url = f"/products/{category_slug}/{r['slug']}" if category_slug else f"/products/{r['slug']}"
+        else:
+            url = f"/news/{r['slug']}"
+        items.append(
+            SearchItemVO(
+                id=r["id"], kind=kind, title=r["title"], summary=r["summary"] or "",
+                slug=r["slug"], url=url, category_slug=category_slug,
+                rank=float(r["rank"] or 0.0), cover_image=r["cover_image"],
+                created_time=r["created_time"],
+            )
         )
-        for r in rows
-    ]
+    return items
 
 
 async def _sqlite_search(
@@ -78,13 +89,16 @@ async def _sqlite_search(
     parts: list[str] = []
     if stype in ("all", "product"):
         parts.append(
-            "SELECT id, 'product' AS kind, title, summary, slug, cover_image, created_time, 0.0 AS rank "
-            "FROM t_product WHERE deleted=0 AND status='PUBLISHED' "
-            "AND (title LIKE ? OR summary LIKE ? OR content_html LIKE ?)"
+            "SELECT p.id, 'product' AS kind, p.title, p.summary, p.slug, p.cover_image, p.created_time, "
+            "c.slug AS category_slug, 0.0 AS rank "
+            "FROM t_product p LEFT JOIN t_product_category c ON c.id = p.category_id "
+            "WHERE p.deleted=0 AND p.status='PUBLISHED' "
+            "AND (p.title LIKE ? OR p.summary LIKE ? OR p.content_html LIKE ?)"
         )
     if stype in ("all", "news"):
         parts.append(
-            "SELECT id, 'news' AS kind, title, summary, slug, cover_image, created_time, 0.0 AS rank "
+            "SELECT id, 'news' AS kind, title, summary, slug, cover_image, created_time, "
+            "NULL AS category_slug, 0.0 AS rank "
             "FROM t_news WHERE deleted=0 AND status='PUBLISHED' "
             "AND (title LIKE ? OR summary LIKE ? OR content_html LIKE ?)"
         )
@@ -117,14 +131,17 @@ async def _pg_search(
     parts: list[str] = []
     if stype in ("all", "product"):
         parts.append(
-            "SELECT id, 'product' AS kind, title, summary, slug, cover_image, created_time, "
-            f"ts_rank(search_vector, plainto_tsquery('{cfg}', $1)) AS rank "
-            "FROM t_product WHERE deleted=0 AND status='PUBLISHED' "
-            f"AND search_vector @@ plainto_tsquery('{cfg}', $1)"
+            "SELECT p.id, 'product' AS kind, p.title, p.summary, p.slug, p.cover_image, p.created_time, "
+            "c.slug AS category_slug, "
+            f"ts_rank(p.search_vector, plainto_tsquery('{cfg}', $1)) AS rank "
+            "FROM t_product p LEFT JOIN t_product_category c ON c.id = p.category_id "
+            "WHERE p.deleted=0 AND p.status='PUBLISHED' "
+            f"AND p.search_vector @@ plainto_tsquery('{cfg}', $1)"
         )
     if stype in ("all", "news"):
         parts.append(
             "SELECT id, 'news' AS kind, title, summary, slug, cover_image, created_time, "
+            "NULL AS category_slug, "
             f"ts_rank(search_vector, plainto_tsquery('{cfg}', $1)) AS rank "
             "FROM t_news WHERE deleted=0 AND status='PUBLISHED' "
             f"AND search_vector @@ plainto_tsquery('{cfg}', $1)"
@@ -150,13 +167,16 @@ async def _pg_search(
         like_parts: list[str] = []
         if stype in ("all", "product"):
             like_parts.append(
-                "SELECT id, 'product' AS kind, title, summary, slug, cover_image, created_time, 0.0 AS rank "
-                "FROM t_product WHERE deleted=0 AND status='PUBLISHED' "
-                "AND (title ILIKE '%'||$1||'%' OR summary ILIKE '%'||$1||'%' OR content_html ILIKE '%'||$1||'%')"
+                "SELECT p.id, 'product' AS kind, p.title, p.summary, p.slug, p.cover_image, p.created_time, "
+                "c.slug AS category_slug, 0.0 AS rank "
+                "FROM t_product p LEFT JOIN t_product_category c ON c.id = p.category_id "
+                "WHERE p.deleted=0 AND p.status='PUBLISHED' "
+                "AND (p.title ILIKE '%'||$1||'%' OR p.summary ILIKE '%'||$1||'%' OR p.content_html ILIKE '%'||$1||'%')"
             )
         if stype in ("all", "news"):
             like_parts.append(
-                "SELECT id, 'news' AS kind, title, summary, slug, cover_image, created_time, 0.0 AS rank "
+                "SELECT id, 'news' AS kind, title, summary, slug, cover_image, created_time, "
+                "NULL AS category_slug, 0.0 AS rank "
                 "FROM t_news WHERE deleted=0 AND status='PUBLISHED' "
                 "AND (title ILIKE '%'||$1||'%' OR summary ILIKE '%'||$1||'%' OR content_html ILIKE '%'||$1||'%')"
             )

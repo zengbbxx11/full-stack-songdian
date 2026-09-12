@@ -18,6 +18,7 @@ import sqlite3
 import uuid
 
 from common.config import settings
+from inquiry.models import Inquiry
 
 
 def _base(email: str, message: str, biz: str, **extra) -> dict:
@@ -38,10 +39,23 @@ def test_submit_inquiry_success(client):
     assert body["code"] in (0, "0"), body
     d = body["data"]
     assert d["biz_req_no"] == biz
-    assert d["email"] == "zhang@example.com"
-    assert d["status"] == "NEW"
-    # 无 SMTP 配置 → 仅持久化，保持 PENDING（BD-02/MOCK）
-    assert d["smtp_status"] == "PENDING", d
+    assert d["received"] is True
+    assert d["status"] == "RECEIVED"
+    # 公开回执必须最小化：不得暴露提交明细或内部 CRM 字段
+    for leaked in (
+        "id", "email", "message", "smtp_status", "tags", "follow_notes",
+        "assigned_user_id", "assigned_user_name", "last_contact_time",
+    ):
+        assert leaked not in d, f"公开回执不应包含内部字段 {leaked}"
+
+    # 无 SMTP 配置 → 仅持久化，保持 PENDING（BD-02/MOCK），CRM 状态为 NEW
+    async def _stored():
+        row = await Inquiry.get(biz_req_no=biz)
+        return row.smtp_status, row.status
+
+    smtp_status, crm_status = client.portal.call(_stored)
+    assert smtp_status == "PENDING"
+    assert crm_status == "NEW"
 
 
 def test_inquiry_attribution_filters_and_notifications(client):
@@ -62,17 +76,29 @@ def test_inquiry_attribution_filters_and_notifications(client):
     )
     submitted = client.post("/api/v1/inquiries", json=payload).json()
     assert submitted["code"] in (0, "0"), submitted
-    inquiry = submitted["data"]
-    assert inquiry["country"] == "Germany"
-    assert inquiry["source_product"] == "dc312x"
-    assert inquiry["utm_source"] == "linkedin"
-    assert inquiry["landing_page"].startswith("/products/")
+    # 公开回执最小化：归属/明细字段不再随匿名提交返回，需经后台接口核对。
+    assert submitted["data"]["biz_req_no"] == biz
+    for leaked in ("follow_notes", "assigned_user_id", "tags", "country", "utm_source", "landing_page"):
+        assert leaked not in submitted["data"], f"公开回执不应包含 {leaked}"
+
+    async def _fetch_id():
+        return (await Inquiry.get(biz_req_no=biz)).id
+
+    inquiry_id = client.portal.call(_fetch_id)
 
     login = client.post(
         "/api/v1/admin/login",
         json={"username": "admin", "password": "Songdian@2026"},
     )
     assert login.json()["code"] in (0, "0")
+
+    detail = client.get(f"/api/v1/admin/inquiries/{inquiry_id}").json()
+    assert detail["code"] in (0, "0"), detail
+    record = detail["data"]
+    assert record["country"] == "Germany"
+    assert record["source_product"] == "dc312x"
+    assert record["utm_source"] == "linkedin"
+    assert record["landing_page"].startswith("/products/")
 
     db_path = settings.database_url.removeprefix("sqlite://")
     with sqlite3.connect(db_path) as connection:
@@ -81,7 +107,7 @@ def test_inquiry_attribution_filters_and_notifications(client):
                SET created_time = datetime('now', '-2 days'),
                    smtp_status = 'FAILED', smtp_retry = 1
                WHERE id = ?""",
-            (inquiry["id"],),
+            (inquiry_id,),
         )
         connection.commit()
 
@@ -90,20 +116,20 @@ def test_inquiry_attribution_filters_and_notifications(client):
         params={"country": "germ", "source_product": "312", "utm_source": "link"},
     ).json()
     assert filtered["code"] in (0, "0"), filtered
-    assert [item["id"] for item in filtered["data"]["list"]] == [inquiry["id"]]
+    assert [item["id"] for item in filtered["data"]["list"]] == [inquiry_id]
 
     notifications = client.get("/api/v1/admin/notifications").json()
     assert notifications["code"] in (0, "0"), notifications
     inquiry_notices = [
         item for item in notifications["data"]["list"]
-        if item["inquiry_id"] == inquiry["id"]
+        if item["inquiry_id"] == inquiry_id
     ]
     assert {item["type"] for item in inquiry_notices} == {
         "NEW_INQUIRY", "FOLLOW_UP_OVERDUE", "SMTP_FAILED"
     }
     notice = next(
         item for item in inquiry_notices
-        if item["key"] == f"inquiry:new:{inquiry['id']}"
+        if item["key"] == f"inquiry:new:{inquiry_id}"
     )
     assert notice["read"] is False
 
@@ -117,18 +143,27 @@ def test_inquiry_attribution_filters_and_notifications(client):
 
 
 def test_submit_inquiry_idempotent(client):
-    """biz_req_no 重复提交返回首次结果（不重复落库）。"""
+    """同一 biz_req_no：内容一致返回同一回执；内容不一致被拒绝且不重复落库。"""
     biz = f"qa-inq-idem-{uuid.uuid4().hex[:8]}"
     p1 = _base("zhang@example.com", "首次留言", biz)
-    r1 = client.post("/api/v1/inquiries", json=p1)
-    d1 = r1.json()["data"]
-    # 第二次用相同 biz_req_no 但不同留言
-    p2 = _base("zhang@example.com", "第二次不同的留言", biz)
-    r2 = client.post("/api/v1/inquiries", json=p2)
-    d2 = r2.json()["data"]
-    assert d2["id"] == d1["id"], "幂等应返回首次结果（同 id）"
+    d1 = client.post("/api/v1/inquiries", json=p1).json()["data"]
+    assert d1["biz_req_no"] == biz
+    assert d1["received"] is True
+    # 完全相同内容重试 → 返回同结构回执（幂等，不重复落库）
+    d2 = client.post("/api/v1/inquiries", json=p1).json()["data"]
     assert d2["biz_req_no"] == biz
-    assert d2["message"] == d1["message"], "幂等应返回首次留言内容"
+    assert d2["received"] is True
+
+    # 不同内容复用同一 biz_req_no → 拒绝，且不回显既有询盘内容
+    p3 = _base("zhang@example.com", "第二次不同的留言", biz)
+    rejected = client.post("/api/v1/inquiries", json=p3).json()
+    assert rejected["code"] == "C400001", rejected
+    assert not (rejected.get("data") or {}).get("message")
+
+    async def _count():
+        return await Inquiry.filter(biz_req_no=biz).count()
+
+    assert client.portal.call(_count) == 1
 
 
 def test_submit_inquiry_invalid_email_A040001(client):

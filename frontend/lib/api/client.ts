@@ -214,6 +214,8 @@ export interface SearchItemDTO {
   summary: string;
   slug: string;
   url: string;
+  // 产品所属分类 slug（新闻为 null）；后端据此生成规范嵌套 URL。
+  category_slug?: string | null;
   rank: number;
   cover_image: string | null;
   sku: string | null;

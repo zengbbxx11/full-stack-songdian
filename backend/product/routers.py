@@ -20,6 +20,7 @@ from product import services
 from product.schemas import (
     AttributeCreateRequest,
     CategoryCreate,
+    CategoryMigrateRequest,
     CategoryUpdate,
     GalleryCreateRequest,
     ProductCreateRequest,
@@ -40,6 +41,12 @@ async def list_products(
     # security-audit F-02：公开列表强制仅返回已发布内容，拒绝客户端传入 DRAFT 等状态。
     items, total = await services.list_products(req, category_id, "PUBLISHED", keyword)
     return Result.ok(PageResponse.build([i.model_dump(mode="json") for i in items], total, req).model_dump())
+
+
+@router.get("/products/{slug}/canonical", summary="产品规范路径（边缘层 308 解析）")
+async def get_product_canonical(slug: str) -> Result:
+    vo = await services.get_product_canonical(slug)
+    return Result.ok(vo.model_dump(mode="json"))
 
 
 @router.get("/products/{slug}", summary="产品详情")
@@ -257,3 +264,17 @@ async def delete_category(
 ) -> Result:
     await services.delete_category(category_id, operator=current_user.username)
     return Result.ok(msg="已删除")
+
+
+@router.post("/admin/categories/{category_id}/migrate-and-delete", summary="迁移产品后删除分类")
+@audit(action="category.migrate_delete", resource="category:{category_id}")
+async def migrate_and_delete_category(
+    category_id: int,
+    data: CategoryMigrateRequest,
+    request: Request,
+    current_user: AdminUser = Depends(require_permission("category:delete")),
+) -> Result:
+    result = await services.migrate_and_delete_category(
+        category_id, data.target_category_id, operator=current_user.username
+    )
+    return Result.ok(result)

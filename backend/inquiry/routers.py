@@ -50,6 +50,7 @@ async def submit(
 ) -> Result:
     # 限流由 ApiSecurityMiddleware 统一对 /api/v1/ 生效（含单 IP 配额）。
     # 此处不再挂 Depends(ip_rate_limit)，否则同一 IP 的额度会被中间件与路由各扣一次。
+    # 公开匿名提交只返回最小回执，不暴露 follow_notes/负责人/标签等内部 CRM 字段。
     vo = await services.submit_inquiry(data)
     return Result.ok(vo.model_dump(mode="json"))
 

@@ -208,16 +208,50 @@ async def _resolve_categorize_hint(hint: str) -> int | None:
     return None
 
 
+async def album_scope_ids(album_id: int) -> list[int]:
+    """返回相册及其所有后代相册的 id（含自身）。
+
+    媒体库按"大类"筛选时必须包含子相册素材，否则点击 Products 只会看到直系为空的列表，
+    与侧边栏显示的子树数量不一致。
+    """
+    rows = await Album.all().values("id", "parent_id")
+    children: dict[int, list[int]] = {}
+    for row in rows:
+        parent = row.get("parent_id")
+        if parent is not None:
+            children.setdefault(int(parent), []).append(int(row["id"]))
+    scope: list[int] = []
+    seen: set[int] = set()
+    stack = [album_id]
+    while stack:
+        current = stack.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        scope.append(current)
+        stack.extend(children.get(current, []))
+    return scope
+
+
 def _build_upload_filter(
     album_id: int | None,
     keyword: str | None,
     media_type: str | None,
+    album_scope: list[int] | None = None,
 ) -> Q:
-    """根据筛选条件构造 Tortoise Q 对象（空 Q 等价于全量）。"""
+    """根据筛选条件构造 Tortoise Q 对象（空 Q 等价于全量）。
+
+    ``album_scope`` 由调用方预先解析（含相册自身与全部后代）；非空时按该集合过滤。
+    """
     q: Q = Q()
     if album_id is not None:
         # 0 表示“未分类”
-        q &= Q(album_id__isnull=True) if album_id == 0 else Q(album_id=album_id)
+        if album_id == 0:
+            q &= Q(album_id__isnull=True)
+        elif album_scope:
+            q &= Q(album_id__in=album_scope)
+        else:
+            q &= Q(album_id=album_id)
     if keyword:
         kw = keyword.strip()
         if kw:
@@ -250,8 +284,12 @@ async def list_upload_records(
     keyword: str | None = None,
     media_type: str | None = None,
 ) -> list[UploadRecord]:
-    """分页查询上传记录（支持相册 / 关键词 / 类型筛选，按创建时间倒序）。"""
-    q = _build_upload_filter(album_id, keyword, media_type)
+    """分页查询上传记录（支持相册 / 关键词 / 类型筛选，按创建时间倒序）。
+
+    按相册筛选时包含其全部子相册素材，与侧边栏"大类"计数口径保持一致。
+    """
+    scope = await album_scope_ids(album_id) if album_id else None
+    q = _build_upload_filter(album_id, keyword, media_type, scope)
     offset = (page - 1) * page_size
     return await UploadRecord.filter(q).order_by("-created_time").offset(offset).limit(page_size)
 
@@ -261,9 +299,45 @@ async def count_upload_records(
     keyword: str | None = None,
     media_type: str | None = None,
 ) -> int:
-    """统计符合筛选条件的上传记录数。"""
-    q = _build_upload_filter(album_id, keyword, media_type)
+    """统计符合筛选条件的上传记录数（相册口径同 list_upload_records：含子相册）。"""
+    scope = await album_scope_ids(album_id) if album_id else None
+    q = _build_upload_filter(album_id, keyword, media_type, scope)
     return await UploadRecord.filter(q).count()
+
+
+def rollup_album_totals(albums: list[Album], counts: dict[int, int]) -> dict[int, int]:
+    """把"直系素材数"逐层累加为"子树合计"（自底向上一次遍历，无额外查询）。
+
+    - 孤儿相册（parent_id 指向已不存在的相册）按根处理；
+    - 数据异常导致的环会被 seen 集合截断，不会死循环。
+    """
+    children: dict[int, list[int]] = {}
+    known: set[int] = set()
+    for album in albums:
+        known.add(int(album.id))
+    for album in albums:
+        parent = getattr(album, "parent_id", None)
+        if parent is not None and int(parent) in known:
+            children.setdefault(int(parent), []).append(int(album.id))
+
+    totals: dict[int, int] = {}
+
+    def walk(album_id: int, visiting: set[int]) -> int:
+        if album_id in totals:
+            return totals[album_id]
+        if album_id in visiting:  # 防御环
+            return counts.get(album_id, 0)
+        visiting.add(album_id)
+        total = counts.get(album_id, 0)
+        for child_id in children.get(album_id, []):
+            total += walk(child_id, visiting)
+        visiting.discard(album_id)
+        totals[album_id] = total
+        return total
+
+    for album in albums:
+        walk(int(album.id), set())
+    return totals
 
 
 async def get_upload_record(record_id: int) -> UploadRecord | None:
@@ -271,28 +345,58 @@ async def get_upload_record(record_id: int) -> UploadRecord | None:
     return await UploadRecord.get_or_none(id=record_id)
 
 
-async def get_upload_usage(url: str) -> dict:
-    """查询某素材 URL 被业务内容引用的明细（产品图集 / 封面 / 新闻封面）。
+def _normalize_media_url(url: str | None) -> str:
+    """把媒体 URL 归一化为可比较的相对路径（P2-7）。
 
+    - 去掉协议与域名（http(s)://host 或 //host），使绝对/相对 URL 可等价比较；
+    - 去掉查询串与片段；
+    - 统一补上前导斜杠。
+    """
+    if not url:
+        return ""
+    raw = url.strip()
+    raw = re.sub(r"^(?:https?:)?//[^/]+", "", raw, flags=re.IGNORECASE)
+    raw = raw.split("?", 1)[0].split("#", 1)[0]
+    if not raw.startswith("/"):
+        raw = "/" + raw
+    return raw
+
+
+async def get_upload_usage(url: str) -> dict:
+    """查询某素材 URL 被业务内容引用的明细。
+
+    覆盖：产品图集 / 产品封面 / 新闻封面 / **产品与新闻正文（content_html）内嵌图片**。
+    比较统一走 ``_normalize_media_url``，因此同一图片使用相对或绝对 URL 都能命中。
+
+    说明：历史版本（content_revision 快照）不作为硬阻断引用，删除后正文若引用历史图片
+    会被清理；如需保留请先归档。
     返回 ``{count, items[{type, name, id}], in_use}``。
     """
     from news.models import News
     from product.models import Product, ProductGallery
 
+    target = _normalize_media_url(url)
     items: list[dict] = []
+    if not target:
+        return {"count": 0, "items": [], "in_use": False}
+
     # 产品图集
-    galleries = await ProductGallery.filter(image_url=url).select_related("product")
+    galleries = await ProductGallery.filter(image_url=target).select_related("product")
     for g in galleries:
         if g.product:  # type: ignore[union-attr]
             items.append({"type": "product_gallery", "name": g.product.title, "id": g.product.id})  # type: ignore[union-attr]
     # 产品封面
-    products = await Product.filter(cover_image=url)
-    for p in products:
+    for p in await Product.filter(cover_image=target):
         items.append({"type": "product_cover", "name": p.title, "id": p.id})
     # 新闻封面
-    news_items = await News.filter(cover_image=url)
-    for n in news_items:
+    for n in await News.filter(cover_image=target):
         items.append({"type": "news_cover", "name": n.title, "id": n.id})
+    # 正文引用：content_html 允许内嵌 <img>；用归一化相对路径做包含匹配，
+    # 同时覆盖正文使用绝对 URL 的场景（此前遗漏 → 仅正文使用的图片会被误删）。
+    for p in await Product.filter(content_html__icontains=target):
+        items.append({"type": "product_content", "name": p.title, "id": p.id})
+    for n in await News.filter(content_html__icontains=target):
+        items.append({"type": "news_content", "name": n.title, "id": n.id})
     return {"count": len(items), "items": items, "in_use": len(items) > 0}
 
 

@@ -17,7 +17,7 @@
 Docker 内 API 代理使用
 `BACKEND_PROXY_URL=http://backend:8000`，不要改成公网 IP。
 Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 风格组件。
-`proxy.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` Cookie），接口层另有 RBAC 兜底。
+`proxy.ts` 做前端路由守卫（校验后端下发的 HttpOnly `access_token` Cookie），`access_token` 失效时用 `refresh_token` 调后端 `/api/v1/admin/refresh` 静默续期并放行原目标页面，接口层另有 RBAC 兜底。
 
 ---
 
@@ -42,7 +42,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | 图表 | apexcharts / react-apexcharts、@fullcalendar/* |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
 | 数据获取 | SWR (v2) + 全局 `SWRProvider`（封装 `apiFetch`，详见 `lib/api-client.ts`） |
-| 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` Cookie） |
+| 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` Cookie；失效时用 refresh Cookie 静默续期） |
 
 ---
 
@@ -132,7 +132,7 @@ P0 级审计修复（相关行为已合入当前代码）：
 - `smtp_password` 后端脱敏：GET 返回 `******`，PUT 回传掩码时后端保留原值（前端无需特殊处理）。
 - ⚠️ SMTP 配置 key 由后端惰性创建（`GET /admin/settings` 触发），前端**不要**在页面里手动建 key；页面只依赖后端返回的 key 渲染。
 - **仪表盘增强**：`EcommerceMetrics.tsx` 新增询盘国家分布（按 country 字段 Top 10）和询盘状态分布进度条。后端 `GET /admin/stats`。
-- **审计日志**：`audit-logs/page.tsx` 新增审计日志表格页——时间/用户/操作/资源/结果/IP，分页+搜索。侧边栏新增入口。
+- **审计日志**：`audit-logs/page.tsx` 新增审计日志表格页——时间/用户/操作/资源/结果/IP，分页+搜索。侧边栏新增入口。搜索词现已提交后端（`keyword`），在分页前过滤并返回过滤后 `total`，不得退回“只过滤当前页”。
 - **动态头部**：`UserDropdown.tsx` 改为从 `/admin/profile` 动态读取用户名，显示真实 username + 首字母头像（不再硬编码"管理员"/"A"）。
 - **询盘国家标记**：`inquiries/page.tsx` 跟进对话框新增 Country 输入框，保存时写入数据库（纯后台标记，客户表单不需要国家字段）。
 
@@ -142,6 +142,15 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 无封面时由官网回退到默认 1200×630 品牌图，管理后台不需要生成占位记录或写入默认图 URL。
 - 保存封面、SEO 标题/描述、新闻标题/摘要后，后端负责缓存失效与官网 ISR revalidation；后台不要直接调用公开页面或拼接社交 metadata。
 - `/llms.txt` 是 frontend 的实验性站点导览，不属于管理 API，不在后台新增一个重复编辑入口；公司核心事实继续由官网共享内容配置维护。
+
+## 会话、表单与列表约定（2026-09-12）
+
+- **入口静默续期**：`src/proxy.ts` 在 `access_token` 失效时用 `refresh_token` 调后端 `/api/v1/admin/refresh`，把 `Set-Cookie` 写回响应并放行到原目标页面；refresh 为单次使用，必须保留并发去重（同一 refresh 共享同一次刷新结果）。只有 refresh 真正失效/后端不可达才跳 `/signin?expired=1`。禁止改成“缺少 access 即重定向登录页”。
+- **登录表单保持 `method="post"`**：`components/auth/SignInForm.tsx` 依赖原生 POST 兜底，避免脚本未接管时把凭据写进 URL 查询串。
+- **封面上传阻塞保存**：产品/新闻表单以 `coverUploading` + 递增 `useRef` 序号管理封面上传；上传期间禁用保存与字段，旧响应不得覆盖新选择。
+- **分类删除先迁移**：分类下仍有内容时 `DELETE` 返回 `C400001` 与关联数量；`categories/page.tsx` 提供「迁移并删除」（`POST /admin/categories/{id}/migrate-and-delete`）。新闻分类迁移接口为 `POST /admin/news-categories/{id}/migrate-and-delete`，后台暂无独立管理页。
+- **相册计数用 `total_count`**：媒体库侧边栏展示含全部子相册的合计；按相册筛选记录时后端已包含子相册，显示数量与列表条数必须一致。`count` 仅供需要“直系数”的场景使用。
+- **列表分页**：审计日志按 `keyword` 走服务端过滤并回到第一页；媒体库与列表页的筛选条件变化时同样重置页码。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

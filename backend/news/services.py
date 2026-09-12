@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from tortoise.functions import Max
 from tortoise.transactions import in_transaction
 
+from common.cache_version import get_content_version
 from common.enums import NewsStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
@@ -58,24 +59,30 @@ async def _safe_cache_get(key: str) -> str | None:
         return None
 
 
-async def _cache_get_detail(slug: str) -> dict | None:
+def _detail_cache_key(slug: str, version: str) -> str:
+    """详情缓存键纳入版本号（P2-13），写入端递增版本即"换 key"关闭回填竞态。"""
+    return cache_key("news", "detail", slug, f"v{version}")
+
+
+async def _cache_get_detail(slug: str, version: str) -> dict | None:
     try:
-        raw = await get_redis().get(cache_key("news", "detail", slug))
+        raw = await get_redis().get(_detail_cache_key(slug, version))
         return json.loads(raw) if raw else None
     except Exception:  # noqa: BLE001
         return None
 
 
-async def _cache_set_detail(slug: str, payload: dict) -> None:
+async def _cache_set_detail(slug: str, version: str, payload: dict) -> None:
     try:
-        await get_redis().setex(cache_key("news", "detail", slug), DETAIL_TTL, json.dumps(payload, default=str))
+        await get_redis().setex(_detail_cache_key(slug, version), DETAIL_TTL, json.dumps(payload, default=str))
     except Exception:  # noqa: BLE001
         pass
 
 
 async def _cache_del_detail(slug: str) -> None:
     try:
-        await get_redis().delete(cache_key("news", "detail", slug))
+        # 删除该 slug 的全部版本键（版本化后键名带 :v{n} 后缀）。
+        await get_redis().delete_prefix(cache_key("news", "detail", slug, ""))
     except Exception:  # noqa: BLE001
         pass
 
@@ -128,7 +135,10 @@ async def list_news(
 
 
 async def get_news_detail(slug: str) -> NewsDetailVO:
-    cached = await _cache_get_detail(slug)
+    # P2-13：先取版本快照并据此定位缓存键；查库期间若发生写入失效（版本递增），
+    # 本次回填只会落到旧版本键，后续读取走新版本键 → 旧数据永不被再次命中。
+    version = await get_content_version("news", slug)
+    cached = await _cache_get_detail(slug, version)
     if cached:
         return NewsDetailVO(**cached)
     # security-audit F-02：公开详情强制仅返回已发布内容，匿名不可读 DRAFT。
@@ -137,7 +147,7 @@ async def get_news_detail(slug: str) -> NewsDetailVO:
         raise BizException(ErrorCode.A020001)
     await news.fetch_related("category")
     vo = NewsDetailVO.from_model(news)
-    await _cache_set_detail(slug, vo.model_dump(mode="json"))
+    await _cache_set_detail(slug, version, vo.model_dump(mode="json"))
     return vo
 
 
@@ -296,13 +306,43 @@ async def update_news_category(news_category_id: int, data: NewsCategoryUpdate, 
 
 @transactional_write
 async def delete_news_category(news_category_id: int, operator: str = "") -> None:
-    # 软删（复用 SoftDeleteMixin 的 deleted 标记），与新闻一致。
+    """软删新闻分类；存在未删除的关联新闻时拒绝，避免内容归属与分类列表不一致。"""
     cat = await NewsCategory.get_or_none(id=news_category_id, deleted=0)
     if cat is None:
         raise BizException(ErrorCode.A020001, "分类不存在")
+    news_count = await News.filter(category_id=news_category_id, deleted=0).count()
+    if news_count > 0:
+        raise BizException(
+            ErrorCode.C400001,
+            f"该分类下仍有 {news_count} 篇新闻，请先迁移到其他分类或删除新闻后再试",
+            data={"count": news_count, "conflict": True},
+        )
     cat.deleted = 1
     await cat.save()
     await _invalidate_news_content(categories=True)
+
+
+@transactional_write
+async def migrate_and_delete_news_category(
+    news_category_id: int, target_category_id: int, operator: str = ""
+) -> dict:
+    """在同一事务内把源分类下的未删除新闻迁移到目标分类，再软删源分类。"""
+    if news_category_id == target_category_id:
+        raise BizException(ErrorCode.C400001, "目标分类不能与源分类相同")
+    source = await NewsCategory.get_or_none(id=news_category_id, deleted=0)
+    if source is None:
+        raise BizException(ErrorCode.A020001, "分类不存在")
+    if await NewsCategory.get_or_none(id=target_category_id, deleted=0) is None:
+        raise BizException(ErrorCode.A020001, "目标分类不存在")
+    async with in_transaction():
+        migrated = await News.filter(
+            category_id=news_category_id, deleted=0
+        ).update(category_id=target_category_id)
+        source.deleted = 1
+        await source.save(update_fields=["deleted"])
+        # 分类名内嵌于新闻详情/列表响应：失效任务与业务写同事务提交（outbox 语义）。
+        await _invalidate_news_content(categories=True)
+    return {"migrated": migrated, "target_category_id": target_category_id}
 
 
 @transactional_write

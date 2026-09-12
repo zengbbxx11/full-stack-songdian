@@ -13,11 +13,13 @@
 
 ## 当前生产基线
 
-- 当前 Aerich 迁移链为 `0`–`15`。
+- 当前 Aerich 迁移链为 `0`–`16`。
 - 11 号迁移增加询盘归因字段和 `t_notification_read_state`。
 - 12 号迁移增加产品/新闻发布状态、`published_at` 和 `t_content_revision`。
 - 13、14 号迁移规范公开文案。
 - 15 号迁移增加产品和新闻的 `sort_order`。
+- 16 号迁移增加持久化后台任务表 `t_background_job` 与 `t_admin_user.session_version`。
+- 后续的内容缓存版本号（`backend/common/cache_version.py`）、相册计数口径、审计日志关键字搜索等改动均为纯应用层实现，**未新增迁移**；升级到最新代码只需在 migrate profile 中执行一次 `aerich upgrade`（幂等）。
 - 生产数据库使用 PostgreSQL 18；未安装 `zhparser` 时，中文全文检索由应用降级为 `simple` 配置。
 - 生产产品、新闻、询盘和上传媒体以服务器数据卷及备份为准，不长期跟随 Git。
 

@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from tortoise.functions import Count, Max
 from tortoise.transactions import in_transaction
 
+from common.cache_version import get_content_version
 from common.enums import ProductStatus
 from common.exceptions import BizException, ErrorCode
 from common.html_cleaner import clean_html, clean_text
@@ -37,6 +38,7 @@ from product.schemas import (
     CategoryVO,
     GalleryCreateRequest,
     GalleryVO,
+    ProductCanonicalVO,
     ProductCreateRequest,
     ProductDetailVO,
     ProductPageVO,
@@ -73,24 +75,34 @@ async def _safe_cache_get(key: str) -> str | None:
         return None
 
 
-async def _cache_get_detail(slug: str) -> dict | None:
+def _detail_cache_key(slug: str, version: str) -> str:
+    """详情缓存键纳入版本号（P2-13）。
+
+    写入端递增版本即"换 key"：并发旧请求即便在失效后回填，也只是写到不再被读取的
+    旧 key，彻底关闭"读旧数据 → 写入并失效 → 旧请求回填"竞态窗口。
+    """
+    return cache_key("product", "detail", slug, f"v{version}")
+
+
+async def _cache_get_detail(slug: str, version: str) -> dict | None:
     try:
-        raw = await get_redis().get(cache_key("product", "detail", slug))
+        raw = await get_redis().get(_detail_cache_key(slug, version))
         return json.loads(raw) if raw else None
     except Exception:  # noqa: BLE001
         return None
 
 
-async def _cache_set_detail(slug: str, payload: dict) -> None:
+async def _cache_set_detail(slug: str, version: str, payload: dict) -> None:
     try:
-        await get_redis().setex(cache_key("product", "detail", slug), DETAIL_TTL, json.dumps(payload, default=str))
+        await get_redis().setex(_detail_cache_key(slug, version), DETAIL_TTL, json.dumps(payload, default=str))
     except Exception:  # noqa: BLE001
         pass
 
 
 async def _cache_del_detail(slug: str) -> None:
     try:
-        await get_redis().delete(cache_key("product", "detail", slug))
+        # 删除该 slug 的全部版本键（版本化后键名带 :v{n} 后缀）。
+        await get_redis().delete_prefix(cache_key("product", "detail", slug, ""))
     except Exception:  # noqa: BLE001
         pass
 
@@ -156,7 +168,10 @@ async def list_products(
 
 
 async def get_product_detail(slug: str) -> ProductDetailVO:
-    cached = await _cache_get_detail(slug)
+    # P2-13：先取版本快照并据此定位缓存键；查库期间若发生写入失效（版本递增），
+    # 本次回填只会落到旧版本键，后续读取走新版本键 → 旧数据永不被再次命中。
+    version = await get_content_version("product", slug)
+    cached = await _cache_get_detail(slug, version)
     if cached:
         return ProductDetailVO(**cached)
     # security-audit F-02：公开详情强制仅返回已发布内容，匿名不可读 DRAFT。
@@ -167,8 +182,25 @@ async def get_product_detail(slug: str) -> ProductDetailVO:
     vo = ProductDetailVO.from_model(
         product, galleries=product.galleries, attributes=product.attributes
     )
-    await _cache_set_detail(slug, vo.model_dump(mode="json"))
+    await _cache_set_detail(slug, version, vo.model_dump(mode="json"))
     return vo
+
+
+async def get_product_canonical(slug: str) -> ProductCanonicalVO:
+    """公开产品规范路径解析（供边缘层 308 重定向）。
+
+    仅对「已发布 + 未软删」产品返回规范路径；不存在时抛 A010001 交由前端渲染 404。
+    分类沿用详情页口径（即使分类已软删，仍以产品当前归属为准），保证规范地址与详情页一致。
+    """
+    product = await Product.get_or_none(
+        slug=slug, deleted=0, status=ProductStatus.PUBLISHED.value
+    )
+    if product is None:
+        raise BizException(ErrorCode.A010001)
+    category = await product.category
+    return ProductCanonicalVO.from_model(
+        product, category.slug if category is not None else None
+    )
 
 
 async def get_product_detail_admin(slug: str) -> ProductDetailVO:
@@ -397,13 +429,43 @@ async def update_category(category_id: int, data: CategoryUpdate, operator: str 
 
 @transactional_write
 async def delete_category(category_id: int, operator: str = "") -> None:
-    # 软删（复用 SoftDeleteMixin 的 deleted 标记），与产品/新闻一致。
+    """软删分类；存在未删除的关联产品时拒绝，避免"分类已删但内容仍归属它"的不一致。"""
     cat = await ProductCategory.get_or_none(id=category_id, deleted=0)
     if cat is None:
         raise BizException(ErrorCode.A010001, "分类不存在")
+    product_count = await Product.filter(category_id=category_id, deleted=0).count()
+    if product_count > 0:
+        raise BizException(
+            ErrorCode.C400001,
+            f"该分类下仍有 {product_count} 个产品，请先迁移到其他分类或删除产品后再试",
+            data={"count": product_count, "conflict": True},
+        )
     cat.deleted = 1
     await cat.save()
     await _invalidate_product_content(categories=True)
+
+
+@transactional_write
+async def migrate_and_delete_category(
+    category_id: int, target_category_id: int, operator: str = ""
+) -> dict:
+    """在同一事务内把源分类下的未删除产品迁移到目标分类，再软删源分类。"""
+    if category_id == target_category_id:
+        raise BizException(ErrorCode.C400001, "目标分类不能与源分类相同")
+    source = await ProductCategory.get_or_none(id=category_id, deleted=0)
+    if source is None:
+        raise BizException(ErrorCode.A010001, "分类不存在")
+    if await ProductCategory.get_or_none(id=target_category_id, deleted=0) is None:
+        raise BizException(ErrorCode.A010001, "目标分类不存在")
+    async with in_transaction():
+        migrated = await Product.filter(
+            category_id=category_id, deleted=0
+        ).update(category_id=target_category_id)
+        source.deleted = 1
+        await source.save(update_fields=["deleted"])
+        # 分类名内嵌于产品详情/列表响应：失效任务与业务写同事务提交（outbox 语义）。
+        await _invalidate_product_content(categories=True)
+    return {"migrated": migrated, "target_category_id": target_category_id}
 
 
 @transactional_write

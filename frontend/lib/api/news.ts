@@ -9,6 +9,7 @@
 
 import type { PostSummary, PostDetail, WCProductCategory } from "@/lib/types";
 import { cache } from "react";
+import { COMPANY } from "@/lib/content-data";
 import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
   apiFetch,
@@ -22,18 +23,23 @@ import {
   type PageMeta,
 } from "./client";
 
+function newsCategoryName(name: string): string {
+  const labels: Record<string, string> = { "企业动态": "Company News", "行业资讯": "Industry Insights" };
+  return labels[name] || normalizeCategoryName(name);
+}
+
 /** 新闻列表默认每页数量（与原 WP 前端一致：9）。 */
 export const NEWS_PER_PAGE = 9;
 
 /** 获取新闻分类列表。 */
-export async function getNewsCategories(): Promise<WCProductCategory[]> {
+export const getNewsCategories = cache(async (): Promise<WCProductCategory[]> => {
   const data = await apiFetch<CategoryDTO[]>(
     "/api/v1/news-categories",
     undefined,
     { tags: ["news-categories"] },
   );
-  return data.map((c) => ({ id: c.id, name: normalizeCategoryName(c.name), slug: c.slug }));
-}
+  return data.map((c) => ({ id: c.id, name: newsCategoryName(c.name), slug: c.slug }));
+});
 
 /** 分页获取新闻列表，按摘要字段映射为 PostSummary。 */
 export async function getPosts(params?: {
@@ -44,24 +50,27 @@ export async function getPosts(params?: {
   /** 排序方式：映射到后端 order_by 参数（如 "sort_order,-created_time"） */
   sort?: string;
 }): Promise<{ posts: PostSummary[]; pagination: PageMeta | null }> {
-  const page = params?.page || 1;
-  const perPage = params?.perPage || NEWS_PER_PAGE;
+  return getPostsCached(params?.page || 1, params?.perPage || NEWS_PER_PAGE, params?.categoryId ?? undefined, params?.search || undefined, params?.sort || undefined);
+}
+
+// Primitive keys let metadata and body share one result, even with separate options objects.
+const getPostsCached = cache(async (page: number, perPage: number, category: number | undefined, search: string | undefined, sort: string | undefined): Promise<{ posts: PostSummary[]; pagination: PageMeta | null }> => {
   const data = await apiFetch<PageDTO<NewsPageDTO>>(
     "/api/v1/news",
     {
       page,
       page_size: perPage,
-      category_id: params?.categoryId ?? undefined,
-      keyword: params?.search || undefined,
+      category_id: category,
+      keyword: search,
       status: "PUBLISHED",
-      ...(params?.sort ? { order_by: params.sort } : {}),
+      ...(sort ? { order_by: sort } : {}),
     },
     { tags: ["news"] },
   );
   const posts = data.list.map(toPostSummary);
   const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
   return { posts, pagination: { total: data.total, totalPages } };
-}
+});
 
 // 仅真实不存在时返回 null；元数据与页面共享同一次详情读取。
 export const getPostBySlug = cache(async (slug: string): Promise<PostDetail | null> => {
@@ -104,6 +113,9 @@ export async function getAllPostSlugs({
       page += 1;
       if (data.list.length === 0) break;
     } while (list.length < total);
+    if (strict && list.length !== total) {
+      throw new Error("Incomplete sitemap pagination");
+    }
     return list.map((n) => n.slug);
   } catch (error) {
     if (strict) throw error;
@@ -168,9 +180,9 @@ function toPostSummary(n: NewsPageDTO): PostSummary {
     featuredImage: toAbsoluteUrl(n.cover_image),
     featuredImageAlt: normalizePublicText(n.title),
     date: formatDate(n.published_at || n.created_time || ""),
-    author: n.author || "Admin",
+    author: n.author || COMPANY.name,
     categories: n.category
-      ? [{ id: n.category.id, name: normalizeCategoryName(n.category.name), slug: n.category.slug }]
+      ? [{ id: n.category.id, name: newsCategoryName(n.category.name), slug: n.category.slug }]
       : [],
   };
 }
@@ -187,10 +199,10 @@ function toPostDetail(n: NewsDetailDTO): PostDetail {
     date: n.published_at || n.created_time || "",
     // API 尚未提供实际更新时间，不能将创建时间冒充修改时间。
     modified: "",
-    author: n.author || "Admin",
+    author: n.author || COMPANY.name,
     authorAvatar: "",
     categories: n.category
-      ? [{ id: n.category.id, name: normalizeCategoryName(n.category.name), slug: n.category.slug }]
+      ? [{ id: n.category.id, name: newsCategoryName(n.category.name), slug: n.category.slug }]
       : [],
     tags: [],
   };

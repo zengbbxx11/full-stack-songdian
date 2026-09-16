@@ -12,10 +12,10 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { MEDIA } from "@/lib/media";
 import InstantSearch from "@/components/InstantSearch";
-import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button";
+import { InteractiveHoverLink } from "@/components/ui/interactive-hover-button";
 
 interface NavLink {
   label: string;
@@ -48,7 +48,6 @@ const COLORS = {
 } as const;
 
 export default function Header() {
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -118,7 +117,7 @@ export default function Header() {
         <div className="site-container relative h-16 flex items-center">
           {/* Logo */}
           <div className="flex-1 flex items-center">
-            <Link href="/" scroll={false} aria-label="Home" className="flex min-h-11 shrink-0 touch-manipulation items-center">
+            <Link prefetch={false} href="/" scroll={false} aria-label="Home" className="flex min-h-11 shrink-0 touch-manipulation items-center">
               <Image
                 src={MEDIA.logo}
                 alt="Songdian Technology"
@@ -157,6 +156,7 @@ export default function Header() {
                 >
                   <Link
                     href={item.href}
+                prefetch={item.href === "/products" && pathname !== "/products" ? null : false}
                     scroll={false}
                     onClickCapture={resetScrollForNavigation}
                     className="inline-flex min-h-11 items-center px-3 py-2 text-[15px] font-medium rounded-lg text-[var(--foreground)] hover:bg-[#f7f7f8] hover:text-[var(--accent)] transition-colors duration-[330ms]"
@@ -198,6 +198,7 @@ export default function Header() {
                         <Link
                           key={child.label}
                           href={child.href}
+                      prefetch={false}
                           scroll={false}
                           onClickCapture={resetScrollForNavigation}
                           className="flex items-center px-4 py-2.5 mx-1 text-[15px] rounded-md hover:bg-gray-50 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors duration-[150ms]"
@@ -216,13 +217,13 @@ export default function Header() {
           {/* 右侧：搜索 + CTA + 汉堡 */}
           <div className="flex-1 flex items-center justify-end gap-3">
             <InstantSearch className="hidden lg:block" />
-            <InteractiveHoverButton
-              onClick={() => router.push("/contact")}
+            <InteractiveHoverLink
+              href="/contact"
               fill="bg-[var(--accent)]"
               className="hidden lg:inline-flex border-[var(--accent)] bg-white text-[var(--foreground)] h-[42px] px-5 text-[15px] transition-colors duration-300 hover:text-white"
             >
               Request Quote
-            </InteractiveHoverButton>
+            </InteractiveHoverLink>
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -272,6 +273,7 @@ export default function Header() {
             >
               <Link
                 href={item.href}
+                    prefetch={item.href === "/products" && pathname !== "/products" ? null : false}
                 scroll={false}
                 onClick={() => setMobileOpen(false)}
                 onClickCapture={resetScrollForNavigation}
@@ -286,6 +288,7 @@ export default function Header() {
                     <Link
                       key={child.label}
                       href={child.href}
+                          prefetch={false}
                       scroll={false}
                       onClick={() => setMobileOpen(false)}
                       onClickCapture={resetScrollForNavigation}
@@ -305,13 +308,14 @@ export default function Header() {
           </div>
 
           <div className="pt-5 mt-3" style={{ borderTop: "1px solid var(--border)" }}>
-            <InteractiveHoverButton
-              onClick={() => { setMobileOpen(false); router.push("/contact"); }}
+            <InteractiveHoverLink
+              href="/contact"
+              onClick={() => setMobileOpen(false)}
               fill="bg-[var(--accent)]"
               className="block w-full border-[var(--accent)] bg-white text-[var(--foreground)] shadow-sm h-[44px] px-6 text-[15px]"
             >
               Request Quote
-            </InteractiveHoverButton>
+            </InteractiveHoverLink>
           </div>
         </nav>
       </div>

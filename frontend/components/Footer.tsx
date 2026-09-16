@@ -21,7 +21,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* 品牌列 */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" aria-label="Home" className="mb-4 flex min-h-11 touch-manipulation items-center gap-2.5">
+            <Link prefetch={false} href="/" aria-label="Home" className="mb-4 flex min-h-11 touch-manipulation items-center gap-2.5">
               <Image
                 src={MEDIA.logo}
                 alt={COMPANY.name}
@@ -75,7 +75,7 @@ export default function Footer() {
             <p className="mb-4 max-w-xs text-[13px] leading-relaxed text-[#666b72]">
               {COMPANY.description}
             </p>
-            <Link
+            <Link prefetch={false}
               href="/contact"
               className="inline-flex min-h-11 touch-manipulation items-center text-[13px] font-medium text-[var(--foreground)] transition-colors duration-[330ms] hover:text-[var(--accent)] active:text-[var(--accent-hover)]"
             >
@@ -100,7 +100,7 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <Link
+                    <Link prefetch={false}
                       href={link.href}
                       className="inline-flex min-h-11 touch-manipulation items-center text-[14px] font-normal text-[#666b72] transition-colors duration-[330ms] hover:text-[var(--accent)] active:text-[var(--accent-hover)]"
                     >
@@ -119,14 +119,14 @@ export default function Footer() {
             &copy; {year} {COMPANY.fullName} All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Sitemap
             </Link>
-            <Link href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Privacy
             </Link>
             <CookieSettingsTrigger />
-            <Link href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               FAQ
             </Link>
           </div>

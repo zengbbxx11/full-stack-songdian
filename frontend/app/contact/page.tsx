@@ -69,12 +69,17 @@ export default async function ContactPage() {
       </section>
 
       {/* 主内容区 */}
-      <section className="section-shell bg-[var(--surface-soft)]">
+      <section className="py-8 md:py-16 bg-[var(--surface-soft)]">
         <div className="site-container">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16">
 
+            {/* 右栏 —— 询盘表单 */}
+            <div className="order-1 lg:order-2 lg:col-span-3">
+              <InquiryForm />
+            </div>
+
             {/* 左栏 */}
-            <div className="lg:col-span-2">
+            <div className="order-2 lg:order-1 lg:col-span-2">
               <Card className="border-[var(--border)]" style={{ borderRadius: "12px" }}>
                 <CardHeader>
                   <CardTitle className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Contact Information</CardTitle>
@@ -121,11 +126,6 @@ export default async function ContactPage() {
                   ))}
                 </CardContent>
               </Card>
-            </div>
-
-            {/* 右栏 —— 询盘表单 */}
-            <div className="lg:col-span-3">
-              <InquiryForm />
             </div>
           </div>
         </div>

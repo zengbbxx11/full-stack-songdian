@@ -73,7 +73,7 @@ export function formatDate(dateStr: string): string {
 export async function apiFetch<T>(
   path: string,
   params?: Record<string, string | number | undefined | null>,
-  options?: { revalidate?: number | false; tags?: string[] },
+  options?: { revalidate?: number | false; tags?: string[]; timeoutMs?: number },
 ): Promise<T> {
   const url = new URL(`${FETCH_API_BASE}${path}`);
   if (params) {
@@ -96,6 +96,8 @@ export async function apiFetch<T>(
   try {
     res = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
+      // Bound connection AND response-body reads; domain React cache() still deduplicates details.
+      signal: AbortSignal.timeout(options?.timeoutMs ?? 10_000),
       ...cacheInit,
     });
   } catch (error) {

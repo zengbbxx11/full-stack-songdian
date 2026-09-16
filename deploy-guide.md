@@ -857,3 +857,70 @@ curl -I https://admin.zsaki.icu/signin
 3. 确认 GitHub Actions Variables 中三个 `NEXT_PUBLIC_*` 仍是生产 HTTPS 域名，再以完整 commit SHA 运行 `Deploy production`。
 4. 发布脚本应依次完成备份、拉取三镜像、启动 PostgreSQL/Redis、执行迁移、切换三应用和搜索冒烟。任一步失败都停止发布；不要手工跳过迁移或健康检查。
 5. 发布后浏览器验证 `/search?q=417&type=all` 为 Product → News，`/search?q=417&type=news` 无中文提示，并检查产品页横滑、FAQ sticky、移动菜单与底部询盘条。
+
+## 2C / 2G / 2 Mbps 资源优化（本地准备，2026-09-15）
+
+- 后端启动脚本通过 `WEB_CONCURRENCY` 控制 Uvicorn worker，默认从 4 调整为 2。根目录 `.env.example` 已提供该配置。每个进程分别拥有数据库连接池与后台任务循环；减少进程降低重复常驻开销，但实际内存和吞吐需要上线后测量，不代表内存减半。无需数据库迁移。
+- 所有 Compose 服务使用 `json-file` 日志轮转，单文件 10m、最多 3 个。容器重建后生效；旧日志会按轮转规则淘汰，应用自行写入的文件日志不受此设置控制。
+- 官网使用命名卷 `frontend_image_cache`，仅挂载 `/app/.next/cache/images`。图片衍生缓存跨容器重建保留；不持久化 HTML/ISR 缓存，避免把旧版本页面跨发布复用。缓存首次仍需生成；磁盘占用需监测。保持现有图片 TTL，不把可原路径替换的图片改成永久缓存。替换图片优先使用新文件 URL，避免旧衍生图短期保留。
+- `apiFetch` 默认 10 秒超时，覆盖响应头与正文读取，失败继续抛出 `ApiError`。显式 signal 会退出 Next 原生 fetch 请求级 memoization；详情数据层已有 React `cache()` 继续去重，Next 持久缓存与 tags 不变。规范路径查询限 2 秒，保留后端不可用时静态映射兜底、业务 404 不兜底的区分。
+- canonical 进程内缓存仍是 60 秒 TTL，最多 512 条；写入时清理过期条目，满容量淘汰最早插入项。暂时故障和非法响应不写缓存。
+
+正式发布前仍按现有 CI/GHCR 流程验证 `docker compose config --quiet` 与镜像构建。本轮没有在 Windows 本机运行 Docker，也未修改线上进程。
+
+上线验收：用 `docker compose stats --no-stream` 记录各服务内存/CPU；确认 backend 只有配置数量的 worker、后台任务仍正常处理；同一图片 URL 连续请求命中缓存，重建 frontend 后缓存仍存在；查看容器日志轮转配置；验证旧产品 URL 308、下架产品不重定向。Redis 内存策略、PG 连接池和容器硬内存上限留待真实峰值测量后确定，避免任意设限导致认证状态淘汰或进程 OOM。
+
+### Sitemap 与媒体缓存补充（2026-09-15）
+
+- sitemap 保持运行时生成，用 Next 显式数据缓存保存完整结果 60 秒，使用 products/news/product-categories 标签，兼容现有发布刷新链路。采用当前非 Cache Components 架构支持的 unstable_cache，未全站切换缓存架构。常规过期允许后台刷新时暂用上一份完整快照；发布主动失效后重新获取。分页不完整直接失败，不缓存残缺 URL 集。
+- 生产构建后在 frontend 目录运行 node scripts/verify-sitemap-cache.mjs，用独立模拟 API 验证缓存复用、发布失效、不完整分页及恢复；默认临时端口 3002，可通过 SITEMAP_TEST_PORT 调整。脚本不写业务库，结束时失效测试缓存并关闭服务。
+- 后端公开媒体 200/206/304 响应增加 Cache-Control: public, max-age=3600，保留 ETag 与 Last-Modified；404 不添加此缓存头。原路径替换图片有一小时浏览器缓存窗口，推荐新 URL。若 OpenResty 直接服务 uploads 或覆盖响应头，需在实际反代层对齐同一策略；本轮未修改线上 CDN/反代设置。
+
+### News 分类与商品详情图（2026-09-16，本地已验证）
+
+- 本批需要更新 frontend 与 admin-next。无需新增数据库迁移；详情图继续存储在产品 content_html 的 img 标签中，复用上传媒体、版本历史与发布缓存刷新。原有文字保留在数据中，官网产品详情区域仅显示图片。
+- 后台产品编辑 → 商品详情图：支持多图上传、说明文字、上下排序和移除；点击保存产品后生效。上传期间禁止保存。封面和图库仍独立。产品私密预览使用相同图片组件。
+- 新上传图片记录原始宽高；官网使用懒加载与响应式尺寸。旧图和外链图兼容显示。建议宽度 1200–1600 px，优先 WebP，超长详情图分段；实际图片内容由运营上传。
+- News 的 category 和 page 使用服务端查询，分类翻页保留筛选条件，分页标题带页码，超范围页 noindex。现有中文分类显示为英文，后台原数据不变。
+- DC403/DC105/DC325/DC417X 已配置基于现有规格的 SEO 默认值，后台显式 SEO 优先。BK05/GO7 按用户要求暂缓，不纳入当前默认推广列表。工厂口径统一使用已确认的 10 条生产线。
+- 验证：前后台生产构建和相关 ESLint 通过；frontend/e2e/product-news-upgrade.spec.ts 四项浏览器回归通过。后台上传保存测试拦截接口，不改业务数据库；官网页面读取本地真实数据。尚未部署线上或验证 Google Search Console 的重新抓取结果。
+
+### News 正文媒体与产品加载状态补充（2026-09-16）
+
+- News 正文图片默认懒加载并异步解码；没有封面时首张正文图片仍优先加载，保留已有 alt、宽高。正文视频统一 preload=none、playsinline 和播放控件；已上传的 /uploads/ 图片、视频及封面 URL 解析至公开 API 地址。预览采用相同规则。
+- 产品详情骨架同步实际页面：移动端型号/规格/询盘在前，桌面 lg 断点恢复左右布局，减少旧骨架与新版页面的顺序跳变。
+- 实测当前 ISR 冷请求不会因单纯拆分辅助内容 Suspense 而提前返回正文，因此未保留该尝试，继续使用现有 ISR，避免为了流式输出改为每请求渲染。
+- 验证：最终生产构建、相关 ESLint、e2e/news-media-performance.spec.ts 三项回归通过；测试覆盖媒体安全属性、无封面首图优先级及真实浏览器图片/视频请求时机。不代表已完成线上 2 Mbps 的性能实测。
+
+### 列表参数与分页 SEO 补充（2026-09-16）
+
+- Products 与 News 共用 list-query.ts：重复 category/page 参数明确取第一个值，非有效安全整数页码回退第一页；metadata 与正文使用同一解析。修复 Products 对数组调用 toLowerCase 的异常。
+- 无效产品分类按既有逻辑显示全部产品，同时正确选中 All Products；分页只保留实际匹配的分类，URLSearchParams 负责编码，第一页去掉 page 参数。产品分页标题增加页码，Retry 保留当前有效分类及页码。
+- 验证：生产构建、相关 ESLint、git diff --check 通过；列表参数、News 媒体、移动产品详情相关 10 项回归通过，本轮未重跑后台上传测试。未改 API、数据库或缓存架构。
+
+### 响应式图片尺寸校准（2026-09-16）
+
+- ProductGallery 的 sizes 对齐 site-container、lg 双栏比例及缩略图占位；修正平板单栏被当作半屏选图、宽屏图片声明尺寸持续增长的问题。缩略图按 64/80 px 断点选图。初始主图保留预加载，用户选择的图片即时加载，并显示所选图片说明。
+- PostCard 默认按首页三栏与 1280 px 容器上限选图；文章页相关文章传入 1024 px 容器对应的 sizes。未改变原图、裁剪方式或图片优化器安全限制。
+- 验证：生产构建及相关 ESLint 通过，e2e/responsive-images.spec.ts 十项回归通过。覆盖 390/768/900/1440/1920 px 屏宽、390/900 px 的 2x 像素密度、两处新闻卡片和图库切换说明。浏览器按实际 HTML/srcset 选源，测试拦截图片响应，因此结果验证选图宽度与交互，不代表实际图片压缩字节量或线上 LCP。
+- 1x 密度实测：1920 px 屏宽图库实际 562 px、选 640 px；900 px 屏宽图库实际 770 px、选 1024 px；首页新闻图实际约 393 px、选 480 px；相关文章图实际约 307 px、选 384 px。
+
+### 列表故障与 SEO 一致性（2026-09-16）
+
+- Products / News 的正文与 metadata 共用请求级加载结果。分类接口失败时停止列表查询，避免把故障当作全部内容；不存在的分类仍沿用原有正常回退规则。
+- 列表或分类故障统一显示英文提示，不向访客展示内部 API 错误；错误页设置 noindex，保留请求分类及页码。Retry 使用完整页面导航，实际恢复后去掉错误页 noindex。产品数量不可读时显示破折号，不误报 0 件。
+- getProductsPage/getNewsPage 的 React cache 只在当前渲染请求内共享状态，底层原有 60 秒数据缓存和发布失效标签保持不变。
+- 验证：生产构建和相关 ESLint 通过；独立模拟 API 脚本 node scripts/verify-listing-failures.mjs 检查两种列表的分类失败、列表失败、恢复及 Retry 点击，共 8 项通过；正常列表参数、分页 SEO 和产品详情另有 7 项回归通过。模拟脚本不写业务库，默认临时端口 3003，退出时清理测试缓存和进程。
+
+### News 产品内链完整性（2026-09-16）
+
+- News 产品关联目录按每页 50 条读取全部已发布产品，继续复用 API 60 秒缓存和 products 标签；重复 ID 或分页不完整时不使用残缺目录，仍显示 OEM/ODM、工厂和询盘入口。目录只在服务端用于选取至多 3 条产品链接。
+- 从可见正文匹配完整型号 token，支持当前 URL slug、SKU 及产品名称首个型号。排除 HTML 属性、脚本内容和型号前缀误匹配；无明确型号时仍按 DC403/DC105/DC325/DC417X 顺序选择现有产品，BK05/GO7 暂缓。无分类产品不生成非规范链接。
+- 验证：生产构建、相关 ESLint 及 5 项逻辑/分页测试通过；真实 DC106Y 文章关联现有 /products/mirrorless-camera/dc106，工厂文章使用主推回退，抽查产品链接全部返回 200。测试包括第 51 个产品、缺页和重复页，不写业务库。
+
+### 首页线上资源基线与 News 预取（2026-09-16）
+
+- 报告见 reports/home-resource-audit-2026-09-16.md，原始 CDP 数据见 reports/home-resources-live.json；390px/DPR2/2Mbps 冷缓存完整滚动约 874 KiB、65 请求。仅为受控样本，不代表 CrUX 或 INP。
+- PostCard 关闭文章自动预取，保留链接导航；生产构建、相关 ESLint 和 1 项预取/点击浏览器回归通过。
+- 线上仍有 Geist Mono、旧 PNG 社交图等，本地累计优化尚未部署。部署后应按相同条件复测。
+- 工厂静态文案已采用 10 条产线，但 CMS News songdian-manufacturing-oem-partner-for-kenko 仍存在 12 条旧口径；此前“统一”的描述仅适用于修改过的静态文案。需对摘要和正文做限定内容修正、发布并刷新缓存，本轮未修改数据库。

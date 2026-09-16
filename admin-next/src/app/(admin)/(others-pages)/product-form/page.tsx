@@ -1,6 +1,6 @@
 /*
  * 页面：产品编辑/创建表单页（/product-form?id=X）
- * 职责：产品的创建和编辑表单。支持富文本描述（零依赖编辑器）、分类下拉选择、
+ * 职责：产品的创建和编辑表单。支持商品详情图、分类下拉选择、
  * 图片上传/删除、规格属性（SKU/库存等）的增删改。编辑模式下通过 URL query ?id=X
  * 加载既有产品数据，提交走 POST/PUT /api/v1/admin/products。
  */
@@ -16,7 +16,7 @@ import SelectField from "@/components/form/SelectField";
 import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import RichTextEditor from "@/components/form/RichTextEditor";
+import ProductDetailImageEditor from "@/components/form/ProductDetailImageEditor";
 import { apiFetch, apiFetchAllPages, resolveMediaUrl } from "@/lib/api-client";
 import type { ProductCategory } from "@/types";
 import { publicationTime, toLocalDateTime } from "@/lib/content-time";
@@ -57,6 +57,7 @@ function ProductFormInner() {
   const [uploading, setUploading] = useState(false);
   // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
   const [coverUploading, setCoverUploading] = useState(false);
+  const [detailUploading, setDetailUploading] = useState(false);
   const coverUploadSeq = useRef(0);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
   const { error: showError } = useToast();
@@ -198,7 +199,7 @@ function ProductFormInner() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (saving || coverUploading || ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey)) return;
+    if (saving || detailUploading || coverUploading || ((id || copyFrom) && loadedKey !== (id || copyFrom) + ":" + reloadKey)) return;
     setSaving(true);
     try {
       if (!form.title.trim() || !form.slug.trim() || !form.category_id) throw new Error("请填写标题、别名并选择分类");
@@ -240,7 +241,7 @@ function ProductFormInner() {
       {isCopy && <p className="mb-4 text-sm text-amber-700">复制基本信息、封面及 SEO；图库和规格不会自动复制，请保存后进入编辑页添加。</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
-        <fieldset disabled={saving || deleting || coverUploading} className="space-y-6">
+        <fieldset disabled={saving || deleting || detailUploading || coverUploading} className="space-y-6">
         {/* 基本信息 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">基本信息</h3>
@@ -285,7 +286,7 @@ function ProductFormInner() {
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入产品描述..." /></div>
+          <div><Label>商品详情图</Label><ProductDetailImageEditor value={form.content_html} name={form.title} onChange={value => setForm(prev => ({ ...prev, content_html: value }))} onBusyChange={setDetailUploading} upload={file => uploadImage(file, form.slug)} /></div>
         </div>
 
         {/* SEO 元数据 */}
@@ -426,7 +427,7 @@ function ProductFormInner() {
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除产品"}</Button>}</div>
           <div className="flex gap-3">
             <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
-            <Button type="submit" disabled={saving || coverUploading}>{saving ? "保存中..." : coverUploading ? "封面上传中..." : "保存产品"}</Button>
+            <Button type="submit" disabled={saving || detailUploading || coverUploading}>{saving ? "保存中..." : detailUploading ? "详情图上传中..." : coverUploading ? "封面上传中..." : "保存产品"}</Button>
           </div>
         </div>
         </fieldset>

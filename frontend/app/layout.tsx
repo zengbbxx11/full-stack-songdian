@@ -1,6 +1,6 @@
 /*
  * 文件：app/layout.tsx（根布局 / Root Layout）
- * 职责：全站根布局，包裹所有页面。负责字体加载（Geist Sans/Mono）、
+ * 职责：全站根布局，包裹所有页面。负责字体加载（Geist Sans）、
  *       全局 SEO 元信息与 JSON-LD（Organization + WebSite）、
  *       以及持久化 UI 外壳（Header → main → Footer → FloatingInquiry）。
  * 数据来源：本地常量与工具 —— COMPANY（@/lib/content-data）、MEDIA（@/lib/media）、
@@ -14,7 +14,7 @@
  * ------------------------------------------------------------------
  * Next.js App Router root layout that wraps every page on the site.
  * Provides:
- *   - Font loading (Geist Sans + Geist Mono from next/font)
+ *   - Font loading (Geist Sans from next/font)
  *   - Global Metadata & Open Graph for SEO (search engines / social sharing)
  *   - Twitter Card metadata for social previews on X / Twitter
  *   - JSON-LD structured data (Organization + WebSite schemas)
@@ -36,7 +36,6 @@
 import type { Metadata, Viewport } from "next";
 import { initSuperMeta } from "next-super-meta";
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingInquiry from "@/components/FloatingInquiry";
@@ -200,7 +199,7 @@ export default function RootLayout({
     // ------------------------------------------------------------------
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+      className={`${GeistSans.variable} antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -318,6 +318,7 @@ export default function HomePage() {
           <div className="mt-10 flex justify-start md:mt-12">
             <Link
               href="/about#factory-tour"
+              prefetch={false}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-[var(--surface-soft)] px-5 text-sm font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
               <Play className="h-4 w-4 fill-current" aria-hidden="true" />
@@ -352,6 +353,7 @@ export default function HomePage() {
               alt="Global ODM partner and export network map"
               width={1200}
               height={500}
+              sizes="(max-width: 1280px) 100vw, 1280px"
               className="w-full h-auto"
               loading="lazy"
             />

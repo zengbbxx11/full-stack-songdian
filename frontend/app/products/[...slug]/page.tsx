@@ -27,9 +27,10 @@ import ProductGallery from "@/components/ProductGallery";
 import { Badge } from "@/components/ui/badge";
 import { CtaButton } from "@/components/CtaButton";
 import { ProductViewTracker } from "@/components/ProductViewTracker";
-import { cleanPostContent } from "@/lib/html-cleaner";
+import ProductDetailImages from "@/components/ProductDetailImages";
 import { MEDIA } from "@/lib/media";
 import { generateBreadcrumbs, productSchema, safeJsonLd } from "@/lib/seo";
+import { PRIORITY_PRODUCT_SEO } from "@/lib/priority-products";
 import { COMPANY } from "@/lib/content-data";
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成产品详情
@@ -69,9 +70,10 @@ export async function generateMetadata({
   const canonical = productPath(product);
   const plainDesc = stripHtml(product.shortDescription || "");
   // SEO 标题 & 描述：优先使用后端 seo_* 字段（运营精修），空则回退 title/shortDescription
-  const seoTitle = product.seoTitle || product.name;
+  const editorial = PRIORITY_PRODUCT_SEO[product.slug];
+  const seoTitle = product.seoTitle || editorial?.title || product.name;
   const factoryDescription = `${product.name}, manufactured by ${COMPANY.name}, an OEM/ODM digital camera factory.${plainDesc ? ` ${plainDesc}` : ""}`;
-  const seoDesc = product.seoDescription || factoryDescription.slice(0, 160).trim();
+  const seoDesc = product.seoDescription || editorial?.description || factoryDescription.slice(0, 160).trim();
   const socialImage = product.images?.[0]?.src || MEDIA.ogImage;
 
   return {
@@ -80,6 +82,7 @@ export async function generateMetadata({
     alternates: { canonical },
     openGraph: {
       title: seoTitle,
+      url: canonical,
       description: seoDesc,
       images: [{ url: socialImage, width: product.images?.[0]?.src ? 800 : 1200, height: product.images?.[0]?.src ? 800 : 630 }],
       type: "website",
@@ -248,6 +251,7 @@ export default async function ProductDetailPage({
     });
 
     const features = product.shortDescription ? extractFeatures(product.shortDescription) : [];
+    const keyFacts = (product.attributes || []).filter(a => /sensor|zoom|screen|video-resolution/.test(a.slug)).slice(0, 3).map(a => ({ label: a.name.replace(/-/g, " "), value: a.value.split(/[;；\n]/)[0].replace(/^(\dK)(\d{1,3})$/, "$1 at $2 fps") }));
 
     const wcAttrs = product.attributes || [];
     const parsedSpecs = product.shortDescription ? extractSpecs(product.shortDescription) : [];
@@ -257,7 +261,7 @@ export default async function ProductDetailPage({
 
     const primaryImage = product.images?.[0]?.src || null;
     const galleryImages = product.gallery || [];
-    const hasContent = product.description && product.description.trim().length > 0;
+
 
     return (
       <>
@@ -272,12 +276,56 @@ export default async function ProductDetailPage({
         </section>
 
         {/* 产品概览 */}
-        <section className="section-shell bg-white">
+        <section className="bg-white py-8 md:py-16">
           <div className="site-container">
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
 
+              {/* 右栏：产品信息 */}
+              <div className="lg:order-2 lg:sticky lg:top-28 lg:self-start">
+                <p className="section-eyebrow mb-4">Product Model</p>
+                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--surface-dark)]">
+                  {product.name}
+                </h1>
+
+                {product.sku && (
+                  <p className="text-xs text-gray-400 mb-5">
+                    SKU: <span className="font-mono text-gray-500">{product.sku}</span>
+                  </p>
+                )}
+
+                {keyFacts.length > 0 && <dl className="mb-5 space-y-2 text-sm">{keyFacts.map((fact, i) => <div key={i}><dt className="capitalize text-gray-500">{fact.label}</dt><dd className="font-medium">{fact.value}</dd></div>)}</dl>}
+
+                {/* 行动号召按钮 */}
+                <div className="flex flex-wrap gap-3 mb-8">
+                  <CtaButton
+                    href={`/contact?product=${encodeURIComponent(product.slug)}&category=${encodeURIComponent(primaryCategory?.slug || "")}`}
+                    ctaLabel="Product Detail - Send Inquiry"
+                    className="h-12 border-[var(--accent)] bg-white px-8 text-[14px] text-[var(--foreground)] hover:text-white"
+                  >
+                    Send Inquiry
+                  </CtaButton>
+                  <Link
+                    href={primaryCategory ? `/products?category=${primaryCategory.slug}` : "/products"}
+                    className="inline-flex items-center px-6 py-3 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    &larr; {primaryCategory ? `Back to ${primaryCategory.name}` : "All Products"}
+                  </Link>
+                </div>
+
+                {features.length > 0 && <details className="mb-5 text-sm text-gray-600"><summary className="cursor-pointer py-2 font-medium">More product information</summary><ul className="mt-2 space-y-2">{features.map((feature, i) => <li key={i}>{feature}</li>)}</ul></details>}
+
+                {/* OEM/ODM 说明 */}
+                <div className="flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/15 bg-[var(--accent)]/5 p-4">
+                  <svg className="w-5 h-5 shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm text-[var(--graphite)]">
+                    Available for OEM/ODM — wholesale pricing upon request
+                  </span>
+                </div>
+              </div>
               {/* 左栏：产品图集 */}
-              <div>
+              <div className="lg:order-1">
                 {primaryImage ? (
                   <>
                     <ProductGallery
@@ -303,57 +351,7 @@ export default async function ProductDetailPage({
                 )}
               </div>
 
-              {/* 右栏：产品信息 */}
-              <div className="lg:sticky lg:top-28 lg:self-start">
-                <p className="section-eyebrow mb-4">Product Model</p>
-                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--surface-dark)]">
-                  {product.name}
-                </h1>
 
-                {features.length > 0 && (
-                  <ul className="space-y-2.5 mb-7">
-                    {features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-3 text-[14px] text-gray-600 leading-relaxed">
-                        <span className="text-gray-400 mt-1 shrink-0">&bull;</span>
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {product.sku && (
-                  <p className="text-xs text-gray-400 mb-5">
-                    SKU: <span className="font-mono text-gray-500">{product.sku}</span>
-                  </p>
-                )}
-
-                {/* 行动号召按钮 */}
-                <div className="flex flex-wrap gap-3 mb-8">
-                  <CtaButton
-                    href={`/contact?product=${encodeURIComponent(product.slug)}`}
-                    ctaLabel="Product Detail - Send Inquiry"
-                    className="h-12 border-[var(--accent)] bg-white px-8 text-[14px] text-[var(--foreground)] hover:text-white"
-                  >
-                    Send Inquiry
-                  </CtaButton>
-                  <Link
-                    href={primaryCategory ? `/products?category=${primaryCategory.slug}` : "/products"}
-                    className="inline-flex items-center px-6 py-3 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                  >
-                    &larr; {primaryCategory ? `Back to ${primaryCategory.name}` : "All Products"}
-                  </Link>
-                </div>
-
-                {/* OEM/ODM 说明 */}
-                <div className="flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/15 bg-[var(--accent)]/5 p-4">
-                  <svg className="w-5 h-5 shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-sm text-[var(--graphite)]">
-                    Available for OEM/ODM — wholesale pricing upon request
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -388,16 +386,7 @@ export default async function ProductDetailPage({
           </section>
         )}
 
-        {/* 产品亮点 */}
-        {hasContent && (
-          <section className="section-shell bg-white">
-            <div className="site-container max-w-5xl">
-              <p className="section-eyebrow">Product overview</p>
-              <h2 className="section-title mb-10 mt-4">Product Highlights</h2>
-              <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(product.description) }} />
-            </div>
-          </section>
-        )}
+        <ProductDetailImages html={product.description || ""} name={product.name} />
 
         {/* 相关产品 — 流式到达，不阻塞主内容 */}
         {primaryCategory && (

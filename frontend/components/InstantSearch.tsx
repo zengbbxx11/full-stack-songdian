@@ -11,6 +11,7 @@
 
 import { useState, useRef, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { search, type SearchResultItem } from "@/lib/api/search";
 
@@ -218,6 +219,7 @@ export default function InstantSearch({ className }: { className?: string }) {
                   >
                     <Link
                       href={item.url}
+                      prefetch={false}
                       onClick={() => setOpen(false)}
                       onMouseEnter={() => setActiveIndex(i)}
                       className={`flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2 transition-colors active:bg-[#eceef1] ${
@@ -244,7 +246,7 @@ export default function InstantSearch({ className }: { className?: string }) {
 
 /**
  * 缩略图组件：图片加载失败时显示占位符。
- * 使用原生 img 的 onError 回调切换状态（避免 next/image 对远程图额外限制）。
+ * 使用站点图片优化器按 36px 展示尺寸取图，保留失败占位。
  */
 function Thumbnail({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
@@ -276,9 +278,11 @@ function Thumbnail({ src, alt }: { src: string | null; alt: string }) {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={src}
+      width={36}
+      height={36}
+      sizes="36px"
       alt={alt}
       onError={() => setFailed(true)}
       className="h-9 w-9 shrink-0 rounded object-cover"

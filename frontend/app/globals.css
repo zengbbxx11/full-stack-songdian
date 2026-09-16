@@ -61,7 +61,7 @@
 
   /* 字体 */
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --font-heading: var(--font-geist-sans);
 }
 
@@ -306,7 +306,7 @@ html {
     padding: 0.15em 0.4em;
     border-radius: 4px;
     font-size: 0.875em;
-    font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   }
 
   hr { margin: 2.5em 0; border-color: #EEEEEE; }

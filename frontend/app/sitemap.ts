@@ -9,16 +9,22 @@
  */
 
 import type { MetadataRoute } from "next";
+import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 import { getAllPostSlugs } from "@/lib/api/news";
 import { getAllProductSlugEntries } from "@/lib/api/products";
 
-// 镜像构建不依赖运行时 API；请求时必须取得完整动态 URL。
-export const dynamic = "force-dynamic";
+// Keep builds independent of the runtime API; cache only a complete successful snapshot.
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return getCachedSitemap(siteUrl);
+}
+
+const getCachedSitemap = unstable_cache(async (siteUrl: string): Promise<MetadataRoute.Sitemap> => {
   const [entries, postSlugs] = await Promise.all([
-    // Sitemap URLs must reflect newly published records immediately; regular page data uses ISR.
+    // Fetch fresh inputs together; publishing invalidates the snapshot via products/news tags.
     getAllProductSlugEntries({ strict: true, revalidate: false }),
     getAllPostSlugs({ strict: true, revalidate: false }),
   ]);
@@ -52,4 +58,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   return [...staticRoutes, ...productRoutes, ...postRoutes];
-}
+}, ["complete-sitemap-v1"], { revalidate: 60, tags: ["products", "news", "product-categories"] });

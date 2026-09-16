@@ -19,9 +19,16 @@
 
 name: songdian-b2b
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # ───────────────────────── 数据库 PostgreSQL（官方镜像，不自定义扩展） ─────────────────────────
   postgres:
+    logging: *default-logging
     image: postgres:18.4-bookworm
     environment:
       POSTGRES_USER: ${PG_USER}
@@ -45,6 +52,7 @@ services:
 
   # ───────────────────────── 缓存/限流 Redis ─────────────────────────
   redis:
+    logging: *default-logging
     image: redis:8.8.1-alpine
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -60,6 +68,7 @@ services:
 
   # ───────────────────────── 后端 API ─────────────────────────
   backend:
+    logging: *default-logging
     image: ${BACKEND_IMAGE:-songdian-backend:local}
     build:
       context: ./backend
@@ -90,6 +99,8 @@ services:
       MEDIA_URL: /uploads
       HOST: 0.0.0.0
       PORT: "8000"
+      # 2C/2G baseline; each worker owns a DB pool and background loops.
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
       MAX_UPLOAD_MB: "10"
       MAX_UPLOAD_FILES: "20"
       MAX_UPLOAD_TOTAL_MB: "100"
@@ -122,6 +133,7 @@ services:
 
   # ───────────────────────── 企业官网 ─────────────────────────
   migrate:
+    logging: *default-logging
     image: ${BACKEND_IMAGE:-songdian-backend:local}
     build:
       context: ./backend
@@ -142,6 +154,7 @@ services:
       - app-net
 
   frontend:
+    logging: *default-logging
     image: ${FRONTEND_IMAGE:-songdian-frontend:local}
     build:
       context: ./frontend
@@ -155,6 +168,9 @@ services:
       PORT: "3000"
       INTERNAL_API_URL: http://backend:8000
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    volumes:
+      # Persist only image derivatives; keep HTML/ISR cache tied to the release.
+      - frontend_image_cache:/app/.next/cache/images
     depends_on:
       backend:
         condition: service_healthy
@@ -170,6 +186,7 @@ services:
 
   # ───────────────────────── 管理后台 ─────────────────────────
   admin-next:
+    logging: *default-logging
     image: ${ADMIN_IMAGE:-songdian-admin:local}
     build:
       context: ./admin-next
@@ -199,6 +216,7 @@ volumes:
   pg_data:
   redis_data:
   uploads_data:
+  frontend_image_cache:
 
 networks:
   app-net:

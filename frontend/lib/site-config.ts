@@ -36,16 +36,16 @@ export const NAV_LINKS = [
 export const SOCIAL_LINKS = [
   {
     name: "Facebook",
-    icon: "/MediaIcon/facebook.png",
+    icon: "/MediaIcon/facebook-60.webp",
     url: COMPANY.social.facebook,
   },
   {
     name: "YouTube",
-    icon: "/MediaIcon/youtube.png",
+    icon: "/MediaIcon/youtube-60.webp",
     url: COMPANY.social.youtube,
   },
-  { name: "Instagram", icon: "/MediaIcon/instagram.png", url: null },
-  { name: "TikTok", icon: "/MediaIcon/tik-tok.png", url: null },
+  { name: "Instagram", icon: "/MediaIcon/instagram-60.webp", url: null },
+  { name: "TikTok", icon: "/MediaIcon/tik-tok-60.webp", url: null },
 ] as const;
 
 /**

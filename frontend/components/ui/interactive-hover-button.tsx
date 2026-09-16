@@ -10,6 +10,8 @@
  *   - @/lib/utils 的 cn()（shadcn 标准类名合并）
  */
 
+import Link from "next/link";
+import type { ComponentProps, ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,5 +46,23 @@ export function InteractiveHoverButton({
         )}
       />
     </button>
+  );
+}
+
+/** Real links remain navigable before React hydration. */
+export function InteractiveHoverLink({
+  children, className, fill = "bg-primary", prefetch = false, ...props
+}: Omit<ComponentProps<typeof Link>, "children"> & { children: ReactNode; fill?: string }) {
+  return (
+    <Link prefetch={prefetch} className={cn(
+      "group bg-background relative inline-flex min-h-11 w-auto items-center justify-center touch-manipulation cursor-pointer overflow-hidden rounded-xl border p-2 px-6 text-center font-semibold active:scale-[0.99]",
+      className
+    )} {...props}>
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        <span>{children}</span>
+        <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-focus-visible:translate-x-0.5 group-focus-visible:-translate-y-0.5" />
+      </span>
+      <span aria-hidden="true" className={cn(fill, "absolute inset-0 origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100")} />
+    </Link>
   );
 }

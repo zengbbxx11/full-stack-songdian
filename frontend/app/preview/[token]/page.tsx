@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import ProductDetailImages from "@/components/ProductDetailImages";
 import { cleanPostContent } from "@/lib/html-cleaner";
 import {
   apiFetch,
@@ -53,7 +54,8 @@ export default async function PreviewPage({ params }: { params: Promise<{ token:
           <Image src={image} alt={content.title} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain" preload />
         </div>
       )}
-      <div className="article-body mt-10" dangerouslySetInnerHTML={{ __html: cleanPostContent(content.content_html) }} />
+      {preview.resource_type === "product" ? <ProductDetailImages html={content.content_html || ""} name={content.title} /> :
+        <div className="article-body mt-10" dangerouslySetInnerHTML={{ __html: cleanPostContent(content.content_html, { hasLeadImage: Boolean(image) }) }} />}
     </article>
   );
 }

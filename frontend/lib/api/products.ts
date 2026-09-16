@@ -33,14 +33,14 @@ import {
 export const PRODUCTS_PER_PAGE = 12;
 
 /** 获取产品分类列表（用于筛选按钮与面包屑）。 */
-export async function getProductCategories(): Promise<WCProductCategory[]> {
+export const getProductCategories = cache(async (): Promise<WCProductCategory[]> => {
   const data = await apiFetch<CategoryDTO[]>(
     "/api/v1/product-categories",
     undefined,
     { tags: ["product-categories"] },
   );
   return data.map((c) => ({ id: c.id, name: normalizeCategoryName(c.name), slug: c.slug }));
-}
+});
 
 /** 分页获取产品列表，按摘要字段映射为 ProductSummary。 */
 export async function getProducts(params?: {
@@ -51,24 +51,27 @@ export async function getProducts(params?: {
   /** 排序方式：映射到后端 order_by 参数（如 "sort_order,-created_time"） */
   sort?: string;
 }): Promise<{ products: ProductSummary[]; pagination: PageMeta | null }> {
-  const page = params?.page || 1;
-  const perPage = params?.perPage || PRODUCTS_PER_PAGE;
+  return getProductsCached(params?.page || 1, params?.perPage || PRODUCTS_PER_PAGE, params?.category ?? undefined, params?.search || undefined, params?.sort || undefined);
+}
+
+// Primitive keys let metadata and body share one result, even with separate options objects.
+const getProductsCached = cache(async (page: number, perPage: number, category: number | undefined, search: string | undefined, sort: string | undefined): Promise<{ products: ProductSummary[]; pagination: PageMeta | null }> => {
   const data = await apiFetch<PageDTO<ProductPageDTO>>(
     "/api/v1/products",
     {
       page,
       page_size: perPage,
-      category_id: params?.category ?? undefined,
-      keyword: params?.search || undefined,
+      category_id: category,
+      keyword: search,
       status: "PUBLISHED",
-      ...(params?.sort ? { order_by: params.sort } : {}),
+      ...(sort ? { order_by: sort } : {}),
     },
     { tags: ["products"] },
   );
   const products = data.list.map(toProductSummary);
   const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
   return { products, pagination: { total: data.total, totalPages } };
-}
+});
 
 /** 按 slug 获取产品详情；仅真实不存在时返回 null，其余 API 故障继续抛出。 */
 export const getProductBySlug = cache(async (slug: string): Promise<ProductDetail | null> => {
@@ -120,6 +123,9 @@ export async function getAllProductSlugEntries({
       page += 1;
       if (data.list.length === 0) break;
     } while (list.length < total);
+    if (strict && list.length !== total) {
+      throw new Error("Incomplete sitemap pagination");
+    }
     return list.map((p) => ({
       slug: p.slug,
       categorySlug: p.category?.slug ?? null,
@@ -199,3 +205,23 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
     seoDescription: p.seo_description ?? null,
   };
 }
+
+/** Full published catalog for News links; existing fetch cache and products tag remain in effect. */
+export const getProductLinkCatalog = cache(async () => {
+  const products: import("@/lib/news-product-links").ProductLink[] = [];
+  const ids = new Set<number>();
+  let page = 1, total = 0;
+  do {
+    const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", { page, page_size: 50, status: "PUBLISHED" }, { tags: ["products"] });
+    total = data.total;
+    for (const product of data.list) {
+      if (ids.has(product.id)) throw new Error("Repeated product in link catalog");
+      ids.add(product.id);
+      products.push({ id: product.id, slug: product.slug, name: normalizePublicText(product.title), sku: product.sku, categories: product.category ? [{ ...product.category, name: normalizeCategoryName(product.category.name) }] : [] });
+    }
+    if (data.list.length === 0) break;
+    page++;
+  } while (products.length < total);
+  if (products.length !== total) throw new Error("Incomplete product link catalog");
+  return products;
+});

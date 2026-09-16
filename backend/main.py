@@ -146,7 +146,11 @@ class _MediaStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):  # type: ignore[override]
         if path.lower().endswith(self._BLOCKED_SUFFIXES):
             raise HTTPException(status_code=404)
-        return await super().get_response(path, scope)
+        response = await super().get_response(path, scope)
+        # Mutable legacy image paths: bounded freshness, retaining ETag/Last-Modified.
+        if response.status_code in (200, 206, 304):
+            response.headers["Cache-Control"] = "public, max-age=3600"
+        return response
 
 
 MEDIA_ROOT.mkdir(parents=True, exist_ok=True)

@@ -175,7 +175,7 @@ export default function CookieConsent() {
                     We use cookies to keep the site running and, with your permission, to
                     measure traffic and use Microsoft Clarity heatmaps and session recordings
                     to understand how visitors use it. See our{" "}
-                    <Link
+                    <Link prefetch={false}
                       href="/privacy-policy#cookies"
                       className="font-medium text-primary hover:underline"
                     >

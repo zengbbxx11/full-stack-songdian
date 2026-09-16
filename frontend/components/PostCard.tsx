@@ -11,6 +11,8 @@ interface PostCardProps {
   /** 是否显示作者（默认显示）；首页 Latest News 区传 false 隐藏 */
   showAuthor?: boolean;
   preload?: boolean;
+  /** Override when the grid uses a narrower container than the home page. */
+  sizes?: string;
 }
 
 // 图片加载失败 / 无图时的占位（文档图标）
@@ -31,9 +33,10 @@ const imageFallback = (
  * - Hover：Electric Blue 边框 + shadow-sm + 图片 brightness(1.05)
  * - 标题 hover 变蓝
  */
-export default function PostCard({ post, showAuthor = true, preload = false }: PostCardProps) {
+export default function PostCard({ post, showAuthor = true, preload = false, sizes = "(max-width: 767px) calc(100vw - 48px), (max-width: 1279px) calc(33.333vw - 32px), 395px" }: PostCardProps) {
   return (
     <Link
+      prefetch={false}
       href={`/news/${post.slug}`}
       className="group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[var(--accent)]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
     >
@@ -44,7 +47,7 @@ export default function PostCard({ post, showAuthor = true, preload = false }: P
             src={post.featuredImage}
             alt={post.featuredImageAlt}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes={sizes}
             preload={preload}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
             style={{ transitionDuration: "0.3s" }}

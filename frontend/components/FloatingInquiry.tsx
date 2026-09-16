@@ -71,7 +71,7 @@ export default function FloatingInquiry() {
         </span>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <Link
+        <Link prefetch={false}
           href="/contact"
           className="inline-flex h-10 touch-manipulation items-center rounded-lg bg-[var(--accent)] px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-[var(--accent-hover)] active:bg-[#991b1b] sm:px-6"
         >

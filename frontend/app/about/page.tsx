@@ -55,9 +55,9 @@ export default function AboutPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
                 Who We Are
               </p>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-6">
                 {ABOUT.story.title}
-              </h2>
+              </h1>
               <div className="space-y-5 text-gray-600 leading-relaxed">
                 {ABOUT.story.content.map((p, i) => (
                   <p

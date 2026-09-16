@@ -37,4 +37,4 @@ fi
 export TRUSTED_PROXIES="${TRUSTED_PROXIES:-127.0.0.1}"
 
 exec uvicorn main:app --host 0.0.0.0 --port 8000 \
-  --proxy-headers --forwarded-allow-ips="$TRUSTED_PROXIES" --workers 4
+  --proxy-headers --forwarded-allow-ips="$TRUSTED_PROXIES" --workers "${WEB_CONCURRENCY:-2}"

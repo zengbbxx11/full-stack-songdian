@@ -29,7 +29,7 @@ export default function HomeCtaSection() {
             >
               Send an Inquiry
             </CtaButton>
-            <Link
+            <Link prefetch={false}
               href="/about"
               className="inline-flex h-12 items-center rounded-xl border border-white/25 bg-transparent px-8 text-sm font-medium text-white transition-colors duration-[330ms] hover:border-white hover:bg-white hover:text-[var(--surface-dark)]"
             >

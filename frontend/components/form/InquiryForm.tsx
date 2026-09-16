@@ -13,11 +13,12 @@
  *  - 提交成功改为页面内成功态，替代原生 alert。
  */
 
-import { useRef, useState } from "react";
+import { Suspense, useCallback, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { inquirySchema, inquiryMessage, type InquiryFormValues } from "@/lib/inquiry-form";
 import FormField from "./FormField";
+import InquiryProductContext from "./InquiryProductContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,8 @@ export default function InquiryForm() {
     handleSubmit,
     control,
     reset,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<InquiryFormValues>({
     resolver: zodResolver(inquirySchema),
@@ -73,6 +76,10 @@ export default function InquiryForm() {
       quantity: "",
     },
   });
+
+  const applyProductInterest = useCallback((value: string) => {
+    if (!getValues("productInterest")) setValue("productInterest", value);
+  }, [getValues, setValue]);
 
   // 提交处理：POST 到后端 /api/v1/inquiries，后端落 PG 库并 SMTP 发信
   const onSubmit = async (values: InquiryFormValues) => {
@@ -189,6 +196,10 @@ export default function InquiryForm() {
           <CardDescription className="text-sm text-gray-500">
             Tell us about your project — get a tailored quote within 24 hours. No commitment, just answers.
           </CardDescription>
+
+          <Suspense fallback={null}>
+            <InquiryProductContext onInterest={applyProductInterest} />
+          </Suspense>
 
           {/* 信任背书条：降低提交心理门槛，提升填表欲望 */}
           <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">

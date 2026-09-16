@@ -13,6 +13,7 @@ interface ProductCardProps {
   product: ProductSummary;
   /** Preload only the single above-the-fold LCP candidate. */
   preload?: boolean;
+  sizes?: string;
 }
 
 // 图片加载失败 / 无图时的占位（相机图标）
@@ -45,7 +46,7 @@ const imageFallback = (
  * - Hover：品牌红边框 #d4343e + 轻微阴影 + 图片 scale(1.03)
  * - CTA：幽灵文字链 "View Details →"，默认 Graphite 灰、卡片 hover 变红 #d4343e + 箭头滑入（蓝色实心按钮已弃用，避免与红 hover 语言撞色且消除重复色块）
  */
-export default function ProductCard({ product, preload = false }: ProductCardProps) {
+export default function ProductCard({ product, preload = false, sizes = "(max-width: 768px) 50vw, 25vw" }: ProductCardProps) {
   const tags = product.tags || [];
 
   return (
@@ -60,7 +61,7 @@ export default function ProductCard({ product, preload = false }: ProductCardPro
             src={product.image}
             alt={product.imageAlt || product.name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes={sizes}
             preload={preload}
             className="object-contain transition-transform group-hover:scale-[1.04]"
             style={{ transitionDuration: "0.3s" }}

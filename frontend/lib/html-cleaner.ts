@@ -7,6 +7,7 @@
  */
 
 import sanitizeHtml from "sanitize-html";
+import { toAbsoluteUrl } from "@/lib/api/client";
 
 // sanitize-html 白名单：只允许文章内容所需的安全标签与属性。
 // script/iframe/object 等危险标签、on* 事件属性、javascript:/data: 协议一律被移除（防存储型 XSS）。
@@ -20,8 +21,8 @@ const ARTICLE_WHITELIST: sanitizeHtml.IOptions = {
   ],
   allowedAttributes: {
     a: ["href", "name", "target", "rel"],
-    img: ["src", "alt", "title", "width", "height", "loading"],
-    video: ["src", "controls", "poster", "width", "height"],
+    img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
+    video: ["src", "controls", "poster", "width", "height", "preload", "playsinline"],
     source: ["src", "type"],
     td: ["colspan", "rowspan"],
     th: ["colspan", "rowspan"],
@@ -30,7 +31,7 @@ const ARTICLE_WHITELIST: sanitizeHtml.IOptions = {
   },
   // 仅允许安全协议，拦截 javascript:/data:/vbscript: 协议注入
   allowedSchemes: ["http", "https", "mailto", "tel"],
-  allowedSchemesAppliedToAttributes: ["href", "src"],
+  allowedSchemesAppliedToAttributes: ["href", "src", "poster"],
   // 外链 target=_blank 自动补 rel="noopener noreferrer"，防 reverse tabnabbing
   transformTags: {
     a: (tagName, attribs) =>
@@ -46,7 +47,7 @@ const ARTICLE_WHITELIST: sanitizeHtml.IOptions = {
  * - 移除 Word/WP 注入的容器、类名、宽高约束
  * - 移除空段落与 HTML 注释
  */
-export function cleanPostContent(html: string): string {
+export function cleanPostContent(html: string, { hasLeadImage = false }: { hasLeadImage?: boolean } = {}): string {
   let cleaned = html;
 
   // 1. 移除 Astra/WP 主题注入的文章元信息块
@@ -109,5 +110,33 @@ export function cleanPostContent(html: string): string {
   cleaned = cleaned.replace(/<(p|div|span)[^>]*>\s*<\/\1>/gi, "");
 
   // 最后做白名单安全消毒：移除危险标签 / on* 事件属性 / 不安全协议（防存储型 XSS）
-  return sanitizeHtml(cleaned, ARTICLE_WHITELIST);
+  let imageIndex = 0;
+  const mediaUrl = (src?: string) => src?.startsWith("/uploads/") ? toAbsoluteUrl(src)! : src;
+  return sanitizeHtml(cleaned, {
+    ...ARTICLE_WHITELIST,
+    transformTags: {
+      ...ARTICLE_WHITELIST.transformTags,
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...attribs,
+          ...(attribs.src ? { src: mediaUrl(attribs.src)! } : {}),
+          // Without a cover, keep the first content image eligible for LCP.
+          loading: !hasLeadImage && imageIndex++ === 0 ? "eager" : "lazy",
+          decoding: "async",
+        },
+      }),
+      video: (tagName, attribs) => ({
+        tagName, attribs: {
+          ...attribs,
+          ...(attribs.src ? { src: mediaUrl(attribs.src)! } : {}),
+          ...(attribs.poster ? { poster: mediaUrl(attribs.poster)! } : {}),
+          preload: "none", playsinline: "", controls: "",
+        },
+      }),
+      source: (tagName, attribs) => ({
+        tagName, attribs: { ...attribs, ...(attribs.src ? { src: mediaUrl(attribs.src)! } : {}) },
+      }),
+    },
+  });
 }

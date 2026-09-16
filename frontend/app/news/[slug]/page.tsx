@@ -10,6 +10,8 @@
  */
 
 import Link from "next/link";
+import { Suspense } from "react";
+import NewsProductLinks from "@/components/NewsProductLinks";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -48,6 +50,7 @@ export async function generateMetadata({
     alternates: { canonical: `/news/${slug}` },
     openGraph: {
       title: post.title, description: desc,
+      url: `/news/${slug}`,
       images: [{ url: socialImage, width: 1200, height: 630 }],
       type: "article", publishedTime: post.date || undefined, modifiedTime: post.modified || undefined, authors: [post.author],
     },
@@ -76,6 +79,7 @@ export default async function NewsDetailPage({
     author: post.author, url: `/news/${slug}`,
   });
 
+
   // 获取同类相关文章（取首个分类，最多 4 篇，失败时忽略）
   const [relatedPosts, { prev: prevPost, next: nextPost }] = await Promise.all([
     post.categories.length > 0
@@ -83,7 +87,6 @@ export default async function NewsDetailPage({
       : Promise.resolve({ posts: [] }),
     getAdjacentPosts(slug),
   ]);
-
   const related = relatedPosts.posts.filter((p) => p.id !== post.id).slice(0, 3);
 
   return (
@@ -136,7 +139,9 @@ export default async function NewsDetailPage({
             </div>
           )}
 
-          <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content) }} />
+          <div className="article-body" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content, { hasLeadImage: Boolean(post.featuredImage) }) }} />
+
+          <Suspense fallback={null}><NewsProductLinks text={post.title + " " + post.content} /></Suspense>
 
           {/* 标签 —— 背景 #F4F4F4、文字 #5C5E62 */}
           {post.tags.length > 0 && (
@@ -223,7 +228,7 @@ export default async function NewsDetailPage({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {related.map((p) => (
-                <PostCard key={p.id} post={p} />
+                <PostCard key={p.id} post={p} sizes="(max-width: 767px) calc(100vw - 48px), (max-width: 1023px) calc(33.333vw - 32px), 310px" />
               ))}
             </div>
           </div>

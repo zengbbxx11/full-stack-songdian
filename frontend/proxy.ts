@@ -29,6 +29,7 @@ const API_BASE =
 
 // slug -> 规范路径（null 表示无规范路径）的短时缓存，避免每次请求都打后端。
 const CACHE_TTL_MS = 60_000;
+const MAX_CACHE_ENTRIES = 512;
 const canonicalCache = new Map<string, { path: string | null; expires: number }>();
 
 /** 业务码：产品不存在或已下架（与后端 ErrorCode.A010001 对应）。 */
@@ -44,19 +45,20 @@ async function resolveCanonical(slug: string): Promise<string | null> {
   const now = Date.now();
   const cached = canonicalCache.get(slug);
   if (cached && cached.expires > now) return cached.path;
+  if (cached) canonicalCache.delete(slug);
 
   let path: string | null = null;
   let resolvedByBackend = false;
   try {
     const res = await fetch(
       `${API_BASE}/api/v1/products/${encodeURIComponent(slug)}/canonical`,
-      { headers: { Accept: "application/json" }, cache: "no-store" },
+      { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(2000) },
     );
     if (res.ok) {
-      resolvedByBackend = true;
-      const body = (await res.json()) as { data?: { canonical_path?: unknown } };
+      const body = (await res.json()) as { code?: unknown; data?: { canonical_path?: unknown } };
       const canonical = body?.data?.canonical_path;
-      if (typeof canonical === "string" && canonical.startsWith("/products/")) {
+      if ((body.code === "0" || body.code === 0) && typeof canonical === "string" && canonical.startsWith("/products/")) {
+        resolvedByBackend = true;
         path = canonical;
       }
     } else if (res.status === 404) {
@@ -80,7 +82,16 @@ async function resolveCanonical(slug: string): Promise<string | null> {
     return CANONICAL_MAP[slug] ?? null;
   }
 
-  canonicalCache.set(slug, { path, expires: now + CACHE_TTL_MS });
+  // Reclaim expired entries on writes; random missing slugs cannot grow the map forever.
+  const completedAt = Date.now();
+  for (const [key, entry] of canonicalCache) {
+    if (entry.expires <= completedAt) canonicalCache.delete(key);
+  }
+  if (!canonicalCache.has(slug) && canonicalCache.size >= MAX_CACHE_ENTRIES) {
+    const oldest = canonicalCache.keys().next().value;
+    if (oldest !== undefined) canonicalCache.delete(oldest);
+  }
+  canonicalCache.set(slug, { path, expires: completedAt + CACHE_TTL_MS });
   return path;
 }
 

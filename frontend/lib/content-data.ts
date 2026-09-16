@@ -30,6 +30,8 @@ export const COMPANY = {
   employees: "1,000+",
   /** 工厂面积 */
   factorySize: "40,000 m²",
+  // Confirmed by the business owner; shared across factory and OEM copy.
+  productionLines: 10,
   /** 最大年产能 */
   annualOutput: "10M+ units/year",
   /** 每年发布的新产品数量 */
@@ -278,7 +280,7 @@ export const STRENGTHS = [
   },
   {
     title: "10M Units Annual Output",
-    description: "10 production lines across 40,000 m² facility. Annual capacity of 10 million units ensures timely delivery at any scale.",
+    description: `${COMPANY.productionLines} production lines across our ${COMPANY.factorySize} facility support camera assembly and quality control. Discuss production scheduling with our team.`,
     icon: "factory",
   },
   {
@@ -470,11 +472,11 @@ export const SOLUTIONS = [
     icon: "factory",
     /** 概述段落 */
     summary:
-      "Hand us your product specifications, BOM, and branding — we handle component sourcing, PCB assembly, firmware, QC, and packaging. Ten production lines and 10 million units of annual capacity keep your orders on time, at any scale.",
+      `Share your product specifications, BOM, and branding. Our ${COMPANY.productionLines} production lines support component sourcing, PCB assembly, firmware, quality control, and packaging. Production schedules are confirmed against project requirements.`,
     /** 主要功能/交付物 */
     features: [
       "Full BOM procurement and supply-chain management",
-      "High-precision SMT assembly across 10 production lines",
+      `Manufacturing supported by ${COMPANY.productionLines} production lines`,
       "Custom firmware with your splash screen and UI",
       "Custom enclosure with your logo and color scheme",
       "Retail-ready packaging with your brand design",
@@ -728,7 +730,7 @@ export const ABOUT = {
     highlights: [
       { label: "Annual New Products", value: "30+" },
       { label: "Registered Patents", value: "500+" },
-      { label: "Production Lines", value: "10" },
+      { label: "Production Lines", value: String(COMPANY.productionLines) },
       { label: "Annual Output", value: "10M Units" },
     ],
   },
@@ -756,7 +758,7 @@ export const ABOUT = {
   factory: {
     title: "Take a Look Inside Our Factory",
     caption:
-      "Step inside our 40,000 m² manufacturing facility — where over 10 million cameras are precision-built every year.",
+      `Step inside our ${COMPANY.factorySize} manufacturing facility and explore the work across our ${COMPANY.productionLines} production lines.`,
   },
 } as const;
 

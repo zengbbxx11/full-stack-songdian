@@ -2,78 +2,48 @@
  * 文件：app/news/page.tsx（新闻列表 / News）
  * 职责：新闻/资讯列表页，含头条推荐、文章网格与分页导航。
  * 数据来源（后端 FastAPI /api/v1）：getPosts() —— 文章列表（支持 page 分页，每页 9 篇）。
- * 渲染方式：Async Server Component + ISR（revalidate = 60 秒）。
+ * 渲染方式：动态 SSR（读取 searchParams）；API 数据缓存 60 秒。
  * 是否含 client 组件：否（列表为服务端渲染，卡片为展示型组件）。
  */
 
 import Link from "next/link";
+import { readListQuery, listUrl, type ListSearchParams } from "@/lib/list-query";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { superMeta } from "next-super-meta";
-import { getPosts, NEWS_PER_PAGE } from "@/lib/api/news";
+import { getNewsPage } from "@/lib/api/list-pages";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SpotlightCard from "@/components/SpotlightCard";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 
-export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
-  const sp = await searchParams;
 
-  // 页码规范化：非数字 / <1 一律按首页处理（canonical 去掉 page=1）。
-  const requested = Number(sp.page);
-  const requestedPage = Number.isInteger(requested) && requested > 1 ? requested : 1;
-
-  // 有效页码 >1 时声明自身 canonical；超范围页回退首页并 noindex。
-  // 与页面组件共用同一次 getPosts 请求（Next 对同一 fetch 去重）。
-  let canonicalPage = requestedPage;
-  let outOfRange = false;
-  if (requestedPage > 1) {
-    try {
-      const { pagination } = await getPosts({ page: requestedPage, perPage: NEWS_PER_PAGE });
-      if (!pagination || requestedPage > pagination.totalPages) {
-        canonicalPage = 1;
-        outOfRange = true;
-      }
-    } catch {
-      canonicalPage = 1;
-      outOfRange = true;
-    }
-  }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<ListSearchParams> }): Promise<Metadata> {
+  const { category: categorySlug, page: requestedPage } = readListQuery(await searchParams);
+  const { category, pagination, failed, retryCategory } = await getNewsPage(requestedPage, categorySlug);
+  const outOfRange = !failed && requestedPage > (pagination?.totalPages || 1);
+  const canonicalPage = outOfRange ? 1 : requestedPage;
 
   const meta = await superMeta({
-    title: "Camera Manufacturing News & Insights",
-    description: `Industry insights, product announcements, and camera manufacturing expertise from ${COMPANY.name}. Stay informed on the latest from Songdian Technology.`,
-    url: canonicalPage > 1 ? `/news?page=${canonicalPage}` : "/news",
+    title: (category ? category.name + " | Camera Manufacturing News" : "Camera Manufacturing News & Insights") + (canonicalPage > 1 ? " | Page " + canonicalPage : ""),
+    description: `${category ? category.name + ": " : ""}Industry insights, product announcements, and camera manufacturing expertise from ${COMPANY.name}.${canonicalPage > 1 ? " Page " + canonicalPage + "." : ""}`,
+    url: listUrl("/news", canonicalPage, failed ? retryCategory : category?.slug),
   });
 
   // 超范围页码：声明首页为规范页并禁止索引，避免低质重复页。
-  return outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
+  return failed || outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
-// ISR 重新验证间隔（秒）：每 60 秒重新生成新闻列表，平衡实时性与性能
+// searchParams 使整页动态渲染；此值不代表整页 ISR，API 数据仍缓存 60 秒。
 export const revalidate = 60;
 
 interface NewsPageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<ListSearchParams>;
 }
 
 export default async function NewsPage({ searchParams }: NewsPageProps) {
-  const params = await searchParams;
-  // 与 generateMetadata 保持同一归一化口径：非整数 / <1 一律按首页处理。
-  const requestedPage = Number(params.page);
-  const currentPage = Number.isInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1;
-
-  // 接口失败时优雅降级：渲染友好提示而非整页崩溃
-  let posts: Awaited<ReturnType<typeof getPosts>>["posts"] = [];
-  let pagination: Awaited<ReturnType<typeof getPosts>>["pagination"] = null;
-  let loadError: string | null = null;
-  try {
-    const data = await getPosts({ page: currentPage, perPage: 9 });
-    posts = data.posts;
-    pagination = data.pagination;
-  } catch (e) {
-    loadError = e instanceof Error ? e.message : "新闻服务暂时不可用，请稍后重试。";
-  }
+  const { category: categorySlug, page: currentPage } = readListQuery(await searchParams);
+  const { categories, category, items: posts, pagination, failed: loadError, retryCategory } = await getNewsPage(currentPage, categorySlug);
 
   const breadcrumbs = generateBreadcrumbs([{ label: "News" }]);
 
@@ -92,16 +62,20 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       {/* 文章列表 */}
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
+          <h1 className="mb-8 text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-4xl">{category?.name || "Camera Manufacturing News & Insights"}</h1>
+          <nav aria-label="News categories" className="mb-8 flex flex-wrap gap-2">
+            {[{ id: 0, name: "All News", slug: "" }, ...categories].map(item => <Link key={item.id} prefetch={false} href={listUrl("/news", 1, item.slug)} aria-current={!loadError && (category?.slug || "") === item.slug ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-[var(--accent)] aria-[current=page]:text-white">{item.name}</Link>)}
+          </nav>
           {loadError ? (
             <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">News Unavailable</h3>
-              <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">{loadError}</p>
-              <Link
-                href="/news"
+              <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">We could not load this list right now. Please try again.</p>
+              <a
+                href={listUrl("/news", currentPage, retryCategory)}
                 className="inline-flex h-9 items-center justify-center rounded-lg bg-[#3E6AE1] px-5 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#3561CC]"
               >
                 Retry
-              </Link>
+              </a>
             </div>
           ) : posts.length > 0 ? (
             <>
@@ -165,7 +139,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   >
                     <div className="relative sm:w-48 shrink-0 aspect-[4/3] sm:aspect-auto bg-gray-100 overflow-hidden">
                       {post.featuredImage ? (
-                        <Image src={post.featuredImage} alt={post.featuredImageAlt} fill sizes="200px" className="object-cover group-hover:brightness-[1.06] transition-all" style={{ transitionDuration: "0.3s" }} />
+                        <Image src={post.featuredImage} alt={post.featuredImageAlt} fill sizes="(max-width: 639px) calc(100vw - 48px), 192px" className="object-cover group-hover:brightness-[1.06] transition-all" style={{ transitionDuration: "0.3s" }} />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-300"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg></div>
                       )}
@@ -187,7 +161,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                 <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-12">
                   {currentPage > 1 && (
                     <Link
-                      href={`/news?page=${currentPage - 1}`}
+                      href={listUrl("/news", currentPage - 1, category?.slug)}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >
@@ -197,7 +171,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   <span className="px-4 py-2.5 text-sm" style={{ color: "var(--muted-foreground)" }}>Page {currentPage} / {pagination.totalPages}</span>
                   {currentPage < pagination.totalPages && (
                     <Link
-                      href={`/news?page=${currentPage + 1}`}
+                      href={listUrl("/news", currentPage + 1, category?.slug)}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}
                     >

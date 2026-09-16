@@ -29,7 +29,7 @@ export default function ProductGallery({
   // 记录加载失败的图片 id（包括主图 id=-1），不渲染失败的缩略图
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
   // 主图是否加载失败
-  const [mainImgError, setMainImgError] = useState(false);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
 
   const markBroken = useCallback((id: number) => {
     setBrokenIds((prev) => new Set(prev).add(id));
@@ -42,7 +42,7 @@ export default function ProductGallery({
   ].filter((img) => !brokenIds.has(img.id));
 
   return (
-    <div className="flex flex-col-reverse gap-3 sm:flex-row md:gap-4">
+    <div role="group" aria-label={mainAlt + " image gallery"} className="flex flex-col-reverse gap-3 sm:flex-row md:gap-4">
       {/* 左侧缩略图列 */}
       <div className="flex w-full shrink-0 snap-x snap-mandatory flex-row gap-2 overflow-x-auto pb-1 sm:w-16 sm:snap-none sm:flex-col sm:overflow-visible sm:pb-0 md:w-20">
         {thumbs.map((img) => (
@@ -64,7 +64,7 @@ export default function ProductGallery({
               src={img.src}
               alt={img.alt || mainAlt}
               fill
-              sizes="80px"
+              sizes="(max-width: 767px) 64px, 80px"
               className="object-contain p-0.5"
               onError={() => markBroken(img.id)}
             />
@@ -77,7 +77,7 @@ export default function ProductGallery({
         <div
           className="relative aspect-square overflow-hidden rounded-2xl border border-black/8 bg-[#f2f3f4]"
         >
-          {mainImgError ? (
+          {failedImage === selected ? (
             <div className="absolute inset-0 flex items-center justify-center text-gray-300">
               <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -86,12 +86,13 @@ export default function ProductGallery({
           ) : (
             <Image
               src={selected}
-              alt={mainAlt}
+              alt={thumbs.find(img => img.src === selected)?.alt || mainAlt}
               fill
-              sizes="(max-width: 768px) 100vw, 50vw"
+              sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 108px), (max-width: 1023px) calc(100vw - 128px), (max-width: 1311px) calc(55vw - 159px), 564px"
               className="object-contain"
-              preload
-              onError={() => setMainImgError(true)}
+              preload={selected === mainImage}
+              loading={selected === mainImage ? undefined : "eager"}
+              onError={() => setFailedImage(selected)}
             />
           )}
         </div>

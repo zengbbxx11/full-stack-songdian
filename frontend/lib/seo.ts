@@ -12,7 +12,7 @@
  * - Article（博客文章）
  * - Product（WooCommerce 产品）
  * - FAQPage（常见问题页面）
- * - LocalBusiness / Manufacturer（本地商家/制造商）
+ * - Organization（本地商家/制造商）
  */
 
 import type { BreadcrumbItem, StructuredData } from "@/lib/types";
@@ -75,7 +75,7 @@ export function generateBreadcrumbs(
 export function organizationSchema(): StructuredData {
   return {
     "@context": "https://schema.org",
-    "@type": "Manufacturer",
+    "@type": "Organization",
     "@id": `${SITE_URL}/#manufacturer`,
     name: COMPANY.name,
     legalName: COMPANY.fullName,
@@ -179,7 +179,7 @@ export function articleSchema(params: {
     datePublished: params.datePublished || undefined,
     dateModified: params.dateModified || undefined,
     author: {
-      "@type": "Person",
+      "@type": params.author === COMPANY.name ? "Organization" : "Person",
       name: params.author,
     },
     publisher: {
@@ -196,8 +196,7 @@ export function articleSchema(params: {
 
 /**
  * 为 WooCommerce 产品页生成 Product Schema.org 结构化数据对象。
- * offer 使用 `businessFunction: ProvideService` 以体现 B2B 询盘模式
- *（价格通过报价获取，而非直接下单结算）。
+ * 询盘产品没有公开价格和库存，不生成未经验证的 Offer。
  *
  * @param params - 产品元数据
  * @param params.name        - 产品显示名称
@@ -226,19 +225,11 @@ export function productSchema(params: {
       name: COMPANY.name,
     },
     manufacturer: {
-      "@type": "Manufacturer",
+      "@type": "Organization",
       "@id": `${SITE_URL}/#manufacturer`,
       name: COMPANY.name,
     },
-    offers: {
-      "@type": "Offer",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      priceCurrency: "USD",
-      url: `${SITE_URL}${params.url}`,
-      // 通过询盘获取价格 — B2B 典型模式
-      businessFunction: "https://purl.org/goodrelations/v1#ProvideService",
-    },
+    url: `${SITE_URL}${params.url}`,
   };
 }
 
@@ -265,10 +256,10 @@ export function faqSchema(faqs: { question: string; answer: string }[]): Structu
 }
 
 /**
- * 生成 Manufacturer（本地商家）Schema.org 结构化数据对象。
+ * 生成 Organization（制造商）Schema.org 结构化数据对象。
  * 为本地 SEO 提供公司的实体地址与联系详情。
  *
- * @returns 符合 https://schema.org/Manufacturer 的 {@link StructuredData} 对象
+ * @returns 符合 https://schema.org/Organization 的 {@link StructuredData} 对象
  */
 export function localBusinessSchema(): StructuredData {
   return organizationSchema();

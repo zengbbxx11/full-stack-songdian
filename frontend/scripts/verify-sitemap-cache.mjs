@@ -14,7 +14,7 @@ const api = createServer((req, res) => {
   const product = req.url.startsWith("/api/v1/products?");
   res.end(JSON.stringify({ code: "0", data: {
     list: incomplete ? [] : [product
-      ? { slug: "fixture-camera", category: { slug: "compact-camera" } }
+      ? { slug: "fixture-camera", category: { slug: "compact-camera" }, updated_time: "2026-08-10T12:00:00Z" }
       : { slug: version }],
     total: incomplete ? 2 : 1,
   } }));
@@ -50,6 +50,14 @@ try {
   assert.equal(first.status, 200);
   const xml = await first.text();
   assert.ok(xml.includes("/news/first"));
+  // URL 结构：产品使用规范嵌套地址 /products/{category}/{slug}；新闻与静态页不带 lastmod。
+  const blocks = xml.split("<url>").slice(1).map(block => block.slice(0, block.indexOf("</url>")));
+  const blockFor = fragment => blocks.find(block => block.includes(fragment));
+  const productBlock = blockFor("/products/compact-camera/fixture-camera");
+  assert.ok(productBlock, "sitemap must use canonical nested product URLs");
+  assert.ok(productBlock.includes("2026-08-10T12:00:00"), "product lastmod must come from updated_time");
+  assert.ok(!blockFor("/news/first").includes("<lastmod>"), "news has no reliable update time");
+  assert.ok(!blockFor("/about").includes("<lastmod>"), "static routes must not claim a lastmod");
   const count = calls;
   const second = await fetch(base + "/sitemap.xml");
   assert.equal(await second.text(), xml);

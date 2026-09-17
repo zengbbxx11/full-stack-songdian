@@ -7,6 +7,8 @@
 
 > 2026-09-11 更新：Next.js 升至 **16.3.4**。`src/app/layout.tsx` 的 `<html>` 已加 `suppressHydrationWarning`（原因见雷区 ⑨）。后台相关 E2E 用例位于 `../frontend/e2e/`，不在本目录（见雷区 ⑩）。
 
+> 2026-09-16 更新：产品编辑页新增**商品详情图**编辑器 `src/components/form/ProductDetailImageEditor.tsx`（多图上传、说明、排序、移除，写回产品 `content_html`），约定见下方「商品详情图约定（2026-09-16）」。本轮后台无数据库结构改动。
+
 ---
 
 ## 项目定位
@@ -152,6 +154,14 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **相册计数用 `total_count`**：媒体库侧边栏展示含全部子相册的合计；按相册筛选记录时后端已包含子相册，显示数量与列表条数必须一致。`count` 仅供需要“直系数”的场景使用。
 - **列表分页**：审计日志按 `keyword` 走服务端过滤并回到第一页；媒体库与列表页的筛选条件变化时同样重置页码。
 - **表单下拉统一用 `SelectField`**（`components/form/SelectField.tsx`，自绘 listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。滚动行为三原则：**选项列表内部滚动不关闭菜单**（点选靠下选项时的列表滚动不得关闭）、页面等外部滚动按触发器新位置**重定位**（位置未变不重渲染）、仅当触发器完全离开视口才**关闭**。当前值暴露在触发器 `data-value`，不是 `input.value`。修改滚动/定位行为必须同步跑 `frontend/e2e/content-lifecycle.spec.ts`——曾因「点选项前的列表滚动被当成页面滚动关闭菜单」导致 CI 里选项 detached 超时。
+
+## 商品详情图约定（2026-09-16）
+
+- 编辑器是 `src/components/form/ProductDetailImageEditor.tsx`，挂载在产品编辑页 `src/app/(admin)/(others-pages)/product-form/page.tsx`。它用 `DOMParser` 把 `content_html` 中的 `img` 摘出为可编辑列表，编辑完成后按同结构序列化回 HTML；**文字内容必须原样保留**，不要因为只处理图片而重建整个 HTML。
+- 上传流程：先用 `createImageBitmap()` 读取原始宽高，再调用现有上传函数，把 src/alt/width/height 一起写回。宽高用于官网预留正确比例，缺失时官网会退化为原生 `<img>`。
+- 忙碌态：上传期间通过 `onBusyChange(true)` 触发父表单的 `detailUploading`，保存按钮与表单字段必须禁用，避免半成品被保存。
+- 交互：每张图可编辑说明（写入 `alt`）、上移/下移调整顺序（首尾按钮禁用）、逐张移除；封面与图库仍为独立字段，图库/规格的增删仍是立即保存。
+- 详情图保存在产品正文，复用既有上传媒体、版本历史与发布缓存刷新链路；产品私密预览使用同一渲染规则。e2e 回归见 `frontend/e2e/product-news-upgrade.spec.ts`。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

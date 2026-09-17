@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import sharp from "sharp";
 import { gotoHydrated } from "./hydration";
 import { readProductDetailImages } from "../components/ProductDetailImages";
+import { adminRequest, cleanup, createNews, createNewsCategory, createProduct, createProductCategory, removeNews, removeProducts } from "./fixtures";
 
 test("detail image extraction removes unsafe sources and retains dimensions and order", () => {
   const images = readProductDetailImages('<p>Old highlights</p><img src="javascript:alert(1)" /><img src="/uploads/a.webp" alt="A &amp; B" width="1200" height="2400"><img src="/uploads/b.webp" onerror="alert(1)">');
@@ -13,28 +14,44 @@ test("detail image extraction removes unsafe sources and retains dimensions and 
 });
 
 test("mobile product shows model, key facts and inquiry before the gallery", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await gotoHydrated(page, "/products/compact-camera/dc417x");
-  await page.getByRole("button", { name: "Reject", exact: true }).click();
-  const main = page.locator("main");
-  const title = await main.locator("h1").boundingBox();
-  const inquiry = await main.getByRole("link", { name: "Send Inquiry", exact: true }).boundingBox();
-  expect(title!.y).toBeLessThan(inquiry!.y);
-  expect(inquiry!.y + inquiry!.height).toBeLessThan(650);
-  await expect(main.getByText("7X Optical Zoom", { exact: true }).first()).toBeVisible();
-  await expect(main.getByRole("heading", { name: "Product Highlights" })).toHaveCount(0);
-  await expect(main.getByRole("link", { name: "Send Inquiry", exact: true })).toHaveAttribute("href", /category=compact-camera/);
+  // 自建夹具产品：key facts 只取 slug 命中 sensor/zoom/screen/video-resolution 的规格。
+  const admin = await adminRequest();
+  const category = await createProductCategory(admin, "Mobile fixture");
+  const product = await createProduct(admin, { categoryId: category.id, attributes: [{ name: "Zoom", value: "7X Optical Zoom" }] });
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoHydrated(page, `/products/${product.categorySlug}/${product.slug}`);
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    const main = page.locator("main");
+    const title = await main.locator("h1").boundingBox();
+    const inquiry = await main.getByRole("link", { name: "Send Inquiry", exact: true }).boundingBox();
+    expect(title!.y).toBeLessThan(inquiry!.y);
+    expect(inquiry!.y + inquiry!.height).toBeLessThan(650);
+    await expect(main.getByText("7X Optical Zoom", { exact: true }).first()).toBeVisible();
+    await expect(main.getByRole("heading", { name: "Product Highlights" })).toHaveCount(0);
+    await expect(main.getByRole("link", { name: "Send Inquiry", exact: true })).toHaveAttribute("href", new RegExp(`category=${category.slug}`));
+  } finally {
+    await cleanup([() => removeProducts(admin, [product.id]), () => admin.delete(`/api/v1/admin/categories/${category.id}`)]);
+  }
 });
 
 test("News categories persist in pagination canonical and invalid pages are noindex", async ({ page }) => {
-  await gotoHydrated(page, "/news?category=news&page=2");
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/news\?category=news&page=2$/);
-  await expect(page).toHaveTitle(/Page 2/);
-  await expect(page.getByRole("navigation", { name: "News categories" }).getByRole("link", { name: "News", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "Previous", exact: true })).toHaveAttribute("href", "/news?category=news");
-  await gotoHydrated(page, "/news?category=news&page=99999");
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/news\?category=news$/);
+  // 新闻每页 9 条，需要 ≥10 条同分类已发布文章才出现第 2 页。
+  const admin = await adminRequest();
+  const category = await createNewsCategory(admin, "News pagination fixture");
+  const news = await createNews(admin, { categoryId: category.id, count: 10 });
+  try {
+    await gotoHydrated(page, `/news?category=${category.slug}&page=2`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/news\\?category=${category.slug}&page=2$`));
+    await expect(page).toHaveTitle(/Page 2/);
+    await expect(page.getByRole("navigation", { name: "News categories" }).getByRole("link", { name: category.name, exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("link", { name: "Previous", exact: true })).toHaveAttribute("href", `/news?category=${category.slug}`);
+    await gotoHydrated(page, `/news?category=${category.slug}&page=99999`);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/news\\?category=${category.slug}$`));
+  } finally {
+    await cleanup([() => removeNews(admin, news.ids), () => admin.delete(`/api/v1/admin/news-categories/${category.id}`)]);
+  }
 });
 
 test("detail image upload blocks save, preserves old text, and saves image order", async ({ page }) => {

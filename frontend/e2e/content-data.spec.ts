@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { apiFetch, ApiError } from "../lib/api/client";
 import { getAllPostSlugs, getPostBySlug } from "../lib/api/news";
-import sitemap from "../app/sitemap";
 import { articleSchema } from "../lib/seo";
 
 // Exercise the real data adapters with isolated responses; no backend data is changed.
@@ -41,23 +40,11 @@ test("article metadata preserves the publication instant without inventing an up
   expect(JSON.parse(JSON.stringify(schema))).not.toHaveProperty("dateModified");
 });
 
-test("sitemap uses canonical product URLs and real product update timestamps", async () => {
-  globalThis.fetch = async (input) => {
-    const url = new URL(String(input));
-    const list = url.pathname.endsWith("/products")
-      ? [{ slug: "fixture", category: { slug: "cameras" }, updated_time: "2026-08-10T12:00:00Z" }]
-      : [{ slug: "fixture-news" }];
-    return Response.json({ code: "0", data: { list, total: 1 } });
-  };
-  const result = await sitemap();
-  expect(result.find(entry => entry.url.endsWith("/products/cameras/fixture"))?.lastModified)
-    .toBe("2026-08-10T12:00:00Z");
-  expect(result.find(entry => entry.url.endsWith("/news/fixture-news"))?.lastModified).toBeUndefined();
-  expect(result.find(entry => entry.url.endsWith("/about"))?.lastModified).toBeUndefined();
-});
-
-test("runtime sitemap fails as a whole while build-time slug discovery tolerates outages", async () => {
+// sitemap() 现在是「运行时生成 + Next 显式数据缓存」的路由，内部调用 connection()，
+// 只能在请求上下文里执行，不能在 Node 中直接调用。其缓存复用、发布失效、不完整分页失败
+// 与恢复，以及产品规范 URL / lastModified 的输出，由 scripts/verify-sitemap-cache.mjs
+// 针对真实的 next start 服务验证；这里只保留不依赖请求上下文的构建期 slug 发现降级。
+test("build-time slug discovery tolerates API outages", async () => {
   globalThis.fetch = async () => Response.json({ code: "B999001" }, { status: 503 });
-  await expect(sitemap()).rejects.toBeInstanceOf(ApiError);
   expect(await getAllPostSlugs()).toEqual([]);
 });

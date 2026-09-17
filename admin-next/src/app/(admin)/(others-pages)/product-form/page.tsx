@@ -357,7 +357,7 @@ function ProductFormInner() {
               </div>
               <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg cursor-pointer hover:bg-brand-600 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                 {uploading ? "上传中..." : "+ 添加图片"}
-                <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />
+                <input aria-label="上传产品图库图片" type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />
               </label>
             </div>
 

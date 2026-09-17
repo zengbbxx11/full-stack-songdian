@@ -4,6 +4,8 @@
 
 > 2026-09-08 更新：最新迁移为 16，新增后台任务表与账户会话版本；15 号迁移补齐产品/新闻 `sort_order` 字段。生产迁移只由独立 Compose `migrate` profile 执行，应用容器启动时不自动运行 Aerich。
 
+> 2026-09-16 更新：公开媒体（`/uploads/*`）200/206/304 响应增加 `Cache-Control: public, max-age=3600`（保留 ETag/Last-Modified，404 不加）；容器启动命令改为 `sh ./scripts/start.sh`（图片资产同步 + 代码文件清理逻辑内聚在脚本里）；worker 数由 `WEB_CONCURRENCY` 控制（默认 2）。本轮仍无新迁移。
+
 ---
 
 ## 项目定位
@@ -97,6 +99,9 @@ backend/
 5. **富文本消毒**：所有入库 HTML 经 `common/html_cleaner.py`（bleach 白名单），与前端 `html-cleaner.ts`（sanitize-html）双层防护，堵存储型 XSS。
 6. **全局异常** → 统一转 `{"code":"B999001","msg":"系统内部错误"}` 信封，前端按 code 处理。
 7. **Redis 可选**：没它后端降级内存，功能可用但限流/缓存失效。
+8. **公开媒体缓存头**：`_MediaStaticFiles` 必须只给 200/206/304 加 `Cache-Control: public, max-age=3600`，并保留框架产生的 ETag/Last-Modified；404 不能带该头。原路径替换图片有一小时浏览器缓存窗口，反代若直接服务 `uploads` 需对齐同一策略。
+9. **启动脚本不能退回 compose 字符串 command**：图片资产同步（只复制 `uploads/products|news|2026`，禁止整体复制 `uploads/`）与代码文件清理都在 `scripts/start.sh` 内执行，`$` 与括号转义在 compose → `/bin/sh -c` → dash 多层传递中会被吞掉。
+10. **worker 数由 `WEB_CONCURRENCY` 决定**（默认 2）：每个 worker 各自持有数据库连接池与后台任务循环，调整前需评估 PG 连接数与内存，不要靠加 worker 解决单实例吞吐问题。
 
 ---
 
@@ -168,3 +173,10 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 媒体静态目录必须保持后缀黑名单（`_MediaStaticFiles`），并保持 `backend/scripts/start.sh` 只同步 `uploads/*` 的图片子目录——禁止整体复制 `uploads/`（该目录含源码模块），也禁止把这类同步逻辑写进 compose 的字符串 command（`$` 与括号转义会被 compose/shlex 吞掉，曾导致容器启动失败）。
 - 内容详情缓存的回填必须经过 `common/cache_version.py` 的版本校验；新增读回填路径时不要绕过 `get_content_version`。
 - 审计日志关键字过滤必须在分页前于数据库完成，并返回过滤后的 `total`。
+
+## 公开媒体缓存与进程配置（2026-09-16）
+
+- 公开媒体 `/uploads/*` 的 200/206/304 响应带 `Cache-Control: public, max-age=3600`，并保留 ETag 与 Last-Modified；404 不添加缓存头。若新增媒体响应路径（如新的静态挂载点），需要同步保持该策略，否则同一媒体在不同路径下的缓存行为会不一致。
+- 替换图片优先使用新 URL：已有 URL 在一小时窗口内可能仍返回浏览器缓存的旧图；不要通过缩短该 TTL 来规避，也不要改成永久缓存。
+- 容器启动由 `scripts/start.sh` 负责：`mkdir -p uploads_data` → 同步 `uploads/products|news|2026` 图片子目录（`cp -rn`，不覆盖运营上传）→ 清理媒体根目录残留的代码/配置后缀文件 → 解析 `TRUSTED_PROXIES` → `exec uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --workers "${WEB_CONCURRENCY:-2}"`。
+- 本轮改动不涉及数据库结构，本地与生产升级都不需要新迁移；本地开发启动仍可用 `uv run uvicorn main:app --port 8000`，与容器路径无冲突。

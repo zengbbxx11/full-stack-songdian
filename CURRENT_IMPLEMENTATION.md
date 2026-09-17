@@ -1,4 +1,4 @@
-# 当前实现总览（2026-09-11）
+# 当前实现总览（2026-09-16）
 
 本文档是仓库现状的单一参考入口。当前行为以代码、`docker-compose.yml`、Aerich 迁移和 GitHub Actions 为准；历史设计稿、审计报告与归档计划仅用于追溯。
 
@@ -40,6 +40,11 @@
 - 新闻详情同样区分不存在与服务故障，使用 React `cache()` 去重；错误边界通过 `retry()` 重新获取服务端数据。发布日期保留原始 ISO 时间，未知修改时间不写入元数据；sitemap 运行时完整读取公开 URL，失败时不返回缺失动态内容的成功结果，产品修改日期使用真实更新时间。
 - 官网服务端设置读取复用公共 API 客户端，遵循 `INTERNAL_API_URL`；浏览器仍使用公开地址。
 - 产品卡片和详情图库保留 `object-contain`，已移除额外大内边距，保证产品主体不裁切且不远离边框。
+- `apiFetch` 统一 10 秒超时（覆盖连接建立与正文读取），失败仍抛 `ApiError`；显式 signal 会让该请求退出 Next 原生请求级 memoization，详情去重继续由领域层的 React `cache()` 承担。
+- Products 与 News 列表共用 `lib/list-query.ts`：重复 `category` / `page` 参数明确取第一个值，非安全整数或小于 1 的页码回退第一页；metadata 与正文使用同一解析口径，第一页不写 `page` 参数。该改动同时修复了 Products 对数组参数调用 `toLowerCase` 的异常。
+- `lib/api/list-pages.ts` 用 React `cache()` 在单次渲染内共享分类与列表结果并保持同一成败状态：分类或列表接口失败时不再回退为「无筛选的全部内容」，而是返回英文故障提示页并输出 `noindex`，Retry 使用保留当前分类与页码的完整页面导航；产品数量不可读时显示破折号。底层 60 秒数据缓存与发布失效标签未变。
+- sitemap 不再使用 `force-dynamic`，改为 `await connection()` + `unstable_cache`（60 秒，tags 为 `products` / `news` / `product-categories`）；分页不完整直接失败，不缓存残缺 URL 集，发布继续通过既有标签链路主动失效。
+- 结构化数据口径调整：组织与制造商统一输出 `Organization`（不再用 `Manufacturer`），作者为公司时文章作者同样使用 `Organization`；询盘产品没有公开价格与库存，`productSchema` 不再输出未经确认的 Offer，只保留规范 URL。
 
 ## 管理后台媒体与认证
 
@@ -54,6 +59,7 @@
 - 媒体库提供“同步引用图片”和“自动归类”：前者为已有产品/新闻引用但缺少 `UploadRecord` 的 URL 补齐记录，后者仅按既有媒体 URL 路径规则整理未分类记录。
 - 禁止在组件中重新拼接 `http://localhost:8000`，否则会破坏 Windows、Docker 和生产域名兼容性。
 - 产品/新闻编辑页包含内容状态、发布时间、版本历史、恢复和短期预览入口。
+- 产品编辑页新增「商品详情图」区块：从 `content_html` 抽取 `img` 形成可编辑列表，支持多图上传（上传前读取原始宽高）、说明文字、上移/下移与移除，编辑结果回写 `content_html`；上传期间禁用保存。详情图仍存储在产品正文中，复用既有媒体、版本历史与发布缓存刷新链路，封面与图库保持独立；官网产品详情页按顺序纵向只展示图片，原有文字保留在数据中。
 
 ## 系统设置与第三方统计配置
 
@@ -66,6 +72,22 @@
 - `smtp_password` 是唯一按敏感值处理的设置：后端返回 `******`，界面使用密码输入框并显示“已配置”；留空或不修改时保留原授权码，新授权码保存后也不会明文回显。
 - 上述回显、局部提交和错误处理改动只涉及 `admin-next` 设置页，不涉及数据库结构、设置 API 协议或官网统计脚本。
 
+## 资源、缓存与进程配置（2026-09-15 / 09-16）
+
+- 后端公开媒体（`/uploads/*`）的 200/206/304 响应新增 `Cache-Control: public, max-age=3600`，保留 ETag 与 Last-Modified，404 不加该头；原路径替换的图片存在一小时浏览器缓存窗口，替换图片建议使用新 URL。若 OpenResty 直接服务 `uploads` 或覆盖响应头，需在反代层对齐同一策略。
+- backend 容器启动脚本 `scripts/start.sh` 统一承担启动前准备：同步镜像内置图片目录到媒体卷、清理媒体根目录残留的代码与配置文件，再解析 `TRUSTED_PROXIES` 并以 `WEB_CONCURRENCY`（默认 2）启动 Uvicorn。每个 worker 各自持有数据库连接池与后台任务循环，减少进程可降低重复常驻开销，但内存与吞吐需以实测为准。
+- Compose 各服务统一 `json-file` 日志轮转（单文件 10m、最多 3 个）；frontend 命名卷 `frontend_image_cache` 只持久化 `/app/.next/cache/images`，不持久化 HTML/ISR 缓存。
+- `frontend/proxy.ts` 的 canonical 查询限时 2 秒，且只有后端以 `code === "0"` 明确返回规范路径才算解析成功（避免把「HTTP 200 但业务失败」当作成功）；进程内缓存 60 秒、上限 512 条，写入时清理过期条目并在满容量时淘汰最早插入项，避免随机 slug 无限增长。
+- 上述资源与缓存改动均为应用层与授权层配置，未新增数据库迁移。
+
+## 官网内容呈现与内链（2026-09-16）
+
+- 产品详情页新增独立详情图区块（`components/ProductDetailImages.tsx`）：只从 `content_html` 抽取 `img` 的 src/alt/width/height；本地 `/uploads/` 且带有效 `width`/`height` 的图片走 `next/image` 懒加载与响应式 `sizes`，本地但缺宽高、旧图与外链图降级为原生 `<img>`，不扩大图片优化器的远端主机白名单。
+- 新闻详情页底部新增相关产品内链（`components/NewsProductLinks.tsx` + `lib/news-product-links.ts`）：从正文可见文本匹配产品 slug / SKU / 名称首个型号，命中优先，否则回退 `lib/priority-products.ts` 的主推型号顺序，最多 3 条；无分类产品不生成非规范链接，关联目录读取失败时仍保留 OEM/ODM、工厂与询盘入口。
+- 主推产品（DC403 / DC105 / DC325 / DC417X）在 `lib/priority-products.ts` 提供基于现有规格的 SEO 默认标题与描述，后台显式 SEO 仍优先；BK05 / GO7 按业务要求暂缓，未纳入当前主推列表。工厂产能口径使用已确认的 10 条生产线，但 CMS 新闻 `songdian-manufacturing-oem-partner-for-kenko` 仍存在旧口径，属待内容修正项，本轮未改数据库。
+- 询盘来源产品上下文拆为独立客户端小岛（`components/form/InquiryProductContext.tsx`）：`?category=` 能直接映射兴趣项时不再请求接口，否则调后端 canonical 接口取分类；请求带 5 秒超时，失败时保留产品引用与手动选择，表单本体仍为服务端渲染。
+- 首屏资源减负：新闻卡片关闭链接自动预取（`prefetch={false}`），Header、Footer、首页 CTA 与即时搜索等入口同步关闭预取；移除多余的 Geist Mono 字体；页脚社交图标改为与显示尺寸匹配的 60px WebP；产品图库与新闻卡片的 `sizes` 按实际容器重新校准。以上属本地已完成、待发布，线上资源基线见 [reports/home-resource-audit-2026-09-16.md](./reports/home-resource-audit-2026-09-16.md)。
+
 ## 现有业务与官网能力
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
@@ -75,7 +97,7 @@
 - 后台通知覆盖新询盘、超过 24 小时未跟进和 SMTP 失败，并通过 `NotificationReadState` 记录用户级已读状态。
 - 搜索使用 PostgreSQL TSVector；缺少 `zhparser` 时降级 `simple`，本地 SQLite 走 LIKE 降级。联合搜索在数据库分页前按“产品分组优先，新闻分组随后”排序，新闻组按 `created_time DESC, id DESC`；降级提示固定为英文 `Basic search mode`。产品结果直接返回规范嵌套 URL（`/products/{category}/{slug}`）并附带 `category_slug`，分类缺失时回退扁平地址，前端不再自行拼接产品路径。
 - 审计日志关键字搜索在**分页前**于数据库过滤 `username` / `action` / `resource` 并返回过滤后的 `total`，后台不再只过滤当前页。
-- 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织类型为 `Manufacturer` 并使用统一 `@id`。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。产品与新闻列表页按有效 `page` 生成自身 canonical（保留分类参数、`page=1` 去掉该参数），非法或非数字页码按首页处理，超出总页数时回落到首页并输出 `robots: noindex`。
+- 官网 SEO 使用规范 URL、sitemap、robots、Open Graph、Twitter Card 和 JSON-LD；组织和制造商统一输出 `Organization` 并使用统一 `@id`（不再输出 `Manufacturer`）。默认社交图为 1200×630 的 `public/og/og-default.jpg`，产品与新闻详情有内容图时优先使用、无图时显式回退默认图。产品与新闻列表页按有效 `page` 生成自身 canonical（保留分类参数、`page=1` 去掉该参数），非法或非数字页码按首页处理，超出总页数时回落到首页并输出 `robots: noindex`。
 - `/llms.txt` 作为实验性 AI 站点导览按小时再验证；它明确区分 2023 年成立的 Songdian Technology 法律实体与 2006 年开始的集团制造历史，不视为正式标准或排名保证。
 - 当前工厂视频仅在 About 页面展示，使用 WebP poster、`preload="none"` 和可选 WebM source；视频、poster 与默认 OG 图均属于随 frontend 镜像发布的静态源码资产。
 - 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图在距视口 200px 时挂载客户端动态组件，保留手动加载入口和失败重试；可配置地址以文本节点写入地图弹窗。
@@ -89,7 +111,7 @@
 
 - 生产要求真实 Redis（`REDIS_REQUIRED=true`）；`/readyz` 同时探测 PostgreSQL 和 Redis，任一关键依赖不可用即阻止发布。
 - CI 运行后端 Ruff/pytest、前后台 lint/build、SEO 校验、真实 PostgreSQL/Redis 迁移测试、Playwright 关键链路、Lighthouse 阈值与依赖审计。GitHub Actions 已统一使用 node24 运行时的 action 最小必要版本（checkout@v5、setup-node@v5、setup-python@v6、setup-uv@v7、upload-artifact@v6、docker 系列 buildx/login v4 + metadata v6 + build-push v7），仅用于消除 Node 20 弃用告警，job 结构、needs、门禁条件与发布逻辑未变。
-- 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（12 个 spec，44 个用例），管理后台用例也在同一套件内。
+- 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（20 个 spec，约 75 个用例），管理后台用例也在同一套件内。2026-09-15/16 批次新增带宽转化、列表分页 SEO、新闻媒体性能、新闻预取、新闻产品内链、产品与新闻升级、响应式图片和服务端资源等用例；列表故障与 sitemap 缓存的专项校验由 `frontend/scripts/verify-listing-failures.mjs`、`frontend/scripts/verify-sitemap-cache.mjs` 以独立模拟 API 脚本覆盖，不计入 Playwright 用例、不写入业务库。
 - **E2E 交互用例统一等待 React 注水**：`page.goto()` / `page.reload()` 在 window load 就返回，此时 DOM 可读写但事件处理器尚未挂载，直接交互会产生「操作无效、无请求、无报错」的假失败。用例通过 `frontend/e2e/hydration.ts` 的 `gotoHydrated()` 打开页面、`waitForHydration()` 在 `reload()` 后补等待；不使用 `waitUntil: "networkidle"`（开发模式下网络静默早于注水完成）。用例在本地 dev 模式下使用 `localhost` 而非 `127.0.0.1`（Next 开发服务器对 `/_next/*` 的同源校验会对后者返回 403，导致页面不注水）；CI 以生产构建（`next start`）启动服务，不受此限制。`playwright.config.ts` 固定 `workers: 2`，避免本机多 dev server 并存时因机器过载出现 teardown 超时。用例夹具必须在 `finally` 中清理（逐条容错，不因清理失败掩盖原始失败），避免残留内容进入官网或污染下一轮断言。
 - **管理后台表单下拉为自绘 listbox（SelectField）**：e2e 断言当前值用触发器的 `data-value`（不是 `toHaveValue`），打开下拉先断言 `aria-expanded="true"`，选项限定在 `getByRole("listbox", { name: "X options" })` 作用域内（触发器用 `getByRole("button", ...)` 定位，`getByLabel` 会因子串匹配误命中 listbox）；交互与滚动行为约定详见 `frontend/AGENTS.md` 的「自绘下拉与 e2e 约定（2026-09-12）」。本地手工跑 e2e 还需环境对齐：三服务同 `JWT_SECRET`、后端配置 `NEXT_REVALIDATE_URL`/`REVALIDATE_SECRET` 并对 localhost 关闭系统代理（`NO_PROXY`），否则会出现与代码无关的假失败。
 - 官网图片优化器访问 loopback/局域网地址由 `ALLOW_LOCAL_IMAGE_OPTIMIZATION` 控制，且与 `NODE_ENV !== "production"` 做与运算：**生产构建即使显式设为 `true` 也恒为 `false`**，本地开发指向 loopback 后端而未开启时启动告警。
@@ -127,6 +149,8 @@
 5. GitHub Actions 的 `CI` 中 `backend`、`frontend`、`admin`、`compose`、`migration`、`e2e`，以及同一 commit 的 `images` 矩阵三项均成功后，才允许发布；`images` 被跳过时不能部署。
 6. 从 GitHub commit 详情页复制 40 位完整 SHA；手动发布时在服务器执行 `git pull --ff-only origin master` 后，用 `git rev-parse HEAD` 与目标 SHA 核对一致，再执行 `scripts/deploy.sh`。
 7. 发布后必须检查 Compose 服务状态、`/readyz`、官网、管理后台、`/llms.txt`、默认 OG 图和视频 Range 响应；完整命令以 [`deploy-guide.md`](./deploy-guide.md) 的手动部署章节为准。
+8. 后端已对公开媒体输出 `Cache-Control: public, max-age=3600`；若 OpenResty 直接服务 `uploads` 或覆盖响应头，需在反代层对齐同一策略。frontend 发布使用命名卷 `frontend_image_cache`，替换图片优先使用新 URL，避免旧衍生图在浏览器缓存窗口内继续命中。
+9. 首页资源审计报告（`reports/home-resource-audit-2026-09-16.md`）测量的是发布中的旧版本；字体、社交图、卡片预取等减负改动尚未上线，发布后需在相同条件下复测再评估是否继续裁减客户端动画。
 
 ## 仍属于后续工作的事项
 

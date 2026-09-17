@@ -69,6 +69,14 @@ NODE_OPTIONS= \
 | `npm run lighthouse` | 执行 Lighthouse CI 与预算断言 |
 | `npm run test:e2e` | Playwright 端到端测试 |
 
+下列脚本未注册为 npm script，需用 `node` 直接运行。前两支需先执行 `npm run build`（脚本以 `next start` 在临时端口起服务），各自启动模拟 API，不写业务库：
+
+| 命令 | 用途 |
+| --- | --- |
+| `node scripts/verify-sitemap-cache.mjs` | 验证 sitemap 缓存复用、发布失效与不完整分页（默认临时端口 3002，可用 `SITEMAP_TEST_PORT`） |
+| `node scripts/verify-listing-failures.mjs` | 验证列表分类失败、列表失败与 Retry 恢复（默认临时端口 3003，可用 `LISTING_TEST_PORT`） |
+| `node scripts/audit-home-resources.mjs` | 不加模拟 API：用本机 Chromium 访问线上官网采集首页资源基线，结果覆盖写入 `reports/home-resources-live.json`；需已安装 Playwright 浏览器且能访问公网 |
+
 产品 308 规范化**不依赖**这份映射：`proxy.ts` 在运行时调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品当前分类，后台改分类后即时生效。`npm run gen:map` 需要后端 API 可达，产物 `lib/generated/canonical-map.ts` 只在后端不可达时兜底，属可选维护项（脚本按 `page_size=50` 翻页拉取全量产品）。
 
 ## 环境变量
@@ -114,9 +122,9 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 | 路由 | 数据与渲染 |
 | --- | --- |
 | `/` | 首页，Streaming SSR，多组 Suspense 边界 |
-| `/products` | 产品列表、分类筛选和分页，ISR |
-| `/products/[category]/[slug]` | 产品规范详情页，ISR；旧扁平 URL 由 `proxy.ts` 308 重定向 |
-| `/news`、`/news/[slug]` | 新闻列表与详情，ISR |
+| `/products` | 产品列表、分类筛选和分页，ISR；分页标题带页码，canonical 按有效 `page` 生成，超范围页回落首页并 `noindex` |
+| `/products/[category]/[slug]` | 产品规范详情页，ISR；正文含详情图区块，旧扁平 URL 由 `proxy.ts` 308 重定向 |
+| `/news`、`/news/[slug]` | 新闻列表与详情，ISR；新闻详情底部含相关产品内链 |
 | `/solutions`、`/solutions/faq` | OEM/ODM 方案与 FAQ |
 | `/about` | 公司、工厂视频、认证、时间线与研发能力 |
 | `/contact` | 询盘表单和地图 |
@@ -139,6 +147,10 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 | Contact Leaflet 地图 | IntersectionObserver + `next/dynamic({ ssr: false })` | 距视口 200px 时才挂载地图组件并加载瓦片；保留固定占位和手动加载入口 |
 | About 工厂视频 | `<video preload="none">` | 展示 poster，用户点击播放后才请求视频数据 |
 | 首页异步数据区块 | `Suspense` Streaming SSR | 是服务端流式渲染，不等同于图片懒加载；关键文字仍可被搜索引擎读取 |
+| 新闻卡片与站内入口链接 | `prefetch={false}` | 卡片出现或悬停时不再预取文章 RSC，降低弱网下的后台流量与脚本竞争；首次点击需现场请求 |
+| 字体加载 | 仅加载正文字体 | 已移除无实际使用的等宽字体（约 70 KiB 字体传输），本地已完成、待发布 |
+| 页脚社交图标 | 与显示尺寸匹配的 60px WebP | 四个文件原始体积合计减少约 69 KB；图标槽位仍保持 `44×44px` 与等间距 |
+| 产品图库与新闻卡片 `sizes` | 按实际容器校准 | 避免平板单栏被当作半屏选图、宽屏声明尺寸持续增长；缩略图按 64/80 px 断点选图 |
 
 修改加载策略时优先检查 LCP、CLS、INP 和弱网移动设备表现；不能为了减少请求而延迟 Hero、首屏标题或首屏 CTA。
 
@@ -154,10 +166,16 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 ## 数据流与内容来源
 
 - `lib/api/` 封装产品、新闻、搜索和分类 API。
+- `lib/api/client.ts` 的 `apiFetch` 统一 10 秒超时（覆盖连接建立与正文读取）；`proxy.ts` 的 canonical 查询限时 2 秒，进程内缓存 60 秒、上限 512 条，写入时清理过期条目并在满容量时淘汰最早插入项。
+- `lib/api/list-pages.ts` 是列表页的统一加载入口：用 React `cache()` 在单次渲染内共享分类与列表结果，并保留失败状态与重试用的分类参数，避免 metadata 与正文出现两种结果。
+- `lib/list-query.ts` 统一解析列表的 `category` / `page` 参数并生成列表 URL；新增列表页必须复用它，不要在页面内各自解析 searchParams。
+- `lib/priority-products.ts` 提供主推机型（DC403/DC105/DC325/DC417X）与基于现有规格的 SEO 默认值，后台显式 SEO 优先。
+- `lib/news-product-links.ts` 从新闻正文可见文本匹配产品型号并选出最多 3 条内链，无命中时回退主推机型。
 - `lib/content-data.ts` 是公司事实、首页文案、FAQ、About 内容等静态信息的集中来源。
 - `lib/media.ts` 集中映射仓库静态媒体。
 - 产品和新闻由 FastAPI/PostgreSQL 提供，不在前端维护副本。
-- 询盘直接提交 FastAPI 并写入 PostgreSQL；SMTP 通知和 CRM 状态由后端负责。
+- 产品详情图存储在产品的 `content_html` 中，由详情页按顺序纵向展示；新闻封面图与正文图由 `lib/html-cleaner.ts` 清洗后渲染。
+- 询盘直接提交 FastAPI 并写入 PostgreSQL；SMTP 通知和 CRM 状态由后端负责。`components/form/InquiryProductContext.tsx` 只负责把 `?product=` / `?category=` 解析成来源产品与兴趣分类，表单本体仍是服务端渲染。
 - 前端 `data/` 已被忽略，不是当前询盘存储方案。
 
 公司年份口径必须保持一致：
@@ -168,7 +186,13 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 
 ## SEO 与社交分享
 
-根布局提供默认 metadata、canonical 基准、robots、Open Graph、Twitter Card 和 Manufacturer JSON-LD。页面按需生成 Product、Article、FAQ、Breadcrumb 等结构化数据。
+根布局提供默认 metadata、canonical 基准、robots、Open Graph、Twitter Card 和 `Organization` JSON-LD。页面按需生成 Product、Article、FAQ、Breadcrumb 等结构化数据。
+
+结构化数据的当前口径：
+
+- 组织与制造商统一使用 `Organization`（`@id` 保持一致），不再输出 `Manufacturer`；文章作者为公司时同样使用 `Organization`。
+- 询盘产品没有公开价格与库存，`productSchema` 不输出未经确认的 Offer，只保留规范 URL 与品牌、制造商信息。
+- sitemap 使用 Next 显式数据缓存保存完整结果（60 秒，tags 为 `products` / `news` / `product-categories`）：分页不完整直接失败，不缓存残缺 URL 集，发布时通过既有标签链路主动失效。
 
 默认社交图为 `public/og/og-default.jpg`，固定 1200×630。普通页面使用默认图；产品和新闻详情优先使用内容图片，无图时显式回退到默认图。详情页必须同时提供 Open Graph 与 Twitter metadata，不能依赖根布局隐式继承内容图。
 
@@ -239,15 +263,25 @@ components/                    展示与交互组件
 components/form/               询盘表单
 components/motion/             动画边界
 lib/api/                       FastAPI 客户端
+lib/api/list-pages.ts          列表页统一加载（请求内共享 + 失败状态与重试参数）
+lib/list-query.ts              列表 category/page 参数解析与 URL 生成
+lib/priority-products.ts       主推机型与 SEO 默认值
+lib/news-product-links.ts      新闻正文产品型号匹配与内链选品
 lib/content-data.ts            共享公司事实与静态内容
 lib/media.ts                   静态媒体路径
 lib/seo.ts                     JSON-LD 与 SEO 工具
 lib/generated/                 canonical 路径映射（后端不可达时的兜底）
+components/ProductDetailImages.tsx  产品详情图区块（按 content_html 顺序纵向展示）
+components/NewsProductLinks.tsx     新闻详情底部相关产品内链
+components/form/InquiryProductContext.tsx  询盘来源产品/分类解析（唯一依赖 useSearchParams 的小岛）
 public/og/                     默认社交分享图
 public/Video/                  工厂 MP4 与 poster
 scripts/generate-og-assets.mjs 社交图与 poster 生成脚本
 scripts/verify-seo.mjs          SEO/GEO 契约校验
-e2e/                            Playwright 用例（12 个 spec）
+scripts/verify-sitemap-cache.mjs      sitemap 缓存与发布失效校验（临时端口 3002）
+scripts/verify-listing-failures.mjs   列表故障与恢复校验（临时端口 3003）
+scripts/audit-home-resources.mjs      首页资源基线采集
+e2e/                            Playwright 用例（20 个 spec）
 e2e/hydration.ts               注水等待 helper：gotoHydrated() / waitForHydration()
 playwright.config.ts           E2E 配置（workers: 2，testDir: e2e）
 next.config.ts                 图片优化、远程主机与生产配置

@@ -49,7 +49,8 @@ for (const resource of ["news", "products"] as const) {
       await expect(categoryOptions).not.toHaveCount(1);
       await categoryOptions.nth(1).click();
       await page.locator("textarea").first().fill("Lifecycle fixture summary");
-      await page.locator('[contenteditable="true"]').fill("Lifecycle fixture body");
+      // 产品正文改由「商品详情图」编辑器管理（只处理图片，原文字保留在数据中），新闻仍用富文本编辑器。
+      if (isNews) await page.locator('[contenteditable="true"]').fill("Lifecycle fixture body");
       const statusListbox = await openListbox(page, page.getByRole("button", { name: "内容状态", exact: true }), "内容状态 options");
       await statusListbox.getByRole("option", { name: "已发布", exact: true }).click();
       if (!isNews) {
@@ -129,7 +130,8 @@ for (const resource of ["news", "products"] as const) {
         await page.getByPlaceholder("值（如：4800 万像素 CMOS）").fill("Fixture sensor");
         await page.getByRole("button", { name: "添加", exact: true }).click();
         await expect(page.getByText("Fixture sensor", { exact: true })).toBeVisible();
-        await page.locator('input[type="file"][multiple]').setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
+        // 产品表单有多个 file 输入（封面 / 图库 / 商品详情图），必须用可访问名精确定位图库输入。
+        await page.getByLabel("上传产品图库图片").setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
         await expect(page.getByRole("img", { name: "fixture.png", exact: true })).toBeVisible();
         await page.reload();
         await waitForHydration(page);

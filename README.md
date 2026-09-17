@@ -22,6 +22,12 @@
 
 运行时服务由 Docker Compose 编排：PostgreSQL、Redis、backend、frontend、admin-next。生产发布使用 GitHub Actions 构建的 GHCR 镜像和完整 commit SHA，不在服务器上随意覆盖源码或数据卷。
 
+运行时的资源与进程边界：
+
+- 后端 Uvicorn worker 数由 `WEB_CONCURRENCY` 控制（默认 2），每个 worker 各自持有数据库连接池与后台任务循环。
+- 每个 Compose 服务统一 `json-file` 日志轮转（单文件 10m、最多 3 个），避免容器日志无限增长。
+- frontend 使用命名卷 `frontend_image_cache` 只持久化 `/app/.next/cache/images`（图片衍生缓存跨容器重建保留）；HTML/ISR 缓存不持久化，避免把旧版本页面跨发布复用。
+
 ## 环境要求
 
 - Node.js `24.18.0`，版本见 `.node-version`
@@ -99,6 +105,15 @@ npm run verify:seo
 npm run build
 npm run test:e2e
 
+# frontend 专项校验脚本（未注册为 npm script，需用 node 直接运行）
+# 前两支需先执行 npm run build（脚本以 next start 起临时端口），各自启动模拟 API，
+# 不写业务库，退出时清理测试缓存与进程
+node scripts/verify-sitemap-cache.mjs       # sitemap 缓存复用、发布失效与不完整分页，默认端口 3002
+node scripts/verify-listing-failures.mjs    # 列表分类失败、列表失败与 Retry 恢复，默认端口 3003（LISTING_TEST_PORT 可改）
+# 首页资源基线采集：不启模拟 API，用本机 Chromium 访问线上官网，覆盖写入
+# reports/home-resources-live.json；需已安装 Playwright 浏览器且能访问公网
+node scripts/audit-home-resources.mjs
+
 # admin-next
 cd ../admin-next
 npm run lint
@@ -159,6 +174,7 @@ CI 用生产构建启动，不受此限制，故不设这两个变量）。
 - [frontend/docs/class-diagram.mermaid](./frontend/docs/class-diagram.mermaid) / [sequence-diagram.mermaid](./frontend/docs/sequence-diagram.mermaid)：官网结构与调用时序
 - [backend/docs/class-diagram.mermaid](./backend/docs/class-diagram.mermaid) / [sequence-diagram.mermaid](./backend/docs/sequence-diagram.mermaid)：后端结构与调用时序
 - [admin-next/README.md](./admin-next/README.md)：管理后台说明
+- [reports/](./reports/)：专项审计报告与原始数据（如 [首页线上资源审计 2026-09-16](./reports/home-resource-audit-2026-09-16.md)）
 
 ## 开发约定
 

@@ -6,6 +6,8 @@
 
 > 2026-09-11 更新：Next.js 升至 **16.3.4**（`frontend` 与 `admin-next` 同步）。新增 **E2E 注水约定** —— 交互用例必须用 `e2e/hydration.ts` 的 `gotoHydrated()`，详见下方「E2E 测试（Playwright）」章节。`ALLOW_LOCAL_IMAGE_OPTIMIZATION` 增加 `NODE_ENV !== "production"` 生产硬门槛。
 
+> 2026-09-16 更新：新增**产品详情图**（`components/ProductDetailImages.tsx`）、**新闻相关产品内链**（`components/NewsProductLinks.tsx` + `lib/news-product-links.ts`）、**列表参数统一解析**（`lib/list-query.ts` + `lib/api/list-pages.ts`）；sitemap 改为显式数据缓存，结构化数据由 `Manufacturer` 调整为 `Organization` 且产品不再输出 Offer；站内入口大面积关闭 `prefetch`。e2e 增至 **20 个 spec**。约定见下方「列表、详情图与内链约定（2026-09-16）」。
+
 ---
 
 ## 项目定位
@@ -119,9 +121,13 @@ npm run dev → http://localhost:3000
 |------|------|
 | `lib/content-data.ts` | 全站可编辑文本（公司信息、产品分类、服务、FAQ、About 时间轴等） |
 | `lib/api/client.ts` | FastAPI 客户端 — `apiFetch()` 封装 + Result 信封解析 + 缓存控制（revalidate / no-store / tags） |
-| `lib/api/products.ts` | 产品数据访问层（列表/详情/分类/slug） |
+| `lib/api/products.ts` | 产品数据访问层（列表/详情/分类/slug；`getProductLinkCatalog()` 供新闻内链取全量目录） |
 | `lib/api/news.ts` | 新闻数据访问层 |
 | `lib/api/search.ts` | 全文搜索数据访问层 |
+| `lib/api/list-pages.ts` | 列表页统一加载（请求内共享 + 失败状态与重试分类参数） |
+| `lib/list-query.ts` | 列表 `category` / `page` 参数解析与列表 URL 生成 |
+| `lib/priority-products.ts` | 主推机型列表与 SEO 默认标题/描述 |
+| `lib/news-product-links.ts` | 新闻正文型号匹配与内链选品（最多 3 条） |
 | `components/form/InquiryForm.tsx` | 当前询盘表单：提交 FastAPI，由后端落 PostgreSQL 并发送 SMTP 通知 |
 | `lib/seo.ts` | JSON-LD 结构化数据生成器 |
 | `lib/html-cleaner.ts` | 富文本 HTML 清洗器（去内联样式/容器）+ `sanitize-html` 白名单消毒（堵存储型 XSS），新闻/产品详情 `dangerouslySetInnerHTML` 必经此层 |
@@ -134,6 +140,9 @@ npm run dev → http://localhost:3000
 | `components/motion/HeroSection.tsx` | 首页 Hero |
 | `components/ProductCard.tsx` | 产品卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 红框+阴影+缩放） |
 | `components/ProductGallery.tsx` | 产品详情页左侧缩略图+右侧大图（next/image + 主图 `preload`） |
+| `components/ProductDetailImages.tsx` | 产品详情图区块（从 `content_html` 抽取图片，按序纵向展示，响应式 + 懒加载） |
+| `components/NewsProductLinks.tsx` | 新闻详情底部相关产品内链（服务端组件，读取产品目录） |
+| `components/form/InquiryProductContext.tsx` | 询盘来源产品/分类解析（唯一依赖 `useSearchParams` 的客户端小岛，5 秒超时） |
 | `components/PostCard.tsx` | 新闻卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 蓝框+阴影+亮度变化） |
 | `components/SafeImage.tsx` | 客户端图片组件（仅处理 onError 换占位），供 RSC 卡片复用，减少 hydration |
 | `components/ContactMapLoader.tsx` | 客户端加载器，`next/dynamic({ ssr:false })` 按需引入 Leaflet，不进首屏 bundle |
@@ -183,8 +192,13 @@ npm run dev → http://localhost:3000
 | 首屏图片优先级 | `HeroSection.tsx`、`Header.tsx`、`SafeImage.tsx` | Hero/Logo 和首个 LCP 候选使用 `preload`；`SafeImage` 默认 `loading="lazy"` |
 | 动态组件分包 | `app/about/page.tsx` | 时间轴与证书画廊用 `next/dynamic` 拆分客户端代码；不等同于视口触发加载 |
 | 视频延迟请求 | `FactoryVideo.tsx` | poster 首先展示，`preload="none"`，用户点击播放后加载视频 |
-| 地图按需加载 | `ContactMapLoader.tsx` | `next/dynamic({ ssr:false })`，Leaflet 仅在联系页客户端加载，不进服务端首屏 bundle；当前不是 IntersectionObserver 视口懒加载 |
-| 列表错误降级 | `app/products`、`app/news` | fetch 加 try/catch，后端异常时渲染「暂不可用+重试」而非整页 error |
+| 地图按需加载 | `ContactMapLoader.tsx` | 客户端 `IntersectionObserver`（`rootMargin: 200px`）在距视口 200px 时才挂载 `next/dynamic({ ssr:false })` 的 Leaflet 组件并加载瓦片，保留固定占位与手动加载入口 |
+| 列表错误降级 | `lib/api/list-pages.ts` + `app/products`、`app/news` | 分类或列表失败时渲染英文「暂不可用 + Retry」并输出 `noindex`，不回退为全部内容、不误报 0 条 |
+| 关闭站内预取 | `PostCard.tsx`、`Header.tsx`、`Footer.tsx`、`HomeCtaSection.tsx`、`InstantSearch.tsx`、`HeroSection.tsx` | 卡片与站内入口链接使用 `prefetch={false}`，不为不一定访问的页面预取 RSC |
+| 字体精简 | `app/layout.tsx` | 移除无实际使用的等宽字体，减少约 70 KiB 字体传输（本地已完成、待发布） |
+| 页脚社交图标 | `Footer.tsx` + `public/MediaIcon/*-60.webp` | 使用与显示尺寸匹配的 60px WebP，四个文件原始体积合计减少约 69 KB；槽位仍为 `44×44px` |
+| 详情图懒加载 | `ProductDetailImages.tsx` | 详情图按容器宽度响应式选图并懒加载；旧图与外链图走原生 `<img>`，不放宽图片优化器白名单 |
+| 内链目录复用缓存 | `components/NewsProductLinks.tsx` | 产品目录在服务端按 60 秒缓存读取，选品不下发到客户端 |
 | 可访问性 | `app/layout.tsx` + `globals.css` | 全站 skip-link 跳主内容 + 全局 focus-visible 焦点环；外链补 `rel="noopener"` |
 
 ---
@@ -225,8 +239,10 @@ npm run dev → http://localhost:3000
 |------|------|-------------|
 | 产品 | 42 | `/api/v1/products` |
 | 产品分类 | 6 | `/api/v1/product-categories` |
-| 新闻 | 9 | `/api/v1/news` |
-| 新闻分类 | 2 | `/api/v1/news-categories` |
+| 新闻 | 10 | `/api/v1/news` |
+| 新闻分类 | 3 | `/api/v1/news-categories` |
+
+> 上表产品/新闻为本地库已发布（`PUBLISHED` 且未删除）的数量，分类为未删除的分类条数（分类没有发布状态）；随运营增删变化，生产以后端接口实际返回为准，不要在代码或断言里依赖固定条数。
 
 ---
 
@@ -248,7 +264,19 @@ npm run dev → http://localhost:3000
 
 ## E2E 测试（Playwright）
 
-套件在 `e2e/`（12 个 spec），入口 `npm run test:e2e`。**必须三个服务齐活**：后端 `:8000`、官网 `:3000`、后台 `:3001`。
+套件在 `e2e/`（20 个 spec），入口 `npm run test:e2e`。**必须三个服务齐活**：后端 `:8000`、官网 `:3000`、后台 `:3001`。
+
+2026-09-15/16 批次新增的 spec 与其覆盖点：
+
+| spec | 覆盖内容 |
+|------|---------|
+| `product-news-upgrade` | 商品详情图在后台上传/排序/移除并在官网按序展示；News 分类翻页与分页 SEO |
+| `news-product-links` | 新闻正文型号匹配与相关产品内链、无命中时的主推回退 |
+| `news-media-performance` | 新闻正文图片/视频的安全属性、无封面时首图优先加载 |
+| `responsive-images` | 390/768/900/1440/1920 px 屏宽下图库与新闻卡片的选图宽度 |
+| `list-query-seo` | 列表分类筛选、分页标题与 canonical、超范围页 noindex |
+| `news-prefetch` | 新闻卡片关闭自动预取后点击仍正常导航 |
+| `bandwidth-conversion` / `server-resource` | 首屏与完整滚动的资源请求、服务端响应缓存与限流边界 |
 
 ```bash
 NODE_OPTIONS= \
@@ -322,6 +350,26 @@ await page.getByRole("button").click(); // 此时交互才安全
 - 套件启动/结束会清理 `test-results/`，失败用例的 trace/video 体积很大，跑前建议先手动清空该目录。
 - 管理端是 HttpOnly Cookie 认证：登录响应体**不含 token**，需从 `Set-Cookie` 取；`admin` 连续 5 次密码错会锁定 15 分钟。
 
+### 内容依赖用例必须自备夹具（2026-09-16）
+
+CI 的 e2e 作业是**全新空库**（只跑迁移 + 最小种子：角色/权限/admin 与 2 个新闻分类），
+没有任何产品、新闻或产品分类。因此**禁止**在用例里硬编码真实内容的 slug/分类
+（`dc417x`、`compact-camera`、`news` 等）——那只是「恰好命中开发者本机数据库」。
+
+统一用 `e2e/fixtures.ts`：
+
+- `adminRequest()` 在**每个 worker 内复用同一个后台会话**。登录限流是 10 次/分钟
+  （`RATE_LOGIN_PER_MIN`），逐用例登录会在连续用例里收到 `C429001`；用例内**不要**再 `dispose()`。
+- `createProductCategory` / `createNewsCategory` / `createProduct` / `createNews`
+  创建带随机后缀的分类与内容，返回 id/slug 供断言，并在 `finally` 里用
+  `cleanup([...])` + `removeProducts` / `removeNews` / `removeUploads` 逐条容错清理。
+- **每个被断言的图片用途都要各自上传一次**（封面、图库、详情图、每篇新闻封面）。
+  同一 URL 被多张 `sizes` 不同的图片共用时，Chrome 会复用封面图 `preload` 的结果选图，
+  让「相关卡片用更窄容器」这类响应式断言失真（实测 307px 槽位会被选成 768w 而不是 384w）。
+- 分页类断言需要真实条数：产品每页 12 条（第 2 页需 ≥13 个已发布产品）、
+  新闻每页 9 条（第 2 页需 ≥10 篇已发布新闻）；首页是静态 ISR，
+  新建内容后要轮询等卡片出现，不能假设立刻可见。
+
 ---
 
 ## 生产部署
@@ -387,7 +435,7 @@ P0 级审计修复（相关行为已合入当前代码）：
 ## 同意、规范化 URL 与分页约定（2026-09-12）
 
 - **分析同意可撤回**：同意状态的唯一来源是 `lib/consent.ts`。撤回时除写 `localStorage` 外必须调用 `syncAnalyticsConsent()`（写入 GA 禁用标记并发送 Consent 拒绝信号）并派发变更事件；`trackEvent()` 必须先读同意状态。组件**不得**只判断 `typeof window.gtag === "function"` 决定是否发送。
-- **产品 URL 规范化在运行时解析**：`proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical`（60 秒短缓存，只缓存后端的明确响应），后端返回 404 时不回退静态映射，避免把已下架产品重定向到旧分类地址。`lib/generated/canonical-map.ts` 仅作后端不可达兜底；搜索接口返回的 `url` 已是规范嵌套地址，禁止在前端重新拼接扁平路径。
+- **产品 URL 规范化在运行时解析**：`proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical`（60 秒短缓存，只缓存后端的明确响应，查询限时 2 秒）；**仅**当后端以业务码 `A010001`（未发布/不存在）明确响应时才不回退静态映射，避免把已下架产品重定向到旧分类地址；后端不可达或尚未提供该接口（`C404001`）时仍用构建期 `lib/generated/canonical-map.ts` 兜底。`lib/generated/canonical-map.ts` 仅作后端不可达兜底；搜索接口返回的 `url` 已是规范嵌套地址，禁止在前端重新拼接扁平路径。
 - **列表分页 canonical**：产品与新闻列表页按有效 `page` 生成自身 canonical（保留 `category` 参数、`page=1` 去掉该参数）；非数字或 <1 的页码按首页处理；超出总页数时 canonical 回落首页并输出 `robots: noindex`。新增列表页时不要写死 canonical。
 
 ## 自绘下拉与 e2e 约定（2026-09-12）
@@ -395,6 +443,15 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 管理后台表单下拉统一用 `admin-next/src/components/form/SelectField`（触发器按钮 + Portal listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。当前值暴露在触发器的 `data-value`，**不是** `input.value`——e2e 断言用 `toHaveAttribute("data-value", ...)`，不要用 `toHaveValue`。
 - 滚动行为：**选项列表内部滚动不会关闭菜单**；页面等外部滚动按触发器新位置重新定位，仅当触发器完全离开视口才关闭。修改该行为必须同步跑 `e2e/content-lifecycle.spec.ts`——曾因「点选项前的列表滚动被当成页面滚动而关闭菜单」导致 CI 里选项 detached 超时。
 - e2e 打开下拉用 `getByRole("button", { name: ... })` 定位触发器（菜单展开后 `aria-label="X options"` 的 listbox 会被 `getByLabel("X")` 子串误命中，造成 strict mode violation）；先断言 `aria-expanded="true"`，再在 `getByRole("listbox", { name: "X options" })` 作用域内点选项。禁止 sleep / force click / 降低断言。
+
+## 列表、详情图与内链约定（2026-09-16）
+
+- **列表参数统一走 `lib/list-query.ts`**：Products 与 News 的 `category` / `page` 由 `readListQuery()` 统一解析（重复参数取第一个值、非安全整数或小于 1 回退第 1 页），列表 URL 由 `listUrl()` 生成（`page=1` 不写 `page` 参数）。新增列表页**不要**各自解析 `searchParams`，否则 metadata 与正文会出现两种口径。
+- **列表数据统一走 `lib/api/list-pages.ts`**：`getProductsPage()` / `getNewsPage()` 用 React `cache()` 在单次渲染内共享分类与列表结果，并返回 `failed` 与 `retryCategory`。分类或列表失败时必须渲染英文故障页并输出 `noindex`，**不得**回退成「无筛选的全部内容」，也不得把不可读的数量显示为 0。
+- **产品详情图**：`components/ProductDetailImages.tsx` 只从 `content_html` 抽取 `img` 的 src/alt/width/height。本地 `/uploads/` 且带有效宽高的图片走 `next/image` 与响应式 `sizes`；旧图与外链图降级为原生 `<img>`。**不要**为了显示历史图片放宽 `next.config.ts` 的 `remotePatterns`。
+- **新闻相关产品内链**：`lib/news-product-links.ts` 只按正文可见文本匹配型号 token（slug / SKU / 名称首型号），无命中时按 `lib/priority-products.ts` 的主推顺序回退，最多 3 条；无分类产品不得生成非规范链接。产品目录读取失败时仍要保留 OEM/ODM、工厂与询盘入口。
+- **结构化数据**：组织与制造商统一 `Organization`；产品页不输出未经确认的 Offer。修改 schema 后必须运行 `npm run verify:seo`。
+- **sitemap**：使用 `unstable_cache`（60 秒，tags 为 products / news / product-categories）缓存完整结果，分页不完整直接失败；不要改回 `force-dynamic`，也不要缓存残缺 URL 集。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

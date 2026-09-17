@@ -1,6 +1,6 @@
 # 松典科技 B2B 官网重构 · 后端（FastAPI + Tortoise ORM）
 
-> 当前状态（2026-09-12）：最新迁移为 `16_20260908090000_backend_reliability.py`（持久化后台任务表 `t_background_job` + 账户 `session_version`）。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。媒体接口支持引用查询（含正文引用）、历史引用同步和按 URL 路径自动归类；公开询盘只返回最小回执，产品规范路径由 `GET /products/{slug}/canonical` 运行时提供。本轮这些一致性修复均为应用层改动，**未新增迁移**。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
+> 当前状态（2026-09-16）：最新迁移仍为 `16_20260908090000_backend_reliability.py`（持久化后台任务表 `t_background_job` + 账户 `session_version`）。15 号迁移补齐产品和新闻排序字段；产品和新闻支持 `DRAFT` / `SCHEDULED` / `PUBLISHED`、短期签名预览与不可变 `ContentRevision` 历史。媒体接口支持引用查询（含正文引用）、历史引用同步和按 URL 路径自动归类；公开询盘只返回最小回执，产品规范路径由 `GET /products/{slug}/canonical` 运行时提供。2026-09-15/16 批次的改动为：公开媒体 200/206/304 响应增加一小时 `Cache-Control`（保留 ETag/Last-Modified、404 不加）、启动前的图片资产同步与代码文件清理移入 `scripts/start.sh`、容器 worker 数由 `WEB_CONCURRENCY` 控制（默认 2）；这批改动**同样未新增迁移**。部署现状以根目录 [`CURRENT_IMPLEMENTATION.md`](../CURRENT_IMPLEMENTATION.md) 和 [`deploy-guide.md`](../deploy-guide.md) 为准。
 
 产品展示（M1）、新闻动态（M2）、联合搜索（M3）、全站询盘（M4）、内容管理/RBAC（M5）
 五大模块。私有化单租户部署。（数据迁移 M6 已移除：WP→PG 主迁移已完成，该 ETL 工具为一次性，日常业务不依赖）
@@ -38,7 +38,7 @@ backend/
 │   ├── redis_client.py          # Redis 封装（无 Redis → 内存降级）
 │   └── search_vector.py         # TSVectorField + update_search_vector + is_sqlite
 ├── product/ news/ search/ inquiry/ content/   # 五大模块（数据迁移 M6 已移除）
-├── seed/seed_data.py            # 6 产品分类 + 2 新闻分类 + admin 账号（幂等）
+├── seed/seed_data.py            # 幂等种子：角色/权限 + 首个 admin；SEED_CONTENT_CATEGORIES=true 时才写入 2 个新闻分类（产品分类不由种子创建）
 └── tests/                       # conftest 基座 + smoke + QA 用例
 ```
 
@@ -120,10 +120,12 @@ python -m seed.seed_data
 - **全文检索索引自愈**：见上方 §3「GIN 索引启动自愈」。搜索命中 GIN 索引，
   数据量增大后由 PostgreSQL 规划器自动从顺序扫描切到 `Bitmap Index Scan`，无需手动干预。
 
-> 图片优化边界：当前 `/uploads/*` 由后端 `_MediaStaticFiles` 直出原图（无 CDN / 无 `Cache-Control`
-> / 无预裁剪），属下一阶段优化项，不影响上述两项已落地收益。该静态类对 `.py` / `.pyc` / `.pyo`
-> / `.pyd` / `.env` / `.sh` / `.ini` / `.toml` / `.cfg` / `.sql` / `.log` / `.md` / `.lock` 等后缀
-> 统一返回 404，纵深防御媒体卷中残留的代码或配置文件被下载。
+> 图片优化边界：`/uploads/*` 仍由后端 `_MediaStaticFiles` 直出原图（无 CDN、无预裁剪），但
+> **200/206/304 响应已带 `Cache-Control: public, max-age=3600`**，同时保留 ETag 与 Last-Modified，
+> 404 不添加该头。浏览器对同一媒体 URL 有一小时缓存窗口，因此**替换图片应使用新 URL**。
+> 该静态类对 `.py` / `.pyc` / `.pyo` / `.pyd` / `.env` / `.sh` / `.ini` / `.toml` / `.cfg` /
+> `.sql` / `.log` / `.md` / `.lock` 等后缀统一返回 404，纵深防御媒体卷中残留的代码或配置文件被下载。
+> 若 OpenResty 直接服务 `uploads` 或覆盖响应头，需在反代层对齐同一缓存策略。
 
 ---
 
@@ -223,6 +225,10 @@ PORT=8000
 # SMTP_* 不填则询盘只入库不真发邮件
 ```
 
+> `WEB_CONCURRENCY` **不在本模板中**：它是 Compose/容器级变量，由根目录 `.env.example` 提供，经
+> `docker-compose.yml` 注入 backend 容器，再由 `scripts/start.sh` 以 `--workers "${WEB_CONCURRENCY:-2}"`
+> 传给 Uvicorn。`common/config.py` 不读取该键，因此写进 `backend/.env` 或本地直跑 `uvicorn` 时都不生效。
+
 ---
 
 ## 8. 运行与部署（uv + 1Panel）
@@ -249,6 +255,12 @@ uv run python -m seed.seed_data
 `zsaki.icu` 重定向至 `www`。PostgreSQL、Redis、backend、frontend、admin-next 均由根目录
 `docker-compose.yml` 编排；仅 1Panel OpenResty 位于 Compose 外负责公网反代。
 完整步骤以根目录 [`deploy-guide.md`](../deploy-guide.md) 为准。
+
+backend 容器的启动命令是 `sh ./scripts/start.sh`，该脚本在 Uvicorn 之前完成三件事：把镜像内置的
+图片目录（`uploads/products|news|2026`）`cp -rn` 同步到媒体卷、清理媒体根目录残留的代码与配置文件、
+解析 `TRUSTED_PROXIES`，最后以 `--workers "${WEB_CONCURRENCY:-2}"` 启动。同步与清理逻辑必须留在
+脚本文件内，不要写回 compose 的字符串 `command`（`$` 与括号转义在多层 shell 传递中被吞掉，曾导致
+容器 `Syntax error: "(" unexpected` 启动失败）。
 
 > **生产必须显式设置 `JWT_SECRET`**（≥32 字节随机值），未设置或仍为占位值时应用会拒绝启动。
 

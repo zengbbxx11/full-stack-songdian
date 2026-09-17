@@ -438,6 +438,31 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **产品 URL 规范化在运行时解析**：`proxy.ts` 调后端 `GET /api/v1/products/{slug}/canonical`（60 秒短缓存，只缓存后端的明确响应，查询限时 2 秒）；**仅**当后端以业务码 `A010001`（未发布/不存在）明确响应时才不回退静态映射，避免把已下架产品重定向到旧分类地址；后端不可达或尚未提供该接口（`C404001`）时仍用构建期 `lib/generated/canonical-map.ts` 兜底。`lib/generated/canonical-map.ts` 仅作后端不可达兜底；搜索接口返回的 `url` 已是规范嵌套地址，禁止在前端重新拼接扁平路径。
 - **列表分页 canonical**：产品与新闻列表页按有效 `page` 生成自身 canonical（保留 `category` 参数、`page=1` 去掉该参数）；非数字或 <1 的页码按首页处理；超出总页数时 canonical 回落首页并输出 `robots: noindex`。新增列表页时不要写死 canonical。
 
+## Lighthouse CI 失败定位约定（2026-09-17）
+
+`lhci assert` 只报「分类分数不达标」（例如 `categories.seo 0.92 < 0.95`），**不会**说哪一项审计失败；而 CI 日志与 `lighthouse-reports` artifact 都需要鉴权才能取。因此 workflow 里加了 `Report failing Lighthouse audits` 步骤（`if: always()`，跑 `scripts/report-lighthouse-failures.mjs`），把每页 SEO 未通过项及其 `details.items` 打进日志。**以后遇到 SEO / 预算断言失败，先看这一步的输出**，不要先猜，更不要改阈值。
+
+先记住 Lighthouse 12.6.1 的 SEO 分类构成（`node_modules/lighthouse/core/config/default-config.js`）：
+
+- `is-crawlable` 权重是 `93/23 ≈ 4.04`（**不是 1**）；`document-title`、`meta-description`、`http-status-code`、`link-text`、`crawlable-anchors`、`robots-txt`、`image-alt`、`hreflang`、`canonical` 各为 1；`structured-data` 权重 0（manual）。
+- `viewport` / `font-size` / `plugins` **不在 SEO 分类里**（`font-size` 属 best-practices-ux，desktop 形态下还会直接 notApplicable），不要再用「小字/视口」解释 SEO 掉分。
+- 由此可反推：`0.92` 只可能来自「**恰好一项权重 1 的审计**失败」；若 `is-crawlable` 失败（例如页面输出 `noindex`），分数会掉到 **0.69** 左右——所以看到 0.92 就能**排除 noindex 路径**。
+
+本地做 CI 同款复现时**必须先删 `.next`**：
+
+```powershell
+node scripts/mock-api.mjs &            # mock API 必须占住 8000，CI 就是 8000
+rmdir /s /q .next .lighthouseci        # 关键：见下方说明
+$env:NEXT_PUBLIC_API_URL = "http://127.0.0.1:8000"
+npm run build; npm run lighthouse; node scripts/report-lighthouse-failures.mjs
+```
+
+> 为什么必须删 `.next`：`.next/cache/fetch-cache` **不随构建失效**。留着上一条对真实后端构建的响应，
+> `generateStaticParams` 会拿到真实文章 slug，而详情请求打到 mock 上（`/api/v1/news/{slug}` 落到 `data: []`），
+> 构建会在 `normalizePublicText(undefined)` 直接崩（`lib/display-text.ts:27`）。
+> 顺带记住这个真实缺口：`decodeHtmlEntities` / `normalizePublicText` 假定入参一定是字符串，后端字段缺失会让
+> 预渲染或 SSR 抛错（页面 500 → `http-status-code` 掉分）；补兜底时要同时覆盖列表与详情两条映射路径。
+
 ## 自绘下拉与 e2e 约定（2026-09-12）
 
 - 管理后台表单下拉统一用 `admin-next/src/components/form/SelectField`（触发器按钮 + Portal listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。当前值暴露在触发器的 `data-value`，**不是** `input.value`——e2e 断言用 `toHaveAttribute("data-value", ...)`，不要用 `toHaveValue`。

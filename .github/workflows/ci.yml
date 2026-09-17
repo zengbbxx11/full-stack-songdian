@@ -55,6 +55,11 @@ jobs:
           test "$MOCK_READY" = "1"
           NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 npm run build
           npm run lighthouse
+      # lhci assert 只报分类分数（例如 categories.seo 0.92 < 0.95），不说是哪一项审计失败；
+      # 这里把各页 SEO 未通过项及其 details 打进日志，避免每次都靠下载 artifact 定位。
+      - name: Report failing Lighthouse audits
+        if: always()
+        run: node scripts/report-lighthouse-failures.mjs
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v6

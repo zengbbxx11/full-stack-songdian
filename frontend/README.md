@@ -76,6 +76,7 @@ NODE_OPTIONS= \
 | `node scripts/verify-sitemap-cache.mjs` | 验证 sitemap 缓存复用、发布失效与不完整分页（默认临时端口 3002，可用 `SITEMAP_TEST_PORT`） |
 | `node scripts/verify-listing-failures.mjs` | 验证列表分类失败、列表失败与 Retry 恢复（默认临时端口 3003，可用 `LISTING_TEST_PORT`） |
 | `node scripts/audit-home-resources.mjs` | 不加模拟 API：用本机 Chromium 访问线上官网采集首页资源基线，结果覆盖写入 `reports/home-resources-live.json`；需已安装 Playwright 浏览器且能访问公网 |
+| `node scripts/report-lighthouse-failures.mjs` | 只读 `.lighthouseci/reports`，打印每页 SEO 未通过项及其 `details`（CI 中由 `Report failing Lighthouse audits` 步骤调用，让 `lhci assert` 的“分类分数不达标”能定位到具体审计项） |
 
 产品 308 规范化**不依赖**这份映射：`proxy.ts` 在运行时调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品当前分类，后台改分类后即时生效。`npm run gen:map` 需要后端 API 可达，产物 `lib/generated/canonical-map.ts` 只在后端不可达时兜底，属可选维护项（脚本按 `page_size=50` 翻页拉取全量产品）。
 

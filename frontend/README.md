@@ -77,6 +77,8 @@ NODE_OPTIONS= \
 | `node scripts/verify-listing-failures.mjs` | 验证列表分类失败、列表失败与 Retry 恢复（默认临时端口 3003，可用 `LISTING_TEST_PORT`） |
 | `node scripts/audit-home-resources.mjs` | 不加模拟 API：用本机 Chromium 访问线上官网采集首页资源基线，结果覆盖写入 `reports/home-resources-live.json`；需已安装 Playwright 浏览器且能访问公网 |
 | `node scripts/report-lighthouse-failures.mjs` | 只读 `.lighthouseci/reports`，打印每页 SEO 未通过项及其 `details`（CI 中由 `Report failing Lighthouse audits` 步骤调用，让 `lhci assert` 的“分类分数不达标”能定位到具体审计项） |
+| `node scripts/verify-metadata-shell.mjs` | 读取页面响应的**首个分片**，报告 title / description / canonical 是否已在首屏外壳的 `<head>` 内；用于验证 `htmlLimitedBots` 兜底（配合 `slow-api-proxy.mjs` 复现「外壳不带元数据」的条件） |
+| `node scripts/slow-api-proxy.mjs` | 在 8010 端口起一个带延迟（默认 1.2s）的 API 代理，用于在本地复现「元数据晚于外壳冲出」的条件（`SLOW_DELAY_MS` 可调） |
 
 产品 308 规范化**不依赖**这份映射：`proxy.ts` 在运行时调用后端 `GET /api/v1/products/{slug}/canonical` 解析产品当前分类，后台改分类后即时生效。`npm run gen:map` 需要后端 API 可达，产物 `lib/generated/canonical-map.ts` 只在后端不可达时兜底，属可选维护项（脚本按 `page_size=50` 翻页拉取全量产品）。
 
@@ -194,6 +196,7 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 - 组织与制造商统一使用 `Organization`（`@id` 保持一致），不再输出 `Manufacturer`；文章作者为公司时同样使用 `Organization`。
 - 询盘产品没有公开价格与库存，`productSchema` 不输出未经确认的 Offer，只保留规范 URL 与品牌、制造商信息。
 - sitemap 使用 Next 显式数据缓存保存完整结果（60 秒，tags 为 `products` / `news` / `product-categories`）：分页不完整直接失败，不缓存残缺 URL 集，发布时通过既有标签链路主动失效。
+- 页面级 metadata 由 `next.config.ts` 的 `htmlLimitedBots: /.*/` 保证**进入首屏 HTML**：Next 默认对动态路由先回复不含 metadata 的外壳、元数据随后由 JS 补写，慢客户端（含 Lighthouse 与不执行 JS 的抓取方）会读到不完整的 head。放宽该匹配后，所有客户端都等元数据就绪再发（代价是动态路由首字节多等一次 metadata 解析）。
 
 默认社交图为 `public/og/og-default.jpg`，固定 1200×630。普通页面使用默认图；产品和新闻详情优先使用内容图片，无图时显式回退到默认图。详情页必须同时提供 Open Graph 与 Twitter metadata，不能依赖根布局隐式继承内容图。
 

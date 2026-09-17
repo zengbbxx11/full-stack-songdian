@@ -480,6 +480,21 @@ CI 报 `categories.seo 0.92`，诊断步骤显示唯一失败项是 `meta-descri
 - 运行期变量也要到位：`frontend/Dockerfile` runner 阶段 `ENV NEXT_PUBLIC_SITE_URL` + Compose frontend
   `environment` 注入同名变量；只配构建期 build arg 不够。
 
+### 第二个真实案例：外壳先发、metadata 后补（2026-09-17）
+
+修掉上面的入口问题后 CI 仍报 `/news` 的 `meta-description=0` + `canonical=n/a`，而 CI 里新增的
+`Capture public page head tags` 步骤显示**服务端完整响应是带元数据的**。差距在**流式交付**：
+
+- Next 15+ 对动态路由默认**流式下发 metadata**：当 `generateMetadata` 还在等数据（冷缓存 / 慢后端）时，
+  先冲出不含 title / description / canonical 的外壳，元数据在文档末尾才补上，靠 JS 挂进 `<head>`；
+  只有匹配 `htmlLimitedBots` 的 UA（默认是一串不执行 JS 的链接预览爬虫）走「等元数据就绪再发」。
+- **本机复现方法（已验证）**：清 `.next/cache` → 用带延迟的 API 代理（1.2s）起 `next start` → 用
+  `scripts/` 下的流式探针读取**首个分片**。冷缓存 + 慢 API 时外壳里 title/description/canonical 全无，
+  元数据出现在 ~65KB 之后；缓存一热立即恢复正常——这就是「本机怎么都复现不出来」的原因。
+- **约定**：`next.config.ts` 的 `htmlLimitedBots: /.*/` 必须保留（所有 UA 都拿完整首屏 metadata）。
+  **不要**为省 TTFB 把它改回流式匹配：那正是 Lighthouse 与不执行 JS 的抓取方丢元数据的原因。
+  改动元数据相关代码后，必须用「首个分片探针 + `npm run lighthouse`」双重验证。
+
 ## 自绘下拉与 e2e 约定（2026-09-12）
 
 - 管理后台表单下拉统一用 `admin-next/src/components/form/SelectField`（触发器按钮 + Portal listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。当前值暴露在触发器的 `data-value`，**不是** `input.value`——e2e 断言用 `toHaveAttribute("data-value", ...)`，不要用 `toHaveValue`。

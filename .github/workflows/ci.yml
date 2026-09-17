@@ -71,8 +71,11 @@ jobs:
             curl --fail --silent http://127.0.0.1:3000/robots.txt > /dev/null && break
             sleep 0.5
           done
-          for page in / /products /news /contact; do
-            echo "===== $page"
+          for page in /products /news; do
+            echo "===== $page : 首屏外壳（首个分片 8KB，反映浏览器/Lighthouse 实际看到的 head）"
+            curl --silent --no-buffer "http://127.0.0.1:3000$page" | head -c 8192 \
+              | grep -oE '<title>[^<]*</title>|<meta name="description"[^>]*>|<link rel="canonical"[^>]*>|<meta name="robots"[^>]*>' || true
+            echo "===== $page : 完整响应（含末尾流式补写的元数据，仅供参考）"
             curl --silent "http://127.0.0.1:3000$page" \
               | grep -oE '<title>[^<]*</title>|<meta name="description"[^>]*>|<link rel="canonical"[^>]*>|<meta name="robots"[^>]*>' || true
           done

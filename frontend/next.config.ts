@@ -30,6 +30,21 @@ if (
 const nextConfig: NextConfig = {
   // 独立输出：适配 Next 16 官方 Docker 运行方式（next start + .next/standalone）
   output: "standalone",
+
+  // 让「完整 metadata 进首屏 HTML」对所有客户端生效（SEO 兜底，2026-09-17 事故修复）。
+  //
+  // 背景：Next 15+ 对动态路由默认**流式下发 metadata**——当页面的 generateMetadata 还在等数据
+  // （冷缓存 / 慢后端）时，Next 先把不含 title / description / canonical 的外壳冲给浏览器，
+  // 元数据在文档末尾（约 65KB 之后）才补上，靠 JS 挂进 <head>。Next 只对匹配 htmlLimitedBots
+  // 的客户端（默认是一串无法执行 JS 的链接预览爬虫，如 facebookexternalhit / Slackbot / Twitterbot）
+  // 走「等元数据就绪再发」的阻塞路径。
+  // 后果：CI 上 Lighthouse 用的普通 Chrome 在慢 runner 上快照早于补写，把 /news 判成
+  // 「没有 meta description」（canonical 也一起丢失），categories.seo 掉到 0.92；本机快、
+  // 缓存热时永远复现不出来。生产环境除浏览器外，各类不执行 JS 的抓取方也拿不到元数据。
+  // 处置：把匹配范围放宽到所有 UA —— 首屏 HTML 永远带完整页面 metadata。代价是动态路由首字节
+  // 要等 metadata 解析（生产后端在同一内网，量级为毫秒），换来的是与客户端能力无关的确定性。
+  htmlLimitedBots: /.*/,
+
   // 本地开发允许经 127.0.0.1 / localhost 访问：Next 15.2+ 会把与 dev server
   // 自身主机名不一致的来源判为跨源并拦掉 HMR WebSocket(/\_next/hmr)，导致页面
   // 无法完成注水（E2E 默认使用 127.0.0.1，会因注水超时而假失败）。

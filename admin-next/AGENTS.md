@@ -159,6 +159,9 @@ P0 级审计修复（相关行为已合入当前代码）：
 
 - 编辑器是 `src/components/form/ProductDetailImageEditor.tsx`，挂载在产品编辑页 `src/app/(admin)/(others-pages)/product-form/page.tsx`。它用 `DOMParser` 把 `content_html` 中的 `img` 摘出为可编辑列表，编辑完成后按同结构序列化回 HTML；**文字内容必须原样保留**，不要因为只处理图片而重建整个 HTML。
 - 上传流程：先用 `createImageBitmap()` 读取原始宽高，再调用现有上传函数，把 src/alt/width/height 一起写回。宽高用于官网预留正确比例，缺失时官网会退化为原生 `<img>`。
+- 交互细节（2026-09-17 补齐，改动后必须同步跑 `frontend/e2e/product-news-upgrade.spec.ts`）：区块带 `role="group" aria-label="商品详情图"`（e2e 定位锚点，不要删）；无图时显示空态引导；支持**拖拽上传**（容器 `onDrop` 复用同一个 `add()` 入口）；**逐张进度**文案是 `正在上传第 x/y 张…`（`apiFetch` 基于 fetch 拿不到上传百分比，这里刻意不做假进度）；**移除需二次确认**（复用 `ConfirmDialog`，`confirmText="移除"`）。
+- **未保存离开提醒**：编辑器通过 `onDirtyChange` 上报「自上次保存后被改动」，产品表单据此（a）注册 `beforeunload`，（b）点「取消」时先弹 `ConfirmDialog`。保存成功后表单必须复位 dirty，否则正常跳转会误弹。
+- **新闻正文插图**：`RichTextEditor` 新增可选 `upload` / `onBusyChange`（目前只有新闻表单接线），工具栏随之出现「插入图片」。实现要点：**先保存 Selection Range 再打开文件选择框**（`input.click()` 会失焦丢选区），上传后 `insertHTML` 插入 `<img src alt width height>`，宽高取自 `createImageBitmap`。未传 `upload` 时不渲染该按钮，避免影响其它调用方（`role="textbox"` + `aria-label` 取自 placeholder，是 e2e 锚点）。
 - 忙碌态：上传期间通过 `onBusyChange(true)` 触发父表单的 `detailUploading`，保存按钮与表单字段必须禁用，避免半成品被保存。
 - 交互：每张图可编辑说明（写入 `alt`）、上移/下移调整顺序（首尾按钮禁用）、逐张移除；封面与图库仍为独立字段，图库/规格的增删仍是立即保存。
 - 详情图保存在产品正文，复用既有上传媒体、版本历史与发布缓存刷新链路；产品私密预览使用同一渲染规则。e2e 回归见 `frontend/e2e/product-news-upgrade.spec.ts`。

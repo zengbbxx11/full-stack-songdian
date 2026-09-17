@@ -47,6 +47,8 @@ function NewsFormInner() {
   // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
   const [coverUploading, setCoverUploading] = useState(false);
   const coverUploadSeq = useRef(0);
+  // 正文「插入图片」上传期间禁用保存，避免提交半成品正文。
+  const [contentUploading, setContentUploading] = useState(false);
   const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "", category_id: "" });
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [categoryError, setCategoryError] = useState("");
@@ -149,7 +151,7 @@ function NewsFormInner() {
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">{isEdit ? "编辑新闻" : "新建文章"}</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
-        <fieldset disabled={saving || deleting || coverUploading} className="space-y-6">
+        <fieldset disabled={saving || deleting || coverUploading || contentUploading} className="space-y-6">
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">文章信息</h3>
           {categoryError && <p role="alert" className="text-red-600">{categoryError}</p>}
@@ -169,7 +171,7 @@ function NewsFormInner() {
             <div><Label htmlFor="publication-time">发布时间</Label><DateTimeField id="publication-time" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入文章内容..." /></div>
+          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入文章内容..." upload={file => uploadImage(file, form.slug)} onBusyChange={setContentUploading} /></div>
         </div>
 
         {/* 封面图 */}
@@ -200,7 +202,7 @@ function NewsFormInner() {
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除"}</Button>}</div>
           <div className="flex gap-3">
             <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
-            <Button type="submit" disabled={saving || coverUploading}>{saving ? "保存中..." : coverUploading ? "封面上传中..." : "保存"}</Button>
+            <Button type="submit" disabled={saving || coverUploading || contentUploading}>{saving ? "保存中..." : contentUploading ? "正文图片上传中..." : coverUploading ? "封面上传中..." : "保存"}</Button>
           </div>
         </div>
         </fieldset>

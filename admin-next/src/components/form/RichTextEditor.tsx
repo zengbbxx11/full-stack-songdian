@@ -2,15 +2,19 @@
  * 组件：RichTextEditor — 零依赖所见即所得 HTML 编辑器
  * ------------------------------------------------------------------
  * 基于 contentEditable + document.execCommand，无需任何 npm 包。
- * 生成的 HTML 仅含标准语义标签（h2/h3/p/b/i/a/ul/ol/li/blockquote），
+ * 生成的 HTML 仅含标准语义标签（h2/h3/p/b/i/a/ul/ol/li/blockquote/img），
  * 不含内联 style，确保经 cleanPostContent 清洗后与官网 .article-body 格式一致。
  *
- * 工具栏：H2 | H3 | B | I | Link | UL | OL | Quote | 清除格式
+ * 工具栏：H2 | H3 | B | I | Link | UL | OL | Quote | 插入图片（传入 upload 时才出现）| 清除格式
+ *
+ * 插入图片：点击后先把当前 Selection 的 Range 存下来（打开系统文件选择框会失焦丢选区），
+ * 选图 → 上传拿到 URL → 还原 Range → insertHTML 插入 <img src alt width height>。
+ * 宽高取自 createImageBitmap 的原始尺寸，官网据此预留比例并做响应式/懒加载。
  */
 
 "use client";
 
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 
 type Tool =
   | "h2" | "h3" | "bold" | "italic"
@@ -32,11 +36,20 @@ interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  /** 图片上传函数（返回可访问 URL）；省略时不渲染「插入图片」按钮。 */
+  upload?: (file: File) => Promise<string>;
+  /** 上传期间通知父表单禁用保存，避免提交半成品内容。 */
+  onBusyChange?: (busy: boolean) => void;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, upload, onBusyChange }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalChange = useRef(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  // 打开系统文件选择框会让编辑区失焦、选区丢失，所以先存 Range，插入时再还原。
+  const savedRange = useRef<Range | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   // 外部 value 变化时同步到编辑器（仅在非编辑中时触发，避免光标跳动）
   useEffect(() => {
@@ -59,7 +72,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
   const exec = useCallback((tool: Tool) => {
     const el = editorRef.current;
-    if (!el) return;
+    if (!el || busy) return;
     el.focus();
 
     switch (tool) {
@@ -94,7 +107,56 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         break;
     }
     emitChange();
-  }, [emitChange]);
+  }, [emitChange, busy]);
+
+  // 记录插入位置后再打开文件选择框
+  const pickImage = useCallback(() => {
+    const el = editorRef.current;
+    const selection = window.getSelection();
+    savedRange.current =
+      el && selection && selection.rangeCount > 0 && selection.anchorNode && el.contains(selection.anchorNode)
+        ? selection.getRangeAt(0).cloneRange()
+        : null;
+    fileRef.current?.click();
+  }, []);
+
+  async function insertImages(files: File[]) {
+    if (!upload || busy) return;
+    const images = files.filter(file => file.type.startsWith("image/"));
+    if (!images.length) return;
+    setBusy(true); onBusyChange?.(true); setError("");
+    try {
+      const parts: string[] = [];
+      for (const file of images) {
+        // 先量原始宽高，官网据此预留比例并做响应式/懒加载；量不到就退化为不带宽高。
+        let size = "";
+        try {
+          const bitmap = await createImageBitmap(file);
+          size = ` width="${bitmap.width}" height="${bitmap.height}"`;
+          bitmap.close();
+        } catch { /* 保留无宽高版本 */ }
+        const src = await upload(file);
+        const alt = file.name.replace(/\.[^.]+$/, "").replace(/"/g, "");
+        parts.push(`<img src="${src}" alt="${alt}"${size}>`);
+      }
+      const el = editorRef.current;
+      if (!el) return;
+      el.focus();
+      const selection = window.getSelection();
+      if (selection && savedRange.current) {
+        selection.removeAllRanges();
+        selection.addRange(savedRange.current);
+      }
+      document.execCommand("insertHTML", false, parts.join(""));
+      emitChange();
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "图片上传失败，请重试");
+    } finally {
+      savedRange.current = null;
+      setBusy(false);
+      onBusyChange?.(false);
+    }
+  }
 
   return (
     <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -105,18 +167,49 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             key={t.key}
             type="button"
             title={t.title}
+            disabled={busy}
             onClick={() => exec(t.key)}
-            className="px-2.5 py-1 text-xs font-medium rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+            className="px-2.5 py-1 text-xs font-medium rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-40"
           >
             {t.label}
           </button>
         ))}
+        {upload && (
+          <button
+            type="button"
+            title="插入图片"
+            disabled={busy}
+            onClick={pickImage}
+            className="px-2.5 py-1 text-xs font-medium rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-40"
+          >
+            🖼
+          </button>
+        )}
       </div>
+
+      {/* 隐藏的图片选择框：与工具栏按钮配对，选完立即清空以便连续选择同一文件 */}
+      {upload && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          aria-label="插入图片"
+          className="hidden"
+          onChange={(event) => {
+            const files = [...(event.target.files || [])];
+            event.target.value = "";
+            void insertImages(files);
+          }}
+        />
+      )}
 
       {/* 编辑区 */}
       <div
         ref={editorRef}
         contentEditable
+        role="textbox"
+        aria-label={placeholder ?? "内容"}
         suppressContentEditableWarning
         onInput={emitChange}
         onBlur={emitChange}
@@ -127,6 +220,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           [&[data-placeholder]:empty:before]:pointer-events-none"
         style={{ lineHeight: 1.75 }}
       />
+
+      {busy && <p role="status" className="px-3 py-2 text-xs text-gray-500">图片上传中，请稍候…</p>}
+      {error && <p role="alert" className="px-3 py-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

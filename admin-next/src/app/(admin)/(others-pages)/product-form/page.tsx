@@ -58,9 +58,20 @@ function ProductFormInner() {
   // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
   const [coverUploading, setCoverUploading] = useState(false);
   const [detailUploading, setDetailUploading] = useState(false);
+  // 详情图自上次保存后被改动：用于离开页面前的提醒（保存成功后复位）。
+  const [detailDirty, setDetailDirty] = useState(false);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
   const coverUploadSeq = useRef(0);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
   const { error: showError } = useToast();
+
+  // 详情图有未保存改动时，刷新/关闭页面前由浏览器给出原生确认（SPA 内部的“取消”另走下面的对话框）。
+  useEffect(() => {
+    if (!detailDirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [detailDirty]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
@@ -209,6 +220,7 @@ function ProductFormInner() {
       if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
       else await apiFetch("/admin/products", { method: "POST", body: payload });
       await mutate(key => typeof key === "string" && (key.startsWith("/admin/products?") || key === "/admin/products" || key === "/admin/stats"), undefined, { revalidate: true });
+      setDetailDirty(false);
       router.push("/products");
     } catch (err) { showError(err instanceof Error ? err.message : "保存失败"); }
     finally { setSaving(false); }
@@ -286,7 +298,7 @@ function ProductFormInner() {
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>商品详情图</Label><ProductDetailImageEditor value={form.content_html} name={form.title} onChange={value => setForm(prev => ({ ...prev, content_html: value }))} onBusyChange={setDetailUploading} upload={file => uploadImage(file, form.slug)} /></div>
+          <div><Label>商品详情图</Label><ProductDetailImageEditor value={form.content_html} name={form.title} onChange={value => setForm(prev => ({ ...prev, content_html: value }))} onBusyChange={setDetailUploading} onDirtyChange={setDetailDirty} upload={file => uploadImage(file, form.slug)} /></div>
         </div>
 
         {/* SEO 元数据 */}
@@ -426,7 +438,7 @@ function ProductFormInner() {
         <div className="flex justify-between">
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除产品"}</Button>}</div>
           <div className="flex gap-3">
-            <Button variant="outline" type="button" onClick={() => router.back()}>取消</Button>
+            <Button variant="outline" type="button" onClick={() => { if (detailDirty) setLeaveConfirm(true); else router.back(); }}>取消</Button>
             <Button type="submit" disabled={saving || detailUploading || coverUploading}>{saving ? "保存中..." : detailUploading ? "详情图上传中..." : coverUploading ? "封面上传中..." : "保存产品"}</Button>
           </div>
         </div>
@@ -439,6 +451,16 @@ function ProductFormInner() {
         message={confirmMessage}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      {/* 详情图改动未保存时离开，先确认 */}
+      <ConfirmDialog
+        open={leaveConfirm}
+        title="放弃未保存的详情图改动？"
+        message="详情图改动还没保存，离开后会丢失。"
+        confirmText="离开"
+        onConfirm={() => { setLeaveConfirm(false); setDetailDirty(false); router.back(); }}
+        onCancel={() => setLeaveConfirm(false)}
       />
     </div>
   );

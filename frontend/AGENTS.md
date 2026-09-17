@@ -270,7 +270,7 @@ npm run dev → http://localhost:3000
 
 | spec | 覆盖内容 |
 |------|---------|
-| `product-news-upgrade` | 商品详情图在后台上传/排序/移除并在官网按序展示；News 分类翻页与分页 SEO |
+| `product-news-upgrade` | 商品详情图在后台上传/排序/移除并在官网按序展示；News 分页 SEO（分类筛选按钮已按业务要求移除，只保留 URL 参数与 canonical 行为） |
 | `news-product-links` | 新闻正文型号匹配与相关产品内链、无命中时的主推回退 |
 | `news-media-performance` | 新闻正文图片/视频的安全属性、无封面时首图优先加载 |
 | `responsive-images` | 390/768/900/1440/1920 px 屏宽下图库与新闻卡片的选图宽度 |
@@ -506,6 +506,7 @@ CI 报 `categories.seo 0.92`，诊断步骤显示唯一失败项是 `meta-descri
 - **列表参数统一走 `lib/list-query.ts`**：Products 与 News 的 `category` / `page` 由 `readListQuery()` 统一解析（重复参数取第一个值、非安全整数或小于 1 回退第 1 页），列表 URL 由 `listUrl()` 生成（`page=1` 不写 `page` 参数）。新增列表页**不要**各自解析 `searchParams`，否则 metadata 与正文会出现两种口径。
 - **列表数据统一走 `lib/api/list-pages.ts`**：`getProductsPage()` / `getNewsPage()` 用 React `cache()` 在单次渲染内共享分类与列表结果，并返回 `failed` 与 `retryCategory`。分类或列表失败时必须渲染英文故障页并输出 `noindex`，**不得**回退成「无筛选的全部内容」，也不得把不可读的数量显示为 0。
 - **产品详情图**：`components/ProductDetailImages.tsx` 只从 `content_html` 抽取 `img` 的 src/alt/width/height。本地 `/uploads/` 且带有效宽高的图片走 `next/image` 与响应式 `sizes`；旧图与外链图降级为原生 `<img>`。**不要**为了显示历史图片放宽 `next.config.ts` 的 `remotePatterns`。
+- **新闻列表不渲染分类筛选按钮**（2026-09-17 按业务要求移除，恢复原版外观）：`app/news/page.tsx` 只保留标题、文章网格与分页；但 `?category=` 的解析、标题/描述/canonical 与分页 SEO 行为**保留**（已被收录的分类 URL 与 `list-query-seo.spec.ts` 依赖它）。要恢复筛选 UI 时再按 `listUrl()` + `aria-current="page"` 的写法加回，不要另起一套参数解析。
 - **新闻相关产品内链**：`lib/news-product-links.ts` 只按正文可见文本匹配型号 token（slug / SKU / 名称首型号），无命中时按 `lib/priority-products.ts` 的主推顺序回退，最多 3 条；无分类产品不得生成非规范链接。产品目录读取失败时仍要保留 OEM/ODM、工厂与询盘入口。
 - **结构化数据**：组织与制造商统一 `Organization`；产品页不输出未经确认的 Offer。修改 schema 后必须运行 `npm run verify:seo`。
 - **sitemap**：使用 `unstable_cache`（60 秒，tags 为 products / news / product-categories）缓存完整结果，分页不完整直接失败；不要改回 `force-dynamic`，也不要缓存残缺 URL 集。

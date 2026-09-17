@@ -43,7 +43,7 @@ interface NewsPageProps {
 
 export default async function NewsPage({ searchParams }: NewsPageProps) {
   const { category: categorySlug, page: currentPage } = readListQuery(await searchParams);
-  const { categories, category, items: posts, pagination, failed: loadError, retryCategory } = await getNewsPage(currentPage, categorySlug);
+  const { category, items: posts, pagination, failed: loadError, retryCategory } = await getNewsPage(currentPage, categorySlug);
 
   const breadcrumbs = generateBreadcrumbs([{ label: "News" }]);
 
@@ -63,9 +63,6 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="mb-8 text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-4xl">{category?.name || "Camera Manufacturing News & Insights"}</h1>
-          <nav aria-label="News categories" className="mb-8 flex flex-wrap gap-2">
-            {[{ id: 0, name: "All News", slug: "" }, ...categories].map(item => <Link key={item.id} prefetch={false} href={listUrl("/news", 1, item.slug)} aria-current={!loadError && (category?.slug || "") === item.slug ? "page" : undefined} className="rounded-full border px-4 py-3 text-sm aria-[current=page]:bg-[var(--accent)] aria-[current=page]:text-white">{item.name}</Link>)}
-          </nav>
           {loadError ? (
             <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">News Unavailable</h3>

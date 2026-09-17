@@ -35,7 +35,7 @@ test("mobile product shows model, key facts and inquiry before the gallery", asy
   }
 });
 
-test("News categories persist in pagination canonical and invalid pages are noindex", async ({ page }) => {
+test("News pagination canonical persists and invalid pages are noindex", async ({ page }) => {
   // 新闻每页 9 条，需要 ≥10 条同分类已发布文章才出现第 2 页。
   const admin = await adminRequest();
   const category = await createNewsCategory(admin, "News pagination fixture");
@@ -44,7 +44,7 @@ test("News categories persist in pagination canonical and invalid pages are noin
     await gotoHydrated(page, `/news?category=${category.slug}&page=2`);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/news\\?category=${category.slug}&page=2$`));
     await expect(page).toHaveTitle(/Page 2/);
-    await expect(page.getByRole("navigation", { name: "News categories" }).getByRole("link", { name: category.name, exact: true })).toHaveAttribute("aria-current", "page");
+    // 列表已按业务要求不再渲染分类筛选按钮（2026-09-17），这里只断言分页与规范链接仍按分类生效
     await expect(page.getByRole("link", { name: "Previous", exact: true })).toHaveAttribute("href", `/news?category=${category.slug}`);
     await gotoHydrated(page, `/news?category=${category.slug}&page=99999`);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);

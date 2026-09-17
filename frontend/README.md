@@ -127,7 +127,7 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 | `/` | 首页，Streaming SSR，多组 Suspense 边界 |
 | `/products` | 产品列表、分类筛选和分页，ISR；分页标题带页码，canonical 按有效 `page` 生成，超范围页回落首页并 `noindex` |
 | `/products/[category]/[slug]` | 产品规范详情页，ISR；正文含详情图区块，旧扁平 URL 由 `proxy.ts` 308 重定向 |
-| `/news`、`/news/[slug]` | 新闻列表与详情，ISR；新闻详情底部含相关产品内链 |
+| `/news`、`/news/[slug]` | 新闻列表与详情，ISR；列表不提供分类筛选按钮（`?category=` 参数、标题/canonical 与分页 SEO 仍保留），新闻详情底部含相关产品内链 |
 | `/solutions`、`/solutions/faq` | OEM/ODM 方案与 FAQ |
 | `/about` | 公司、工厂视频、认证、时间线与研发能力 |
 | `/contact` | 询盘表单和地图 |

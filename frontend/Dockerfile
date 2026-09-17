@@ -34,6 +34,11 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 
+# 运行期同样需要站点 URL：next-super-meta 在**运行期**读取（见 lib/site-meta.ts 顶部说明），
+# 只在 builder 阶段 ENV 不足以覆盖运行期读取，缺了会让页面级 description / canonical 消失。
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 # 复制 standalone 最小服务器（含 .next/standalone/server.js）
 COPY --from=builder /app/.next/standalone ./
 # 静态资源由 Next 运行时从 .next/static 读取

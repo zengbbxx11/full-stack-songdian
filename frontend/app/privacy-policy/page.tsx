@@ -8,7 +8,7 @@
  *          Pewter 正文、电光蓝 CTA，全站视觉一致。
  */
 
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import { generateBreadcrumbs } from "@/lib/seo";

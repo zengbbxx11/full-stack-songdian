@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { readListQuery, listUrl, type ListSearchParams } from "@/lib/list-query";
 import type { Metadata } from "next";
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import { getProductsPage } from "@/lib/api/list-pages";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";

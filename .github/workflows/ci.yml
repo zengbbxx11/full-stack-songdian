@@ -60,6 +60,22 @@ jobs:
       - name: Report failing Lighthouse audits
         if: always()
         run: node scripts/report-lighthouse-failures.mjs
+      # Lighthouse 报告里看不到 <head>，失败时无法区分「metadata 没生成」与「生成了但没落进 HTML」。
+      # 这里按 CI 同样的构建+运行条件重新起一次服务，把关键 head 标签打进日志。
+      - name: Capture public page head tags
+        if: always()
+        run: |
+          node scripts/mock-api.mjs > /tmp/songdian-mock-capture.log 2>&1 &
+          (npm run start -- --hostname 127.0.0.1 > /tmp/songdian-next-capture.log 2>&1 &)
+          for i in {1..40}; do
+            curl --fail --silent http://127.0.0.1:3000/robots.txt > /dev/null && break
+            sleep 0.5
+          done
+          for page in / /products /news /contact; do
+            echo "===== $page"
+            curl --silent "http://127.0.0.1:3000$page" \
+              | grep -oE '<title>[^<]*</title>|<meta name="description"[^>]*>|<link rel="canonical"[^>]*>|<meta name="robots"[^>]*>' || true
+          done
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v6

@@ -7,7 +7,7 @@
  * 是否含 client 组件：是 —— InquiryForm、ContactMap 为客户端组件。
  */
 
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ContactMap from "@/components/ContactMapLoader";
 import InquiryForm from "@/components/form/InquiryForm";

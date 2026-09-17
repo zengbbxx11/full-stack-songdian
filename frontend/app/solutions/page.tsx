@@ -7,7 +7,7 @@
  */
 
 import Link from "next/link";
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import { Factory, PencilRuler, Store, Check } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";

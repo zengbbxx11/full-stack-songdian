@@ -463,6 +463,23 @@ npm run build; npm run lighthouse; node scripts/report-lighthouse-failures.mjs
 > 顺带记住这个真实缺口：`decodeHtmlEntities` / `normalizePublicText` 假定入参一定是字符串，后端字段缺失会让
 > 预渲染或 SSR 抛错（页面 500 → `http-status-code` 掉分）；补兜底时要同时覆盖列表与详情两条映射路径。
 
+### 首个真实案例：`/news` 丢掉页面级 metadata（2026-09-17）
+
+CI 报 `categories.seo 0.92`，诊断步骤显示唯一失败项是 `meta-description=0`，并且 **`canonical=n/a`**（按
+`canonical.js:134-139`，n/a 表示 DOM 里连 canonical 都没有）——即**整段页面级 metadata 都没落进 head**，
+标题只是 layout 模板兜底。根因与修法：
+
+- `next-super-meta` 的站点 URL 是**模块级状态**：由 `initSuperMeta()` 写入，或调用时从
+  `process.env.NEXT_PUBLIC_SITE_URL` 兜底；两者都拿不到时 `superMeta()` **抛错** → Next 退回上层 metadata。
+- 该读取发生在**运行期**（本机实测：构建期缺变量、运行期有值，canonical 照样正常输出），所以构建期内联的
+  `NEXT_PUBLIC_*` 覆盖不到它。若只在 `app/layout.tsx` 里 init、而页面各自直接导入 `superMeta`，只要
+  页面模块先于 layout 模块被求值（冷渲染 worker）且运行期缺变量，页面级 description / canonical 就静默消失。
+- **硬性约定**：页面一律 `import { superMeta } from "@/lib/site-meta"`。该模块内先 `initSuperMeta({ siteUrl: SITE_URL })`
+  再导出 `superMeta`，保证「初始化与调用点处于同一模块图」，与 worker 顺序、外部变量都无关。
+  `npm run verify:seo` 会扫描 `app/`、`lib/`、`components/`，发现直接 `from "next-super-meta"` 即判失败。
+- 运行期变量也要到位：`frontend/Dockerfile` runner 阶段 `ENV NEXT_PUBLIC_SITE_URL` + Compose frontend
+  `environment` 注入同名变量；只配构建期 build arg 不够。
+
 ## 自绘下拉与 e2e 约定（2026-09-12）
 
 - 管理后台表单下拉统一用 `admin-next/src/components/form/SelectField`（触发器按钮 + Portal listbox，对外 props 兼容原生 select：`value` / `onChange` / `<option>` 子节点）。当前值暴露在触发器的 `data-value`，**不是** `input.value`——e2e 断言用 `toHaveAttribute("data-value", ...)`，不要用 `toHaveValue`。

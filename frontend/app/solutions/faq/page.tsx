@@ -8,7 +8,7 @@
  */
 
 import { ChevronDown } from "lucide-react";
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { CtaButton } from "@/components/CtaButton";
 import FaqToc, { CATEGORY_ICONS } from "@/components/FaqToc";

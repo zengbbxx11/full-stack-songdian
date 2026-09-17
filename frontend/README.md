@@ -90,7 +90,7 @@ NODE_OPTIONS= \
 | `INTERNAL_API_URL` | Server Components/构建阶段访问后端 | Compose 中通常为 `http://backend:8000` |
 | `NEXT_PUBLIC_IMAGE_HOST` | `next/image` 允许的远程图片主机 | 只填主机名，不带协议和路径 |
 | `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 允许图片优化器访问本地/局域网地址 | 仅本地开发可设 `true`；生产必须关闭或不设置。已被 `NODE_ENV !== "production"` 硬门槛包住，生产构建恒为 `false` |
-| `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名 |
+| `NEXT_PUBLIC_SITE_URL` | canonical、sitemap、OG 和 `/llms.txt` 基础 URL | 生产必须为官网 HTTPS 主域名。**Server 端页面 metadata 会在运行期读取它**（见 `lib/site-meta.ts`），所以除构建期 build arg 外，运行容器也必须带该变量（Compose `environment` 与 Dockerfile runner 阶段均已注入）；缺失时页面级 description / canonical 会静默消失 |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | 默认描述 | 避免与公开公司事实漂移 |
 | `NEXT_PUBLIC_GA_ID` | GA4 Measurement ID 兜底 | 后台缺少 ga_id 或接口失败时使用；后台明确留空时关闭 GA |
 | `NEXT_PUBLIC_GOOGLE_VERIFICATION` | Search Console 验证码 | 可选 |
@@ -271,6 +271,7 @@ lib/news-product-links.ts      新闻正文产品型号匹配与内链选品
 lib/content-data.ts            共享公司事实与静态内容
 lib/media.ts                   静态媒体路径
 lib/seo.ts                     JSON-LD 与 SEO 工具
+lib/site-meta.ts               superMeta 入口（站点 URL 与 next-super-meta 初始化，页面必须从这里导入）
 lib/generated/                 canonical 路径映射（后端不可达时的兜底）
 components/ProductDetailImages.tsx  产品详情图区块（按 content_html 顺序纵向展示）
 components/NewsProductLinks.tsx     新闻详情底部相关产品内链

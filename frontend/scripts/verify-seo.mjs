@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import sharp from "sharp";
 
 const sourceChecks = [
@@ -52,6 +52,39 @@ for (const asset of assets) {
   const bytes = statSync(path).size;
   if (bytes > asset.maxBytes) {
     missing.push(`${asset.file}: expected <= ${asset.maxBytes} bytes, got ${bytes}`);
+  }
+}
+
+// ── next-super-meta 入口契约 ────────────────────────────────────────────────
+// 站点 URL 是 next-super-meta 的模块级状态：初始化必须与 superMeta 调用点处于同一模块图，
+// 否则缺 NEXT_PUBLIC_SITE_URL 时页面级 description / canonical 会静默消失（2026-09-17 CI 事故）。
+// 因此入口统一为 lib/site-meta.ts，其它位置不得直接从 "next-super-meta" 导入。
+const superMetaEntry = "lib/site-meta.ts";
+const superMetaEntryPath = resolve(superMetaEntry);
+if (!existsSync(superMetaEntryPath)) {
+  missing.push(`${superMetaEntry}: file missing`);
+} else {
+  const entry = readFileSync(superMetaEntryPath, "utf8");
+  for (const fragment of ["initSuperMeta({", "siteUrl: SITE_URL", "export { superMeta }"]) {
+    if (!entry.includes(fragment)) missing.push(`${superMetaEntry}: ${fragment}`);
+  }
+}
+
+const walkSources = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+  const full = join(dir, entry.name);
+  if (entry.isDirectory()) return walkSources(full);
+  return entry.isFile() && /\.(ts|tsx)$/.test(entry.name) ? [full] : [];
+});
+
+for (const dir of ["app", "lib", "components"]) {
+  const root = resolve(dir);
+  if (!existsSync(root)) continue;
+  for (const file of walkSources(root)) {
+    const rel = relative(resolve("."), file).split("\\").join("/");
+    if (rel === superMetaEntry) continue;
+    if (readFileSync(file, "utf8").includes('from "next-super-meta"')) {
+      missing.push(`${rel}: import superMeta from "@/lib/site-meta" instead of "next-super-meta"`);
+    }
   }
 }
 

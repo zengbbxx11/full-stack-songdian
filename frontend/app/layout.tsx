@@ -34,7 +34,6 @@
  */
 
 import type { Metadata, Viewport } from "next";
-import { initSuperMeta } from "next-super-meta";
 import { GeistSans } from "geist/font/sans";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -47,13 +46,12 @@ import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import { getPublicSettings } from "@/lib/api/settings";
 import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site-meta";
 import "./globals.css";
 
-// 初始化 next-super-meta 全局配置
-initSuperMeta({
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  defaultImage: MEDIA.ogImage,
-});
+// next-super-meta 的初始化已统一收敛到 @/lib/site-meta（导入该模块即生效）。
+// 页面必须从 @/lib/site-meta 取 superMeta，保证「初始化与调用点在同一模块图」，
+// 否则缺 NEXT_PUBLIC_SITE_URL 时页面级 description / canonical 会静默丢失。
 
 // ------------------------------------------------------------------
 // Font configuration — self-hosted via next/font (no external requests)
@@ -65,8 +63,7 @@ initSuperMeta({
 // Site URL — used for canonical links, OG images, and JSON-LD @id
 // ------------------------------------------------------------------
 
-/** Canonical base URL of the site; override via NEXT_PUBLIC_SITE_URL env var */
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+// Canonical base URL 由 @/lib/site-meta 统一解析（与页面 metadata 使用同一个值）。
 
 /**
  * Global Metadata object exported for every page.

@@ -31,6 +31,10 @@
 | `NEXT_PUBLIC_IMAGE_HOST` | `api.zsaki.icu` |
 
 > 这些 `NEXT_PUBLIC_*` 值在 CI 构建镜像时写入客户端产物。只修改服务器根目录 `.env` 不会改变已发布的 GHCR 前端镜像；域名或 API 地址变化后必须重新运行 CI 并部署新镜像。
+>
+> 例外：`NEXT_PUBLIC_SITE_URL` 还会被 **Server 端页面 metadata 在运行期读取**（`frontend/lib/site-meta.ts`）。
+> Compose frontend 服务与镜像 runner 阶段都注入同名变量，所以改域名时**除重建镜像外**，也要同步更新服务器
+> `.env` 的 `NEXT_PUBLIC_SITE_URL`；缺失时页面级 description / canonical 会静默消失（CI 的 Lighthouse 断言会失败）。
 
 服务器的 `.env` 继续只保存在生产机，不上传 GitHub。首次自动发布前应先运行一次 `scripts/backup.sh` 并做恢复演练。
 
@@ -777,7 +781,7 @@ curl -I https://admin.zsaki.icu/signin
 | ⚠️ **uploads 代码/数据分离** | `uploads/` 是**代码模块**（Album/UploadRecord 模型，须进镜像）；上传文件数据在 **`uploads_data/`**（`MEDIA_ROOT=uploads_data`，卷 `uploads_data` 挂 `/app/backend/uploads_data`）。**不要**把卷挂到 `uploads/`——Docker 卷会遮住镜像里的 `uploads/models.py` 导致 `Module not found` |
 | 图片自动同步 | backend 启动脚本 `scripts/start.sh` **只**把 `uploads/products`、`uploads/news`、`uploads/2026` 图片目录 `cp -rn` 到 `uploads_data/`（`-n` 不覆盖运营上传文件，幂等），再清理媒体根目录残留的 `.py` / `.env` / `.sh` 等代码与配置文件；git 里的种子图片随镜像进，启动自动同步到卷；运营新上传直接写卷。⚠️ 同步逻辑必须放在脚本文件内，**不要写进 compose 的字符串 command**——compose 对 `$` 与括号做插值/shlex 处理，转义在多层 shell 传递中会被吞掉（曾导致容器 `sh: 1: Syntax error: "(" unexpected`）；也**不得改回整体复制 `uploads/.`**——`uploads/` 同时是代码模块目录，整体复制会把 `models.py` 等源码暴露到公开的 `/uploads/` 路径 |
 | 媒体目录后缀防线 | 即使媒体卷中残留在代码文件，`backend/main.py` 的 `_MediaStaticFiles` 也会对 `.py` / `.pyc` / `.env` / `.sh` / `.toml` / `.sql` / `.log` / `.md` 等后缀统一返回 404，避免源码经 `/uploads/` 被下载 |
-| 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env） |
+| 域名变更 | `NEXT_PUBLIC_API_URL`、`NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_IMAGE_HOST` 是**构建期内联**变量，改域名需重建 frontend/admin-next 镜像（非仅改 env）。其中 `NEXT_PUBLIC_SITE_URL` 另需运行期可见（Compose frontend `environment` 与镜像 runner 阶段已注入），服务器 `.env` 的值要与镜像一致 |
 | 图片域名 | `frontend/next.config.ts` 生产环境默认仅允许 `api.zsaki.icu` 的 HTTPS 上传资源；API 域名变更时需同步修改并重建 |
 | admin 校验 | `admin-next` 与 `backend` 的 `JWT_SECRET` 必须一致，否则后台登录失败 |
 | HTTPS | 管理后台必须配置域名和 Let’s Encrypt 证书；生产 Secure Cookie 不支持 IP/HTTP 登录 |

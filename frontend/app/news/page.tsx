@@ -10,7 +10,7 @@ import Link from "next/link";
 import { readListQuery, listUrl, type ListSearchParams } from "@/lib/list-query";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import { getNewsPage } from "@/lib/api/list-pages";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SpotlightCard from "@/components/SpotlightCard";

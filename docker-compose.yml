@@ -168,6 +168,9 @@ services:
       PORT: "3000"
       INTERNAL_API_URL: http://backend:8000
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # 运行期也要有站点 URL（frontend/lib/site-meta.ts 在运行期读取它做页面 canonical / description）。
+      # 与上面的 build args 同源，改域名时只改 .env 即可，无需重新构建镜像。
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://www.zsaki.icu}
     volumes:
       # Persist only image derivatives; keep HTML/ISR cache tied to the release.
       - frontend_image_cache:/app/.next/cache/images

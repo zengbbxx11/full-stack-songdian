@@ -30,7 +30,7 @@ import ExhibitionMarquee from "@/components/ExhibitionMarquee";
 import StatsBand from "@/components/StatsBand";
 import { getExhibitions } from "@/lib/exhibitions";
 import { ShieldCheck, ArrowRight, Camera, Award, Zap, Factory, Lightbulb, Globe, Package, Play, type LucideIcon } from "lucide-react";
-import { superMeta } from "next-super-meta";
+import { superMeta } from "@/lib/site-meta";
 import { STRENGTHS, COMPANY, GLOBAL_ODM, TRUST_CERTS, CATEGORY_SHOWCASE } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import type { WCProductCategory } from "@/lib/types";

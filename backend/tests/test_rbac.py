@@ -18,6 +18,8 @@ from httpx import ASGITransport
 
 from common.config import close_db, init_db
 from common.password import hash_password
+from common.settings_model import Setting
+from common.settings_router import PUBLIC_SETTING_KEYS, SMTP_PASSWORD_MASK, ensure_admin_settings
 from content.models import AdminUser, Role
 from news.models import NewsCategory
 from product.models import ProductCategory
@@ -113,3 +115,60 @@ def test_low_permission_role_forbidden_but_allowed():
         await close_db()
 
     asyncio.run(_run())
+
+
+def test_settings_read_is_scoped_for_low_permission_role():
+    """方案 C：无 settings:update 的账号只能读到公开白名单项。
+
+    真实缺口：`GET /admin/settings` 过去只校验登录，任何账号都能拿到
+    `smtp_host` / `smtp_user` / `inquiry_email_from` / `inquiry_email_to`
+    （内部 SMTP 主机与业务收发件箱）。现在读范围随权限收缩。
+    """
+
+    async def _run():
+        await init_db()
+        await run_seed()
+        op = await Role.get_or_none(code="operator")
+        assert op is not None, "种子应含 operator 角色"
+        uname = "qa_settings_op_" + uuid.uuid4().hex[:8]
+        await AdminUser.create(
+            username=uname,
+            password_hash=hash_password("Qa@pass123"),
+            role_id=op.id,
+            status="ENABLED",
+        )
+        # 先让设置行惰性创建并写入敏感值，确保"读不到"不是因为行不存在
+        await ensure_admin_settings()
+        smtp_host = await Setting.get(key="smtp_host")
+        smtp_host.value = "smtp.internal.example.com"
+        await smtp_host.save()
+
+        transport = ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
+            login = await ac.post("/api/v1/admin/login", json={"username": uname, "password": "Qa@pass123"})
+            assert login.json()["code"] in (0, "0"), login.json()
+            scoped = (await ac.get("/api/v1/admin/settings")).json()
+            assert scoped["code"] in (0, "0"), scoped
+            keys = set(scoped["data"].keys())
+            for sensitive in ("smtp_host", "smtp_user", "inquiry_email_from", "inquiry_email_to", "smtp_password"):
+                assert sensitive not in keys, f"{sensitive} 不应出现在低权账号的响应里：{sorted(keys)}"
+            # 公开项仍可见，保证设置页能正常渲染
+            assert "ga_id" in keys
+            assert set(keys) <= set(PUBLIC_SETTING_KEYS)
+
+        await close_db()
+
+    asyncio.run(_run())
+
+
+def test_settings_read_includes_sensitive_keys_for_admin(client):
+    """对照组：具备 settings:update 的账号仍能拿到全部设置项（且授权码脱敏）。"""
+    _admin_headers(client)
+    body = client.get("/api/v1/admin/settings").json()
+    assert body["code"] in (0, "0"), body
+    data = body["data"]
+    assert "smtp_host" in data
+    assert "inquiry_email_to" in data
+    assert body["code"] in (0, "0")
+    if data.get("smtp_password", {}).get("value"):
+        assert data["smtp_password"]["value"] == SMTP_PASSWORD_MASK

@@ -16,7 +16,7 @@ const ARTICLE_WHITELIST: sanitizeHtml.IOptions = {
     "h1", "h2", "h3", "h4", "h5", "h6", "p", "a", "ul", "ol", "li", "blockquote",
     "img", "figure", "figcaption",
     "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col",
-    "strong", "b", "em", "i", "u", "s", "mark", "small", "sup", "sub", "code", "pre",
+    "strong", "b", "em", "i", "u", "s", "del", "mark", "small", "sup", "sub", "code", "pre",
     "hr", "br", "div", "span", "section", "video", "source",
   ],
   allowedAttributes: {
@@ -70,9 +70,12 @@ export function cleanPostContent(html: string, { hasLeadImage = false }: { hasLe
   cleaned = cleaned.replace(/\s+style\s*=\s*'[^']*'/gi, "");
 
   // 4. 清除内联 width / max-width 样式（残留的独立 width 声明）
-  cleaned = cleaned.replace(
-    /\s*(?:max-)?width\s*:\s*[^;"]+[;"]?/gi,
-    ""
+  //    只在**标签内部**处理：旧实现对整篇字符串跑正则，`[^;"]+` 没有边界，会从 width: 一路
+  //    吞到下一个引号 —— 正文里出现字面量 width:（例如 "Screen width: 3 inch"）时，
+  //    "width: 3 inch</p><img src=" 会被整体删掉（正文截断 + 图片消失）。
+  //    逐标签改写保证不越出 <...> 边界，也不触碰正文文本。
+  cleaned = cleaned.replace(/<[^>]*>/g, (tag) =>
+    tag.replace(/\s*(?:max-)?width\s*:\s*[^;"'>]+[;"]?/gi, "")
   );
 
   // 4. 移除 alignwide / alignfull 等 Astra 布局类

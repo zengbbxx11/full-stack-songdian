@@ -35,7 +35,7 @@ class TestLocalStorageWhitelist:
 
     @patch("uploads.services.settings")
     async def test_rejects_exe_extension(self, mock_settings):
-        """上传 `.exe` 应被拒绝（不在白名单 {.jpg,.jpeg,.png,.webp,.gif}）。"""
+        """上传 `.exe` 应被拒绝（不在白名单：图片 5 种 + 视频 mp4/webm）。"""
         mock_settings.max_upload_mb = 10
         backend = LocalStorageBackend()
 
@@ -67,12 +67,13 @@ class TestLocalStorageWhitelist:
         assert "不支持的文件类型" in str(exc_info.value)
 
     @patch("uploads.services.settings")
-    async def test_allows_jpg_png_webp_gif(self, mock_settings):
-        """验证白名单内所有扩展名均可通过扩展名与文件头校验。"""
+    async def test_allows_whitelisted_image_and_video_extensions(self, mock_settings):
+        """验证白名单内所有扩展名（图片 + 视频）均可通过扩展名与文件头校验。"""
         import tempfile
         from pathlib import Path
 
         mock_settings.max_upload_mb = 10
+        mock_settings.max_upload_video_mb = 50
         mock_settings.media_url = "/uploads"
         valid_headers = {
             ".jpg": b"\xff\xd8\xff\xe0" + b"0" * 20,
@@ -80,22 +81,27 @@ class TestLocalStorageWhitelist:
             ".png": b"\x89PNG\r\n\x1a\n" + b"0" * 20,
             ".webp": b"RIFF" + b"0" * 4 + b"WEBP" + b"0" * 20,
             ".gif": b"GIF89a" + b"0" * 20,
+            # 视频容器特征：mp4 的 'ftyp' box 在偏移 4；webm 是 EBML 容器
+            ".mp4": b"\x00\x00\x00\x18ftypisom" + b"0" * 20,
+            ".webm": b"\x1a\x45\xdf\xa3" + b"0" * 20,
         }
 
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             backend = LocalStorageBackend(root=root)
 
-            for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
-                filename = f"photo{ext}"
+            for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm"]:
+                filename = f"asset{ext}"
                 file = UploadFile(filename=filename, file=io.BytesIO(valid_headers[ext]))
                 url = await backend.save(file, filename)
                 assert url.startswith("/uploads/")
                 assert url.endswith(ext)
 
     def test_whitelist_contains_expected_extensions(self):
-        """白名单包含设计文档要求的 5 种扩展名。"""
-        assert ALLOWED_EXT == frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
+        """白名单 = 图片 5 种 + 视频 2 种（媒体库支持 mp4/webm）。"""
+        assert ALLOWED_EXT == frozenset({
+            ".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm",
+        })
 
 
 # ───────────────── 2. ProductCreateRequest.tags 默认空数组 ─────────────────
@@ -226,7 +232,15 @@ class TestUploadVO:
         assert vo.url == "/uploads/x.png"
 
     def test_model_dump_json_serializable(self):
-        """model_dump 可正常序列化。"""
+        """model_dump 可正常序列化；build 出厂的对象不带 id/album_id（接口层用 from_record 补齐）。"""
         vo = UploadVO.build(url="/u/a.jpg", file_name="a.jpg", size=512)
         d = vo.model_dump(mode="json")
-        assert d == {"url": "/u/a.jpg", "file_name": "a.jpg", "size": 512}
+        assert d == {"url": "/u/a.jpg", "file_name": "a.jpg", "size": 512, "id": None, "album_id": None}
+
+    def test_from_record_carries_id_and_album(self):
+        """from_record 返回 id / album_id（媒体选择器上传后需要据此自动选中并切换相册）。"""
+        from types import SimpleNamespace
+
+        record = SimpleNamespace(id=7, url="/uploads/2026/a.jpg", file_name="a.jpg", size=512, album_id=3)
+        vo = UploadVO.from_record(record)
+        assert vo.id == 7 and vo.album_id == 3 and vo.url == "/uploads/2026/a.jpg"

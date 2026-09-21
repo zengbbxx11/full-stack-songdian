@@ -16,10 +16,14 @@ _TEXT_TAG_RE = re.compile(r"<[^>]*>")
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 # 允许的标签（常见富文本排版标签）
+# 2026-09-18：补充 del / figure / figcaption / mark / s / small —— 后台新闻正文新增「HTML 源码」模式，
+# 运营可直接粘贴带图注、删除线、强调语义的 HTML；这几类标签在前台渲染白名单
+# （frontend/lib/html-cleaner.ts 的 ARTICLE_WHITELIST）里本就允许，此前只在入库时被剥掉。
 ALLOWED_TAGS = [
-    "a", "abbr", "b", "blockquote", "br", "code", "div", "em", "h1", "h2", "h3",
-    "h4", "h5", "h6", "hr", "i", "img", "li", "ol", "p", "pre", "span", "strong",
-    "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul",
+    "a", "abbr", "b", "blockquote", "br", "code", "del", "div", "em", "figcaption",
+    "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "li", "mark",
+    "ol", "p", "pre", "s", "small", "span", "strong", "sub", "sup", "table", "tbody",
+    "td", "th", "thead", "tr", "u", "ul",
 ]
 
 # 允许的属性（含图片/链接安全属性）
@@ -32,7 +36,10 @@ ALLOWED_ATTRIBUTES = {
 }
 
 # 允许使用的 URL 协议（防止 javascript: 等）
-ALLOWED_PROTOCOLS = ["http", "https", "mailto"]
+# tel 与前台渲染白名单（frontend/lib/html-cleaner.ts 的 allowedSchemes）对齐：源码模式粘贴
+# 的电话链接此前会被剥掉 href。注意 frontend 白名单里还有 video/source/section 等仅前端
+# 允许的标签（历史 WP 内容直入前台的通道），后端不放开这些，属既有的有意差异。
+ALLOWED_PROTOCOLS = ["http", "https", "mailto", "tel"]
 
 # 强制为链接添加 rel="noopener"（防 tabnabbing）
 ALLOWED_PROTOCOLS_SET = set(ALLOWED_PROTOCOLS)

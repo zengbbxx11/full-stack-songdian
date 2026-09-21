@@ -81,6 +81,8 @@ def _qa_isolate_state(monkeypatch):
     async def idle_jobs(stop):
         await stop.wait()
     monkeypatch.setattr("common.tasks.job_loop", idle_jobs)
+    # Unit tests must not contact the developer's running site or inherit retry jobs.
+    monkeypatch.setattr(_cfg.settings, "next_revalidate_url", "")
     db_name = f"test_{_uuid.uuid4().hex}.db"
     db_path = os.path.join(_PROJECT_ROOT, db_name)
     _cfg.settings.database_url = f"sqlite://{db_path}"

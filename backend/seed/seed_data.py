@@ -85,21 +85,27 @@ async def _seed_admin(role_ids: dict) -> None:
         else:
             logger.info("已创建初始管理员账号：%s", ADMIN_USERNAME)
     else:
-        # 幂等：确保角色与状态正确；并按需修正密码
-        user.role_id = admin_role_id
-        user.status = "ENABLED"
+        # 幂等，但**默认不覆盖运维在后台做的修改**（口令、角色、启用状态）：
+        # 只有显式开启 SEED_ADMIN_PASSWORD_FORCE 时才按环境变量/种子值重置。
+        # 唯一例外是空口令兜底（security-audit F-04），属安全修复，无条件执行。
         if not user.password_hash or verify_password("", user.password_hash):
-            # 历史以空密码（或空哈希）播种：补设为一次性随机密码（security-audit F-04）
+            # 历史以空密码（或空哈希）播种：补设为一次性随机密码
             user.password_hash = hash_password(pw)
             if generated:
                 logger.warning(
                     "管理员账号 %s 密码为空，已重置为自动生成的临时密码（请尽快修改）：%s",
                     ADMIN_USERNAME, pw,
                 )
-        elif settings.admin_password and not verify_password(settings.admin_password, user.password_hash):
-            # 环境变量显式指定了密码且与现有不一致：幂等同步更新
-            user.password_hash = hash_password(settings.admin_password)
-            logger.info("已按 ADMIN_PASSWORD 同步管理员账号 %s 的密码", ADMIN_USERNAME)
+        elif settings.seed_admin_password_force:
+            # 显式开启时才把角色/状态/口令对齐到种子口径。
+            user.role_id = admin_role_id
+            user.status = "ENABLED"
+            if settings.admin_password and not verify_password(settings.admin_password, user.password_hash):
+                user.password_hash = hash_password(settings.admin_password)
+                logger.info(
+                    "已按 ADMIN_PASSWORD 同步管理员账号 %s 的密码（SEED_ADMIN_PASSWORD_FORCE=true）",
+                    ADMIN_USERNAME,
+                )
         await user.save()
 
 

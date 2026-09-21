@@ -71,6 +71,7 @@
 - 公开设置修改与缓存刷新任务同事务提交，提交后清理 Redis 和官网 public-settings 缓存，失败由现有任务机制重试。Google 站点验证码已接入官网服务端 metadata，后台明确留空会移除验证标签。
 - 设置页按真实消费位置说明生效范围；未接入官网的历史站点名称、公司名称、Logo、传真及社交配置保留为只读，避免误以为保存即应用。SMTP 普通字段留空仍回退部署环境配置，不能作为停发开关；测试发送会先保存本页修改，成功响应允许 data 为 null。
 - `smtp_password` 是唯一按敏感值处理的设置：后端返回 `******`，界面使用密码输入框并显示“已配置”；留空或不修改时保留原授权码，新授权码保存后也不会明文回显。
+- `GET /api/v1/admin/settings` 的**读取范围随权限收缩**（2026-09-17）：接口仍只需登录，但无 `settings:update` 的账号只会拿到 `PUBLIC_SETTING_KEYS` 白名单项，`smtp_host`/`smtp_user`/`inquiry_email_from`/`inquiry_email_to` 不再出现在响应里；采「默认拒绝 + 白名单裁剪 key」而非逐字段掩码（设置页只对 `smtp_password` 的 `******` 做“不修改”跳过，抹其它字段会被当真实值回写）。具备权限的账号行为不变，未新增权限码、未改种子与前端。
 - 上述回显、局部提交和错误处理改动只涉及 `admin-next` 设置页，不涉及数据库结构、设置 API 协议或官网统计脚本。
 
 ## 资源、缓存与进程配置（2026-09-15 / 09-16）
@@ -89,6 +90,23 @@
 - 询盘来源产品上下文拆为独立客户端小岛（`components/form/InquiryProductContext.tsx`）：`?category=` 能直接映射兴趣项时不再请求接口，否则调后端 canonical 接口取分类；请求带 5 秒超时，失败时保留产品引用与手动选择，表单本体仍为服务端渲染。
 - 首屏资源减负：新闻卡片关闭链接自动预取（`prefetch={false}`），Header、Footer、首页 CTA 与即时搜索等入口同步关闭预取；移除多余的 Geist Mono 字体；页脚社交图标改为与显示尺寸匹配的 60px WebP；产品图库与新闻卡片的 `sizes` 按实际容器重新校准。以上属本地已完成、待发布，线上资源基线见 [reports/home-resource-audit-2026-09-16.md](./reports/home-resource-audit-2026-09-16.md)。
 
+## 产品详情页改版：移动端主图放大 + 关联产品后台手选（2026-09-18）
+
+- 移动端（<640px）产品主图从 180px 提到 260px：缩略图条改为绝对定位叠加在主图底部（`components/ProductGallery.tsx` 新增可选 prop `thumbsOverlayOnMobile`，`max-sm` 与组件自身 `sm:flex-row` 断点严格互补），省下的 76px 全部让给主图；顺序仍是 型号 → 主图 → 询盘/返回（并排一行）→ 简介要点 → OEM 说明，询盘按钮底部实测 632px，仍满足既有「首屏 650px」约束（`e2e/product-news-upgrade.spec.ts`）。640–1023px 保持 300px，≥1024px 仍是正方形；无主图占位框与 `loading.tsx` 骨架同步。
+- 主图容器由 `aspect-square` + 高度上限推导为**正方形**，因此主图 `sizes` 按图高声明（`min(100vw - 32px, 260px)`）：沿用按容器宽度声明的旧值会选到约 1.8 倍大的候选图（`e2e/responsive-images.spec.ts` 会判为过量下载）。
+- 相关产品（Related Products）由「同分类自动取 4 条」改为**后台手选**：新增 `t_product_related`（`ProductRelated` 模型 + 17 号迁移，含 `UNIQUE(product, related)`、`(product, sort_order)` 与 `(related)` 索引）。写入复用 `POST/PUT /api/v1/admin/products` 的 `related_product_ids`（去重保序、上限 4、不允许自关联、已删除目标静默剔除、完全不存在的 id 报 400），读取走详情 VO 的 `related`：公开详情与预览只含 PUBLISHED 目标，后台详情返回全部已保存目标供选品器回填。关联为**单向**；未配置关联的产品**不渲染**该区块。
+- 关联是反向依赖：目标产品被改标题/封面/slug、上下架、定时上架或删除时，`services._referrer_slugs` 会反查引用方并一并失效其详情缓存，避免前台残留旧卡片或死链（`tests/test_product_related.py::test_related_target_change_invalidates_referrer_cache`）。
+- 后台产品编辑页新增「关联产品（0/4）」区块：关键字搜索（250ms 防抖，`/admin/products?keyword=`）→ 添加；已选项按展示顺序上移/下移/移除，非 PUBLISHED 目标标注「未发布，前台不显示」。关联改动最长 60 秒内在官网生效（后端缓存失效 + 详情页 ISR 60s）。
+- 注意：关联不进入 revision 快照，恢复历史版本不回滚关联（与图库/规格的既有约定一致）；上线后若 Redis 里已有旧版详情缓存，最多 1 小时内该产品可能暂不显示相关产品区块（旧缓存结构缺 `related`，自然过期自愈）。
+
+## 官网移动端图片版式 + 后台两个编辑器优化（2026-09-18）
+
+- 移动端产品图集（`components/ProductGallery.tsx` 新增可选 prop `thumbsSideOnMobile`）：从「缩略图条叠在主图底部」改为「左侧 260×260 主图 + 右侧竖排 56×56 缩略图」（4 张列高 248px ≤ 主图高，图集整体高度仍 260px），询盘按钮底部实测 632px，仍满足 650px 首屏约束；主图、缩略图与加载骨架（`app/products/[...slug]/loading.tsx`）三处版式同步，640px 起维持「左缩略图列 + 右主图」不变。
+- 移动端产品卡片（`components/ProductCard.tsx`）图片容器由手机端 `aspect-[4/3]` 改为 `aspect-square`：真实产品主图全部是 1:1，旧版 4:3 容器 + `object-contain` 必然在左右留出 `#f2f3f4` 灰底；改正方形后既不裁图也无灰边（卡片高度约 +40px）。
+- 后台「商品详情图」编辑器（`admin-next/src/components/form/ProductDetailImageEditor.tsx`）呈现层重做：说明 + 「选择文件」主按钮 + 缩略图网格（序号徽标、原始尺寸、说明输入、图标化上移/下移/移除）+ HTML5 拖拽排序（落点蓝色描边；拖文件仍走整块投放区上传，用 `dataTransfer.files` 区分两类拖拽）+ 上传进度/失败清单/二次确认/空态引导。既有可访问名与文案（商品详情图、上传商品详情图、详情图 N 说明、上移、下移、移除此图、移除、暂无详情图、正在上传第 x/y 张、也可以把图片直接拖进这块区域）逐字保留，作为 e2e 契约。
+- 后台新闻正文编辑器（`admin-next/src/components/form/RichTextEditor.tsx`）新增「可视化 / HTML 源码」双标签（默认可视化，保证既有定位与断言）：源码模式用等宽 textarea 直接编辑同一份 `content_html`，可粘贴完整 HTML 代码来确定内容与格式；工具按钮图标化（lucide 替换 emoji）；编辑器内标注允许的标签与「内联 style 会被清除，版式由站点 CSS 接管」。
+- 后端 `common/html_cleaner.py` 的 `ALLOWED_TAGS` 增加 del/figure/figcaption/mark/s/small（前台渲染白名单本就允许这几类，此前只在入库时被剥掉），`ALLOWED_ATTRIBUTES` 与协议白名单不变；新增 `tests/test_html_cleaner.py` 固定「语义标签保留 + script/style/on*/javascript: 仍被清除」两侧行为；前台 `lib/html-cleaner.ts` 同步补 `del`。
+
 ## 现有业务与官网能力
 
 - 询盘记录国家/地区、来源产品、落地页、来源页和 UTM 归因；产品 CTA 通过 `?product=<slug>` 预填来源产品。
@@ -106,6 +124,7 @@
 - 官网资源加载采用“首屏优先、非关键资源按需”的策略：Hero/Logo 等关键图片使用 `next/image` `preload`，`SafeImage` 默认使用 `loading="lazy"`，About 的时间轴/证书画廊使用 `next/dynamic` 分包，工厂视频使用 `preload="none"`。Contact 地图在距视口 200px 时挂载客户端动态组件，保留手动加载入口和失败重试；可配置地址以文本节点写入地图弹窗。
 - 官网 Header 在 `lg` 断点显示桌面导航、搜索和报价 CTA，较窄视口使用移动菜单，避免平板端搜索框挤压导航；站内导航链接使用 `scroll={false}` 配合显式顶部重置，确保从任意滚动位置跳转到新页面都从首屏开始。About 页首屏顺序为 `Who We Are / Our Story`，`Our Journey` 位于下一段。
 - 首页 Hero 在 `xl`（≥1280px）宽屏使用上左对齐，内容仍沿 `site-container` 左侧基线；标题内容列放宽至 980px，避免 1920px 视口不必要的换行。底部 CTA 与 Scroll 提示避开固定 56px 询盘栏；平板和手机保留自然流式布局，并在 1024px、390px 视口验证无横向溢出。
+- **首页 Hero 轮播（2026-09-21）**：最多 3 张，数据来自后台设置键 `home_banners`（公开设置，随 `GET /public/settings` 下发，写入后清理 Redis + 推送 ISR）。第 1 张是首屏主图（后台留空即回退 `MEDIA.heroBanner`，原有悬浮文字、按钮与 `next/image` `preload` 不变），第 2、3 张为纯图（可选整图链接）且**首次切到才挂载下载**，首屏字节不增加。槽位可选配 `mobileUrl`（art direction）：配了就用 `<picture>` + `<source media="(max-width: 767px)">` 只下载匹配的那一张（不走图片优化器，故产图标准限定体积）。指示点为极简白点（底部居中、位置固定 `bottom-24`、无底衬/描边/白环，仅一层 1px 极轻投影，当前张更大更亮；**纯白底图上仍不可辨，属已知限制**），**cookie 提示条可见时不渲染**；**单张时显示 Scroll 提示、多张时由指示点占用同一位置**；自动轮播 6s 且悬停/`:focus-visible`/移出视口/标签页隐藏时暂停、`prefers-reduced-motion` 与 `saveData`/2G/3G 不自动。手机 Hero 高度 `max(600px,72svh)`（露出下一屏），≥768px 760px，≥1024px「视口 − 顶栏」。后台管理入口：「设置 → 首页轮播」面板（`admin-next/src/components/settings/HomeBannerPanel.tsx`，3 槽位选图/启用/链接，独立保存）。
 - 官网即时搜索聚焦时只显示一层品牌红边框，避免全局焦点环与输入框边框叠加；页脚四个社交图标统一占用 `44×44px` 槽位，链接状态不会改变图标间距。
 - 即时搜索在输入变化时立即使旧响应失效，加载期间不允许选择旧建议；错误保持可重试，Escape 只关闭建议框而不清空关键词，关闭后 Enter 提交当前关键词。列表 ARIA ID 按组件实例唯一生成。
 - 联系页地图、Cookie 横幅和底部询盘栏在移动端协调显示，不产生横向溢出。产品分类与 FAQ 移动目录提供横滑提示、边缘控制和 sticky 定位；首图预加载、结构匹配骨架、触屏反馈和 `prefers-reduced-motion` 已统一。
@@ -114,9 +133,12 @@
 
 - 生产要求真实 Redis（`REDIS_REQUIRED=true`）；`/readyz` 同时探测 PostgreSQL 和 Redis，任一关键依赖不可用即阻止发布。
 - CI 运行后端 Ruff/pytest、前后台 lint/build、SEO 校验、真实 PostgreSQL/Redis 迁移测试、Playwright 关键链路、Lighthouse 阈值与依赖审计。GitHub Actions 已统一使用 node24 运行时的 action 最小必要版本（checkout@v5、setup-node@v5、setup-python@v6、setup-uv@v7、upload-artifact@v6、docker 系列 buildx/login v4 + metadata v6 + build-push v7），仅用于消除 Node 20 弃用告警，job 结构、needs、门禁条件与发布逻辑未变。`frontend` 作业在 Lighthouse 断言之后增加 `Report failing Lighthouse audits` 步骤（`if: always()`，调用 `frontend/scripts/report-lighthouse-failures.mjs`）：`lhci assert` 只报「分类分数不达标」，该步骤把各页 SEO 未通过项及其 `details` 打进日志，用于定位具体失败审计（阈值与预算未调整）。
-- 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（20 个 spec，约 75 个用例），管理后台用例也在同一套件内。2026-09-15/16 批次新增带宽转化、列表分页 SEO、新闻媒体性能、新闻预取、新闻产品内链、产品与新闻升级、响应式图片和服务端资源等用例；列表故障与 sitemap 缓存的专项校验由 `frontend/scripts/verify-listing-failures.mjs`、`frontend/scripts/verify-sitemap-cache.mjs` 以独立模拟 API 脚本覆盖，不计入 Playwright 用例、不写入业务库。
+- 官网与管理后台均为 Next.js **16.3.4**；Playwright 套件在 `frontend/e2e/`（**24 个 spec、107 个用例**，`npx playwright test --list` 口径），管理后台用例也在同一套件内。2026-09-15/16 批次新增带宽转化、列表分页 SEO、新闻媒体性能、新闻预取、新闻产品内链、产品与新闻升级、响应式图片和服务端资源等用例；2026-09-18/21 批次新增 `admin-mobile.spec.ts`（后台移动端：卡片列表、媒体库折叠、表单吸底、矮屏弹窗）与 `home-banner.spec.ts`（首页轮播：轮播切换、首张回退、art direction 换源、后台面板保存），并回归 `admin-reliability` / `admin-settings` / `admin-data` / `inquiry-editor` / `content-lifecycle` / `product-news-upgrade` / `public-quality` / `bandwidth-conversion` / `responsive-images` / `list-query-seo`。列表故障与 sitemap 缓存的专项校验由 `frontend/scripts/verify-listing-failures.mjs`、`frontend/scripts/verify-sitemap-cache.mjs` 以独立模拟 API 脚本覆盖，不计入 Playwright 用例、不写入业务库。
 - **E2E 交互用例统一等待 React 注水**：`page.goto()` / `page.reload()` 在 window load 就返回，此时 DOM 可读写但事件处理器尚未挂载，直接交互会产生「操作无效、无请求、无报错」的假失败。用例通过 `frontend/e2e/hydration.ts` 的 `gotoHydrated()` 打开页面、`waitForHydration()` 在 `reload()` 后补等待；不使用 `waitUntil: "networkidle"`（开发模式下网络静默早于注水完成）。用例在本地 dev 模式下使用 `localhost` 而非 `127.0.0.1`（Next 开发服务器对 `/_next/*` 的同源校验会对后者返回 403，导致页面不注水）；CI 以生产构建（`next start`）启动服务，不受此限制。`playwright.config.ts` 固定 `workers: 2`，避免本机多 dev server 并存时因机器过载出现 teardown 超时。用例夹具必须在 `finally` 中清理（逐条容错，不因清理失败掩盖原始失败），避免残留内容进入官网或污染下一轮断言。
 - **管理后台表单下拉为自绘 listbox（SelectField）**：e2e 断言当前值用触发器的 `data-value`（不是 `toHaveValue`），打开下拉先断言 `aria-expanded="true"`，选项限定在 `getByRole("listbox", { name: "X options" })` 作用域内（触发器用 `getByRole("button", ...)` 定位，`getByLabel` 会因子串匹配误命中 listbox）；交互与滚动行为约定详见 `frontend/AGENTS.md` 的「自绘下拉与 e2e 约定（2026-09-12）」。本地手工跑 e2e 还需环境对齐：三服务同 `JWT_SECRET`、后端配置 `NEXT_REVALIDATE_URL`/`REVALIDATE_SECRET` 并对 localhost 关闭系统代理（`NO_PROXY`），否则会出现与代码无关的假失败。
+- **后台产品 SEO 快速编辑的竞态修复（2026-09-21）**：`content-lifecycle.spec.ts` 第 99 行「清空 SEO 描述后行徽标变未设置」的偶发失败，根因既不是后端列表缓存陈旧，也不是断言本身：弹窗初值来自**列表行数据**，而 `handleSeoSave` 保存成功后 `mutate(productsKey)` 未等待，重新校验落地前行数据仍是旧值；在这段窗口内重开同一行弹窗会带入旧 `seo_title`，只改「描述」再保存就把已清空的「标题」写回。trace 证据：`PUT`(清标题) 后列表 `seo_title=""`，下一次 `PUT`(清描述) 后 `seo_title` 变回旧值，失败现场行快照为 `button "已设置"`。修复：`admin-next/src/app/(admin)/products/page.tsx` 的 `handleSeoSave` 在关闭弹窗**之前**把刚保存的值写入行缓存（`mutate(key, updater, { revalidate: false })`），再后台重新校验（读取失败不影响已保存结果），与 `settings/page.tsx` 既有写法同构。同轮还修掉该 spec 两条独立偶发：标题只用 `Date.now()` 时 `workers: 2` 会让两条用例生成同一 slug（命中 `t_product_slug_key` 唯一约束 → 后端未捕获异常 500 `B999001`，`create_product` 的 slug 查重存在 TOCTOU），改为追加随机后缀；`添加` 按钮在页面上有多个（关联产品候选列表每行一个），点击限定到规格行内（`getByPlaceholder("值（如：4800 万像素 CMOS）").locator("..")`）。
+- **本地跑 e2e 的实测前置（2026-09-21 补记）**：后端 `app_env` 默认 `production`（`common/config.py`，`backend/.env` 未设 `APP_ENV`）→ 会话 Cookie 带 `Secure`；Playwright 的 `APIRequestContext` **不会在明文 HTTP 上发送 `Secure` Cookie**（浏览器会，因 `localhost` 属可信源）。故本地 e2e 必须用 `E2E_ADMIN_URL`/`E2E_API_URL`/`E2E_FRONTEND_URL` 指向 `http://localhost:...`；用 `127.0.0.1` 会在 `page.request` 的首次调用即 401（现象为 `categories.data` 为 null）。另需在测试进程环境导出与 `admin-next/.env.local` 一致的 `JWT_SECRET`，否则 `admin-settings`/`admin-reliability` 的伪造 Cookie 验签失败、页面被重定向到 `/signin`（表现为「找不到列表行/按钮」）。登录限流 `RATE_LOGIN_PER_MIN=10` 会限制 `--repeat-each`（每个用例登录一次），重复验证需分批并留间隔。
+- **仍未处理（2026-09-21 记录）**：`admin-next` 以 `next start` 运行时打印 `"next start" does not work with "output: standalone" configuration`，且偶发 `Failed to proxy http://127.0.0.1:8000/... Error: read ECONNRESET`（前端收到 500 `Internal Server Error` 纯文本、非后端信封，后端日志无 traceback）。该现象会让任意经 `:3001` 代理的请求偶发失败（本轮 22 次 products 复跑中命中 1 次），与业务代码无关；彻底规避需按 `next.config.ts` 的意图改用 `node .next/standalone/server.js` 启动后台。
 - 官网图片优化器访问 loopback/局域网地址由 `ALLOW_LOCAL_IMAGE_OPTIMIZATION` 控制，且与 `NODE_ENV !== "production"` 做与运算：**生产构建即使显式设为 `true` 也恒为 `false`**，本地开发指向 loopback 后端而未开启时启动告警。
 - Web Vitals 仅在用户同意 Analytics 且 GA4 已配置时上报 LCP、CLS、INP、FCP 与 TTFB，不增加身份信息采集；撤回同意后 `trackEvent()` 会先读当前同意状态，并立即停用已加载的 GA（禁用标记 + Consent 拒绝信号），再次接受后恢复。
 - 生产发布先备份 PostgreSQL 与 `uploads_data`，再运行迁移、切换三个应用并冒烟；应用镜像可自动回滚，数据库迁移不会自动反向回滚。备份文件名带时分秒与可选发布号（`db_YYYYmmdd_HHMMSS[_RELEASE_ID].sql.gz` 与同名 uploads 包），同日多次部署不会互相覆盖。

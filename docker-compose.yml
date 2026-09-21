@@ -84,7 +84,10 @@ services:
       JWT_ALG: HS256
       APP_ENV: production
       OPENAPI_DOCS_ENABLED: "false"
-      CORS_ORIGINS: ${CORS_ORIGINS}
+      # 必填守卫：backend 对 /api/v1/admin/* 的写请求会校验 Origin 是否在白名单内，
+      # 空值时任何带 Origin 的浏览器写请求都会被 403（"不受信任的请求来源"），
+      # 且启动不报错、很难排障 —— 这里让未配置直接失败，而不是静默降级。
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required (comma-separated trusted origins, e.g. https://www.example.com,https://admin.example.com)}
       # 留空时启动脚本自动识别 Docker 网桥网关；如网络拓扑不同可在 .env 显式覆盖。
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       SECURITY_FAIL_CLOSED: "true"
@@ -94,7 +97,9 @@ services:
       SCHEDULED_PUBLISH_INTERVAL: ${SCHEDULED_PUBLISH_INTERVAL:-30}
       SEED_ON_START: ${SEED_ON_START:-false}
       SEED_CONTENT_CATEGORIES: ${SEED_CONTENT_CATEGORIES:-false}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      # 必填守卫：缺失时直接失败退出，避免带着弱默认口令启动（CI 的 compose 作业会
+      # `cp .env.example .env`，其中已提供该键，因此校验仍然通过）。
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required (set a strong random value in .env)}
       MEDIA_ROOT: uploads_data
       MEDIA_URL: /uploads
       HOST: 0.0.0.0
@@ -102,6 +107,10 @@ services:
       # 2C/2G baseline; each worker owns a DB pool and background loops.
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
       MAX_UPLOAD_MB: "10"
+      # 视频单文件上限（MB）：媒体库支持 mp4/webm（≤50MB）。生产反代的 client_max_body_size
+      # （OpenResty，不在本 compose 内）必须 ≥ MAX_UPLOAD_TOTAL_MB（批量上传的请求体上限），
+      # 否则大文件/多文件请求会在边缘被拒。
+      MAX_UPLOAD_VIDEO_MB: "50"
       MAX_UPLOAD_FILES: "20"
       MAX_UPLOAD_TOTAL_MB: "100"
       STORAGE_BACKEND: local

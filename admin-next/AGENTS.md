@@ -128,6 +128,16 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **产品批量操作**：`products/page.tsx` 新增全选/单选 Checkbox + 批量操作栏（发布选中/隐藏选中/删除选中），`Promise.all` 并发逐条 PUT/DELETE。
 - **用户管理**：`users/page.tsx` 新增用户管理页——表格列出所有后台账号 + 新建弹窗（username/password）+ 删除（admin 不可删）+ 密码重置弹窗。所有新账号统一管理员权限。
 
+## 首页轮播后台配置（2026-09-21）
+
+- 设置页新增「首页轮播」面板（`components/settings/HomeBannerPanel.tsx`），管理公开设置键 `home_banners`：固定 3 个槽位，每槽 = 图片（`MediaPicker` 单选）+ 可选**移动端专用竖版图** + 启用开关 + 跳转链接（支持站内 `/path` 或 http(s)）。
+- 第 1 槽是**首屏主图**：留空即官网默认 Banner（保持原有悬浮文字与按钮），因此该槽没有启用开关、链接输入禁用；第 2、3 槽是纯图轮播，启用开关只在选了图后可用。
+- 面板**独立保存**（PUT `/admin/settings` 只提交 `home_banners`），与页面通用差量保存互不干扰：该键已从 `otherEntries` 排除，不得混进 `editValues`/`changes`。
+- 面板以 `key={服务端值}` 挂载 —— 服务端值变化（保存/他处修改）时整体重置；值不变（SWR 后台 revalidate 返回同值）不会丢失未保存编辑。
+- ⚠️ 与 SMTP 键同理：`home_banners` 行由后端 `ensure_admin_settings()` 惰性创建，前端不要手动建 key；`PUT` 只更新已存在的行。
+- 产图标准（面板内折叠说明）：桌面 1920×1080（16:9）≤500KB、手机竖版 1080×1350 或 1080×1920 ≤350KB；主体居中、四周留 ≥10% 安全边距；第 1 张左侧 60% 不放关键主体（叠加文字所在）。
+- 回归用例：`../frontend/e2e/home-banner.spec.ts`（4 条：官网轮播/首张回退/art direction 换源/面板保存），需三服务在跑并注入 `E2E_ADMIN_URL`。
+
 ## 邮件通知 SMTP 后台配置（2026-08-01）
 
 - `settings/page.tsx` 新增「邮件通知（询盘 SMTP）」分组：识别 `smtp_*` / `inquiry_email_*` 键归组展示（两列栅格），右上角「测试发送」按钮（先 PUT 保存当前表单 → POST `/admin/settings/smtp/test` 用已存配置发信）。
@@ -149,7 +159,8 @@ P0 级审计修复（相关行为已合入当前代码）：
 
 - **入口静默续期**：`src/proxy.ts` 在 `access_token` 失效时用 `refresh_token` 调后端 `/api/v1/admin/refresh`，把 `Set-Cookie` 写回响应并放行到原目标页面；refresh 为单次使用，必须保留并发去重（同一 refresh 共享同一次刷新结果）。只有 refresh 真正失效/后端不可达才跳 `/signin?expired=1`。禁止改成“缺少 access 即重定向登录页”。
 - **登录表单保持 `method="post"`**：`components/auth/SignInForm.tsx` 依赖原生 POST 兜底，避免脚本未接管时把凭据写进 URL 查询串。
-- **封面上传阻塞保存**：产品/新闻表单以 `coverUploading` + 递增 `useRef` 序号管理封面上传；上传期间禁用保存与字段，旧响应不得覆盖新选择。
+- **封面上传阻塞保存**：产品/新闻表单的封面/图库/详情图/正文插图统一走 `components/media/MediaPicker`（从媒体库选择；选择器内也可上传，默认带 `categorize=product|news:{slug}` 自动归档）。选择器通过 `onBusyChange` 驱动 `coverUploading`/`uploading`/`detailUploading`/`contentUploading`，上传期间禁用保存与字段。
+- **媒体库支持视频**：后端白名单为图片（jpg/png/webp/gif ≤ `MAX_UPLOAD_MB`）+ 视频（mp4/webm ≤ `MAX_UPLOAD_VIDEO_MB`，默认 50）；类型判定按扩展名（与 `_build_upload_filter` 一致），不做转码，首帧/时长由浏览器读取；正文/产品详情暂不支持嵌入视频（HTML 白名单未放开）。
 - **分类删除先迁移**：分类下仍有内容时 `DELETE` 返回 `C400001` 与关联数量；`categories/page.tsx` 提供「迁移并删除」（`POST /admin/categories/{id}/migrate-and-delete`）。新闻分类迁移接口为 `POST /admin/news-categories/{id}/migrate-and-delete`，后台暂无独立管理页。
 - **相册计数用 `total_count`**：媒体库侧边栏展示含全部子相册的合计；按相册筛选记录时后端已包含子相册，显示数量与列表条数必须一致。`count` 仅供需要“直系数”的场景使用。
 - **列表分页**：审计日志按 `keyword` 走服务端过滤并回到第一页；媒体库与列表页的筛选条件变化时同样重置页码。

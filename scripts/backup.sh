@@ -58,6 +58,12 @@ PG_FILE="$BACKUP_DIR/db_${STAMP}.sql.gz"
 PG_TMP=$(mktemp "$BACKUP_DIR/.db_${STAMP}.XXXXXX")
 
 log "→ PostgreSQL 备份：$PG_FILE"
+# `docker compose exec` 只能作用于**正在运行**的容器：postgres 未运行时备份必然失败。
+# deploy.sh 已把 `up -d --wait postgres redis` 提前到备份之前；手动/cron 执行本脚本前请确保它已启动。
+# 用 `ps -q`（默认只列运行中的容器）而非 `ps --status`，避免依赖 compose v2.3+ 的选项。
+if [[ -z "$(docker compose ps -q postgres 2>/dev/null || true)" ]]; then
+    die "postgres 容器未运行，无法备份（先执行 docker compose up -d --wait postgres redis；确认无需备份时可执行 deploy.sh <version> --skip-backup）"
+fi
 if docker compose exec -T postgres pg_dump -U "$PG_USER" -d "$PG_DB" 2>/tmp/pg_dump_err.log | gzip > "$PG_TMP" && gzip -t "$PG_TMP"; then
     mv "$PG_TMP" "$PG_FILE"
     PG_SIZE=$(du -h "$PG_FILE" | cut -f1)

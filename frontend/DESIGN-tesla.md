@@ -79,9 +79,10 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 ### 首页 Hero
 
-- `components/motion/HeroSection.tsx` 使用工厂实拍图作为首屏背景，Hero 图片是 LCP 候选，继续使用 `next/image` `preload`，不得改成普通懒加载。
+- `components/motion/HeroSection.tsx` 使用工厂实拍图作为首屏背景，Hero 图片是 LCP 候选，继续使用 `next/image` `preload`，不得改成普通懒加载（第 1 张配了移动端专用图时改用 `<picture>`：`<img loading="eager" fetchpriority="high">`，LCP 语义等价但不再经过图片优化器）。
+- 首页 Hero 支持最多 3 张轮播（`components/home/HeroCarousel.tsx`，数据来自后台设置键 `home_banners`）：第 1 张保留悬浮文字与按钮，第 2、3 张只显示图片（可选整图链接）；第 2、3 张首次切到时才加载，首屏字节不得因此增加。
 - `xl`（≥1280px）宽屏将内容放在左上方视觉区域，保留 `site-container` 的左右基线；标题内容列为 `980px`，避免 1920px 视口下标题不必要地多换一行。
-- 宽屏 Hero 的 `Explore Products` 和 `Get a Quote` 必须完整位于固定底部询盘栏（56px）上方；Scroll 提示使用视口高度安全定位，不得被浮层覆盖。
+- 宽屏 Hero 的 `Explore Products` 和 `Get a Quote` 必须完整位于固定底部询盘栏（56px）上方；Scroll 提示使用视口高度安全定位，不得被浮层覆盖。**底部居中同一位置只放一个提示**：单张时显示 Scroll 提示，多张轮播时改由指示点占用。指示点走极简风格：白色圆点、无底衬/描边/白环，仅一层 1px 极轻投影 `shadow-[0_1px_3px_rgba(0,0,0,0.45)]`（**仅保证暗底/中灰底可辨；纯白底图上仍不可辨，是当前已知限制** —— 若要亮底也可辨需改用 `mix-blend-difference` 等反相方案），当前张更大更亮（`h-2 w-2 bg-white`，其余 `h-1.5 w-1.5 bg-white/45`），位置固定 `bottom-24` 且不得与固定询盘栏重叠；**cookie 提示条可见时隐藏指示点**（不遮挡、不上移）。
 - 平板和手机保持自然流式布局，CTA 允许换行但不能横向溢出；至少回归 1440px、1024px 和 390px 视口。
 
 ### Header
@@ -150,7 +151,7 @@ font-family: var(--font-geist-sans), Arial, Helvetica, system-ui, sans-serif;
 
 - 页面 `scrollWidth` 不超过视口宽度。
 - Header、搜索框、筛选栏、面包屑和产品卡片没有文字溢出；平板端导航不被搜索框遮挡。
-- 1920px/1440px 宽屏首页 Hero 的标题、说明和 `Explore Products` / `Get a Quote` CTA 完整可见；CTA 与底部询盘栏保持安全间距，Scroll 提示不被浮层覆盖。
+- 1920px/1440px 宽屏首页 Hero 的标题、说明和 `Explore Products` / `Get a Quote` CTA 完整可见；CTA 与底部询盘栏保持安全间距，Scroll 提示不被浮层覆盖；**多张轮播时该位置只出现指示点（Scroll 提示不渲染）**，且 cookie 提示条可见时指示点不渲染（关掉提示后恢复）。
 - 产品 Hero 与 `Browse by category` 间距紧凑，首屏能看到有效内容。
 - 联系页地图、询盘表单和固定底栏不会互相遮挡。
 - 视频封面、播放按钮和控制条可以正常使用。

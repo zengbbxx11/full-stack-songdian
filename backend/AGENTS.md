@@ -143,7 +143,8 @@ P0 级审计修复（相关行为已合入当前代码）：
 - **用户管理**：`content/services.py` 新增 `list_users` / `create_user`（统一 admin 角色）/ `delete_user`（admin 账号受保护）/ `reset_password`。路由 `GET/POST/DELETE /admin/users` + `PUT .../reset-password`。
 - **审计日志**：`content/routers.py` 已有 `GET /admin/audit-logs`（分页 + `keyword` 服务端搜索）。`keyword` 在分页前于数据库过滤 `username` / `action` / `resource`，`total` 为过滤后总数。
 - **admin 产品端点**：`product/routers.py` 新增 `GET /admin/products`（不过滤状态，含草稿）。
-- **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA 与站点验证配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
+- **后台系统设置**：询盘邮件配置从 `.env` 迁移到 `t_setting` 表——`inquiry/smtp_mailer.py` 的 `load_smtp_config()` 库优先（**非空才覆盖**环境变量兜底）；`common/settings_router.py` 对 `smtp_password` 脱敏（GET 返回 `******`、PUT 回传掩码保留原值）+ 新增 `POST /admin/settings/smtp/test` 测试端点。⚠️ **惰性创建**：`ensure_admin_settings()` 在 `GET /admin/settings` 时 `get_or_create` 邮件、GA、站点验证与首页轮播配置项，**不依赖 `SEED_ON_START`**，也不会覆盖已有配置。
+- **首页轮播设置键**：`home_banners` 已加入 `PUBLIC_SETTING_KEYS`（随 `GET /public/settings` 下发，写入后经 `_invalidate_public_settings_cache()` 清理 Redis 并推送官网 ISR）；值为 JSON 数组字符串，固定 3 槽 `[{url, mobileUrl, enabled, href} ×3]`，结构校验放在官网侧（`frontend/lib/api/settings.ts` 的 `parseHomeBanners()` 防御式解析），后端只做通用 KV 存取。
 - **迁移**：迁移 8/9 保留历史兼容；迁移 10 统一 `assigned_user_id` 为 BIGINT 并收敛历史外键，迁移 11 增加询盘归因与通知已读状态，迁移 12 增加内容状态、发布时间和版本表。生产由独立 Compose `migrate` profile 显式执行 `aerich upgrade`，backend 应用容器不自动迁移。
 - ⚠️ **生产初始化**：生产只运行迁移和最小种子（角色、权限、首个管理员）。`db/seed_data.sql`、完整 SQL 和 CSV 是本地开发快照，含业务数据与密码哈希，禁止导入生产。
 

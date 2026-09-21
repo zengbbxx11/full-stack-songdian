@@ -137,7 +137,8 @@ npm run dev → http://localhost:3000
 | `components/Header.tsx` | 导航栏（`lg` 桌面断点、平板移动菜单、搜索与顶部滚动重置） |
 | `components/Footer.tsx` | 页脚（社交图标统一槽位与等间距） |
 | `components/NavigationProgress.tsx` | 顶部路由切换进度条（品牌红 #d4343e，零依赖） |
-| `components/motion/HeroSection.tsx` | 首页 Hero |
+| `components/motion/HeroSection.tsx` | 首页 Hero（服务端组件：section 布局类 + 全部叠加层，叠加层作为 children 交给轮播层） |
+| `components/home/HeroCarousel.tsx` | 首页 Hero 轮播层（客户端：图片层挂载策略、底部居中指示点、6s 自动轮播与降级、art direction） |
 | `components/ProductCard.tsx` | 产品卡片（服务端组件 RSC，图片走 SafeImage 兜底；hover 红框+阴影+缩放） |
 | `components/ProductGallery.tsx` | 产品详情页左侧缩略图+右侧大图（next/image + 主图 `preload`） |
 | `components/ProductDetailImages.tsx` | 产品详情图区块（从 `content_html` 抽取图片，按序纵向展示，响应式 + 懒加载） |
@@ -226,7 +227,7 @@ npm run dev → http://localhost:3000
 - **Logo**：`public/logo.png`（本地）
 - **产品图 / 文章图**：通过 FastAPI 后端管理（管理后台上传，`/uploads/` 提供静态文件服务）
 - **媒体引用查询**：管理后台调用 `GET /api/v1/admin/upload/{id}/usage` 展示产品图库、产品封面、新闻封面，以及产品和新闻**正文**中引用图片的使用位置（URL 已按归一化形式比较）；被引用素材删除前由后端拦截确认，仅被正文引用的图片同样受保护。
-- **上传归档**：产品表单通过 `product:{slug}` 归入 `Products / {slug}`，新闻表单通过 `news:{slug}` 归入 `News / {slug}`；slug 为空时进入“未分类”。这是媒体库相册归属，物理文件仍由后端按其存储策略保存，不能据此拼接 URL。
+- **上传归档**：产品/新闻表单的素材入口是媒体选择器（`admin-next/src/components/media/MediaPicker`），选择器内上传时通过 `product:{slug}` / `news:{slug}` 归入 `Products / {slug}`、`News / {slug}`；slug 为空时进入“未分类”。这是媒体库相册归属，物理文件仍由后端按其存储策略保存，不能据此拼接 URL。
 - **OG 图**：`lib/media.ts` 配置
 - **产品相册**：附属于产品，管理后台表单管理
 - **展会图片**：`public/Exhibitions/` 目录增删文件
@@ -301,7 +302,7 @@ CI 的 `e2e` 作业对后端/官网/后台三个进程注入同一组变量，�
 - **revalidate 接线**：后端设置 `NEXT_REVALIDATE_URL`（指向官网 `/api/revalidate`）与和官网一致的
   `REVALIDATE_SECRET`，否则内容变更后官网 ISR 不刷新，`content-lifecycle` 的 metadata / noindex
   断言会一直读到旧页面（错误形态：Expected 值停留在修改前）。
-- **系统代理机器给后端进程加 `NO_PROXY=localhost,127.0.0.1`**：httpx(trust_env) 会把发往
+- **`NO_PROXY=localhost,127.0.0.1` 必须是启动后端进程时的环境变量**（`$env:NO_PROXY=...` 后再起 uvicorn）：写进 `backend/.env` 无效 —— 自定义键不会进入 `os.environ`，httpx(trust_env) 仍会把发往
   `localhost:3000` 的 revalidate 请求交给系统代理而失败（`backend/common/revalidation.py` 的日志
   有记录），表现为官网缓存迟迟不刷新。CI 无代理，不受影响。
 
@@ -431,6 +432,8 @@ P0 级审计修复（相关行为已合入当前代码）：
 - Footer 的 Facebook、YouTube、Instagram、TikTok 统一使用 `44×44px` 图标槽位；无链接平台也必须占位并提示 `coming soon`，不得让图标间距随链接状态改变。
 - 首页 Hero 在 `xl`（≥1280px）宽屏使用上左布局，沿 `site-container` 左侧对齐，标题列放宽至 `980px`；`Explore Products` / `Get a Quote` 必须避开固定 56px 询盘栏。
 - Hero 的 Scroll 提示按视口高度安全定位，避免内容撑高时落入底部浮层；本次回归覆盖 1920×920、1440×900、1024×768 和 390×844。
+- **首页轮播与 art direction（2026-09-21）**：`home_banners`（公开设置键，最多 3 槽）驱动 `components/home/HeroCarousel.tsx`。要点：① 第 1 张恒为首屏主图（第 1 槽留空即回退 `MEDIA.heroBanner`，悬浮文字/按钮与 `preload` 不变），第 2、3 张是纯图并在**首次切到时才挂载**；② 配了 `mobileUrl` 的槽位用 `<picture>` + `<source media="(max-width: 767px)">`（只下一张，但不走 `next/image` 优化器），未配则维持 `next/image`；③ 底部居中同一位置只放一个提示 —— 单张显示 Scroll、多张显示指示点；指示点是**极简白点**（无底衬/描边/白环，仅一层 1px 极轻投影 `shadow-[0_1px_3px_rgba(0,0,0,0.45)]`；当前张 `h-2 w-2 bg-white`、其余 `h-1.5 w-1.5 bg-white/45 hover:bg-white/80`），位置固定 `bottom-24`，**cookie 提示条可见时整块不渲染**（判据用 MutationObserver 观察 `[role="region"][aria-label="Cookie consent"]` + 事件兜底，不能只靠事件：首帧广播可能早于本组件挂载）；④ 自动轮播 6s，悬停/`:focus-visible` 暂停，Hero 移出视口或标签页隐藏时暂停（`IntersectionObserver` + `visibilitychange`），`prefers-reduced-motion` 与 `saveData`/2G/3G 不自动；⑤ 手机 Hero 高度 `max(600px,72svh)`，≥768px 为 760px，≥1024px 为「视口 − 顶栏」。回归用例：`e2e/home-banner.spec.ts`（含 art direction 换源与 cookie 期间无指示点断言）。
+- **本地跑官网的两个前置条件**：① `npm run build` 需要后端在跑（构建期要取数，否则 `/news/[slug]` 导出失败）；② 后端图在生产构建下会被图片优化器拒绝（`dangerouslyAllowLocalIP` 仅在 dev + `ALLOW_LOCAL_IMAGE_OPTIMIZATION=true` 时开启），本地要看后台上传图需用 `npm run dev`；配了 `mobileUrl` 的轮播槽位走原生 `<img>`，不受此限制。
 
 ## 同意、规范化 URL 与分页约定（2026-09-12）
 

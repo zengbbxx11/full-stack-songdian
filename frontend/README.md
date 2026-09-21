@@ -143,7 +143,7 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 
 | 资源/区域 | 当前策略 | 说明 |
 | --- | --- | --- |
-| Hero、Logo、首个 LCP 候选 | `next/image` `preload` | 保障首屏最大内容及时显示，不应改成懒加载 |
+| Hero、Logo、首个 LCP 候选 | `next/image` `preload`（Hero 配了移动端专用图时改用 `<picture>` + `loading="eager"`/`fetchpriority="high"`，语义等价但不过优化器） | 保障首屏最大内容及时显示，不应改成懒加载 |
 | 产品/新闻卡片图片 | `SafeImage` 默认 `loading="lazy"` | `preload={true}` 只给首屏候选；失败时渲染占位 |
 | 首页非首屏图片 | `next/image` 默认懒加载或显式 `loading="lazy"` | 配合 `sizes` 减少不必要的下载尺寸 |
 | About 时间轴、证书画廊 | `next/dynamic` 代码分包 | 当前是组件动态分包，不等同于滚动进入视口才加载 |
@@ -163,6 +163,8 @@ ALLOW_LOCAL_IMAGE_OPTIMIZATION=true
 - Header 内部 `Link` 使用 `scroll={false}`，并由 `resetScrollForNavigation()` 显式回到页面顶部，防止 Next.js 在旧滚动位置或异步内容加载完成后把新页面定位到中间区块。
 - About 页首屏内容顺序固定为 `Who We Are` 眉题、`Our Story` 主标题，`Our Journey` 位于下一段；从 Home 任意滚动位置点击 About 都必须从页面顶部进入。
 - 首页 Hero 在 `xl`（≥1280px）宽屏采用左上方内容布局，沿 `site-container` 对齐；内容列放宽至 `980px`，让 1920px 视口下标题保持合理换行。CTA 需位于固定底部询盘栏上方，Scroll 提示使用视口高度定位以避开 56px 浮层；平板和手机继续使用流式布局。
+- **首页 Hero 轮播（`components/home/HeroCarousel.tsx`）**：背景图来自后台「设置 → 首页轮播」（公开设置键 `home_banners`），最多 3 张。第 1 张是首屏主图：后台留空即用默认 `banner.webp`（保持原有悬浮文字与按钮，`next/image` `preload` 不变），选了图则替换首图；第 2、3 张为纯图（可选整图跳转链接），**首次切到才下载**。第 1 张未配移动端图时走 `next/image`，配了 `mobileUrl` 的槽位改用 `<picture>` + `<source media="(max-width: 767px)">`（art direction：浏览器只下载匹配的那一张，代价是不走优化器，故产图标准限定体积）。
+- 轮播行为：6 秒自动切换（悬停/`:focus-visible` 暂停、`prefers-reduced-motion` 与 `navigator.connection` 的 `saveData`/2G/3G 不自动、Hero 移出视口或标签页隐藏时暂停）；指示点为**极简白点** —— 底部居中、位置固定 `bottom-24`、触控区 40px，当前张是更大更亮的纯白点、其余为半透明白点，**无底衬/描边/白环，仅保留一层 1px 极轻投影**（`shadow-[0_1px_3px_rgba(0,0,0,0.45)]`；**已知限制：纯白底图上仍基本不可见**，暗底/中灰底可辨）；cookie 提示条可见时整块隐藏（不遮挡也不上移）。**Scroll 提示只在单张时显示**，多张时由指示点占用该位置。手机 Hero 高度为 `max(600px,72svh)`（露出下一屏），≥768px 为 760px，≥1024px 为「视口 − 顶栏」。
 - `InstantSearch` 聚焦时保留一层品牌红边框，并通过 `data-focus-visible="none"` 避免全局 `:focus-visible` 焦点环造成双层红框；搜索仍保留可见的聚焦状态。
 - Footer 的 Facebook、YouTube、Instagram、TikTok 均使用 `44×44px` 外层槽位；没有链接的图标也不能改用裸 `span`，否则会破坏等间距布局。
 

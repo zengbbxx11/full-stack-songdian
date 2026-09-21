@@ -211,9 +211,9 @@ IMAGE_REGISTRY='ghcr.io/zengbbxx11/full-stack-songdian' \
 
 `scripts/deploy.sh` 会依次执行：
 
-1. 备份当前部署状态。
-2. 拉取 backend、frontend、admin 三个指定版本镜像。
-3. 等待 PostgreSQL 和 Redis 健康。
+1. 启动并等待 PostgreSQL 与 Redis 健康（`backup.sh` 走 `docker compose exec postgres`，必须先有运行中的容器）。
+2. 备份当前部署状态（数据库 + uploads）。**唯一跳过方式**是显式参数 `bash scripts/deploy.sh <version> --skip-backup`（刻意不提供环境变量开关，避免 CI 意外带上导致静默零备份）。
+3. 拉取 backend、frontend、admin 三个指定版本镜像。
 4. 执行独立数据库迁移。
 5. 以 `--no-build` 切换应用容器。
 6. 运行后端、官网、管理后台和搜索冒烟检查。
@@ -339,10 +339,12 @@ vim .env     # 至少修改 PG_PASSWORD / JWT_SECRET / ADMIN_PASSWORD，并填�
 | `PG_USER` / `PG_PASSWORD` / `PG_DB` | Compose 内 postgres 服务初始化所用（首次建库生效；后续改此处不影响已建库） |
 | `JWT_SECRET` | ≥32 字节随机值；**backend 与 admin-next 共用同一值**（admin 用它服务端校验令牌） |
 | `REVALIDATE_SECRET` | ≥32 字节的另一组随机值；backend 与 frontend 共用，用于后台发布后安全清除官网 ISR 缓存 |
-| `ADMIN_PASSWORD` | 初始管理员密码（仅在 `SEED_ON_START=true` 由应用种子器使用时生效） |
-| `SEED_ON_START` | 首次部署临时设 `true`，仅初始化角色、权限和 admin；验证后改回 `false` |
+| `ADMIN_PASSWORD` | 初始管理员密码。**仅在账号首次创建时写入**：后台改过密码后，重启不会再用它覆盖（若确实需要"改 env 即同步口令"的语义，显式设 `SEED_ADMIN_PASSWORD_FORCE=true`）。Compose 中该变量为**必填**（`${ADMIN_PASSWORD:?...}`）：缺失时任何 `docker compose` 命令都会直接失败退出，服务器 `.env` 必须先填好非空强口令 |
+| `SEED_ON_START` | 首次部署临时设 `true`，仅初始化角色、权限和 admin；验证后改回 `false`。开启期间种子**不再**覆盖已存在账号的口令/角色/启用状态（仅空口令兜底除外） |
+| `SEED_ADMIN_PASSWORD_FORCE` | 默认 `false`。设为 `true` 时，种子会把已存在 admin 的**角色、启用状态与口令**对齐到 `ADMIN_PASSWORD`（等价于每次重启都重置），仅在明确需要该语义时开启 |
+| `REDIS_REQUIRED` | 生产/多 worker 必须为 `true`：Redis 不可用时拒绝启动，避免登出黑名单、幂等键与限流退化为进程内内存（多 worker 下会失效或放大额度） |
 | `SEED_CONTENT_CATEGORIES` | 生产保持 `false`；设为 `true` 才额外写入演示分类，绝不删除或覆盖现有产品、新闻及分类 |
-| `CORS_ORIGINS` | 官网 + 后台公网域名，逗号分隔，**禁用通配** |
+| `CORS_ORIGINS` | 官网 + 后台公网域名，逗号分隔，**禁用通配**。**必填**：缺失时 `docker compose` 直接失败退出（而不是静默让后台所有写请求返回 403「不受信任的请求来源」） |
 | `NEXT_PUBLIC_API_URL` | 浏览器直连的 API 地址（走 OpenResty 反代） |
 | `ALLOW_LOCAL_IMAGE_OPTIMIZATION` | 仅限本地开发允许图片优化器访问 loopback/局域网地址；生产必须不设置或保持 `false`。已由 `NODE_ENV !== "production"` 硬门槛兜底：生产构建即使显式设为 `true` 也恒为 `false`，无需依赖运维纪律 |
 | `TRUSTED_PROXIES` | 留空时自动识别 Docker 网桥网关；仅自定义反代拓扑时填写可信代理 IP，禁止使用通配符 |
@@ -490,6 +492,10 @@ SEED_ON_START=true
 #    编辑 .env：SEED_ON_START=false
 docker compose up -d backend
 ```
+
+> 初始化完成后把 `SEED_ON_START` 改回 `false` 即可。若之后在后台修改了管理员密码，即使 `SEED_ON_START` 被误开，
+> 重启也**不会**把口令回滚成 `ADMIN_PASSWORD`（除非显式设置 `SEED_ADMIN_PASSWORD_FORCE=true`）；
+> 同理，被禁用的账号不会被种子悄悄重新启用。
 
 已有生产数据库只通过 `Deploy production` 工作流执行备份、迁移和应用切换，绝不执行 `DROP SCHEMA`。如果只是修改 `.env` 运行时配置，可在确认影响范围后执行 `docker compose up -d` 重新注入配置；如确需迁移历史业务内容，先在隔离环境清理账号、询盘和审计数据，再以显式、可验证的数据导入脚本处理。
 
@@ -644,6 +650,9 @@ GA4、Clarity 和站点/邮件相关配置可在管理后台的“设置”页�
 ### 自动备份（scripts/backup.sh）
 
 项目提供 `scripts/backup.sh` 自动化备份脚本，覆盖 **PostgreSQL 全量导出** + **uploads 上传文件快照**。脚本对临时文件做原子落盘，并在写入后验证 gzip/tar 完整性；任一步失败会以非零状态退出。
+
+> `scripts/backup.sh` 依赖**正在运行**的 postgres 容器（内部为 `docker compose exec postgres pg_dump`）：手动或 cron 执行前先 `docker compose up -d postgres redis`。
+> 容器未运行时脚本会明确报错并退出（不会产出空备份文件）；`scripts/deploy.sh` 已把"先起数据服务、再备份"排好序，首次部署或抢修发布不会再被备份环节阻断。
 
 ```bash
 # 一、首次设置

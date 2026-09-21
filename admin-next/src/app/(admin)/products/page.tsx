@@ -9,12 +9,21 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import MobileCard, { MobileCardActions, MobileCardHeader, mobileActionClass, mobileIconButtonClass } from "@/components/common/MobileCard";
 import SelectField from "@/components/form/SelectField";
 import { useToast } from "@/context/ToastContext";
 import { apiFetch, apiFetchAllPages, swrFetcher, resolveMediaUrl } from "@/lib/api-client";
 import { settleBatch } from "@/lib/batch";
 import { mergeVisibleOrder } from "@/lib/content-order";
 import type { Product, ProductCategory, Paginated } from "@/types";
+
+// 状态文案与配色：桌面表格与移动端卡片共用，避免两处各写一遍。
+function statusLabel(status: Product["status"]) {
+  return status === "PUBLISHED" ? "已发布" : status === "SCHEDULED" ? "定时发布" : status === "DRAFT" ? "草稿" : status;
+}
+function statusBadgeClass(status: Product["status"]) {
+  return status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600";
+}
 
 export default function ProductsPage() {
   const toast = useToast();
@@ -133,6 +142,17 @@ export default function ProductsPage() {
   }
   function handleDragOver(e: React.DragEvent) { e.preventDefault(); }
 
+  /* ── 移动端排序：触摸端无法触发 HTML5 拖拽，改由卡片上的上移/下移按钮调整本地顺序 ── */
+  function moveItem(index: number, delta: number) {
+    const target = index + delta;
+    if (busy || target < 0 || target >= items.length) return;
+    const reordered = [...items];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(target, 0, moved);
+    setLocalItems(reordered);
+    setDirty(true);
+  }
+
   async function handleSaveOrder() {
     setSaving(true);
     try {
@@ -161,20 +181,42 @@ export default function ProductsPage() {
   /* ── SEO ── */
   async function handleSeoSave() {
     if (!seoEdit.target) return;
+    const { id } = seoEdit.target;
+    const seoTitle = seoEdit.seoTitle || null;
+    const seoDescription = seoEdit.seoDesc || null;
     setSeoSaving(true);
     try {
-      await apiFetch(`/admin/products/${seoEdit.target.id}`, { method: "PUT", body: { seo_title: seoEdit.seoTitle || null, seo_description: seoEdit.seoDesc || null } });
-      toast.success("SEO 已更新");
-      setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" }); mutate(productsKey);
-    } catch (err) { toast.error(err instanceof Error ? err.message : "SEO 保存失败"); }
-    finally { setSeoSaving(false); }
+      await apiFetch(`/admin/products/${id}`, { method: "PUT", body: { seo_title: seoTitle, seo_description: seoDescription } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "SEO 保存失败");
+      setSeoSaving(false);
+      return;
+    }
+    // 保存已成功，下面只是本地收尾，不再提示「保存失败」。
+    // 先写缓存再关弹窗：列表重新校验是异步的，若在它完成前重开同一行的弹窗，初值会取到旧行数据，
+    // 用户只改一个字段保存就会把另一个刚清空的字段原样写回（空串口径与后端归一化一致）。
+    // 弹窗初值来自 productsData.list，与 localItems 拖拽快照解耦；dirty 时 SEO 按钮本就禁用。
+    try {
+      await mutate<Paginated<Product>>(
+        productsKey,
+        current => current
+          ? { ...current, list: current.list.map(item => (item.id === id ? { ...item, seo_title: seoTitle ?? "", seo_description: seoDescription ?? "" } : item)) }
+          : current,
+        { revalidate: false },
+      );
+    } catch { /* 本地缓存写入失败不影响已保存结果 */ }
+    setSeoEdit({ open: false, target: null, seoTitle: "", seoDesc: "" });
+    toast.success("SEO 已更新");
+    setSeoSaving(false);
+    // 后台重新校验列表（读取失败不影响已保存结果）。
+    void mutate(productsKey).catch(() => undefined);
   }
 
   /* ── 渲染 ── */
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90">产品</h2>
           {saving && <span className="text-xs text-amber-500">保存中...</span>}
           {dirty && !saving && <span className="text-xs text-orange-500 font-medium">顺序已调整 — 未保存</span>}
@@ -184,7 +226,7 @@ export default function ProductsPage() {
 
       {/* 排序确认栏 */}
       {dirty && (
-        <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
+        <div className="mb-4 flex flex-wrap items-center gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#FFF8E1", borderColor: "#FFD54F" }}>
           <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
           <span className="text-sm text-amber-800 flex-1">您有未保存的排序更改，切换页面前请先保存或取消。</span>
           <button disabled={busy} onClick={handleCancelOrder} className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">取消</button>
@@ -194,7 +236,7 @@ export default function ProductsPage() {
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 p-3 rounded-lg border border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-900/20">
+        <div className="mb-4 flex flex-wrap items-center gap-2 p-3 rounded-lg border border-brand-200 bg-brand-50 sm:gap-3 dark:border-brand-800 dark:bg-brand-900/20">
           <span className="text-sm font-medium text-brand-700 dark:text-brand-300">已选 {selectedIds.size} 个</span>
           <button onClick={() => openBatchConfirm("publish", "批量发布", `确定将 ${selectedIds.size} 个产品标记为「已发布」吗？`)} className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" disabled={busy || dirty}>发布选中</button>
           <button onClick={() => openBatchConfirm("hide", "批量隐藏", `确定将 ${selectedIds.size} 个产品标记为「草稿」吗？`)} className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" disabled={busy || dirty}>隐藏选中</button>
@@ -211,7 +253,7 @@ export default function ProductsPage() {
           disabled={busy || dirty}
           onChange={e => { resetListDraft(); setKeyword(e.target.value); }}
           placeholder="搜索产品..."
-          className="h-9 w-64 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 sm:h-9 sm:w-64 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
         />
         <SelectField
           selectSize="sm"
@@ -224,11 +266,82 @@ export default function ProductsPage() {
           <option value="">全部分类</option>
           {categories.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
         </SelectField>
-        <button disabled={busy || dirty} onClick={() => { resetListDraft(); setKeyword(""); setCategoryId(""); }} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400">✕ 清除筛选</button>
+        <button disabled={busy || dirty} onClick={() => { resetListDraft(); setKeyword(""); setCategoryId(""); }} className="min-h-10 rounded-lg px-2 text-sm text-gray-500 hover:text-gray-700 sm:min-h-0 sm:px-0 dark:text-gray-400">✕ 清除筛选</button>
       </div>
 
-      {/* 产品表格 */}
-      <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
+      {/* 手机端卡片（<768px）：状态与操作完整可见，不必横向滚动表格。
+          与桌面表格是两套 DOM、按断点显隐，可访问名称保持一致（隐藏分支是 display:none，不参与角色匹配）。 */}
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-28 animate-pulse rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]" />
+          ))
+        ) : productsError && !productsData ? (
+          <div role="alert" className="rounded-2xl border border-gray-200 bg-white px-4 py-10 text-center text-sm text-red-600 dark:border-gray-800 dark:bg-white/[0.03]">
+            产品加载失败 <button onClick={() => mutate(productsKey)} className="underline">重试</button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-800 dark:bg-white/[0.03]">未找到产品</div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-white/[0.03]">
+              <input type="checkbox" aria-label="全选产品" disabled={busy || dirty} checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">共 {items.length} 个产品</span>
+            </div>
+
+            {items.map((item, index) => (
+              <MobileCard key={item.id}>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    aria-label={`选择 ${item.title}`}
+                    disabled={busy || dirty}
+                    checked={selectedIds.has(item.id)}
+                    onChange={() => toggleSelectOne(item.id)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                  />
+                  {item.cover_image
+                    ? <img src={resolveMediaUrl(item.cover_image)} className="h-12 w-12 shrink-0 rounded object-cover" alt="" />
+                    : <div className="h-12 w-12 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />}
+                  <div className="min-w-0 flex-1">
+                    <MobileCardHeader>
+                      <span className="min-w-0 break-words font-medium text-gray-800 dark:text-white/90">{item.title}</span>
+                      <span className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass(item.status)}`}>{statusLabel(item.status)}</span>
+                    </MobileCardHeader>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.category?.name || "未分类"}</p>
+                  </div>
+                </div>
+
+                <MobileCardActions>
+                  <Link href={`/product-form?id=${item.id}`} className={mobileActionClass()}>编辑</Link>
+                  <Link href={`/product-form?copy_from=${item.id}`} className={mobileActionClass()}>复制</Link>
+                  <button disabled={busy || dirty} onClick={() => handleDelete(item.id, item.title)} className={mobileActionClass("border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400")}>删除</button>
+                  <button
+                    disabled={busy || dirty}
+                    onClick={() => setSeoEdit({ open: true, target: item, seoTitle: item.seo_title || "", seoDesc: item.seo_description || "" })}
+                    className={mobileActionClass((item.seo_title || item.seo_description) ? "border-green-200 text-green-700 dark:border-green-900 dark:text-green-400" : "")}
+                  >
+                    SEO {(item.seo_title || item.seo_description) ? "已设置" : "未设置"}
+                  </button>
+                  {/* 触摸端无法使用 HTML5 拖拽，改由这两个按钮调整顺序，复用既有的「保存排序」流程 */}
+                  <span className="ml-auto flex items-center gap-1">
+                    <button type="button" aria-label={`上移 ${item.title}`} disabled={busy || index === 0} onClick={() => moveItem(index, -1)} className={mobileIconButtonClass()}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button type="button" aria-label={`下移 ${item.title}`} disabled={busy || index === items.length - 1} onClick={() => moveItem(index, 1)} className={mobileIconButtonClass()}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </span>
+                </MobileCardActions>
+              </MobileCard>
+            ))}
+            <p className="text-xs text-gray-400">用卡片右侧 ▲▼ 调整顺序后点「保存排序」；勾选卡片可批量发布/隐藏/删除。</p>
+          </>
+        )}
+      </div>
+
+      {/* 产品表格（≥768px；<768px 用上方卡片） */}
+      <div className="hidden bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
             <tr>
@@ -266,7 +379,7 @@ export default function ProductsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{p.category?.name || "-"}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${p.status === "PUBLISHED" ? "bg-blue-100 text-blue-700" : p.status === "SCHEDULED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>{p.status === "PUBLISHED" ? "已发布" : p.status === "SCHEDULED" ? "定时发布" : p.status === "DRAFT" ? "草稿" : p.status}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(p.status)}`}>{statusLabel(p.status)}</span></td>
                 <td className="px-4 py-3">
                   <button disabled={busy || dirty} onClick={() => setSeoEdit({ open: true, target: p, seoTitle: p.seo_title || "", seoDesc: p.seo_description || "" })}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${(p.seo_title || p.seo_description) ? "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-500"}`}>
@@ -285,7 +398,7 @@ export default function ProductsPage() {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-gray-400">拖动行首握把可调整顺序 → 保存排序。勾选行可批量发布/隐藏/删除。</p>
+      <p className="mt-3 hidden text-xs text-gray-400 md:block">拖动行首握把可调整顺序 → 保存排序。勾选行可批量发布/隐藏/删除。</p>
 
       {/* SEO 快速编辑弹窗 */}
       {seoEdit.open && seoEdit.target && (

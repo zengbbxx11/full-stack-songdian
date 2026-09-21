@@ -105,14 +105,19 @@ export type ProductFixture = { id: number; slug: string; categorySlug: string; m
  *
  * - `media: true` 时上传一张图片，同时用作封面与图库图（官网图库需要封面才会渲染）；
  * - `gallery`：额外图库图数量（与封面共用同一 URL，仅用于让缩略图数量满足断言）；
- * - `attributes`：规格（`slug` 由名称推导，`zoom` / `sensor` / `screen` / `video-resolution`
- *   会进入产品页的 key facts）。
+ * - `attributes`：规格（`slug` 由名称推导；产品页下方的 Specifications 表格会完整展示这些规格）。
  */
 export async function createProduct(
   admin: APIRequestContext,
   options: {
     categoryId: number;
     index?: number;
+    /**
+     * 覆盖标题（默认 `Fixture camera <suffix>`）。真实商品名是短型号，在 390px 宽的移动端
+     * 与型号 H1 只占一行；需要按真实版式断言的用例（如移动端首屏顺序）可传短标题，
+     * 否则「Fixture camera xxxxx」会折成两行、额外占约 41px。
+     */
+    title?: string;
     media?: boolean;
     gallery?: number;
     attributes?: { name: string; value: string }[];
@@ -122,7 +127,7 @@ export async function createProduct(
 ): Promise<ProductFixture> {
   const suffix = fixtureSuffix();
   const slug = `fixture-product-${suffix}`;
-  const title = `Fixture camera ${suffix}${options.index ? " " + options.index : ""}`;
+  const title = options.title ?? `Fixture camera ${suffix}${options.index ? " " + options.index : ""}`;
   const mediaUrl = options.media || options.detailImages ? await uploadFixtureImage(admin) : undefined;
   // 图库图必须是独立的上传地址：ProductGallery 以 src 判断当前主图，
   // 复用封面地址会让「切换到图库图」被当成仍选中封面。
@@ -216,8 +221,10 @@ export async function cleanup(steps: (() => Promise<unknown>)[]): Promise<void> 
   for (const step of steps) {
     try {
       await step();
-    } catch {
-      /* 清理失败不影响用例结论 */
+    } catch (err) {
+      // 清理失败不影响用例结论，但不能完全静默：过去静默导致夹具残留在本地累积
+      //（如超时中断的运行会留下空的夹具分类），只有打出日志才能被发现。
+      console.warn("[e2e cleanup] 清理步骤失败（不影响用例结论）：", err instanceof Error ? err.message : err);
     }
   }
 }
@@ -232,20 +239,27 @@ export async function removeNews(admin: APIRequestContext, ids: number[]): Promi
 
 /**
  * 尽力删除夹具上传的媒体记录（内容删除后就不再被引用）。
- * 只扫描最近若干页记录，失败不影响用例结论；本地未被清理的图片不影响后续运行。
+ *
+ * 分页扫描到 `total` 为止（上限 10 页 / 500 条）：过去固定只扫前 3 页，
+ * 媒体库累积到数百条后新上传的夹具图会落在扫描范围外、静默残留。
+ * 失败不影响用例结论。
  */
 export async function removeUploads(admin: APIRequestContext, urls: (string | undefined)[]): Promise<void> {
   const wanted = new Set(urls.filter((url): url is string => Boolean(url)));
   if (wanted.size === 0) return;
-  for (const page of [1, 2, 3]) {
-    const list = await (await admin.get(`/api/v1/admin/upload/records?page=${page}&page_size=100`)).json();
-    const records = (list?.data?.list ?? []) as { id: number; url: string }[];
+  let seen = 0;
+  for (let page = 1; page <= 10; page += 1) {
+    const body = await (await admin.get(`/api/v1/admin/upload/records?page=${page}&page_size=50`)).json();
+    const records = (body?.data?.list ?? []) as { id: number; url: string }[];
+    if (records.length === 0) return;
+    seen += records.length;
     for (const record of records) {
       if (wanted.has(record.url)) {
         await admin.delete(`/api/v1/admin/upload/${record.id}?force=true`);
         wanted.delete(record.url);
       }
     }
-    if (wanted.size === 0 || records.length === 0) return;
+    const total = Number(body?.data?.total ?? seen);
+    if (wanted.size === 0 || seen >= total) return;
   }
 }

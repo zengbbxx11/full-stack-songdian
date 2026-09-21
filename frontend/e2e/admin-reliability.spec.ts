@@ -41,8 +41,10 @@ test("news management loads drafts and all pages; filtered sorting preserves hid
   await gotoHydrated(page, `${adminBase}/news`);
   await expect(page.locator("tbody tr")).toHaveCount(55);
   expect(pages).toContain(2);
-  await expect(page.getByText("草稿", { exact: true })).toBeVisible();
-  await expect(page.getByText("定时发布", { exact: true })).toBeVisible();
+  // 列表在 <768px 会改用卡片视图（两套 DOM、按断点显隐），display:none 的分支同样会被 getByText 命中，
+  // 因此这里把断言限定在表格内（断言语义不变：表格里能同时看到草稿与定时发布两种状态）。
+  await expect(page.locator("tbody").getByText("草稿", { exact: true })).toBeVisible();
+  await expect(page.locator("tbody").getByText("定时发布", { exact: true })).toBeVisible();
   await page.getByPlaceholder("搜索文章...").fill("Fixture");
   await page.locator("tr").filter({ hasText: "Fixture B" }).dragTo(page.locator("tr").filter({ hasText: "Fixture A" }));
   await page.getByRole("button", { name: "保存排序", exact: true }).click();

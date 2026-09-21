@@ -25,7 +25,9 @@ for (const resource of ["news", "products"] as const) {
     expect((await login.json()).code).toBe("0");
     const isNews = resource === "news";
     const route = isNews ? "news-form" : "product-form";
-    const title = `Lifecycle ${resource} ${Date.now()}`;
+    // 并发用例（workers: 2）可能在同一毫秒启动：纯 Date.now() 会让两条用例生成同一 slug，
+    // 触发 t_product_slug_key 唯一约束（后端返回 B999001），故追加随机后缀。
+    const title = `Lifecycle ${resource} ${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const slug = title.toLowerCase().replaceAll(" ", "-");
     const save = page.getByRole("button", { name: isNews ? "保存" : "保存产品", exact: true });
     let id: number | undefined;
@@ -128,10 +130,13 @@ for (const resource of ["news", "products"] as const) {
       if (!isNews) {
         await page.getByPlaceholder("名称（如：传感器）").fill("Sensor");
         await page.getByPlaceholder("值（如：4800 万像素 CMOS）").fill("Fixture sensor");
-        await page.getByRole("button", { name: "添加", exact: true }).click();
+        // 关联产品候选列表每行也有一个「添加」（页面挂载后自动拉取候选），须限定在规格行内。
+        await page.getByPlaceholder("值（如：4800 万像素 CMOS）").locator("..").getByRole("button", { name: "添加", exact: true }).click();
         await expect(page.getByText("Fixture sensor", { exact: true })).toBeVisible();
-        // 产品表单有多个 file 输入（封面 / 图库 / 商品详情图），必须用可访问名精确定位图库输入。
-        await page.getByLabel("上传产品图库图片").setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
+        // 图库改从媒体库选择（选择器内可直接上传，素材自动归档到 Products / {slug}）。
+        await page.getByRole("button", { name: "+ 从媒体库添加" }).click();
+        await page.getByLabel("选择器内上传素材").setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64") });
+        await page.getByRole("button", { name: /^确定（\d+）$/ }).click();
         await expect(page.getByRole("img", { name: "fixture.png", exact: true })).toBeVisible();
         await page.reload();
         await waitForHydration(page);

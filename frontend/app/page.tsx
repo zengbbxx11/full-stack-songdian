@@ -23,6 +23,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { getPosts } from "@/lib/api/news";
 import { getProducts, getProductCategories } from "@/lib/api/products";
+import { getPublicSettings, parseHomeBanners } from "@/lib/api/settings";
+import SafeImage from "@/components/SafeImage";
 import NewsGrid from "@/components/NewsGrid";
 import HeroSection from "@/components/motion/HeroSection";
 import AnimatedSection from "@/components/motion/AnimatedSection";
@@ -52,9 +54,16 @@ export const revalidate = 60;
 // Streaming async sections — 各自独立获取数据，流式到达
 // ============================================================
 
-/** Hero 区块 — 使用本地 public 下的 Banner 图（路径统一收口到 lib/media.ts 的 MEDIA.heroBanner） */
+/**
+ * Hero 区块 — 轮播图来自后台「设置 → 首页轮播」（公开设置接口，Data Cache 300s +
+ * tags 失效；与 layout.tsx 的调用读同一 Data Cache，稳态 0 次额外后端请求，
+ * 仅冷缓存时可能各发一次 —— apiFetch 的 timeout signal 会绕过请求级 fetch 去重）。
+ * 未配置 / 数据非法时回退默认 Banner（MEDIA.heroBanner）。
+ */
 async function HeroSectionAsync() {
-  return <HeroSection bannerUrl={MEDIA.heroBanner} />;
+  const settings = await getPublicSettings();
+  const banners = parseHomeBanners(settings.home_banners);
+  return <HeroSection banners={banners} />;
 }
 
 /** 产品类目展示 — 异步获取分类及每个分类下的最新产品图 */
@@ -63,20 +72,22 @@ async function ProductCategoriesSection() {
 
   const categoryOrder = ["mirrorless", "compact", "action", "video", "kids"] as const;
   const sortedCategories = categoryOrder
-    .map((slug) => categories.find((c) => c.slug.toLowerCase().includes(slug)))
-    .filter((c): c is WCProductCategory => Boolean(c));
+    .flatMap((slug) => {
+      const category = categories.find((c) => c.slug.toLowerCase().includes(slug));
+      return category ? [{ category, meta: CATEGORY_SHOWCASE[`${slug}-camera`] ?? { name: category.name, description: "" } }] : [];
+    });
 
   if (sortedCategories.length === 0) return null;
 
   const categoryProducts = await Promise.all(
-    sortedCategories.map((cat) =>
-      getProducts({ category: cat.id, perPage: 1 }).catch(() => ({ products: [], pagination: null }))
+    sortedCategories.map(({ category }) =>
+      getProducts({ category: category.id, perPage: 1 }).catch(() => ({ products: [], pagination: null }))
     )
   );
 
-  const categoryCards = sortedCategories.map((cat, i) => ({
-    category: cat,
-    meta: CATEGORY_SHOWCASE[categoryOrder[i]] ?? { name: cat.name, description: "" },
+  const categoryCards = sortedCategories.map(({ category, meta }, i) => ({
+    category,
+    meta,
     product: categoryProducts[i]?.products?.[0] ?? null,
   }));
 
@@ -89,7 +100,7 @@ async function ProductCategoriesSection() {
             <span className="section-eyebrow">Product Categories</span>
             <h2 className="section-title mt-4">Cameras We Manufacture</h2>
           </div>
-          <Link href="/products" className="hidden md:inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
+          <Link prefetch={false} href="/products" className="hidden md:inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
@@ -98,17 +109,19 @@ async function ProductCategoriesSection() {
           {categoryCards.map(({ category, meta, product }, i) => (
             <Link
               key={category.id}
-              href={`/products?category=${category.slug}`}
-              className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[var(--foreground)] transition-[flex-grow] duration-500 ease-out sm:aspect-[3/4] lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.5]"
+              href={`/products?category=${encodeURIComponent(category.slug)}`}
+              prefetch={false}
+              className="home-category group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-[var(--foreground)] transition-[flex-grow] duration-500 ease-out sm:aspect-[3/4] lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1 lg:contain-layout lg:hover:flex-[2.5] lg:focus-visible:flex-[2.5]"
               aria-label={`${meta.name} — view products`}
             >
               {product?.image ? (
-                <Image
+                <SafeImage
+                  fallback={<div className="absolute inset-0 flex items-center justify-center text-white/30"><Camera className="h-12 w-12" aria-hidden="true" /></div>}
                   src={product.image}
                   alt={product.imageAlt || meta.name}
                   fill
-                  sizes="(max-width: 1024px) 50vw, 20vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.08] will-change-transform transform-gpu"
+                  sizes="(max-width: 639px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 40vw"
+                  className="object-cover transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.05]"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-white/30">
@@ -123,7 +136,7 @@ async function ProductCategoriesSection() {
                   </span>
                   <h3 className="text-xl font-semibold leading-snug tracking-[-0.03em]">{meta.name}</h3>
                 </div>
-                <div className="max-h-28 overflow-hidden opacity-100 transition-all duration-500 ease-out lg:max-h-0 lg:opacity-0 lg:group-hover:delay-500 lg:group-hover:max-h-28 lg:group-hover:opacity-100">
+                <div className="max-h-28 overflow-hidden opacity-100 transition-all duration-500 ease-out lg:max-h-0 lg:opacity-0 lg:group-hover:delay-500 lg:group-hover:max-h-28 lg:group-hover:opacity-100 lg:group-focus-visible:max-h-28 lg:group-focus-visible:opacity-100">
                   <p className="mt-2 text-[12px] leading-snug text-white/80 line-clamp-2">{meta.description}</p>
                   <span className="mt-2 inline-flex items-center text-[12px] font-medium text-white/90">
                     Explore
@@ -136,7 +149,7 @@ async function ProductCategoriesSection() {
         </div>
 
         <div className="mt-8 text-center md:hidden">
-          <Link href="/products" className="inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
+          <Link prefetch={false} href="/products" className="inline-flex items-center text-sm font-medium transition-colors hover:text-[var(--accent)]" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All Products <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
@@ -186,7 +199,7 @@ async function NewsSection() {
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>News &amp; Insights</span>
             <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "var(--foreground)" }}>Latest Updates</h2>
           </div>
-          <Link href="/news" className="hidden md:inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
+          <Link prefetch={false} href="/news" className="hidden md:inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </Link>
         </div>
@@ -195,7 +208,7 @@ async function NewsSection() {
         <NewsGrid posts={posts} />
 
         <div className="mt-8 text-center md:hidden">
-          <Link href="/news" className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
+          <Link prefetch={false} href="/news" className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "var(--graphite)", transitionDuration: "0.33s" }}>
             View All News <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </Link>
         </div>

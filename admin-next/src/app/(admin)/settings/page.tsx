@@ -2,6 +2,7 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
+import HomeBannerPanel from "@/components/settings/HomeBannerPanel";
 import { useToast } from "@/context/ToastContext";
 import React, { useRef, useState } from "react";
 import useSWR from "swr";
@@ -20,6 +21,8 @@ const SMTP_KEYS = new Set([
 
 // 当前官网未消费这些历史配置，保留值供查看，避免把“保存成功”误当成“官网已应用”。
 const INACTIVE_KEYS = new Set(["site_name", "company_name", "company_logo", "company_fax", "company_linkedin", "company_youtube", "company_facebook"]);
+// 首页轮播键：由专属面板（HomeBannerPanel）编辑，不进入通用文本卡片与差量保存
+const BANNER_KEY = "home_banners";
 const SETTING_HELP: Record<string, string> = {
   ga_id: "用于官网访问统计；访客同意 Analytics 后才加载。填写 G- 开头的测量 ID，留空关闭。",
   clarity_id: "用于官网会话分析；访客同意后才加载。只填写项目 ID，留空关闭。",
@@ -124,7 +127,7 @@ export default function SettingsPage() {
 
   const entries = settings ? Object.entries(settings) : [];
   const smtpEntries = entries.filter(([k]) => SMTP_KEYS.has(k));
-  const otherEntries = entries.filter(([k]) => !SMTP_KEYS.has(k));
+  const otherEntries = entries.filter(([k]) => !SMTP_KEYS.has(k) && k !== BANNER_KEY);
 
   const renderCard = (key: string, item: SettingItem) => (
     <div key={key} className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -187,6 +190,15 @@ export default function SettingsPage() {
               {smtpEntries.map(([key, item]) => renderCard(key, item))}
             </div>
           </section>
+        )}
+
+        {/* 首页轮播（专属面板；key 绑定服务端值，保存/重读后整体重置为最新值） */}
+        {settings?.[BANNER_KEY] && (
+          <HomeBannerPanel
+            key={settings[BANNER_KEY].value ?? "[]"}
+            value={settings[BANNER_KEY].value ?? "[]"}
+            onSaved={() => void mutate().catch(() => undefined)}
+          />
         )}
 
         {/* 其他设置 */}

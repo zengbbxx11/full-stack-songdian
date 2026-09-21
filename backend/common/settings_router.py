@@ -7,9 +7,9 @@ from fastapi import APIRouter, Depends, Request
 
 from common.audit import audit
 from common.tasks import enqueue, transactional_write
-from common.deps import get_current_user, require_permission
+from common.deps import get_current_user, get_user_permissions, require_permission
 from common.enums import SmtpStatus
-from common.exceptions import ErrorCode, resolve_error
+from common.exceptions import BizException, ErrorCode, resolve_error
 from common.redis_client import cache_key, get_redis
 from common.result import Result
 from common.settings_model import Setting
@@ -34,6 +34,8 @@ PUBLIC_SETTING_KEYS = {
     "ga_id",
     "clarity_id",
     "google_verification",
+    # 官网首页轮播图：JSON 数组字符串，由设置页「首页轮播」面板管理
+    "home_banners",
 }
 PUBLIC_SETTINGS_TTL = 300  # 缓存 5 分钟
 
@@ -65,6 +67,7 @@ _GENERAL_DEFAULTS = [
     ("ga_id", "", "Google Analytics ID", "GA4 测量 ID，格式 G-XXXXXXXXXX"),
     ("clarity_id", "", "Microsoft Clarity 项目 ID", "填写安装代码中的项目 ID（仅字母和数字），不要粘贴整段脚本；留空关闭"),
     ("google_verification", "", "Google Search Console 验证码", "用于站点所有权验证"),
+    ("home_banners", "[]", "首页轮播", "官网首页轮播图，由设置页轮播面板管理"),
 ]
 
 
@@ -114,19 +117,55 @@ async def get_public_settings() -> Result:
 
 @router.get("/admin/settings", summary="获取所有系统设置")
 async def list_settings(
-    _user: AdminUser = Depends(get_current_user),
+    user: AdminUser = Depends(get_current_user),
 ) -> Result:
-    """返回全部系统配置项的 key-value 字典（含 label/description 元信息）。
+    """返回系统配置项的 key-value 字典（含 label/description 元信息）。
 
-    供管理后台设置页初始加载使用，无需额外 RBAC 权限（仅需登录）。
-    smtp_password 脱敏：非空时返回 ******，避免授权码回显到前端。
+    供管理后台设置页初始加载使用：仅需登录即可调用，但**读取范围随权限收缩** ——
+    不具备 `settings:update` 的账号只会拿到公开白名单项（`PUBLIC_SETTING_KEYS`），
+    避免低权/外部账号读到内部 SMTP 主机与账号、业务收发件箱（真正多出来的敏感项，
+    其余如 ga_id / clarity_id / google_verification / company_* 本就在匿名可读的公开接口里）。
+    对具备权限者，smtp_password 非空时脱敏为 ******，避免授权码回显到前端。
     """
     await ensure_admin_settings()
     rows = await Setting.all()
     data = {r.key: {"value": r.value, "label": r.label, "description": r.description} for r in rows}
-    if data.get("smtp_password", {}).get("value"):
+
+    # 每次请求查库取当前授权（权限回收即时生效，见 common/deps.py get_user_permissions）
+    perms = await get_user_permissions(user)
+    if "settings:update" not in perms:
+        # 默认拒绝 + 白名单裁剪 key（不做逐字段掩码：设置页保存逻辑只对 smtp_password 的
+        # ****** 做"不修改"跳过，其它字段会把页面上的值原样提交，掩码会被误写进真实配置）
+        data = {key: value for key, value in data.items() if key in PUBLIC_SETTING_KEYS}
+    elif data.get("smtp_password", {}).get("value"):
         data["smtp_password"]["value"] = SMTP_PASSWORD_MASK
     return Result.ok(data)
+
+
+async def _json_object_body(request: Request) -> dict:
+    """读取请求体并要求必须是 JSON 对象。
+
+    过去直接 `await request.json()` + `body.get(...)`：空体/非法 JSON 抛 JSONDecodeError、
+    `[]` 或 `"x"` 抛 AttributeError，都落到兜底处理器变成 500。这里统一按 400（C400001）返回。
+    """
+    try:
+        body = await request.json()
+    except ValueError as exc:  # 空请求体 / 非法 JSON
+        raise BizException(ErrorCode.C400001, "请求体必须是 JSON 对象") from exc
+    if not isinstance(body, dict):
+        raise BizException(ErrorCode.C400001, "请求体必须是 JSON 对象")
+    return body
+
+
+def _normalize_setting_value(value: object) -> str:
+    """把设置值收敛为字符串。
+
+    Setting.value 是 NOT NULL 的 TextField：写入 None 会触发数据库 NOT NULL 违约（500），
+    这里统一把 null 视为「清空」写成空串；数字/对象则按旧行为转为字符串。
+    """
+    if value is None:
+        return ""
+    return value if isinstance(value, str) else str(value)
 
 
 @router.put("/admin/settings/{key}", summary="更新系统设置")
@@ -144,14 +183,14 @@ async def update_setting(
     若 key 不存在则返回 A070001 错误。
     操作会被写入审计日志（@audit 装饰器）。
     """
-    # 从请求体读取 value
-    body = await request.json()
-    value = body.get("value", "")
+    # 从请求体读取 value（必须是 JSON 对象，否则 400；null 等价于清空）
+    body = await _json_object_body(request)
+    value = _normalize_setting_value(body.get("value", ""))
     setting = await Setting.get_or_none(key=key)
     if setting is None:
         return _fail(ErrorCode.A070001)
     # SMTP 密码：前端回传掩码时保留原值（未修改授权码）
-    if key == "smtp_password" and value in ("", None, SMTP_PASSWORD_MASK):
+    if key == "smtp_password" and value in ("", SMTP_PASSWORD_MASK):
         value = setting.value
     setting.value = value
     await setting.save()
@@ -173,16 +212,18 @@ async def batch_update_settings(
     请求体为 `{key: value, ...}` 键值对字典，仅更新已存在的 key（跳过不存在的）。
     操作写入统一审计日志条目。
     """
-    body = await request.json()
+    # 请求体必须是 JSON 对象（非对象 / 空体过去会 500，现在按 400 返回）
+    body = await _json_object_body(request)
     updated = 0
     public_settings_changed = False
-    for key, value in body.items():
+    for key, raw_value in body.items():
         setting = await Setting.get_or_none(key=key)
         if setting is not None:
+            value = _normalize_setting_value(raw_value)
             # SMTP 密码：前端回传掩码时保留原值（未修改授权码）
-            if key == "smtp_password" and value in ("", None, SMTP_PASSWORD_MASK):
+            if key == "smtp_password" and value in ("", SMTP_PASSWORD_MASK):
                 value = setting.value
-            setting.value = str(value)
+            setting.value = value
             await setting.save()
             updated += 1
             public_settings_changed = public_settings_changed or key in PUBLIC_SETTING_KEYS

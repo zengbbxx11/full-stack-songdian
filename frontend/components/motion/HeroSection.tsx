@@ -1,32 +1,30 @@
 /*
- * HeroSection —— 首页全屏 Banner（项目自定义动画组件）
- * 100vh 全屏 hero，以产线实拍图为背景，叠加渐变蒙层保证文字可读。
- * 首屏内容使用服务端 HTML 与轻量 CSS 淡入，避免加载完整客户端动画运行时。
+ * HeroSection —— 首页全屏 Banner（服务端组件）
+ * section 布局类与全部叠加层（渐变蒙层 / 徽章 / 标题 / 副标题 / CTA / Scroll 提示）
+ * 保持原样；背景图与轮播逻辑交给客户端组件 HeroCarousel（children 即下方叠加层，
+ * 轮到第 2/3 张时叠加层淡出，仅显示图片）。
  */
 
 import Link from "next/link";
-import Image from "next/image";
 import { HERO } from "@/lib/content-data";
-import { MEDIA } from "@/lib/media";
 import { CtaButton } from "@/components/CtaButton";
+import HeroCarousel from "@/components/home/HeroCarousel";
+import type { HomeBanner } from "@/lib/api/settings";
 
 interface HeroSectionProps {
-  /** Banner 图片 URL（缺省时回退到 media.ts 的 heroBanner） */
-  bannerUrl?: string;
+  /** 轮播图数据（公开设置 home_banners 的解析结果；为空时 HeroCarousel 回退默认 Banner） */
+  banners?: HomeBanner[];
 }
 
-export default function HeroSection({ bannerUrl }: HeroSectionProps) {
+export default function HeroSection({ banners }: HeroSectionProps) {
   return (
-    <section className="relative flex min-h-[600px] items-center overflow-hidden md:min-h-[760px] lg:min-h-[calc(100svh-4rem)] xl:items-start">
-      <Image
-        src={bannerUrl || MEDIA.heroBanner}
-        alt="Songdian SMT production line — precision camera manufacturing"
-        fill
-        preload
-        sizes="100vw"
-        className="object-cover"
-      />
-
+    <HeroCarousel
+      // 手机端高度：约 72% 视口高、下限 600px —— 主流做法（不占满屏，露出下一屏提示可滚动；
+      // 满屏 hero 反而让人以为到底了）。max() 兼顾矮屏/横屏：section 是 overflow-hidden，
+      // 太矮会把文案/按钮裁掉。≥768px 仍是 760px，≥1024px 与原来一致（视口 - 顶栏）。
+      className="relative flex min-h-[max(600px,72svh)] items-center overflow-hidden md:min-h-[760px] lg:min-h-[calc(100svh-4rem)] xl:items-start"
+      banners={banners}
+    >
       {/* 渐变蒙层 — 底部最深、顶部最浅：文字区清晰可读，同时保留图片上部细节 */}
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,9,12,0.9)_0%,rgba(7,9,12,0.66)_48%,rgba(7,9,12,0.18)_100%)]" />
       <div className="absolute inset-0 opacity-20 tech-grid" aria-hidden="true" />
@@ -78,16 +76,7 @@ export default function HeroSection({ bannerUrl }: HeroSectionProps) {
         </div>
         </div>
       </div>
-
-      {/* 滚动引导指示 — 底部居中，缓慢上下浮动，引导用户下滚 */}
-      <div className="animate-fade-in hidden md:block absolute left-1/2 top-[calc(100svh-12rem)] z-10 -translate-x-1/2 [animation-delay:320ms]" aria-hidden="true">
-        <div className="flex flex-col items-center gap-2 text-white/70">
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Scroll</span>
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-    </section>
+      {/* 滚动引导指示由 HeroCarousel 渲染（仅单张时显示：有轮播时底部居中让给指示点） */}
+    </HeroCarousel>
   );
 }

@@ -260,7 +260,9 @@ export default function SelectField({
               top: menuPos.top,
               bottom: menuPos.bottom,
               maxHeight: menuPos.maxHeight,
-              zIndex: 90,
+              // 必须高于弹层（ui/modal 的 z-99999）：listbox portal 到 body，与弹层同处
+              // body 的层叠上下文，z 值低会被弹窗面板/遮罩盖住且点击落到遮罩上（等于关闭弹窗）。
+              zIndex: 100000,
             }}
             className="custom-scrollbar overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-theme-md dark:border-gray-700 dark:bg-gray-900"
           >

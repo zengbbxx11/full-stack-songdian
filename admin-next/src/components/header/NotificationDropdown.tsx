@@ -75,10 +75,14 @@ export default function NotificationDropdown() {
           </span>
         )}
       </button>
+      {/* 移动端（<lg）：铃铛左右都有按钮，绝对定位无论右对齐还是原来的 -right-[240px]
+          都会有一侧溢出视口，因此改成 fixed 铺满左右留边、贴顶栏下方。
+          top-36（144px）= 顶栏移动端高度：第一行 64px（py-3 ×2 + 40px 按钮）+ 第二行 76px（py-4 ×2 + 44px），
+          留 4px 空隙；AppHeader 的行高若调整，这里的数值需要同步。lg 起完全恢复原来的绝对定位与 320px 宽度。 */}
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        className="absolute -right-[240px] mt-[17px] w-[320px] rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark sm:w-[380px] lg:right-0"
+        className="fixed left-3 right-3 top-36 mt-0 w-auto max-h-[calc(100dvh-10rem)] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark lg:absolute lg:left-auto lg:right-0 lg:top-auto lg:mt-[17px] lg:w-[320px]"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h5 className="text-base font-semibold text-gray-800 dark:text-gray-200">业务通知</h5>

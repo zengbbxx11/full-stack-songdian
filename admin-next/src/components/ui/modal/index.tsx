@@ -88,7 +88,12 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         )}
-        <div>{children}</div>
+        {/* 非全屏：给内容加最大高度 + 内部滚动。
+            矮屏（手机横屏、带浏览器工具栏）下长内容原先超出视口且无法滚动；
+            滚动放在这一层而不是内容面板上，是为了让右上角关闭按钮保持可见、不随内容滚走。 */}
+        <div className={isFullscreen ? "h-full" : "max-h-[calc(100dvh-2rem)] overflow-y-auto"}>
+          {children}
+        </div>
       </div>
     </div>
   );

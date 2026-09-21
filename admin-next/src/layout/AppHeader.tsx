@@ -29,7 +29,8 @@ const AppHeader: React.FC = () => {
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           {/* 侧边栏切换按钮 */}
           <button
-            className="items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
+            // 补基础 flex：原先只有 lg:flex，<1024px 时按钮不是 flex 容器，图标不居中
+            className="flex items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 lg:border"
             onClick={handleToggle}
             aria-label="切换侧边栏"
           >

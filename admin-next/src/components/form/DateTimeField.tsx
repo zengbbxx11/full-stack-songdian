@@ -338,7 +338,8 @@ export default function DateTimeField({
               top: pos.top,
               bottom: pos.bottom,
               maxHeight: pos.maxHeight,
-              zIndex: 80,
+              // 与 SelectField 菜单一致：必须高于弹层（ui/modal 的 z-99999），否则日期面板在弹窗内不可见
+              zIndex: 100000,
             }}
             className="custom-scrollbar overflow-auto rounded-xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-700 dark:bg-gray-900"
           >

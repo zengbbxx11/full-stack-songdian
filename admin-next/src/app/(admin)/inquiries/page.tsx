@@ -328,7 +328,7 @@ export default function InquiriesPage() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               <button onClick={() => openReply(i)} className="rounded-lg bg-brand-500 px-3 py-2 text-xs font-medium text-white hover:bg-brand-600">跟进记录</button>
-              {NEXT_STATUS[i.status].map((nextStatus) => (
+              {nextStatusesOf(i.status).map((nextStatus) => (
                 <button key={nextStatus} onClick={() => setStatusConfirm({ open: true, target: i, next: nextStatus })} className={`rounded-lg border px-3 py-2 text-xs font-medium ${nextStatus === "LOST" ? "border-red-200 text-red-500" : "border-green-200 text-green-700"}`}>
                   转为{STATUS_LABEL[nextStatus]}
                 </button>
@@ -453,7 +453,7 @@ export default function InquiriesPage() {
                       <button onClick={() => openReply(i)} className="text-xs text-brand-500 hover:text-brand-600">
                         跟进
                       </button>
-                      {NEXT_STATUS[i.status].map((ns) => (
+                      {nextStatusesOf(i.status).map((ns) => (
                         <button
                           key={ns}
                           onClick={() => setStatusConfirm({ open: true, target: i, next: ns })}
@@ -462,7 +462,7 @@ export default function InquiriesPage() {
                           → {ns}
                         </button>
                       ))}
-                      {i.status !== "LOST" && i.status !== "DEAL" && NEXT_STATUS[i.status].length === 0 && (
+                      {i.status !== "LOST" && i.status !== "DEAL" && nextStatusesOf(i.status).length === 0 && (
                         <span className="text-xs text-gray-300">终态</span>
                       )}
                       <button

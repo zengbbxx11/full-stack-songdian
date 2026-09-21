@@ -73,7 +73,9 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      // 移动端顶栏高 64px（mt-16）：高度用 calc(100vh - 4rem)，否则 h-screen + mt-16 会让底边超出视口 64px，
+      // 抽屉里最后几个菜单项滚不到；lg 起顶栏不再占位，恢复 mt-0 + h-screen。
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-[calc(100vh-4rem)] lg:h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${isExpanded || isMobileOpen ? "w-[290px]" : isHovered ? "w-[290px]" : "w-[90px]"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}
@@ -94,8 +96,8 @@ const AppSidebar: React.FC = () => {
         </Link>
       </div>
 
-      {/* 导航菜单 */}
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+      {/* 导航菜单（flex-1 + min-h-0 才能在矮视口内滚动而不是溢出到侧栏外面） */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav>
           <ul className="flex flex-col gap-4">
             {navItems.map((nav) => (

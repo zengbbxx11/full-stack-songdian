@@ -54,15 +54,17 @@ export async function search(
     { revalidate: false },
   );
 
-  const items: SearchResultItem[] = data.items.map((it) => ({
+  // 后端字段缺失时不抛错：items / total / degraded 一律兜底，避免搜索页整页 500。
+  const items: SearchResultItem[] = (data.items ?? []).map((it) => ({
     id: it.id,
     kind: it.kind === "product" ? "product" : "news",
     title: normalizePublicText(it.title),
     summary: normalizePublicSummary(it.summary),
     slug: it.slug,
     // 后端已返回规范 URL（产品为 /products/{category}/{slug}）；异常缺省时回退本地拼接。
+    // 排除协议相对地址（//evil.example.com）：它同样以 "/" 开头，但会跳离本站。
     url:
-      typeof it.url === "string" && it.url.startsWith("/")
+      typeof it.url === "string" && it.url.startsWith("/") && !it.url.startsWith("//")
         ? it.url
         : it.kind === "product"
           ? `/products/${it.slug}`
@@ -75,9 +77,9 @@ export async function search(
 
   return {
     items,
-    total: data.total,
+    total: data.total ?? 0,
     tookMs: data.took_ms ?? 0,
-    degraded: data.degraded,
+    degraded: Boolean(data.degraded),
     // Public site is English-only; do not leak a legacy localized backend note.
     note: data.degraded ? "Basic search mode" : "",
   };

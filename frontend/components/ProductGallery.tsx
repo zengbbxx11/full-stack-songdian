@@ -17,12 +17,34 @@ interface ProductGalleryProps {
   mainAlt: string;
   /** 相册图片（不含主图） */
   gallery: { id: number; src: string; alt?: string }[];
+  /**
+   * 追加到主图容器的 class，用于按场景约束主图尺寸。
+   * 默认容器是 aspect-square（正方形）；详情页移动端传按断点的限高
+   * 让它变成限定高度的横图（object-contain 居中、不变形），桌面端仍是正方形。
+   */
+  mainImageClassName?: string;
+  /**
+   * 主图 sizes 覆盖。容器被限高后主图实际内容宽度远小于容器宽度，
+   * 沿用按容器宽度声明的默认值会挑到明显过大的候选图（过量下载），
+   * 因此限高场景由调用方传更贴合的 sizes。
+   */
+  mainImageSizes?: string;
+  /**
+   * 移动端（<640px）把缩略图列放到主图**右侧竖排**（56px 宽），主图在左：
+   * 既不像横向缩略图条那样额外占纵向空间，也不会像叠加那样遮住主图内容。
+   * 缩略图最多 4 张 ⇒ 列高 4×56 + 3×8 = 248px ≤ 主图 260px，图集整体不会变高。
+   * 640px 起组件本身就是「左缩略图列 + 右主图」，不受该开关影响。
+   */
+  thumbsSideOnMobile?: boolean;
 }
 
 export default function ProductGallery({
   mainImage,
   mainAlt,
   gallery,
+  mainImageClassName = "",
+  mainImageSizes,
+  thumbsSideOnMobile = false,
 }: ProductGalleryProps) {
   // 当前展示的大图地址，默认取主图
   const [selected, setSelected] = useState(mainImage);
@@ -42,18 +64,24 @@ export default function ProductGallery({
   ].filter((img) => !brokenIds.has(img.id));
 
   return (
-    <div role="group" aria-label={mainAlt + " image gallery"} className="flex flex-col-reverse gap-3 sm:flex-row md:gap-4">
-      {/* 左侧缩略图列 */}
-      <div className="flex w-full shrink-0 snap-x snap-mandatory flex-row gap-2 overflow-x-auto pb-1 sm:w-16 sm:snap-none sm:flex-col sm:overflow-visible sm:pb-0 md:w-20">
+    <div
+      role="group"
+      aria-label={mainAlt + " image gallery"}
+      // thumbsSideOnMobile：移动端用 flex-row-reverse —— DOM 顺序是 [缩略图, 主图]，
+      // 反转后主图在左、缩略图在右；640px 起恢复「左缩略图列 + 右主图」。
+      className={`flex flex-col-reverse gap-3 sm:flex-row md:gap-4 ${thumbsSideOnMobile ? "max-sm:flex-row-reverse" : ""}`}
+    >
+      {/* 缩略图列：移动端 56px 竖排贴右（4 张共 248px，不越主图高）；≥640px 为左侧竖排 64/80px */}
+      <div className={`flex w-full shrink-0 snap-x snap-mandatory flex-row gap-2 overflow-x-auto pb-1 sm:w-16 sm:snap-none sm:flex-col sm:overflow-visible sm:pb-0 md:w-20 ${thumbsSideOnMobile ? "max-sm:w-14 max-sm:flex-col max-sm:snap-none max-sm:overflow-visible max-sm:pb-0" : ""}`}>
         {thumbs.map((img) => (
           <button
             key={img.id}
             type="button"
             aria-label={`View ${img.alt || mainAlt}`}
             aria-pressed={selected === img.src}
-            // 点击缩略图切换右侧大图
+            // 点击缩略图切换大图
             onClick={() => setSelected(img.src)}
-            className={`relative h-16 w-16 shrink-0 snap-start touch-manipulation overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer active:scale-[0.98] md:h-20 md:w-20 ${
+            className={`relative h-16 w-16 shrink-0 snap-start touch-manipulation overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer active:scale-[0.98] md:h-20 md:w-20 ${thumbsSideOnMobile ? "max-sm:h-14 max-sm:w-14" : ""} ${
               selected === img.src
                 ? "border-[var(--accent)]"
                 : "border-[var(--border)] hover:border-gray-400"
@@ -64,7 +92,8 @@ export default function ProductGallery({
               src={img.src}
               alt={img.alt || mainAlt}
               fill
-              sizes="(max-width: 767px) 64px, 80px"
+              // 与上面的格子尺寸一致：移动 56px / 平板 64px / 桌面 80px
+              sizes={thumbsSideOnMobile ? "(max-width: 639px) 56px, (max-width: 767px) 64px, 80px" : "(max-width: 767px) 64px, 80px"}
               className="object-contain p-0.5"
               onError={() => markBroken(img.id)}
             />
@@ -72,10 +101,11 @@ export default function ProductGallery({
         ))}
       </div>
 
-      {/* 右侧大图 */}
+      {/* 主图（移动端在左） */}
       <div className="min-w-0 flex-1">
         <div
-          className="relative aspect-square overflow-hidden rounded-2xl border border-black/8 bg-[#f2f3f4]"
+          // mx-auto：限高时盒子被 aspect-square 推导成正方形（比可用宽度窄），在左栏内居中
+          className={`relative aspect-square mx-auto overflow-hidden rounded-2xl border border-black/8 bg-[#f2f3f4] ${mainImageClassName}`}
         >
           {failedImage === selected ? (
             <div className="absolute inset-0 flex items-center justify-center text-gray-300">
@@ -88,7 +118,7 @@ export default function ProductGallery({
               src={selected}
               alt={thumbs.find(img => img.src === selected)?.alt || mainAlt}
               fill
-              sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 108px), (max-width: 1023px) calc(100vw - 128px), (max-width: 1311px) calc(55vw - 159px), 564px"
+              sizes={mainImageSizes ?? "(max-width: 639px) calc(100vw - 32px), (max-width: 767px) calc(100vw - 108px), (max-width: 1023px) calc(100vw - 128px), (max-width: 1311px) calc(55vw - 159px), 564px"}
               className="object-contain"
               preload={selected === mainImage}
               loading={selected === mainImage ? undefined : "eager"}

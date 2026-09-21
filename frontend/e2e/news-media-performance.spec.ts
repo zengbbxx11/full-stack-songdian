@@ -19,6 +19,26 @@ test("article media retains SEO dimensions and strips unsafe content", async ({ 
   await expect(page.locator("script")).toHaveCount(0);
 });
 
+test("literal width: in body text is kept and never eats the following markup", async ({ page }) => {
+  // 回归：清洗正则曾对整篇字符串执行，`[^;"]+` 会从 width: 一路吞到下一个引号，
+  // 把「文字 + </p><img src=」整段删掉。现在只在标签内部处理。
+  const html = cleanPostContent('<p>Screen width: 3 inch</p><img src="/uploads/news/screen.webp" alt="Screen"><p>Weight: 120 g</p>');
+  expect(html).toContain("Screen width: 3 inch");
+  expect(html).toContain("Weight: 120 g");
+  await page.route("**/*", route => route.abort());
+  await page.setContent(html);
+  await expect(page.locator("img")).toHaveCount(1);
+  await expect(page.locator("p")).toHaveCount(2);
+});
+
+test("inline width declarations are still stripped from tags only", async ({ page }) => {
+  const html = cleanPostContent('<img src="/uploads/news/test.webp" alt="A" style=width:100%><p>Body text width: 3 inch</p>');
+  await page.route("**/*", route => route.abort());
+  await page.setContent(html);
+  expect(await page.locator("img").getAttribute("style")).toBeNull();
+  await expect(page.locator("p")).toHaveText("Body text width: 3 inch");
+});
+
 test("an article without a cover keeps only its first body image eager", async ({ page }) => {
   await page.route("**/*", route => route.abort());
   await page.setContent(cleanPostContent('<img src="/uploads/first.webp"><img src="/uploads/second.webp">'));

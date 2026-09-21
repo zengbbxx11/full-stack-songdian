@@ -67,9 +67,11 @@ const getPostsCached = cache(async (page: number, perPage: number, category: num
     },
     { tags: ["news"] },
   );
-  const posts = data.list.map(toPostSummary);
-  const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
-  return { posts, pagination: { total: data.total, totalPages } };
+  // 后端字段缺失时不抛错：列表与总数一律兜底（详情页没有列表页那层 try/catch）。
+  const total = data.total ?? 0;
+  const posts = (data.list ?? []).map(toPostSummary);
+  const totalPages = total > 0 ? Math.ceil(total / perPage) : 1;
+  return { posts, pagination: { total, totalPages } };
 });
 
 // 仅真实不存在时返回 null；元数据与页面共享同一次详情读取。
@@ -108,10 +110,10 @@ export async function getAllPostSlugs({
         },
         { revalidate, tags: ["news"] },
       );
-      list.push(...data.list);
-      total = data.total;
+      list.push(...(data.list ?? []));
+      total = data.total ?? 0;
       page += 1;
-      if (data.list.length === 0) break;
+      if (!data.list?.length) break;
     } while (list.length < total);
     if (strict && list.length !== total) {
       throw new Error("Incomplete sitemap pagination");
@@ -123,14 +125,18 @@ export async function getAllPostSlugs({
   }
 }
 
+/** 全量翻页的页数上限（对齐 scripts/gen-canonical-map.mjs）：后端分页异常时不会无界翻页。 */
+const MAX_ADJACENT_PAGES = 200;
+
 /**
  * 获取指定文章的「上一篇 / 下一篇」导航数据。
  * 后端暂无相邻文章接口，这里拉取全量（站点文章极少）后在内存中按发布时间降序定位。
+ * 用 React cache() 包裹，与同文件其它读取口径一致（同一次请求内多次调用只打一次后端）。
  */
-export async function getAdjacentPosts(slug: string): Promise<{
+export const getAdjacentPosts = cache(async (slug: string): Promise<{
   prev: { slug: string; title: string; date: string } | null;
   next: { slug: string; title: string; date: string } | null;
-}> {
+}> => {
   try {
     const list: NewsPageDTO[] = [];
     let page = 1;
@@ -145,11 +151,11 @@ export async function getAdjacentPosts(slug: string): Promise<{
         },
         { tags: ["news"] },
       );
-      list.push(...data.list);
-      total = data.total;
+      list.push(...(data.list ?? []));
+      total = data.total ?? 0;
       page += 1;
-      if (data.list.length === 0) break;
-    } while (list.length < total);
+      if (!data.list?.length) break;
+    } while (list.length < total && page <= MAX_ADJACENT_PAGES);
     const sorted = [...list].sort((a, b) =>
       (b.published_at || "").localeCompare(a.published_at || ""),
     );
@@ -169,7 +175,7 @@ export async function getAdjacentPosts(slug: string): Promise<{
   } catch {
     return { prev: null, next: null };
   }
-}
+});
 
 function toPostSummary(n: NewsPageDTO): PostSummary {
   return {

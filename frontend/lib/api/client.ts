@@ -190,6 +190,8 @@ export interface ProductDetailDTO extends ProductPageDTO {
   content_html: string;
   galleries: GalleryDTO[];
   attributes: AttributeDTO[];
+  // 后台手选的关联产品（按配置顺序，最多 4 个）；公开接口只含已发布目标，未配置时为空数组
+  related: ProductPageDTO[];
 }
 
 export interface NewsPageDTO {

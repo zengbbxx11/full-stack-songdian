@@ -102,7 +102,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
             <div className="relative h-40 bg-white p-3">
               <Image
                 src={cert.src}
-                alt={`${cert.title} 认证证书`}
+                alt={`${cert.title} certificate`}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                 className="object-contain transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
@@ -149,7 +149,7 @@ export default function CertificateGallery({ items }: { items: readonly CertItem
             <div className="relative h-[78vh] w-full">
               <Image
                 src={active.src}
-                alt={`${active.title} 认证证书高清大图`}
+                alt={`${active.title} certificate enlarged view`}
                 fill
                 sizes="100vw"
                 className="object-contain rounded-lg"

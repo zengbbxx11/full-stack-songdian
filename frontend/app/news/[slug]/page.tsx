@@ -42,7 +42,12 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post) notFound();
-  const desc = post.excerpt?.slice(0, 160);
+  // 摘要为空时不能让整条 meta description 消失（否则 Lighthouse 的 meta-description 审计失败）：
+  // 回退到「文章标题 + 站点定位」，与列表页描述口径保持一致。
+  const desc = (
+    post.excerpt?.trim() ||
+    `${post.title} — camera manufacturing insights from Songdian Technology, an OEM/ODM digital camera factory.`
+  ).slice(0, 160);
   const socialImage = post.featuredImage || MEDIA.ogImage;
   return {
     title: post.title,

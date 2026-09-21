@@ -2,7 +2,7 @@
  * 文件：app/search/page.tsx（搜索结果页 / Search）
  * 职责：产品 + 新闻联合搜索结果展示，含搜索框、类型切换、封面卡片网格与分页。
  * 数据来源（后端 /api/v1/search）：search(q, { type, page })
- * 渲染方式：Async Server Component + ISR（revalidate = 60 秒）。
+ * 渲染方式：Async Server Component + SSR（dynamic = "force-dynamic"，搜索结果实时 no-store）。
  *
  * 设计要点（对齐 DESIGN-tesla.md + AGENTS.md 视觉调性）：
  *  - 结果区为「响应式封面卡片网格」：桌面 3 列 / 平板 2 列 / 手机 1 列。
@@ -20,6 +20,7 @@ import SearchControls from "@/components/SearchControls";
 import SearchResultCard from "@/components/SearchResultCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
+import { readListQuery } from "@/lib/list-query";
 
 // 搜索结果需实时反映后端最新数据：禁用整页静态缓存，强制每次请求动态渲染
 export const dynamic = "force-dynamic";
@@ -51,7 +52,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const sp = await searchParams;
   const q = (sp.q || "").toString().trim();
   const type = (["all", "product", "news"].includes(sp.type ?? "") ? (sp.type as string) : "all") as SearchType;
-  const page = Number(sp.page) || 1;
+  // 与其它列表页统一口径：非安全整数或 < 2 一律回退第 1 页（负数/小数不会直达后端）
+  const { page } = readListQuery(sp);
 
   // 执行搜索（空关键词不请求后端）；出错时进入友好错误态而非整页崩溃。
   let result: SearchResult | null = null;
@@ -61,7 +63,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     try {
       result = await search(q, { type, page, pageSize: PAGE_SIZE });
     } catch (e) {
-      errorMessage = e instanceof Error ? e.message : "Search is temporarily unavailable. Please try again.";
+      // 英文站：不要把中文 ApiError.message（含后端 msg）渲染到页面，原始错误留给服务端日志。
+      console.error("Search failed:", e);
+      errorMessage = "Search is temporarily unavailable. Please try again.";
     }
   } else {
     // 无关键词：返回空结果占位（保持类型一致，用于类型切换等场景）。

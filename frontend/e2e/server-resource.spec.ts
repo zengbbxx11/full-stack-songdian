@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { NextRequest } from "next/server";
 import { apiFetch, ApiError } from "../lib/api/client";
 import { proxy } from "../proxy";
+import { CANONICAL_MAP } from "../lib/generated/canonical-map";
 
 const originalFetch = globalThis.fetch;
 test.afterEach(() => { globalThis.fetch = originalFetch; });
@@ -111,11 +112,19 @@ test("canonical entries expire and backend recovery overrides fallback", async (
     expect(calls).toBe(2);
   } finally { Date.now = realNow; }
 
+  // 后端不可达时回退到构建期生成的 canonical 映射。不硬编码真实产品 slug
+  // （AGENTS.md：用例不得依赖真实内容 slug），映射为空时跳过离线兜底断言。
+  const fallbackSlug = Object.keys(CANONICAL_MAP)[0];
   globalThis.fetch = async () => { throw new TypeError("offline"); };
-  const fallback = await proxy(request("dc226"));
-  expect(fallback.status).toBe(308);
+  if (fallbackSlug) {
+    const fallback = await proxy(request(fallbackSlug));
+    expect(fallback.status).toBe(308);
+    expect(fallback.headers.get("location")).toContain(CANONICAL_MAP[fallbackSlug]);
+  } else {
+    test.skip(true, "canonical map is empty; run npm run gen:map to cover the offline fallback");
+  }
   globalThis.fetch = async () => Response.json({ code: "A010001" }, { status: 404 });
-  const unpublished = await proxy(request("dc226"));
+  const unpublished = await proxy(request(fallbackSlug || "unknown-slug"));
   expect(unpublished.status).toBe(200);
   expect(unpublished.headers.get("location")).toBeNull();
 });

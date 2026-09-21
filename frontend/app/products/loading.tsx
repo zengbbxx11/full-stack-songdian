@@ -30,7 +30,7 @@ export default function ProductsLoading() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-black/8 bg-white">
-                <div className="skeleton aspect-[4/3] md:aspect-square" />
+                <div className="skeleton aspect-square" />
                 <div className="space-y-3 p-4 md:p-5">
                   <div className="skeleton h-3 w-2/5 rounded" />
                   <div className="skeleton h-5 w-3/4 rounded" />

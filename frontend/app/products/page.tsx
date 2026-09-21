@@ -86,7 +86,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </section>
 
       <section className="bg-[var(--surface-dark)] pb-7 pt-4 text-white md:pb-8 md:pt-5">
-        <div className="site-container grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="site-container grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="max-w-3xl">
             <p className="section-eyebrow">Product Portfolio</p>
             <h1 className="mt-2.5 text-[clamp(2.35rem,4vw,3.5rem)] font-semibold leading-[1] tracking-[-0.045em]">
@@ -96,8 +96,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               Explore our current camera portfolio for OEM and ODM projects. Select a category to narrow the collection.
             </p>
           </div>
-          <div className="border-l border-white/15 pl-5 lg:mb-1">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-white/45">Available products</p>
+          <div className="flex items-center gap-4 border-t border-white/15 pt-4 sm:block sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-white/65">Available products</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums">{loadError ? "—" : pagination?.total ?? products.length}</p>
           </div>
         </div>
@@ -107,21 +107,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div className="site-container">
           {/* 产品分类筛选 */}
           {categories.length > 0 && (
-            <div className="mb-10 overflow-hidden rounded-3xl border border-black/[0.07] bg-white shadow-[0_18px_50px_rgba(17,19,22,0.06)]">
-              <div className="border-b border-black/[0.06] bg-gradient-to-r from-[#fafafa] to-white px-5 py-4 md:px-6">
+            <div className="mb-7 overflow-hidden rounded-2xl border border-black/[0.08] bg-white md:mb-10">
+              <div className="border-b border-black/[0.06] bg-gradient-to-r from-[#fafafa] to-white px-4 py-3 md:px-6 md:py-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
                     <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
                     <p className="text-[15px] font-semibold text-[var(--foreground)]">Browse by category</p>
-                    <p className="text-sm text-[#777b81]">Choose a camera type to refine the collection</p>
+                    <p className="text-sm text-[var(--muted-foreground)]">Choose a camera type to refine the collection</p>
                   </div>
                 </div>
               </div>
-              <HorizontalScrollArea ariaLabel="Product categories" className="px-5 pt-5 md:overflow-visible md:px-6 md:pb-5">
-              <div className="flex gap-2.5 pb-1 md:flex-wrap">
+              <HorizontalScrollArea ariaLabel="Product categories" className="px-4 pt-4 md:overflow-visible md:px-6 md:pb-4">
+              <div className="flex gap-2 pb-1 md:flex-wrap">
                 <Link
+                  prefetch={false}
                   href="/products"
                   aria-current={!matchedCategory ? "page" : undefined}
                   className={`inline-flex min-h-11 shrink-0 snap-start touch-manipulation items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98] ${!matchedCategory ? "border-[var(--foreground)] bg-[var(--foreground)] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[var(--graphite)] hover:border-[var(--accent)]/50 hover:bg-white hover:text-[var(--accent)]"}`}
@@ -132,6 +133,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 const isActive = !!categorySlug && categorySlug.toLowerCase() === cat.slug.toLowerCase();
                 return (
                   <Link
+                  prefetch={false}
                     key={cat.id}
                     href={`/products?category=${cat.slug}`}
                     aria-current={isActive ? "page" : undefined}
@@ -165,16 +167,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                 {products.map((product, index) => (
-                  <div key={product.id}>
-                    <ProductCard product={product} preload={index === 0} sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 320px" />
+                  <div key={product.id} className="min-w-0">
+                    <ProductCard product={product} preload={index === 0} sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 320px" />
                   </div>
                 ))}
               </div>
 
               {pagination && pagination.totalPages > 1 && (
-                <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-12">
+                <nav aria-label="Pagination" className="flex flex-wrap items-center justify-center gap-2 mt-10 md:mt-12">
                   {currentPage > 1 && (
                     <Link
+                  prefetch={false}
                       href={listUrl("/products", currentPage - 1, matchedCategory?.slug)}
                       className="inline-flex min-h-11 items-center rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--graphite)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                     >
@@ -186,6 +189,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   </span>
                   {currentPage < pagination.totalPages && (
                     <Link
+                  prefetch={false}
                       href={listUrl("/products", currentPage + 1, matchedCategory?.slug)}
                       className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-black/10 bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--graphite)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                     >

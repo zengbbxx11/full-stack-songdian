@@ -128,27 +128,6 @@ export function webSiteSchema(): StructuredData {
 }
 
 /**
- * 生成 BreadcrumbList（面包屑列表）Schema.org 结构化数据对象。
- * 每个面包屑项映射为带位置编号的 ListItem。
- *
- * @param items - 面包屑项（通常来自 {@link generateBreadcrumbs}）
- * @returns 符合 https://schema.org/BreadcrumbList 的 {@link StructuredData} 对象
- */
-export function breadcrumbSchema(items: BreadcrumbItem[]): StructuredData {
-  const siteUrl = SITE_URL;
-  return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: items.map((item, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: item.label,
-      item: item.href ? `${siteUrl}${item.href}` : undefined,
-    })),
-  };
-}
-
-/**
  * 为博客文章生成 Article Schema.org 结构化数据对象。
  *
  * @param params - 文章元数据

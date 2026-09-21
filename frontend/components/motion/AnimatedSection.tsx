@@ -22,5 +22,5 @@ export default function AnimatedSection({
   children,
   className = "",
 }: AnimatedSectionProps) {
-  return <div className={className}>{children}</div>;
+  return <div className={`section-reveal ${className}`}>{children}</div>;
 }

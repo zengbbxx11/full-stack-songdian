@@ -9,10 +9,21 @@ const source = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
+const clientSource = ts.transpileModule(
+  fs.readFileSync(new URL("../lib/api/client.ts", import.meta.url), "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
 function load(fetch, timers = {}) {
   const context = {
-    exports: {}, process: { env: {} }, fetch, AbortController,
+    exports: {}, process: { env: {} }, fetch, AbortController, URL,
     setTimeout, clearTimeout, ...timers,
+  };
+  const clientContext = { ...context, exports: {} };
+  vm.runInNewContext(clientSource, clientContext);
+  context.require = (name) => {
+    assert.equal(name, "./client");
+    return clientContext.exports;
   };
   vm.runInNewContext(source, context);
   return context.exports;

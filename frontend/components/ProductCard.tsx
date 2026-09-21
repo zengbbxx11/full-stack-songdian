@@ -50,11 +50,13 @@ export default function ProductCard({ product, preload = false, sizes = "(max-wi
   const tags = product.tags || [];
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-within:border-[var(--accent)]/60 focus-within:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm">
-      {/* 图片区域 */}
+    <article className="product-card group flex h-full flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-[transform,border-color,box-shadow] duration-300 motion-safe:hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-within:border-[var(--accent)]/60 focus-within:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm">
+      {/* 图片区域 — 正方形：真实产品主图全部是 1:1，旧版手机端用 4:3 容器 + object-contain
+          会在左右留出 #f2f3f4 灰底（图片按高度撑满后两侧空着）。 */}
       <Link
+        prefetch={false}
         href={productPath(product)}
-        className="relative block aspect-[4/3] shrink-0 overflow-hidden bg-[#f2f3f4] md:aspect-square"
+        className="relative block aspect-square shrink-0 overflow-hidden bg-[#f2f3f4]"
       >
         {product.image ? (
           <SafeImage
@@ -63,7 +65,7 @@ export default function ProductCard({ product, preload = false, sizes = "(max-wi
             fill
             sizes={sizes}
             preload={preload}
-            className="object-contain transition-transform group-hover:scale-[1.04]"
+            className="object-contain transition-transform motion-safe:group-hover:scale-[1.04]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
           />
@@ -74,9 +76,9 @@ export default function ProductCard({ product, preload = false, sizes = "(max-wi
 
       {/* 信息区域 */}
       <div className="flex flex-1 flex-col p-4 md:p-5">
-        <Link href={productPath(product)} className="flex-1 rounded-sm focus-visible:outline-offset-4">
-          {product.categories[0] && <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8e94]">{product.categories[0].name}</p>}
-          <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-[-0.02em] text-[var(--foreground)] transition-colors duration-300 group-hover:text-[var(--accent)] md:text-[18px]">
+        <Link prefetch={false} href={productPath(product)} className="flex-1 rounded-sm focus-visible:outline-offset-4">
+          {product.categories[0] && <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">{product.categories[0].name}</p>}
+          <h3 className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-[-0.02em] text-[var(--foreground)] transition-colors duration-300 group-hover:text-[var(--accent)] group-focus-within:text-[var(--accent)] md:text-[18px]">
             {product.name}
           </h3>
           {/* 产品标签 —— 最多展示 4 个，沿用 Tesla 设计语言（Light Ash 底 / Pewter 字、无阴影） */}
@@ -91,12 +93,13 @@ export default function ProductCard({ product, preload = false, sizes = "(max-wi
 
         {/* CTA —— 幽灵文字链：默认 Graphite 灰，卡片 hover 变红 + 箭头滑入 */}
         <Link
+        prefetch={false}
           href={productPath(product)}
           aria-label={`View details of ${product.name}`}
-          className="mt-3 inline-flex min-h-11 touch-manipulation items-center gap-1 rounded-sm text-xs font-semibold uppercase tracking-[0.08em] text-[var(--graphite)] transition-colors duration-300 group-hover:text-[var(--accent)] active:text-[var(--accent-hover)]"
+          className="mt-3 inline-flex min-h-11 touch-manipulation items-center gap-1 rounded-sm text-xs font-semibold uppercase tracking-[0.08em] text-[var(--graphite)] transition-colors duration-300 group-hover:text-[var(--accent)] group-focus-within:text-[var(--accent)] active:text-[var(--accent-hover)]"
         >
           <span>View Details</span>
-          <ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
+          <ArrowRight className="h-3.5 w-3.5 -translate-x-1 opacity-60 transition-[transform,opacity] duration-300 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100" />
         </Link>
       </div>
     </article>

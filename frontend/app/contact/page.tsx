@@ -11,7 +11,7 @@ import { superMeta } from "@/lib/site-meta";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ContactMap from "@/components/ContactMapLoader";
 import InquiryForm from "@/components/form/InquiryForm";
-import { generateBreadcrumbs, localBusinessSchema, safeJsonLd } from "@/lib/seo";
+import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 import { getPublicSettings } from "@/lib/api/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,8 @@ export default async function ContactPage() {
   const address = settings.company_address || COMPANY.contact.address;
 
   const breadcrumbs = generateBreadcrumbs([{ label: "Contact" }]);
-  const businessSchema = localBusinessSchema();
+  // Organization 结构化数据由 app/layout.tsx 全站输出（复用同一个 @id #manufacturer）；
+  // 此处不再重复输出，避免同一页出现两个同 @id 的 Organization 块。
 
   // 高德传 WGS-84 并自动转 GCJ-02；Google 中国底图为 GCJ-02，
   // 故 Google 链接需先用 WGS-84 坐标换算成 GCJ-02，才能与高德落在同一点。
@@ -48,11 +49,6 @@ export default async function ContactPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(businessSchema) }}
-      />
-
       {/* 首屏 Hero —— 仅含面包屑 */}
       <section className="border-b border-white/10 bg-[var(--surface-dark)] py-5">
         <div className="site-container">

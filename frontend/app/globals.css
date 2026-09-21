@@ -490,3 +490,31 @@ html {
     touch-action: manipulation;
   }
 }
+
+/* Progressive enhancement: content stays readable without JS or view timelines. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section-reveal {
+      animation: section-arrive linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 22%;
+    }
+    @keyframes section-arrive {
+      from { opacity: 0.72; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+}
+
+/* Wide touch devices have no hover: keep the existing category information visible. */
+@media (hover: none) and (min-width: 1024px) {
+  .home-category > div:last-child > div:last-child {
+    max-height: 7rem;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 639px) {
+  .section-shell { padding-block: 3.5rem; }
+  .section-title { line-height: 1.1; }
+}

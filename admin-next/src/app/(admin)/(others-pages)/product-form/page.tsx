@@ -16,6 +16,8 @@ import SelectField from "@/components/form/SelectField";
 import Button from "@/components/ui/button/Button";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import MediaPicker from "@/components/media/MediaPicker";
+import type { PickedMedia } from "@/components/media/types";
 import ProductDetailImageEditor from "@/components/form/ProductDetailImageEditor";
 import { apiFetch, apiFetchAllPages, resolveMediaUrl } from "@/lib/api-client";
 import type { ProductCategory } from "@/types";
@@ -25,6 +27,11 @@ import ContentWorkflowPanel from "@/components/content/ContentWorkflowPanel";
 
 interface GalleryItem { id: number; image_url: string; alt: string | null; sort_order: number; }
 interface AttributeItem { id: number; name: string; slug: string; value: string; }
+/** 关联产品（后台手选、单向、最多 RELATED_MAX 个）：数组顺序即前台展示顺序。 */
+interface RelatedItem { id: number; title: string; slug: string; status: string; cover_image: string | null; }
+
+/** 与后端 services.MAX_RELATED_PRODUCTS 对齐：超过会被 400 拒绝。 */
+const RELATED_MAX = 4;
 
 export default function ProductFormPage() {
   return (
@@ -54,14 +61,23 @@ function ProductFormInner() {
   const [galleries, setGalleries] = useState<GalleryItem[]>([]);
   const [attrs, setAttrs] = useState<AttributeItem[]>([]);
   const [newAttr, setNewAttr] = useState({ name: "", value: "" });
+  // 关联产品：related = 已选（按展示顺序，提交时取 id 数组）；relatedKeyword/options = 选品搜索
+  const [related, setRelated] = useState<RelatedItem[]>([]);
+  const [relatedKeyword, setRelatedKeyword] = useState("");
+  const [relatedOptions, setRelatedOptions] = useState<RelatedItem[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // 封面上传忙碌态 + 请求序号：上传期间禁止保存，连续选择时只接受最后一次结果。
+  // 素材选择器（替代表单内直接上传）：上传中仍通过 coverUploading/uploading 禁用保存。
   const [coverUploading, setCoverUploading] = useState(false);
   const [detailUploading, setDetailUploading] = useState(false);
   // 详情图自上次保存后被改动：用于离开页面前的提醒（保存成功后复位）。
   const [detailDirty, setDetailDirty] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
-  const coverUploadSeq = useRef(0);
+  // 选择器开关；详情图选择器以 Promise 形式接入编辑器（确认时 resolve，取消时 resolve 空数组）
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
+  const [galleryPickerOpen, setGalleryPickerOpen] = useState(false);
+  const [detailPickerOpen, setDetailPickerOpen] = useState(false);
+  const detailPickResolve = useRef<((picked: PickedMedia[]) => void) | null>(null);
   const [form, setForm] = useState({ title: "", slug: "", sku: "", summary: "", content_html: "", category_id: "", stock_status: "instock", status: "DRAFT", published_at: "", cover_image: "", seo_title: "", seo_description: "" });
   const { error: showError } = useToast();
 
@@ -122,6 +138,8 @@ function ProductFormInner() {
       setForm({ title, slug, sku: String(p.sku || ""), summary: String(p.summary || ""), content_html: String(p.content_html || ""), category_id: category?.id ? String(category.id) : "", stock_status: String(p.stock_status || "instock"), status: copyFrom ? "DRAFT" : String(p.status || "DRAFT"), published_at: copyFrom ? "" : toLocalDateTime(String(p.published_at || "")), cover_image: String(p.cover_image || ""), seo_title: String(p.seo_title || ""), seo_description: String(p.seo_description || "") });
       setGalleries((p.galleries as GalleryItem[]) || []);
       setAttrs((p.attributes as AttributeItem[]) || []);
+      // 关联产品回填（复制模式下同样带过来，便于以现有产品为模板）
+      setRelated((p.related as RelatedItem[]) || []);
     }).catch((err: unknown) => {
       if (!active) return;
       const msg: string = err instanceof Error ? err.message : "Unknown error";
@@ -130,6 +148,22 @@ function ProductFormInner() {
     });
     return () => { active = false; };
   }, [id, copyFrom, showError, reloadKey]);
+
+  // 关联产品候选：按关键字搜索（后端 /admin/products 支持 keyword + 分页，单页上限 50）
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      setRelatedLoading(true);
+      const query = relatedKeyword ? `&keyword=${encodeURIComponent(relatedKeyword)}` : "";
+      apiFetch<{ list: RelatedItem[] }>(`/admin/products?page_size=20${query}`)
+        .then((data) => { if (active) setRelatedOptions(data.list || []); })
+        .catch((err: unknown) => {
+          if (active) showError(err instanceof Error ? err.message : "加载候选产品失败");
+        })
+        .finally(() => { if (active) setRelatedLoading(false); });
+    }, 250);
+    return () => { active = false; clearTimeout(timer); };
+  }, [relatedKeyword, showError]);
 
   // 上传图片文件到后端 → 返回 URL
   async function uploadImage(file: File, productSlug?: string): Promise<string> {
@@ -143,22 +177,34 @@ function ProductFormInner() {
     return result.url;
   }
 
-  // 添加画廊图
-  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !id) return;
+  // 从媒体库选图加入图库（保留「添加即保存」语义：逐张 POST，失败逐条提示）。
+  // 同一张图重复加入会产生重复图库行，先按 URL 去重。
+  async function addGalleryImages(picked: PickedMedia[]) {
+    if (!id || picked.length === 0) return;
+    const existing = new Set(galleries.map(g => g.image_url));
+    const fresh = picked.filter(p => !existing.has(p.url));
+    if (fresh.length === 0) { showError("所选图片都已在图库中"); return; }
     setUploading(true);
     try {
-      for (let i = 0; i < files.length; i++) {
-        const url = await uploadImage(files[i], form.slug);
+      for (let i = 0; i < fresh.length; i++) {
         const newG = await apiFetch<GalleryItem>(`/admin/products/${id}/gallery`, {
           method: "POST",
-          body: { image_url: url, alt: files[i].name, sort_order: galleries.length + i },
+          body: { image_url: fresh[i].url, alt: fresh[i].title || "", sort_order: galleries.length + i },
         });
         setGalleries(prev => [...prev, { id: newG.id, image_url: newG.image_url, alt: newG.alt, sort_order: newG.sort_order }]);
       }
-    } catch (err) { showError(err instanceof Error ? err.message : "上传失败"); }
-    finally { setUploading(false); e.target.value = ""; }
+    } catch (err) { showError(err instanceof Error ? err.message : "添加失败"); }
+    finally { setUploading(false); }
+  }
+
+  // 详情图选择器：以 Promise 接入编辑器（确认 resolve 选中项，取消 resolve 空数组）
+  function openDetailPicker(): Promise<PickedMedia[]> {
+    return new Promise((resolve) => { detailPickResolve.current = resolve; setDetailPickerOpen(true); });
+  }
+  function closeDetailPicker(picked?: PickedMedia[]) {
+    detailPickResolve.current?.(picked ?? []);
+    detailPickResolve.current = null;
+    setDetailPickerOpen(false);
   }
 
   // 添加规格属性
@@ -166,7 +212,7 @@ function ProductFormInner() {
     const name = newAttr.name.trim(), value = newAttr.value.trim();
     if (!name || !value || !id) return;
     try {
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       const res = await apiFetch<AttributeItem>(`/admin/products/${id}/attributes`, {
         method: "POST", body: { name, slug, value },
       });
@@ -191,21 +237,24 @@ function ProductFormInner() {
     });
   }
 
-  // 上传封面图：纳入忙碌态 + 请求序号，旧请求不会覆盖新选择，上传期间禁止保存。
-  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const seq = ++coverUploadSeq.current;
-    setCoverUploading(true);
-    try {
-      const url = await uploadImage(file, form.slug);
-      if (seq === coverUploadSeq.current) setForm(prev => ({ ...prev, cover_image: url }));
-    } catch (err) {
-      if (seq === coverUploadSeq.current) showError(err instanceof Error ? err.message : "上传失败");
-    } finally {
-      if (seq === coverUploadSeq.current) setCoverUploading(false);
-    }
+  // ── 关联产品（最多 RELATED_MAX 个，单向）：选择顺序即前台展示顺序 ──
+  function addRelated(item: RelatedItem) {
+    if (related.length >= RELATED_MAX) return;
+    if (related.some(r => r.id === item.id)) return;
+    if (id && Number(id) === item.id) return;  // 后端也会拒绝自关联，这里先挡住
+    setRelated(prev => [...prev, item]);
+  }
+  function removeRelated(itemId: number) {
+    setRelated(prev => prev.filter(r => r.id !== itemId));
+  }
+  function moveRelated(index: number, delta: number) {
+    setRelated(prev => {
+      const target = index + delta;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -215,6 +264,8 @@ function ProductFormInner() {
     try {
       if (!form.title.trim() || !form.slug.trim() || !form.category_id) throw new Error("请填写标题、别名并选择分类");
       const payload: Record<string, unknown> = { ...form, category_id: form.category_id ? Number(form.category_id) : null };
+      // 关联产品随主表单一起提交；数组顺序 = 前台 Related Products 的展示顺序（空数组表示清空）
+      payload.related_product_ids = related.map(r => r.id);
       payload.published_at = publicationTime(form.published_at, form.status);
       if (!payload.published_at) delete payload.published_at;
       if (isEdit) await apiFetch(`/admin/products/${id}`, { method: "PUT", body: payload });
@@ -253,7 +304,8 @@ function ProductFormInner() {
       {isCopy && <p className="mb-4 text-sm text-amber-700">复制基本信息、封面及 SEO；图库和规格不会自动复制，请保存后进入编辑页添加。</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
-        <fieldset disabled={saving || deleting || detailUploading || coverUploading} className="space-y-6">
+        {/* fieldset 默认 min-width:min-content，窄屏上会被内部固定宽内容顶出横向溢出，故补 min-w-0 */}
+        <fieldset disabled={saving || deleting || detailUploading || coverUploading} className="min-w-0 space-y-6">
         {/* 基本信息 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">基本信息</h3>
@@ -298,7 +350,7 @@ function ProductFormInner() {
             </div>
           </div>
           <div><Label>简介</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>商品详情图</Label><ProductDetailImageEditor value={form.content_html} name={form.title} onChange={value => setForm(prev => ({ ...prev, content_html: value }))} onBusyChange={setDetailUploading} onDirtyChange={setDetailDirty} upload={file => uploadImage(file, form.slug)} /></div>
+          <div><Label>商品详情图</Label><ProductDetailImageEditor value={form.content_html} name={form.title} onChange={value => setForm(prev => ({ ...prev, content_html: value }))} onBusyChange={setDetailUploading} onDirtyChange={setDetailDirty} upload={file => uploadImage(file, form.slug)} pickFromLibrary={openDetailPicker} /></div>
         </div>
 
         {/* SEO 元数据 */}
@@ -332,22 +384,26 @@ function ProductFormInner() {
             <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">封面图</h3>
             <p className={`mt-1 text-xs ${form.slug.trim() ? "text-gray-400" : "text-amber-600 dark:text-amber-400"}`}>
               {form.slug.trim()
-                ? <>上传后归档至：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span></>
-                : "请先填写别名；现在上传的图片将进入媒体库的“未分类”。"}
+                ? <>图片归属：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span>；选择器内也可直接上传。</>
+                : "请先填写别名；选择器内上传的图片将进入媒体库的“未分类”。"}
             </p>
           </div>
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             {form.cover_image ? (
-              <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-32 object-cover rounded-lg border" alt="Cover" />
+              <img src={resolveMediaUrl(form.cover_image)} className="w-32 h-32 shrink-0 object-cover rounded-lg border" alt="Cover" />
             ) : (
-              <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>
+              <div className="w-32 h-32 shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg border flex items-center justify-center text-gray-400 text-sm">无封面</div>
             )}
             <div className="flex-1 space-y-3">
               <Input value={form.cover_image} onChange={e => setForm({...form, cover_image: e.target.value})} placeholder="/uploads/products/x/cover.webp" />
-              <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 ${coverUploading ? "opacity-50 pointer-events-none" : ""}`}>
-                {coverUploading ? "上传中..." : "上传图片"}
-                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" disabled={coverUploading} />
-              </label>
+              <button
+                type="button"
+                onClick={() => setCoverPickerOpen(true)}
+                disabled={coverUploading}
+                className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                {coverUploading ? "处理中..." : "从媒体库选择封面"}
+              </button>
             </div>
           </div>
         </div>
@@ -356,25 +412,29 @@ function ProductFormInner() {
         {/* 产品画廊 */}
         {isEdit && (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
                   产品图库（{galleries.length}）
                 </h3>
                 <p className={`mt-1 text-xs ${form.slug.trim() ? "text-gray-400" : "text-amber-600 dark:text-amber-400"}`}>
                   {form.slug.trim()
-                    ? <>新增图片归档至：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span></>
-                    : "请先填写别名，以便新增图片自动归档。"}
+                    ? <>图片归属：媒体库 / Products / <span className="font-medium">{form.slug.trim()}</span>；选择器内也可直接上传。</>
+                    : "请先填写别名，以便选择器内上传的图片自动归档。"}
                 </p>
               </div>
-              <label className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg cursor-pointer hover:bg-brand-600 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
-                {uploading ? "上传中..." : "+ 添加图片"}
-                <input aria-label="上传产品图库图片" type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />
-              </label>
+              <button
+                type="button"
+                onClick={() => setGalleryPickerOpen(true)}
+                disabled={uploading}
+                className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {uploading ? "添加中..." : "+ 从媒体库添加"}
+              </button>
             </div>
 
             {galleries.length === 0 ? (
-              <p className="text-sm text-gray-400 py-8 text-center">No gallery images yet. Click &quot;+ 添加图片&quot; to upload.</p>
+              <p className="text-sm text-gray-400 py-8 text-center">暂无图库图片，点上方「从媒体库添加」。</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {galleries.map(g => (
@@ -384,7 +444,8 @@ function ProductFormInner() {
                       <button
                         type="button"
                         onClick={() => handleGalleryDelete(g.id)}
-                        className="opacity-0 group-hover:opacity-100 px-3 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600 transition-opacity"
+                        // 触摸端没有 hover，移动端常显；≥768px 仍为悬停出现
+                        className="min-h-9 px-3 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600 transition-opacity opacity-100 md:opacity-0 md:group-hover:opacity-100"
                       >
                         Delete
                       </button>
@@ -406,44 +467,148 @@ function ProductFormInner() {
             {attrs.length > 0 && (
               <div className="space-y-2">
                 {attrs.map(a => (
-                  <div key={a.id} className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-300 w-32 truncate">{a.name}</span>
+                  <div key={a.id} className="flex flex-wrap items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm sm:gap-3">
+                    <span className="w-20 shrink-0 truncate font-medium text-gray-700 dark:text-gray-300 sm:w-32">{a.name}</span>
                     <span className="text-gray-400">=</span>
-                    <span className="flex-1 text-gray-600 dark:text-gray-400">{a.value}</span>
-                    <button type="button" onClick={() => handleDeleteAttr(a.id)} className="text-red-500 hover:text-red-600 text-xs px-2">删除</button>
+                    <span className="min-w-0 flex-1 break-words text-gray-600 dark:text-gray-400">{a.value}</span>
+                    <button type="button" onClick={() => handleDeleteAttr(a.id)} className="min-h-9 shrink-0 px-2 text-xs text-red-500 hover:text-red-600 sm:min-h-0">删除</button>
                   </div>
                 ))}
               </div>
             )}
 
             {/* 添加新规格 */}
-            <div className="flex items-center gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200 sm:gap-3 dark:border-gray-700">
               <input
                 type="text" value={newAttr.name} onChange={e => setNewAttr(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="名称（如：传感器）" className="w-40 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                placeholder="名称（如：传感器）" className="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm sm:h-9 sm:w-40 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               />
               <input
                 type="text" value={newAttr.value} onChange={e => setNewAttr(prev => ({ ...prev, value: e.target.value }))}
-                placeholder="值（如：4800 万像素 CMOS）" className="flex-1 h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                placeholder="值（如：4800 万像素 CMOS）" className="h-10 w-full min-w-0 rounded-lg border border-gray-300 bg-transparent px-3 text-sm sm:h-9 sm:flex-1 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddAttr())}
               />
-              <button type="button" onClick={handleAddAttr} className="px-3 py-1.5 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 shrink-0">添加</button>
+              <button type="button" onClick={handleAddAttr} className="min-h-10 shrink-0 px-3 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 sm:min-h-0 sm:py-1.5">添加</button>
             </div>
           </div>
         )}
 
+        {/* 关联产品（最多 4 个，单向）：随主表单一起提交 related_product_ids */}
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
+              关联产品（{related.length}/{RELATED_MAX}）
+            </h3>
+            <p className="mt-1 text-xs text-gray-400">
+              手动选择本产品详情页「Related Products」要展示的产品（单向：只影响本产品页）；一个都不选则前台不显示该区块。
+            </p>
+          </div>
+
+          {/* 已选：按展示顺序排列，可上移/下移/移除 */}
+          {related.length > 0 ? (
+            <div className="space-y-2">
+              {related.map((item, index) => (
+                <div key={item.id} className="flex flex-wrap items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm sm:gap-3">
+                  {item.cover_image
+                    ? <img src={resolveMediaUrl(item.cover_image)} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+                    : <div className="w-10 h-10 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />}
+                  <span className="min-w-0 truncate font-medium text-gray-700 dark:text-gray-300">{item.title}</span>
+                  <span className="hidden min-w-0 truncate text-xs text-gray-400 sm:inline">/{item.slug}</span>
+                  {item.status !== "PUBLISHED" && (
+                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">未发布，前台不显示</span>
+                  )}
+                  <span className="hidden flex-1 sm:block" />
+                  <button type="button" onClick={() => moveRelated(index, -1)} disabled={index === 0}
+                    className="min-h-9 px-2 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-30 sm:min-h-0">上移</button>
+                  <button type="button" onClick={() => moveRelated(index, 1)} disabled={index === related.length - 1}
+                    className="min-h-9 px-2 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-30 sm:min-h-0">下移</button>
+                  <button type="button" onClick={() => removeRelated(item.id)}
+                    className="min-h-9 px-2 text-xs text-red-500 hover:text-red-600 sm:min-h-0">移除</button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 py-4 text-center">尚未选择关联产品，前台不显示 Related Products 区块。</p>
+          )}
+
+          {/* 搜索候选并添加 */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200 sm:gap-3 dark:border-gray-700">
+            <input
+              type="text" value={relatedKeyword} onChange={e => setRelatedKeyword(e.target.value)}
+              placeholder="搜索产品名称…" aria-label="搜索要关联的产品"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-transparent px-3 text-sm sm:h-9 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            />
+            <span className="shrink-0 text-xs text-gray-400">{relatedLoading ? "加载中…" : `候选 ${relatedOptions.length} 个`}</span>
+          </div>
+          {related.length >= RELATED_MAX && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">已达上限 {RELATED_MAX} 个，如需更换请先移除一个。</p>
+          )}
+          <div className="max-h-64 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+            {relatedOptions
+              .filter(o => !related.some(r => r.id === o.id) && !(id && Number(id) === o.id))
+              .map(o => (
+                <div key={o.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm sm:gap-3">
+                  {o.cover_image
+                    ? <img src={resolveMediaUrl(o.cover_image)} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                    : <div className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 shrink-0" />}
+                  <span className="min-w-0 truncate text-gray-700 dark:text-gray-300">{o.title}</span>
+                  {o.status !== "PUBLISHED" && (
+                    <span className="shrink-0 text-xs text-amber-600 dark:text-amber-400">未发布</span>
+                  )}
+                  <span className="hidden flex-1 sm:block" />
+                  <button type="button" onClick={() => addRelated(o)} disabled={related.length >= RELATED_MAX}
+                    className="min-h-9 shrink-0 px-3 py-1 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-40 sm:min-h-0">添加</button>
+                </div>
+              ))}
+          </div>
+        </div>
+
         {isEdit && id && <ContentWorkflowPanel resource="products" id={id} onRestored={() => setReloadKey((value) => value + 1)} />}
 
-        {/* 操作栏 */}
-        <div className="flex justify-between">
+        {/* 操作栏：移动端吸底常驻（长表单不必滚到底才能保存），≥640px 恢复原行内布局 */}
+        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 dark:border-gray-800 dark:bg-gray-900/95 sm:dark:bg-transparent">
           <div>{isEdit && <Button variant="outline" type="button" onClick={handleDelete} disabled={deleting}>{deleting ? "删除中..." : "删除产品"}</Button>}</div>
-          <div className="flex gap-3">
+          <div className="flex flex-1 justify-end gap-3 sm:flex-none">
             <Button variant="outline" type="button" onClick={() => { if (detailDirty) setLeaveConfirm(true); else router.back(); }}>取消</Button>
             <Button type="submit" disabled={saving || detailUploading || coverUploading}>{saving ? "保存中..." : detailUploading ? "详情图上传中..." : coverUploading ? "封面上传中..." : "保存产品"}</Button>
           </div>
         </div>
         </fieldset>
       </form>
+
+      {/* 媒体选择器：封面（单选）/ 图库（多选）/ 详情图（多选，Promise 接入编辑器）。
+          上传归属默认 product:{slug}（后端自动建/复用 Products/{slug} 相册），保证素材必有归属。 */}
+      {coverPickerOpen && (
+        <MediaPicker
+          mode="single"
+          categorizeHint={form.slug.trim() ? `product:${form.slug.trim()}` : undefined}
+          onBusyChange={setCoverUploading}
+          onClose={() => setCoverPickerOpen(false)}
+          onConfirm={(picked) => {
+            const first = picked[0];
+            if (first) setForm(prev => ({ ...prev, cover_image: first.url }));
+            setCoverPickerOpen(false);
+          }}
+        />
+      )}
+      {galleryPickerOpen && (
+        <MediaPicker
+          mode="multiple"
+          categorizeHint={form.slug.trim() ? `product:${form.slug.trim()}` : undefined}
+          onBusyChange={setUploading}
+          onClose={() => setGalleryPickerOpen(false)}
+          onConfirm={(picked) => { void addGalleryImages(picked); setGalleryPickerOpen(false); }}
+        />
+      )}
+      {detailPickerOpen && (
+        <MediaPicker
+          mode="multiple"
+          categorizeHint={form.slug.trim() ? `product:${form.slug.trim()}` : undefined}
+          onBusyChange={setDetailUploading}
+          onClose={() => closeDetailPicker()}
+          onConfirm={(picked) => closeDetailPicker(picked)}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmOpen}

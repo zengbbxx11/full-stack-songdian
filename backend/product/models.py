@@ -50,6 +50,7 @@ class Product(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
 
     galleries: fields.ReverseRelation[ProductGallery]
     attributes: fields.ReverseRelation[ProductAttribute]
+    related_links: fields.ReverseRelation[ProductRelated]
 
     class Meta:
         table = "t_product"
@@ -80,3 +81,29 @@ class ProductAttribute(Model):
 
     class Meta:
         table = "t_product_attribute"
+
+
+class ProductRelated(Model):
+    """产品 → 关联产品（后台手选，单向，最多 4 个，按 sort_order 排序）。
+
+    为什么用独立子表而不是 Product.tags 那样的 JSON 数组：需要外键完整性（目标产品删除时
+    级联清理）、UNIQUE(product, related) 去重、以及按 sort_order 的稳定排序；写法对齐
+    ProductGallery（FK CASCADE + sort_order）与 t_role_permission（联合唯一）。
+    单向语义：只写「A → B」这一行，B 的产品页不会自动出现 A（见 services._replace_related）。
+    """
+
+    id = fields.BigIntField(primary_key=True)
+    product = fields.ForeignKeyField(
+        "models.Product", related_name="related_links", on_delete=fields.CASCADE
+    )
+    related = fields.ForeignKeyField(
+        "models.Product", related_name="related_by_links", on_delete=fields.CASCADE
+    )
+    sort_order = fields.FloatField(default=0.0)  # 后台选择顺序，越小越靠前
+
+    class Meta:
+        table = "t_product_related"
+        unique_together = (("product", "related"),)
+        # (product, sort_order) 服务「按展示顺序读取引用列表」；
+        # (related,) 单独建索引，服务「目标变化时反查引用方」（services._referrer_slugs）
+        indexes = (("product", "sort_order"), ("related",))

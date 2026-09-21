@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from datetime import UTC, datetime
 
 from tortoise.functions import Count, Max
@@ -29,6 +30,7 @@ from product.models import (
     ProductAttribute,
     ProductCategory,
     ProductGallery,
+    ProductRelated,
 )
 from product.schemas import (
     AttributeCreateRequest,
@@ -167,6 +169,86 @@ async def list_products(
     return vos, total
 
 
+# ───────────────── 关联产品（后台手选，单向，最多 4 个）─────────────────
+
+MAX_RELATED_PRODUCTS = 4
+
+
+async def _normalize_related_ids(product_id: int, ids: list[int]) -> list[int]:
+    """校验并归一化关联产品 id：去重保序、剔除自身、上限 4、目标必须存在且未软删。
+
+    任一条不合法都按 400 拒绝（运营能立刻看到原因），不做静默丢弃 ——
+    静默会让后台看到的列表与最终入库结果不一致。
+    """
+    ordered = list(dict.fromkeys(ids))  # 去重且保留后台的选择顺序
+    if product_id in ordered:
+        raise BizException(ErrorCode.C400001, "不能把产品关联到自身")
+    if len(ordered) > MAX_RELATED_PRODUCTS:
+        raise BizException(ErrorCode.C400001, f"关联产品最多 {MAX_RELATED_PRODUCTS} 个")
+    if ordered:
+        rows = await Product.filter(id__in=ordered).values_list("id", "deleted")
+        existing = {rid for rid, _ in rows}
+        # 完全不存在的 id：脏请求或程序错误 → 400
+        if any(rid not in existing for rid in ordered):
+            raise BizException(ErrorCode.C400001, "关联产品不存在")
+        # 已软删（被删除）的目标属运营控制之外的状态变化：静默剔除，
+        # 不因为一个失效项就阻断整单保存（否则运营会看到"保存失败却找不到可移除的项"）。
+        alive = {rid for rid, deleted in rows if not deleted}
+        ordered = [rid for rid in ordered if rid in alive]
+    return ordered
+
+
+async def _replace_related(product_id: int, ids: list[int]) -> None:
+    """整体覆盖关联产品（delete + insert，sort_order = 数组下标）。
+
+    单向：只写「本产品 → 目标」的行，不反向写入，所以 B 的产品页不会因为 A 关联了它而变化。
+    """
+    await ProductRelated.filter(product_id=product_id).delete()
+    if ids:
+        await ProductRelated.bulk_create(
+            [
+                ProductRelated(product_id=product_id, related_id=rid, sort_order=index)
+                for index, rid in enumerate(ids)
+            ]
+        )
+
+
+async def _load_related(product_id: int, published_only: bool) -> list[ProductPageVO]:
+    """按后台配置顺序取回关联产品卡片。
+
+    published_only=True（公开详情）时过滤未发布与已软删目标：关联的产品被下架/删除后
+    前台自动少显示一条，而不是把草稿曝光；后台详情传 False，便于选品器回填（含草稿）。
+    """
+    ids = list(
+        await ProductRelated.filter(product_id=product_id)
+        .order_by("sort_order", "id")
+        .values_list("related_id", flat=True)
+    )
+    if not ids:
+        return []
+    q = Product.filter(id__in=ids, deleted=0)
+    if published_only:
+        q = q.filter(status=ProductStatus.PUBLISHED.value)
+    rows = await q.prefetch_related("category")
+    by_id = {row.id: row for row in rows}
+    # Tortoise 不保证 __in 的返回顺序，这里按关联表的顺序重排
+    return [ProductPageVO.from_model(by_id[rid]) for rid in ids if rid in by_id]
+
+
+async def _referrer_slugs(product_id: int) -> list[str]:
+    """引用了该产品的其它产品 slug（关联是反向依赖）。
+
+    目标产品的标题/封面/slug/上架状态变化都会改变「引用方」页面里的那张关联卡片，
+    因此这些写操作必须把引用方的详情缓存一起失效，否则前台会在缓存周期内
+    残留旧卡片，甚至指向已删除产品的死链。
+    """
+    return list(
+        await ProductRelated.filter(related_id=product_id, product__deleted=0).values_list(
+            "product__slug", flat=True
+        )
+    )
+
+
 async def get_product_detail(slug: str) -> ProductDetailVO:
     # P2-13：先取版本快照并据此定位缓存键；查库期间若发生写入失效（版本递增），
     # 本次回填只会落到旧版本键，后续读取走新版本键 → 旧数据永不被再次命中。
@@ -180,7 +262,10 @@ async def get_product_detail(slug: str) -> ProductDetailVO:
         raise BizException(ErrorCode.A010001)
     await product.fetch_related("category", "galleries", "attributes")
     vo = ProductDetailVO.from_model(
-        product, galleries=product.galleries, attributes=product.attributes
+        product,
+        galleries=product.galleries,
+        attributes=product.attributes,
+        related=await _load_related(product.id, published_only=True),
     )
     await _cache_set_detail(slug, version, vo.model_dump(mode="json"))
     return vo
@@ -214,7 +299,11 @@ async def get_product_detail_admin(slug: str) -> ProductDetailVO:
         raise BizException(ErrorCode.A010001)
     await product.fetch_related("category", "galleries", "attributes")
     return ProductDetailVO.from_model(
-        product, galleries=product.galleries, attributes=product.attributes
+        product,
+        galleries=product.galleries,
+        attributes=product.attributes,
+        # 后台详情返回全部已保存的关联（含草稿/未发布），否则选品器看不到自己配过的项
+        related=await _load_related(product.id, published_only=False),
     )
 
 
@@ -243,6 +332,11 @@ async def create_product(
             seo_title=clean_text(data.seo_title), seo_description=clean_text(data.seo_description),
             created_by=operator or None, updated_by=operator or None,
         )
+        # 关联产品与产品本体同事务写入，避免出现「产品已建好但关联缺失」的半成品
+        if data.related_product_ids:
+            await _replace_related(
+                product.id, await _normalize_related_ids(product.id, data.related_product_ids)
+            )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     await revision_services.record_revision(product, "product", "CREATE", operator)
     await _invalidate_product_content(data.slug)
@@ -287,10 +381,18 @@ async def update_product(
         product.content_html = clean_html(data.content_html)
     product.updated_by = operator or None
     await product.save()
+    # 关联产品：仅当请求体显式提交了该字段时才整体覆盖（与 tags 的语义一致）：
+    # 未提交保留原值，显式空数组表示清空。
+    if "related_product_ids" in data.model_fields_set:
+        await _replace_related(
+            product.id, await _normalize_related_ids(product.id, data.related_product_ids)
+        )
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     change_type = "SCHEDULE" if product.status == ProductStatus.SCHEDULED.value else "UPDATE"
+    # 注：关联产品与 gallery/attribute 一样不进入 revision 快照（既有约定），
+    # 因此这里也不需要把 related 写入 revision；但引用方的缓存必须一起失效（见下）。
     await revision_services.record_revision(product, "product", change_type, operator)
-    await _invalidate_product_content(old_slug, product.slug)
+    await _invalidate_product_content(old_slug, product.slug, *await _referrer_slugs(product.id))
     return await get_product_detail_admin(product.slug)
 
 
@@ -302,7 +404,8 @@ async def delete_product(product_id: int, operator: str = "") -> None:
     product.deleted = 1
     product.updated_by = operator or None
     await product.save()
-    await _invalidate_product_content(product.slug)
+    # 目标被删：引用它的产品页也要刷新，否则前台会残留指向已删产品的关联卡片（死链）
+    await _invalidate_product_content(product.slug, *await _referrer_slugs(product_id))
 
 
 @transactional_write
@@ -336,6 +439,19 @@ async def delete_gallery(product_id: int, gallery_id: int, can_publish: bool = T
         await _invalidate_product_content(slug)
 
 
+_ATTRIBUTE_SLUG_SEPARATORS = re.compile(r"[^a-z0-9]+")
+
+
+def normalize_attribute_slug(value: str) -> str:
+    """规格 slug 统一为「小写 + 连字符」。
+
+    后台表单曾按下划线生成（Video Resolution → video_resolution），而官网产品页 key facts
+    的正则只匹配 video-resolution，导致该类规格静默不显示（现有 e2e 夹具用连字符，测不到）。
+    收敛到服务层作为单一口径；官网另保留对历史下划线数据的兼容匹配。
+    """
+    return _ATTRIBUTE_SLUG_SEPARATORS.sub("-", (value or "").strip().lower()).strip("-")
+
+
 @transactional_write
 async def add_attribute(product_id: int, data: AttributeCreateRequest, can_publish: bool = True) -> AttributeVO:
     live = await Product.filter(id=product_id, deleted=0).select_for_update().first()
@@ -345,7 +461,10 @@ async def add_attribute(product_id: int, data: AttributeCreateRequest, can_publi
         raise BizException(ErrorCode.C403001, "修改已发布内容需要发布权限")
     product = live
     a = await ProductAttribute.create(
-        product_id=product_id, name=data.name, slug=data.slug, value=data.value
+        product_id=product_id,
+        name=data.name,
+        slug=normalize_attribute_slug(data.slug or data.name),
+        value=data.value,
     )
     await _invalidate_product_content(product.slug)
     return AttributeVO.from_model(a)
@@ -489,7 +608,10 @@ async def get_product_by_id(product_id: int) -> ProductDetailVO:
         raise BizException(ErrorCode.A010001)
     await product.fetch_related("category", "galleries", "attributes")
     return ProductDetailVO.from_model(
-        product, galleries=product.galleries, attributes=product.attributes
+        product,
+        galleries=product.galleries,
+        attributes=product.attributes,
+        related=await _load_related(product.id, published_only=False),
     )
 
 
@@ -522,7 +644,7 @@ async def restore_product_revision(product_id: int, revision_id: int, operator: 
     await product.save()
     await update_search_vector("t_product", product.id, "title", "summary", "content_html")
     await revision_services.record_revision(product, "product", "RESTORE", operator)
-    await _invalidate_product_content(old_slug, product.slug)
+    await _invalidate_product_content(old_slug, product.slug, *await _referrer_slugs(product.id))
     return await get_product_detail_admin(product.slug)
 
 
@@ -531,7 +653,13 @@ async def get_product_preview(product_id: int) -> ProductDetailVO:
     if product is None:
         raise BizException(ErrorCode.A010001)
     await product.fetch_related("category", "galleries", "attributes")
-    return ProductDetailVO.from_model(product, product.galleries, product.attributes)
+    # 预览要对齐访客实际看到的内容 → 关联产品同样只含已发布目标
+    return ProductDetailVO.from_model(
+        product,
+        product.galleries,
+        product.attributes,
+        related=await _load_related(product.id, published_only=True),
+    )
 
 
 @transactional_write
@@ -548,6 +676,7 @@ async def publish_due_products() -> int:
         if changed:
             product = await Product.get(id=product_id)
             await revision_services.record_revision(product, "product", "PUBLISH", "scheduler")
-            await _invalidate_product_content(slug)
+            # 定时上架后，引用它的产品页里那条关联卡片才会出现 → 一并失效引用方
+            await _invalidate_product_content(slug, *await _referrer_slugs(product_id))
             published += 1
     return published

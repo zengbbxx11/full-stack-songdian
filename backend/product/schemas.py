@@ -33,6 +33,9 @@ class ProductCreateRequest(BaseModel):
     cover_image: str | None = Field(default=None, max_length=500)
     # tags：标签名数组，如 ["OEM", "4K", "Waterproof"]；缺省空数组（T04）。
     tags: list[str] = []
+    # related_product_ids：后台手选的关联产品（单向，最多 4 个，按数组顺序展示）；
+    # 缺省空数组 = 不关联；超出上限/包含自身/目标不存在都会由服务层按 400 拒绝。
+    related_product_ids: list[int] = []
     # SEO 字段（可选，空则回退系统默认值）
     seo_title: str | None = Field(default=None, max_length=120, description="页面标题（推荐 ~60 字符）")
     seo_description: str | None = Field(default=None, max_length=300, description="Meta 描述（推荐 120-160 字符）")
@@ -75,6 +78,8 @@ class ProductUpdateRequest(BaseModel):
     sort_order: float | None = None
     # tags：提交时整体覆盖；未提交时保留原值，空数组表示清空。
     tags: list[str] = []
+    # related_product_ids：提交时整体覆盖（数组顺序即展示顺序）；未提交时保留原值，空数组表示清空。
+    related_product_ids: list[int] = []
     # SEO 字段：未提交保留，显式 null/空字符串清空并回退默认值。
     seo_title: str | None = Field(default=None, max_length=120)
     seo_description: str | None = Field(default=None, max_length=300)
@@ -239,14 +244,18 @@ class ProductDetailVO(ProductPageVO):
     content_html: str = ""
     galleries: list[GalleryVO] = []
     attributes: list[AttributeVO] = []
+    # related：后台手选的关联产品卡片（按 sort_order 顺序）。
+    # 公开详情只含已发布目标（服务层过滤），后台详情含全部已保存目标（供选品器回填）。
+    related: list[ProductPageVO] = []
 
     @classmethod
-    def from_model(cls, m, galleries=None, attributes=None) -> ProductDetailVO:  # type: ignore[valid-type]
+    def from_model(cls, m, galleries=None, attributes=None, related=None) -> ProductDetailVO:  # type: ignore[valid-type]
         base = ProductPageVO.from_model(m)
         data = base.model_dump()
         data["content_html"] = m.content_html
         data["galleries"] = [GalleryVO.from_model(g) for g in (galleries or [])]
         data["attributes"] = [AttributeVO.from_model(a) for a in (attributes or [])]
+        data["related"] = [ProductPageVO.from_model(r) for r in (related or [])]
         return cls(**data)
 
 

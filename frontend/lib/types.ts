@@ -202,8 +202,8 @@ export interface ProductDetail {
   tags: string[];
   /** 产品规格/属性 */
   attributes: WCAttribute[];
-  /** 关联产品 ID */
-  relatedIds: number[];
+  /** 关联产品（后台手选，按配置顺序，最多 4 个；未配置为空数组 → 详情页不渲染该区块） */
+  related: ProductSummary[];
   /** 库存可用状态 */
   stockStatus: string;
   /** ISO 8601 最后修改日期字符串 */

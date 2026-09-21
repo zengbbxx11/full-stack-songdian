@@ -68,9 +68,11 @@ const getProductsCached = cache(async (page: number, perPage: number, category: 
     },
     { tags: ["products"] },
   );
-  const products = data.list.map(toProductSummary);
-  const totalPages = data.total > 0 ? Math.ceil(data.total / perPage) : 1;
-  return { products, pagination: { total: data.total, totalPages } };
+  // 后端字段缺失时不抛错：列表与总数一律兜底（与 news / search 的映射保持一致）。
+  const total = data.total ?? 0;
+  const products = (data.list ?? []).map(toProductSummary);
+  const totalPages = total > 0 ? Math.ceil(total / perPage) : 1;
+  return { products, pagination: { total, totalPages } };
 });
 
 /** 按 slug 获取产品详情；仅真实不存在时返回 null，其余 API 故障继续抛出。 */
@@ -118,10 +120,10 @@ export async function getAllProductSlugEntries({
         },
         { revalidate, tags: ["products"] },
       );
-      list.push(...data.list);
-      total = data.total;
+      list.push(...(data.list ?? []));
+      total = data.total ?? 0;
       page += 1;
-      if (data.list.length === 0) break;
+      if (!data.list?.length) break;
     } while (list.length < total);
     if (strict && list.length !== total) {
       throw new Error("Incomplete sitemap pagination");
@@ -160,7 +162,8 @@ function toProductSummary(p: ProductPageDTO): ProductSummary {
 }
 
 function toProductDetail(p: ProductDetailDTO): ProductDetail {
-  const galleries: WCProductImage[] = p.galleries.map((g: GalleryDTO) => ({
+  // 后端字段缺失时不抛错：galleries / attributes 与同函数的 tags 保持同样的兜底口径。
+  const galleries: WCProductImage[] = (p.galleries ?? []).map((g: GalleryDTO) => ({
     id: g.id,
     date_created: "",
     src: toAbsoluteUrl(g.image_url) ?? "",
@@ -171,7 +174,7 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
   const images: WCProductImage[] = cover
     ? [{ id: -1, date_created: "", src: cover, name: p.title, alt: p.title }, ...galleries]
     : galleries;
-  const attributes: WCAttribute[] = p.attributes.map((a: AttributeDTO) => ({
+  const attributes: WCAttribute[] = (p.attributes ?? []).map((a: AttributeDTO) => ({
     name: a.name,
     slug: a.slug,
     value: a.value,
@@ -197,7 +200,8 @@ function toProductDetail(p: ProductDetailDTO): ProductDetail {
     // 从后端 DTO 读取标签字符串数组；DB 为 NULL 时兜底为空数组
     tags: p.tags || [],
     attributes,
-    relatedIds: [],
+    // 后台手选的关联产品：后端已按 sort_order 排序并过滤未发布目标，这里直接复用列表卡片映射。
+    related: (p.related ?? []).map(toProductSummary),
     stockStatus: p.stock_status,
     dateModified: p.updated_time ?? p.created_time ?? "",
     // SEO 字段透传（后端 NULL → null，前端 generateMetadata 做回退）
@@ -213,13 +217,13 @@ export const getProductLinkCatalog = cache(async () => {
   let page = 1, total = 0;
   do {
     const data = await apiFetch<PageDTO<ProductPageDTO>>("/api/v1/products", { page, page_size: 50, status: "PUBLISHED" }, { tags: ["products"] });
-    total = data.total;
-    for (const product of data.list) {
+    total = data.total ?? 0;
+    for (const product of data.list ?? []) {
       if (ids.has(product.id)) throw new Error("Repeated product in link catalog");
       ids.add(product.id);
       products.push({ id: product.id, slug: product.slug, name: normalizePublicText(product.title), sku: product.sku, categories: product.category ? [{ ...product.category, name: normalizeCategoryName(product.category.name) }] : [] });
     }
-    if (data.list.length === 0) break;
+    if (!data.list?.length) break;
     page++;
   } while (products.length < total);
   if (products.length !== total) throw new Error("Incomplete product link catalog");

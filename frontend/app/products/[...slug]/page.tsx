@@ -7,20 +7,19 @@
  * 因为 Next.js 不允许同级出现 [slug] 与 [category] 两个不同名的动态段。
  *
  * 数据来源：
- *   - getProductBySlug(slug) → 单个产品（按 slug 唯一查找）
+ *   - getProductBySlug(slug) → 单个产品（按 slug 唯一查找，含后台手选的关联产品）
  *   - getAllProductSlugEntries() → 产品 slug + 主分类 slug（用于 SSG 预渲染）
- *   - getProducts()          → 同类相关产品
  * 渲染方式：Async Server Component + ISR（revalidate = 60 秒）+ generateStaticParams 预生成。
  * 是否含 client 组件：是 —— ProductGallery 为客户端交互组件。
  */
 
-import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProductBySlug, getAllProductSlugEntries, getProducts } from "@/lib/api/products";
+import { getProductBySlug, getAllProductSlugEntries } from "@/lib/api/products";
 import { ApiError } from "@/lib/api/client";
 import { productPath } from "@/lib/product-url";
+import type { ProductSummary } from "@/lib/types";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import ProductGallery from "@/components/ProductGallery";
@@ -62,6 +61,8 @@ export async function generateMetadata({
     // 元数据失败不应抢先终止正文；页面会渲染可重试的服务不可用状态。
     return {
       title: "Product Temporarily Unavailable",
+      // 显式声明 canonical：否则会继承 layout 的首页 canonical（把故障页当成首页的重复内容）
+      alternates: { canonical: `/products/${productSlug}` },
       robots: { index: false, follow: false },
     };
   }
@@ -129,15 +130,12 @@ function extractSpecs(html: string): { label: string; value: string }[] {
 }
 
 // ============================================================
-// 相关产品 — 独立 async 组件，Suspense 流式到达，不阻塞主内容
+// 相关产品 — 完全由后台手选（单向、最多 4 个）。
+// 关联列表随详情接口一起返回，因此这里同步渲染、无额外请求；
+// 未配置关联的产品不渲染该区块（旧「同分类自动取 4 条」逻辑已下线）。
 // ============================================================
 
-async function RelatedProducts({ categoryId, currentProductId }: { categoryId: number; currentProductId: number }) {
-  const { products } = await getProducts({ category: categoryId, perPage: 4 }).catch(() => ({ products: [], pagination: null }));
-  const related = products.filter((p) => p.id !== currentProductId).slice(0, 4);
-
-  if (related.length === 0) return null;
-
+function RelatedProducts({ related }: { related: ProductSummary[] }) {
   return (
     <section className="py-14 md:py-20" style={{ backgroundColor: "var(--muted)" }}>
       <div className="max-w-7xl mx-auto px-6">
@@ -145,24 +143,6 @@ async function RelatedProducts({ categoryId, currentProductId }: { categoryId: n
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {related.map((p) => (
             <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RelatedProductsSkeleton() {
-  return (
-    <section className="py-14 md:py-20" style={{ backgroundColor: "var(--muted)" }}>
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="skeleton h-8 w-48 rounded mb-8" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <div className="skeleton aspect-square rounded-xl" style={{ animationDelay: `${i * 0.1}s` }} />
-              <div className="skeleton h-4 w-3/4 rounded" />
-            </div>
           ))}
         </div>
       </div>
@@ -251,7 +231,6 @@ export default async function ProductDetailPage({
     });
 
     const features = product.shortDescription ? extractFeatures(product.shortDescription) : [];
-    const keyFacts = (product.attributes || []).filter(a => /sensor|zoom|screen|video-resolution/.test(a.slug)).slice(0, 3).map(a => ({ label: a.name.replace(/-/g, " "), value: a.value.split(/[;；\n]/)[0].replace(/^(\dK)(\d{1,3})$/, "$1 at $2 fps") }));
 
     const wcAttrs = product.attributes || [];
     const parsedSpecs = product.shortDescription ? extractSpecs(product.shortDescription) : [];
@@ -278,60 +257,97 @@ export default async function ProductDetailPage({
         {/* 产品概览 */}
         <section className="bg-white py-8 md:py-16">
           <div className="site-container">
-            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
+            {/* 移动端（<lg）：右栏用 max-lg:contents 把包裹层「摊平」（display:contents 不生成盒子），
+                其子元素直接成为本单列 grid 的 item，于是可以按 order 排出
+                「型号 → 图集 → 简介 + 按钮」的顺序，让访客一屏内先看到产品主图。
+                桌面端（lg 起）包裹层恢复为普通块，order 失效，布局/order/sticky 与改版前完全一致。 */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
 
               {/* 右栏：产品信息 */}
-              <div className="lg:order-2 lg:sticky lg:top-28 lg:self-start">
-                <p className="section-eyebrow mb-4">Product Model</p>
-                <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--surface-dark)]">
-                  {product.name}
-                </h1>
+              <div className="max-lg:contents lg:order-2 lg:sticky lg:top-28 lg:self-start">
+                {/* 块 1（移动端顺序 1）：型号区 */}
+                <div className="order-1">
+                  <p className="section-eyebrow mb-4">Product Model</p>
+                  <h1 className="mb-6 text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-[var(--surface-dark)]">
+                    {product.name}
+                  </h1>
 
-                {product.sku && (
-                  <p className="text-xs text-gray-400 mb-5">
-                    SKU: <span className="font-mono text-gray-500">{product.sku}</span>
-                  </p>
-                )}
-
-                {keyFacts.length > 0 && <dl className="mb-5 space-y-2 text-sm">{keyFacts.map((fact, i) => <div key={i}><dt className="capitalize text-gray-500">{fact.label}</dt><dd className="font-medium">{fact.value}</dd></div>)}</dl>}
-
-                {/* 行动号召按钮 */}
-                <div className="flex flex-wrap gap-3 mb-8">
-                  <CtaButton
-                    href={`/contact?product=${encodeURIComponent(product.slug)}&category=${encodeURIComponent(primaryCategory?.slug || "")}`}
-                    ctaLabel="Product Detail - Send Inquiry"
-                    className="h-12 border-[var(--accent)] bg-white px-8 text-[14px] text-[var(--foreground)] hover:text-white"
-                  >
-                    Send Inquiry
-                  </CtaButton>
-                  <Link
-                    href={primaryCategory ? `/products?category=${primaryCategory.slug}` : "/products"}
-                    className="inline-flex items-center px-6 py-3 border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                  >
-                    &larr; {primaryCategory ? `Back to ${primaryCategory.name}` : "All Products"}
-                  </Link>
+                  {product.sku && (
+                    <p className="text-xs text-gray-400 mb-5">
+                      SKU: <span className="font-mono text-gray-500">{product.sku}</span>
+                    </p>
+                  )}
                 </div>
 
-                {features.length > 0 && <details className="mb-5 text-sm text-gray-600"><summary className="cursor-pointer py-2 font-medium">More product information</summary><ul className="mt-2 space-y-2">{features.map((feature, i) => <li key={i}>{feature}</li>)}</ul></details>}
+                {/* 块 3：简介要点 + 行动号召 + OEM 说明（移动端 flex + order 重排，桌面顺序不变）。
+                    移动端顺序 = 按钮 → 简介 → OEM：主图占位后，需把转化入口提到简介之前，
+                    询盘按钮才能仍落在首屏（390×844 下按钮底部 <650px，见 e2e/product-news-upgrade.spec.ts）；
+                    简介要点与改版前一致（默认展开、无需点击），移动端显示前 3 条、
+                    桌面最多 8 条（extractFeatures 的既有口径）。规格仍由下方 Specifications 表承载。 */}
+                <div className="order-3 flex flex-col">
+                  {features.length > 0 && (
+                    <ul className="order-2 mb-7 space-y-2.5 lg:order-1">
+                      {features.map((feature, i) => (
+                        <li
+                          key={i}
+                          className={`${i >= 3 ? "hidden md:flex" : "flex"} items-start gap-3 text-[14px] leading-relaxed text-gray-600`}
+                        >
+                          <span aria-hidden="true" className="mt-1 shrink-0 text-gray-400">&bull;</span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
-                {/* OEM/ODM 说明 */}
-                <div className="flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/15 bg-[var(--accent)]/5 p-4">
-                  <svg className="w-5 h-5 shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-sm text-[var(--graphite)]">
-                    Available for OEM/ODM — wholesale pricing upon request
-                  </span>
+                  {/* 行动号召按钮（移动端 order-1：排在简介之前把转化入口提到首屏；
+                      两个按钮并排一行：flex-nowrap + 收紧内边距与字号，省掉换行那一行的高度。
+                      返回链接 min-w-0 + truncate，优先保证主按钮不被压缩；lg 起还原桌面样式） */}
+                  <div className="order-1 mb-8 flex flex-nowrap items-stretch gap-2 lg:order-2 lg:flex-wrap lg:gap-3">
+                    <CtaButton
+                      href={`/contact?product=${encodeURIComponent(product.slug)}&category=${encodeURIComponent(primaryCategory?.slug || "")}`}
+                      ctaLabel="Product Detail - Send Inquiry"
+                      className="h-12 shrink-0 border-[var(--accent)] bg-white px-4 text-[13px] text-[var(--foreground)] hover:text-white lg:px-8 lg:text-[14px]"
+                    >
+                      Send Inquiry
+                    </CtaButton>
+                    <Link
+                      href={primaryCategory ? `/products?category=${primaryCategory.slug}` : "/products"}
+                      className="inline-flex min-w-0 items-center rounded-xl border border-gray-200 px-3 py-3 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-50 max-lg:h-12 lg:px-6 lg:text-sm"
+                    >
+                      <span className="truncate">&larr; {primaryCategory ? `Back to ${primaryCategory.name}` : "All Products"}</span>
+                    </Link>
+                  </div>
+
+                  {/* OEM/ODM 说明 */}
+                  <div className="order-3 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/15 bg-[var(--accent)]/5 p-4">
+                    <svg className="w-5 h-5 shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-[var(--graphite)]">
+                      Available for OEM/ODM — wholesale pricing upon request
+                    </span>
+                  </div>
                 </div>
               </div>
-              {/* 左栏：产品图集 */}
-              <div className="lg:order-1">
+              {/* 左栏：产品图集（移动端 order-2：夹在型号与行动号召之间；桌面端回到 order-1 居左）。
+                  移动端缩略图条叠加进主图（省下 76px 纵向空间），主图限高从 180px 提到 260px：
+                  产品主图都是 1:1 正方形，抬高容器即等比放大照片（180→260），
+                  而「询盘按钮底部 = 372 + 图高」仍满足 <650px 的首屏约束（260 → 约 632px）。
+                  640–1023px 组件本就是左缩略图列，不受高度占用影响，保持 300px。 */}
+              <div className="order-2 lg:order-1">
                 {primaryImage ? (
                   <>
                     <ProductGallery
                       mainImage={primaryImage}
                       mainAlt={product.images?.[0]?.alt || product.name}
                       gallery={galleryImages}
+                      // 移动端：左侧主图 260 + 右侧竖排 56px 缩略图（不遮挡主图、也不额外占高）
+                      thumbsSideOnMobile
+                      mainImageClassName="max-sm:h-[260px] sm:max-lg:h-[300px]"
+                      // 主图容器是 aspect-square + 高度上限 ⇒ 实际渲染成正方形（260×260 / 300×300），
+                      // 所以 sizes 要按「图高」声明；沿用按容器宽度声明的默认值会选到约 1.8 倍大的候选图
+                      // （e2e/responsive-images.spec.ts 的响应式选图断言会因此判为过量下载）。
+                      mainImageSizes="(max-width: 639px) min(100vw - 32px, 260px), (max-width: 1023px) min(100vw - 128px, 300px), (max-width: 1311px) calc(55vw - 159px), 564px"
                     />
                     {/* 产品标签 — 放在大图下方 */}
                     {product.tags.length > 0 && (
@@ -343,7 +359,7 @@ export default async function ProductDetailPage({
                     )}
                   </>
                 ) : (
-                  <div className="aspect-square bg-gray-50 border border-[var(--border)] flex items-center justify-center text-gray-300" style={{ borderRadius: "12px" }}>
+                  <div className="aspect-square mx-auto max-sm:h-[260px] sm:max-lg:h-[300px] bg-gray-50 border border-[var(--border)] flex items-center justify-center text-gray-300" style={{ borderRadius: "12px" }}>
                     <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     </svg>
@@ -388,12 +404,8 @@ export default async function ProductDetailPage({
 
         <ProductDetailImages html={product.description || ""} name={product.name} />
 
-        {/* 相关产品 — 流式到达，不阻塞主内容 */}
-        {primaryCategory && (
-          <Suspense fallback={<RelatedProductsSkeleton />}>
-            <RelatedProducts categoryId={primaryCategory.id} currentProductId={product.id} />
-          </Suspense>
-        )}
+        {/* 相关产品 — 后台手选（单向、最多 4 个）；未配置关联的产品不渲染该区块 */}
+        {product.related.length > 0 && <RelatedProducts related={product.related} />}
       </>
     );
   }

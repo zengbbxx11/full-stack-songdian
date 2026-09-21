@@ -136,3 +136,38 @@ def test_rollup_totals_match_subtree(client, album_tree):
             assert totals[int(album_id)] == expected[int(album_id)]
 
     client.portal.call(check)
+
+
+def test_banner_media_is_protected_from_deletion(client):
+    import json
+    from common.settings_model import Setting
+    from uploads.services import get_upload_usage
+
+    _login(client)
+
+    async def seed():
+        record = await UploadRecord.create(
+            url="/uploads/qa/banner-mobile.webp", file_name="banner-mobile.webp", size=1,
+        )
+        await Setting.update_or_create(
+            defaults={"value": json.dumps([
+                None,
+                {"url": "", "mobileUrl": "https://cdn.example.com/uploads/qa/banner-mobile.webp?v=2", "enabled": False},
+            ])},
+            key="home_banners",
+        )
+        return record.id
+
+    record_id = client.portal.call(seed)
+    usage = client.portal.call(get_upload_usage, "/uploads/qa/banner-mobile.webp")
+    assert usage["count"] == 1
+    assert usage["items"][0]["type"] == "home_banner"
+    response = client.delete(f"/api/v1/admin/upload/{record_id}")
+    assert response.status_code == 400, response.text
+    assert response.json()["data"]["conflict"] is True
+
+    async def clear():
+        await Setting.filter(key="home_banners").update(value="[]")
+
+    client.portal.call(clear)
+    assert client.portal.call(get_upload_usage, "/uploads/qa/banner-mobile.webp")["count"] == 0

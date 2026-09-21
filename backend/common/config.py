@@ -106,6 +106,10 @@ class Settings(BaseSettings):
     # ── 种子数据 ──
     seed_on_start: bool = True
     seed_content_categories: bool = False
+    # 是否允许种子用 ADMIN_PASSWORD 覆盖**已存在**的管理员口令（默认关闭）。
+    # 关闭时：仅当账号首次创建（或哈希为空）才写入口令，后台改密后重启不会被环境变量回滚。
+    # 若运维依赖"改 .env 的 ADMIN_PASSWORD 后重启即同步口令"，显式设为 true。
+    seed_admin_password_force: bool = False
     # 初始管理员密码：不再硬编码默认值（security-audit F-04）。
     # 通过环境变量 ADMIN_PASSWORD 注入；若为空，种子将生成一次性随机密码并打印到日志。
     admin_password: str = ""
@@ -122,6 +126,9 @@ class Settings(BaseSettings):
     # ── 文件上传（T03）──
     # 单文件大小上限（MB）；前端/后端均据此校验。
     max_upload_mb: int = 10
+    # 视频单文件上限（MB）：媒体库支持 mp4/webm，体积远大于图片故单独限额；
+    # 只做类型/体积校验，不做转码（首帧与时长由浏览器读取）。
+    max_upload_video_mb: int = 50
     # 批量上传上限（数量 / 总大小 MB），防磁盘耗尽 DoS（security-audit F-10）。
     max_upload_files: int = 20
     max_upload_total_mb: int = 100

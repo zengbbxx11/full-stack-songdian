@@ -43,10 +43,10 @@ async def list_upload_records(
     page_size: int = Query(50, ge=1, le=200, description="每页条数"),
     album_id: Optional[int] = Query(None, description="相册 ID；0 表示未分类；不传查全部"),
     keyword: Optional[str] = Query(None, description="关键词（匹配 url / 文件名 / 标题）"),
-    media_type: Optional[str] = Query(None, alias="type", description="类型筛选，如 image"),
+    media_type: Optional[str] = Query(None, alias="type", description="类型筛选：image / video"),
     _user: AdminUser = Depends(require_permission("media:upload")),
 ) -> Result:
-    """返回上传记录分页列表，供媒体库页面展示已上传图片。
+    """返回上传记录分页列表，供媒体库页面展示已上传图片与视频。
 
     需要 `media:upload` RBAC 权限。支持相册 / 关键词 / 类型筛选，按创建时间倒序。
     """
@@ -94,9 +94,9 @@ async def delete_upload(
 @router.post("/admin/upload", summary="单文件上传")
 @audit(action="media.upload", resource="media:{file_name}")
 async def upload(
-    file: UploadFile = File(..., description="待上传图片（jpg/png/webp/gif，≤ max_upload_mb）"),
+    file: UploadFile = File(..., description="待上传图片或视频（jpg/png/webp/gif ≤ max_upload_mb；mp4/webm ≤ max_upload_video_mb）"),
     album_id: Optional[int] = Form(None, description="归属相册 ID（可选）"),
-    title: Optional[str] = Form(None, description="展示标题（可选）"),
+    title: Optional[str] = Form(None, max_length=255, description="展示标题（可选，≤255）"),
     categorize: Optional[str] = Form(None, description="归类提示，如 product:860a / news:slug（自动建相册）"),
     request: Request = None,  # noqa: ARG001 - 供 @audit 解析 IP
     current_user: AdminUser = Depends(require_permission("media:upload")),
@@ -117,13 +117,13 @@ async def upload(
     except Exception:
         await services.remove_physical_file(url)
         raise
-    return Result.ok(UploadVO.build(record.url, record.file_name, record.size).model_dump(mode="json"))
+    return Result.ok(UploadVO.from_record(record).model_dump(mode="json"))
 
 
 @router.post("/admin/upload/batch", summary="多文件上传")
 @audit(action="media.upload.batch", resource="media:batch")
 async def upload_batch(
-    files: list[UploadFile] = File(..., description="多个待上传图片"),
+    files: list[UploadFile] = File(..., description="多个待上传图片或视频"),
     album_id: Optional[int] = Form(None, description="归属相册 ID（可选）"),
     request: Request = None,  # noqa: ARG001 - 供 @audit 解析 IP
     current_user: AdminUser = Depends(require_permission("media:upload")),
@@ -151,7 +151,7 @@ async def upload_batch(
                 album_id=album_id,
             )
             records.append(record)
-            vos.append(UploadVO.build(record.url, record.file_name, record.size).model_dump(mode="json"))
+            vos.append(UploadVO.from_record(record).model_dump(mode="json"))
     except Exception:
         for record in records:
             try:
@@ -229,7 +229,7 @@ async def create_album(
     request: Request = None,  # noqa: ARG001 - 供将来审计使用
     current_user: AdminUser = Depends(require_permission("media:upload")),
 ) -> Result:
-    album = await services.create_album(name=body.name, slug=body.slug, parent_id=body.parent_id)
+    album = await services.create_album(name=body.name, slug=body.slug, parent_id=body.parent_id, sort_order=body.sort_order)
     return Result.ok(AlbumVO.from_model(album).model_dump(mode="json"))
 
 

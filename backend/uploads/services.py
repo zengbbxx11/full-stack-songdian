@@ -3,8 +3,9 @@
 设计约束（design-admin-ui.md §1.2 缺口② / §1.4）：
 - 存储抽象为 ``StorageBackend``（Protocol），当前仅 ``LocalStorageBackend``（默认）。
   未来切 OSS/COS 仅新增实现 + 改 ``settings``（见 ``get_storage_backend`` 工厂）。
-- 校验：扩展名白名单（jpg/png/webp/gif）+ 魔数（magic bytes）+ mimetypes 双重校验、
-  单文件 ≤ ``max_upload_mb``。
+- 校验：扩展名白名单（图片 jpg/png/webp/gif + 视频 mp4/webm）+ 魔数（magic bytes）+
+  mimetypes 双重校验；图片单文件 ≤ ``max_upload_mb``，视频 ≤ ``max_upload_video_mb``。
+  视频仅做库内管理（上传/归档/引用/删除），不转码、不生成缩略图。
 - 落盘：写入 ``MEDIA_ROOT``（复用 main.py 的 StaticFiles 挂载目录），按年份分子目录，
   返回相对 URL ``{media_url}/{year}/{uuid}.ext}``。
 - 成功后写 ``UploadRecord`` 溯源（best-effort）。
@@ -12,6 +13,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import mimetypes
 import asyncio
 import os
@@ -30,8 +32,10 @@ from uploads.models import Album, UploadRecord
 
 logger = logging.getLogger(__name__)
 
-# 扩展名白名单（小写，含点）
-ALLOWED_EXT: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
+# 扩展名白名单（小写，含点）：图片 + 视频（视频只做库内管理，不转码）
+IMAGE_EXT: frozenset[str] = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
+VIDEO_EXT: frozenset[str] = frozenset({".mp4", ".webm"})
+ALLOWED_EXT: frozenset[str] = IMAGE_EXT | VIDEO_EXT
 
 # 图片魔数（magic bytes）：文件头前 N 字节 → MIME 类型，用于防扩展名伪造。
 _IMAGE_MAGIC: dict[bytes, str] = {
@@ -40,10 +44,18 @@ _IMAGE_MAGIC: dict[bytes, str] = {
     b"GIF87a": "image/gif",                 # GIF87a
     b"GIF89a": "image/gif",                 # GIF89a
 }
-_ALLOWED_MIMES: frozenset[str] = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif"})
+# 视频容器特征：MP4 的 'ftyp' box 固定在偏移 4；WebM 属 EBML 容器（Matroska 家族）。
+_MP4_FTYP = b"ftyp"
+_MP4_FTYP_OFFSET = 4
+_EBML_MAGIC = b"\x1a\x45\xdf\xa3"
+_ALLOWED_MIMES: frozenset[str] = frozenset({
+    "image/jpeg", "image/png", "image/webp", "image/gif",
+    "video/mp4", "video/webm",
+})
 _EXTENSION_MIMES: dict[str, str] = {
     ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
     ".webp": "image/webp", ".gif": "image/gif",
+    ".mp4": "video/mp4", ".webm": "video/webm",
 }
 
 
@@ -57,25 +69,50 @@ def _detect_image_mime(content: bytes) -> str | None:
     return None
 
 
-def _validate_image_content(content: bytes, filename: str) -> str:
-    """通过文件头魔数 + mimetypes 双重校验，返回确认的 MIME 类型。
+def _detect_media_mime(content: bytes) -> str | None:
+    """从真实文件头识别媒体格式（图片魔数优先，再判视频容器）。"""
+    image_mime = _detect_image_mime(content)
+    if image_mime:
+        return image_mime
+    if len(content) >= _MP4_FTYP_OFFSET + len(_MP4_FTYP) and content[_MP4_FTYP_OFFSET:][:4] == _MP4_FTYP:
+        return "video/mp4"
+    if content.startswith(_EBML_MAGIC):
+        return "video/webm"
+    return None
 
-    一、mimetypes 基于文件名扩展名推断 MIME 类型；
-    二、魔数匹配文件头真实内容（防扩展名伪造 / 脚本伪装成图片）。
+
+def _validate_media_content(content: bytes, filename: str) -> str:
+    """通过文件头魔数 + mimetypes 双重校验，返回确认的 MIME 类型（图片或视频）。
+
+    一、扩展名必须落在白名单内，并由扩展名推出期望 MIME；
+    二、mimetypes 推断仅作辅助（部分运行环境未收录 webm 等类型，取不到时以扩展名表为准），
+       推断出结果时必须与扩展名一致；
+    三、魔数匹配文件头真实内容（防扩展名伪造 / 脚本伪装成图片或视频）。
     任一步失败即抛 BizException C400001。
     """
-    # 第一步：mimetypes 类型推断
+    # 第一步：扩展名 → 期望 MIME
     ext = os.path.splitext(filename or "")[1].lower()
     expected_mime = _EXTENSION_MIMES.get(ext)
-    mime, _ = mimetypes.guess_type(filename)
-    if expected_mime is None or mime not in _ALLOWED_MIMES or mime != expected_mime:
-        raise BizException(ErrorCode.C400001, f"不支持的文件类型：{mime or '未知'}")
+    if expected_mime is None:
+        raise BizException(ErrorCode.C400001, f"不支持的文件类型：{ext or '未知'}")
 
-    # 第二步：文件魔数必须与扩展名对应的格式完全一致。
-    detected_mime = _detect_image_mime(content)
+    # 第二步：mimetypes 辅助校验 —— 仅当推断结果落在白名单内才做一致性比对。
+    # 不同操作系统的 mimetypes/注册表对 mp4/webm 的推断不一（可能给 audio/mp4、
+    # video/x-matroska 之类），不能作为拒绝依据；真正的安全门是第三步的文件头魔数。
+    guessed_mime, _ = mimetypes.guess_type(filename)
+    if guessed_mime and guessed_mime in _ALLOWED_MIMES and guessed_mime != expected_mime:
+        raise BizException(ErrorCode.C400001, "文件扩展名与 MIME 类型不一致")
+
+    # 第三步：文件魔数必须与扩展名对应的格式完全一致。
+    detected_mime = _detect_media_mime(content)
     if detected_mime != expected_mime:
         raise BizException(ErrorCode.C400001, "文件内容与扩展名不匹配，疑似伪造")
     return detected_mime
+
+
+def _validate_image_content(content: bytes, filename: str) -> str:
+    """[保留旧名] 校验语义已扩展为「图片 + 视频」，内部转调 :func:`_validate_media_content`。"""
+    return _validate_media_content(content, filename)
 
 
 class StorageBackend(Protocol):
@@ -97,17 +134,18 @@ class LocalStorageBackend:
         if ext not in ALLOWED_EXT:
             raise BizException(ErrorCode.C400001, f"不支持的文件类型：{ext or '未知'}")
 
-        max_bytes = settings.max_upload_mb * 1024 * 1024
+        # 视频与图片分开限额：视频单文件体积远大于图片
+        is_video = ext in VIDEO_EXT
+        max_mb = settings.max_upload_video_mb if is_video else settings.max_upload_mb
+        max_bytes = max_mb * 1024 * 1024
         content = await file.read(max_bytes + 1)
-
-        max_bytes = settings.max_upload_mb * 1024 * 1024
         if len(content) > max_bytes:
             raise BizException(
                 ErrorCode.C400001,
-                f"文件大小 {len(content) // 1024}KB 超过 {settings.max_upload_mb}MB 上限",
+                f"{'视频' if is_video else '图片'}大小 {len(content) // 1024}KB 超过 {max_mb}MB 上限",
             )
 
-        _validate_image_content(content, filename)
+        _validate_media_content(content, filename)
         file.size = len(content)
 
         # 按年份分子目录，使用 uuid 避免文件名碰撞
@@ -143,6 +181,21 @@ def check_upload_limits(files: list[UploadFile]) -> None:
         )
 
 
+def _truncate_file_name(name: str, limit: int = 255) -> str:
+    """截断超长文件名（保留扩展名）。
+
+    `UploadRecord.file_name` 是 max_length=255 的 CharField，超长会在 ORM 校验阶段抛
+    ValidationError → 500（SQLite 也一样）。磁盘文件恒为 uuid 名，这里只影响入库的溯源字段，
+    扩展名必须保留，否则后台按扩展名做的图片判定会失效。
+    """
+    if len(name) <= limit:
+        return name
+    stem, dot, ext = name.rpartition(".")
+    if dot and 0 < len(ext) <= 20:
+        return f"{stem[: limit - len(ext) - 1]}.{ext}"
+    return name[:limit]
+
+
 async def record_upload(
     url: str,
     file_name: str,
@@ -162,7 +215,7 @@ async def record_upload(
 
     return await UploadRecord.create(
         url=url,
-        file_name=file_name,
+        file_name=_truncate_file_name(file_name),
         size=size,
         uploaded_by=uploaded_by,
         album_id=album_id,
@@ -260,20 +313,13 @@ def _build_upload_filter(
                 | Q(file_name__icontains=kw)
                 | Q(title__icontains=kw)
             )
-    if media_type == "image":
-        # 按扩展名粗略判定图片（其余类型后续可扩展）
-        q &= Q(
-            Q(url__iendswith=".jpg")
-            | Q(url__iendswith=".jpeg")
-            | Q(url__iendswith=".png")
-            | Q(url__iendswith=".webp")
-            | Q(url__iendswith=".gif")
-            | Q(file_name__iendswith=".jpg")
-            | Q(file_name__iendswith=".jpeg")
-            | Q(file_name__iendswith=".png")
-            | Q(file_name__iendswith=".webp")
-            | Q(file_name__iendswith=".gif")
-        )
+    if media_type in {"image", "video"}:
+        # 按扩展名粗略判定媒体类型（图片 / 视频），无需为记录新增类型字段
+        exts = VIDEO_EXT if media_type == "video" else IMAGE_EXT
+        type_condition = Q()
+        for ext in exts:
+            type_condition |= Q(url__iendswith=ext) | Q(file_name__iendswith=ext)
+        q &= type_condition
     return q
 
 
@@ -374,6 +420,7 @@ async def get_upload_usage(url: str) -> dict:
     """
     from news.models import News
     from product.models import Product, ProductGallery
+    from common.settings_model import Setting
 
     target = _normalize_media_url(url)
     items: list[dict] = []
@@ -397,6 +444,24 @@ async def get_upload_usage(url: str) -> dict:
         items.append({"type": "product_content", "name": p.title, "id": p.id})
     for n in await News.filter(content_html__icontains=target):
         items.append({"type": "news_content", "name": n.title, "id": n.id})
+    # Saved banner slots are editable references, including disabled/mobile images.
+    setting = await Setting.get_or_none(key="home_banners")
+    if setting:
+        try:
+            banners = json.loads(setting.value)
+        except (ValueError, TypeError):
+            banners = []
+        if isinstance(banners, list):
+            for index, banner in enumerate(banners[:3]):
+                if not isinstance(banner, dict):
+                    continue
+                for field in ("url", "mobileUrl"):
+                    value = banner.get(field)
+                    if isinstance(value, str) and _normalize_media_url(value) == target:
+                        items.append({
+                            "type": "home_banner", "id": setting.key,
+                            "name": f"首页轮播 {index + 1} ({field})",
+                        })
     return {"count": len(items), "items": items, "in_use": len(items) > 0}
 
 
@@ -464,10 +529,11 @@ async def list_albums() -> list[Album]:
     return await Album.all().order_by("sort_order", "-created_time")
 
 
-async def create_album(name: str, slug: str | None = None, parent_id: int | None = None) -> Album:
+async def create_album(name: str, slug: str | None = None, parent_id: int | None = None, sort_order: float | None = None) -> Album:
     """创建相册；slug 缺省按名称生成，冲突则追加随机后缀保证唯一。
 
     支持指定父相册 parent_id 挂入树形结构；若父相册不存在则报错。
+    sort_order 为排序权重（越小越靠前），缺省 0。
     """
     if parent_id is not None:
         parent = await Album.get_or_none(id=parent_id)
@@ -477,7 +543,7 @@ async def create_album(name: str, slug: str | None = None, parent_id: int | None
     unique = base
     while await Album.filter(slug=unique).exists():
         unique = f"{base}-{uuid.uuid4().hex[:6]}"
-    return await Album.create(name=name.strip(), slug=unique, sort_order=0.0, parent_id=parent_id)
+    return await Album.create(name=name.strip(), slug=unique, sort_order=sort_order if sort_order is not None else 0.0, parent_id=parent_id)
 
 
 async def update_album(
@@ -557,7 +623,7 @@ async def sync_missing_uploads() -> dict:
         path = _safe_media_path(url)
         if path is not None:
             size = path.stat().st_size
-        await UploadRecord.create(url=url, file_name=file_name, size=size, uploaded_by="sync")
+        await UploadRecord.create(url=url, file_name=_truncate_file_name(file_name), size=size, uploaded_by="sync")
         synced += 1
 
     return {"found": len(urls), "synced": synced}

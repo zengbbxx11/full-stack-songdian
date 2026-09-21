@@ -19,10 +19,25 @@ class UploadVO(BaseModel):
     url: str
     file_name: str
     size: int = 0
+    # 2026-09-18：补充记录 id 与相册 id —— 媒体选择器上传后需要据此自动选中新素材
+    # 并把浏览位置切到对应相册；缺省 None 保持对旧调用方的兼容。
+    id: int | None = None
+    album_id: int | None = None
 
     @classmethod
     def build(cls, url: str, file_name: str, size: int) -> UploadVO:
         return cls(url=url, file_name=file_name, size=size)
+
+    @classmethod
+    def from_record(cls, record) -> UploadVO:
+        """从 UploadRecord ORM 模型构建（含 id / album_id）。"""
+        return cls(
+            id=record.id,
+            url=record.url,
+            file_name=record.file_name,
+            size=record.size or 0,
+            album_id=getattr(record, "album_id", None),
+        )
 
 
 class UploadRecordVO(BaseModel):
@@ -87,6 +102,7 @@ class AlbumCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="相册名称")
     slug: str | None = Field(None, max_length=120, description="URL 标识（可选，缺省按名称生成）")
     parent_id: int | None = Field(None, description="父相册 ID（可选，null=根相册）")
+    sort_order: float | None = Field(None, description="排序权重（可选，越小越靠前，缺省 0）")
 
 
 class AlbumUpdateRequest(BaseModel):

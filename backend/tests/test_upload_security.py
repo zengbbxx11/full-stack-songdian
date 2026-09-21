@@ -21,6 +21,26 @@ def test_rejects_riff_container_that_is_not_webp():
         services._validate_image_content(b"RIFF\x00\x00\x00\x00WAVE", "audio.webp")
 
 
+def test_accepts_mp4_and_webm_containers():
+    """视频容器特征可通过校验：mp4 的 ftyp box + webm 的 EBML 头。"""
+    assert services._validate_media_content(b"\x00\x00\x00\x18ftypisom" + b"0" * 20, "clip.mp4") == "video/mp4"
+    assert services._validate_media_content(b"\x1a\x45\xdf\xa3" + b"0" * 20, "clip.webm") == "video/webm"
+
+
+@pytest.mark.parametrize("filename", ["clip.mp4", "clip.webm"])
+def test_rejects_script_content_renamed_as_video(filename: str):
+    """脚本内容改名成 .mp4/.webm 必须被拒（防扩展名伪造）。"""
+    for payload in (b"<?php system($_GET['c']); ?>", b"<script>alert(1)</script>"):
+        with pytest.raises(BizException):
+            services._validate_media_content(payload, filename)
+
+
+def test_rejects_image_bytes_declared_as_video():
+    """PNG 字节改名成 mp4 也必须被拒（扩展名与文件头不一致）。"""
+    with pytest.raises(BizException):
+        services._validate_media_content(b"\x89PNG\r\n\x1a\n" + b"0" * 20, "clip.mp4")
+
+
 def test_safe_media_path_rejects_traversal_and_symlink(tmp_path, monkeypatch):
     root = tmp_path / "uploads"
     image = root / "2026" / "ok.jpg"

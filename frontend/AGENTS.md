@@ -265,7 +265,7 @@ npm run dev → http://localhost:3000
 
 ## E2E 测试（Playwright）
 
-套件在 `e2e/`（20 个 spec），入口 `npm run test:e2e`。**必须三个服务齐活**：后端 `:8000`、官网 `:3000`、后台 `:3001`。
+套件在 `e2e/`（27 个 spec、119 个用例，2026-09-22 实测 `npx playwright test --list` 口径），入口 `npm run test:e2e`。**必须三个服务齐活**：后端 `:8000`、官网 `:3000`、后台 `:3001`。
 
 2026-09-15/16 批次新增的 spec 与其覆盖点：
 
@@ -278,6 +278,21 @@ npm run dev → http://localhost:3000
 | `list-query-seo` | 列表分类筛选、分页标题与 canonical、超范围页 noindex |
 | `news-prefetch` | 新闻卡片关闭自动预取后点击仍正常导航 |
 | `bandwidth-conversion` / `server-resource` | 首屏与完整滚动的资源请求、服务端响应缓存与限流边界 |
+
+2026-09-18/21/22 批次新增的 spec 与其覆盖点（后台相册与编辑器的详细口径见 `admin-next/AGENTS.md`）：
+
+| spec | 覆盖内容 |
+|------|---------|
+| `admin-mobile` | 后台移动端：产品/新闻列表改卡片、媒体库相册面板折叠、表单单列 + 提交条吸底、矮屏弹窗滚动 |
+| `home-banner` | 首页轮播：轮播切换、首张回退、art direction 换源、cookie 提示期间不渲染指示点、后台面板保存 |
+| `admin-album-tree` | 相册新建默认继承当前浏览相册 → 建完选中并展开；编辑可改回根级（断言库里 `parent_id` 为 `null`）；父级候选排除自身子树，后端拒绝成环（`400` / `C400001`） |
+| `admin-album-sort` | 同级拖动重排持久化（断言 `sort_order` 为 `[0,1,2]`）、上移/下移与首末置灰、根级与「全部」缩进对齐、弹窗内已无排序数字输入（`getByRole("spinbutton")` 计数为 0） |
+
+新闻正文编辑器（2026-09-22 改为纯代码编辑器）的断言口径：
+
+- 正文定位从「可视化编辑区」`getByRole("textbox", { name: "请输入文章内容..." })` 改为 `getByRole("textbox", { name: "HTML 源码" })`（`admin-mobile`、`content-lifecycle`、`product-news-upgrade` 三处已同步）；「可视化 / HTML 源码」模式页签已不存在，不要再断言 `getByRole("tab")`。
+- 右侧预览是 `ArticlePreviewFrame` 的 `<iframe title="正文预览" sandbox="">`，用 `page.frameLocator('iframe[title="正文预览"]')` 进入断言；**沙箱必须独立断言**：`toHaveAttribute("sandbox", "")` + 预览文档 `window.origin === "null"`（不透明源）+ 文档内嵌 CSP 含 `default-src 'none'`。原因：清洗器已把 `<script>` 删除，只断言「脚本没执行」无法区分是清洗生效还是沙箱生效。
+- 用例会断言 `PUT` 载荷的 `content_html` 与代码框原文**逐字一致**（客户端不做保存前清洗，权威清洗在后端 `clean_html`）——这是有意契约，不要改成「客户端清洗后再提交」。
 
 ```bash
 NODE_OPTIONS= \

@@ -174,7 +174,7 @@ CI 用生产构建启动，不受此限制，故不设这两个变量）。
 - [frontend/docs/class-diagram.mermaid](./frontend/docs/class-diagram.mermaid) / [sequence-diagram.mermaid](./frontend/docs/sequence-diagram.mermaid)：官网结构与调用时序
 - [backend/docs/class-diagram.mermaid](./backend/docs/class-diagram.mermaid) / [sequence-diagram.mermaid](./backend/docs/sequence-diagram.mermaid)：后端结构与调用时序
 - [admin-next/README.md](./admin-next/README.md)：管理后台说明
-- [reports/](./reports/)：专项审计报告与原始数据（如 [首页线上资源审计 2026-09-16](./reports/home-resource-audit-2026-09-16.md)）
+- [reports/](./reports/)：专项审计报告与原始数据（如 [首页线上资源审计 2026-09-16](./reports/home-resource-audit-2026-09-16.md)）；[站点精修（官网视觉与交互）](./reports/site-refinement/README.md) 收录 2026-09-22 批次的范围、变化、验证与截图说明
 
 ## 开发约定
 

@@ -189,6 +189,7 @@ pytest tests/ -q
 - `GET /admin/upload/{id}/usage` 返回素材被产品图库、产品封面、新闻封面以及**产品和新闻正文（`content_html`）**引用的数量与明细（正文引用对应 `product_content` / `news_content` 类型）；比较前统一归一化媒体 URL，因此同一图片的相对/绝对地址都能命中。被引用素材通过删除接口删除时需要显式 `force=true`，否则后端拒绝操作。
 - `POST /admin/upload/sync` 扫描产品/新闻中已引用但尚未建立 `UploadRecord` 的 URL，补齐媒体库记录；`POST /admin/upload/auto-categorize` 仅整理未分类记录，不移动物理文件。
 - 产品/新闻表单可传 `categorize=product:{slug}` 或 `categorize=news:{slug}`，后端自动创建或复用 `Products / {slug}`、`News / {slug}` 子相册。相册是逻辑归档，LocalStorageBackend 仍按年份/UUID 保存文件并返回 `/uploads/{year}/{uuid}.ext` URL。
+- 相册接口：`GET/POST /admin/albums`、`PUT/DELETE /admin/albums/{album_id}`，以及同级拖动排序 `PUT /admin/albums/sort`（body `{parent_id, ids}`，**数组下标即 `sort_order`**，整体在事务内执行；该路由必须声明在 `/admin/albums/{album_id}` 之前，否则会被当成 `album_id="sort"`）。`PUT /admin/albums/{album_id}` 的 `parent_id` 是**三态**：不传 = 保持原父级、`null` = 移到根级、`id` = 换父级（换父级会校验「不能移到自己或自己的子孙下」，避免成环让整棵子树从侧边栏消失）；别名非法或冲突、跨父级排序、`sort_order` 非法或超界均返回 `C400001`。完整口径与覆盖用例见 [AGENTS.md](./AGENTS.md) 的「相册接口约定（2026-09-22）」。
 
 ## 6. 关键设计决策
 

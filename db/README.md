@@ -19,7 +19,7 @@
 - 13、14 号迁移规范公开文案。
 - 15 号迁移增加产品和新闻的 `sort_order`。
 - 16 号迁移增加持久化后台任务表 `t_background_job` 与 `t_admin_user.session_version`。
-- 后续的内容缓存版本号（`backend/common/cache_version.py`）、相册计数口径、审计日志关键字搜索等改动均为纯应用层实现，**未新增迁移**；升级到最新代码只需在 migrate profile 中执行一次 `aerich upgrade`（幂等）。
+- 后续的内容缓存版本号（`backend/common/cache_version.py`）、相册计数口径、**相册同级排序归一化（新建缺省取同级最前、可为负）与同级拖动排序接口 `PUT /admin/albums/sort`**、审计日志关键字搜索等改动均为纯应用层实现，**未新增迁移**；升级到最新代码只需在 migrate profile 中执行一次 `aerich upgrade`（幂等）。
 - 生产数据库使用 PostgreSQL 18；未安装 `zhparser` 时，中文全文检索由应用降级为 `simple` 配置。
 - 生产产品、新闻、询盘和上传媒体以服务器数据卷及备份为准，不长期跟随 Git。
 

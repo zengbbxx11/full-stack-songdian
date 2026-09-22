@@ -288,7 +288,7 @@ scripts/verify-seo.mjs          SEO/GEO 契约校验
 scripts/verify-sitemap-cache.mjs      sitemap 缓存与发布失效校验（临时端口 3002）
 scripts/verify-listing-failures.mjs   列表故障与恢复校验（临时端口 3003）
 scripts/audit-home-resources.mjs      首页资源基线采集
-e2e/                            Playwright 用例（20 个 spec）
+e2e/                            Playwright 用例（27 个 spec、119 个用例）
 e2e/hydration.ts               注水等待 helper：gotoHydrated() / waitForHydration()
 playwright.config.ts           E2E 配置（workers: 2，testDir: e2e）
 next.config.ts                 图片优化、远程主机与生产配置

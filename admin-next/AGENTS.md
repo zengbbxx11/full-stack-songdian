@@ -44,6 +44,7 @@ Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui 
 | 图表 | apexcharts / react-apexcharts、@fullcalendar/* |
 | 交互 | react-dnd（拖拽排序）、flatpickr（日期）、@react-jvectormap（地图） |
 | 数据获取 | SWR (v2) + 全局 `SWRProvider`（封装 `apiFetch`，详见 `lib/api-client.ts`） |
+| 安全清洗 | `sanitize-html` ^2.17.7（与 `frontend` 同版本，仅新闻正文预览用；类型 `@types/sanitize-html` 在 devDependencies） |
 | 守卫 | `proxy.ts`（Edge Runtime，校验后端下发的 HttpOnly `access_token` Cookie；失效时用 refresh Cookie 静默续期） |
 
 ---
@@ -172,10 +173,23 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 上传流程：先用 `createImageBitmap()` 读取原始宽高，再调用现有上传函数，把 src/alt/width/height 一起写回。宽高用于官网预留正确比例，缺失时官网会退化为原生 `<img>`。
 - 交互细节（2026-09-17 补齐，改动后必须同步跑 `frontend/e2e/product-news-upgrade.spec.ts`）：区块带 `role="group" aria-label="商品详情图"`（e2e 定位锚点，不要删）；无图时显示空态引导；支持**拖拽上传**（容器 `onDrop` 复用同一个 `add()` 入口）；**逐张进度**文案是 `正在上传第 x/y 张…`（`apiFetch` 基于 fetch 拿不到上传百分比，这里刻意不做假进度）；**移除需二次确认**（复用 `ConfirmDialog`，`confirmText="移除"`）。
 - **未保存离开提醒**：编辑器通过 `onDirtyChange` 上报「自上次保存后被改动」，产品表单据此（a）注册 `beforeunload`，（b）点「取消」时先弹 `ConfirmDialog`。保存成功后表单必须复位 dirty，否则正常跳转会误弹。
-- **新闻正文插图**：`RichTextEditor` 新增可选 `upload` / `onBusyChange`（目前只有新闻表单接线），工具栏随之出现「插入图片」。实现要点：**先保存 Selection Range 再打开文件选择框**（`input.click()` 会失焦丢选区），上传后 `insertHTML` 插入 `<img src alt width height>`，宽高取自 `createImageBitmap`。未传 `upload` 时不渲染该按钮，避免影响其它调用方（`role="textbox"` + `aria-label` 取自 placeholder，是 e2e 锚点）。
+- **新闻正文编辑器（2026-09-22 改写，勿按旧文档理解）**：`RichTextEditor` 已是**纯 HTML 代码编辑器** —— 只有一个等宽 textarea（`aria-label="HTML 源码"` 是 e2e 锚点），可视化模式、`contentEditable`、`document.execCommand`、`upload` prop 均已删除（不要再把正文交给 `innerHTML`/`dangerouslySetInnerHTML` 渲染）。插图走「从媒体库插入图片」（`title` 是 e2e 锚点）→ 选择器确认后按 `measureImage` 读原始宽高，在**代码光标处**插入 `<img src alt width height>`；上传期间 `onBusyChange(true)` 让父表单禁用保存，保存按钮文案变「正文图片上传中...」。右侧预览是 `ArticlePreviewFrame`：先按 `lib/article-html.ts`（后端 bleach ∩ 官网 sanitize-html 白名单的交集）清洗，再渲染进 **`<iframe sandbox="">`（无 allow-scripts / allow-same-origin）+ 内嵌 CSP**，这是强制安全边界，清洗层只负责保真。
 - 忙碌态：上传期间通过 `onBusyChange(true)` 触发父表单的 `detailUploading`，保存按钮与表单字段必须禁用，避免半成品被保存。
 - 交互：每张图可编辑说明（写入 `alt`）、上移/下移调整顺序（首尾按钮禁用）、逐张移除；封面与图库仍为独立字段，图库/规格的增删仍是立即保存。
 - 详情图保存在产品正文，复用既有上传媒体、版本历史与发布缓存刷新链路；产品私密预览使用同一渲染规则。e2e 回归见 `frontend/e2e/product-news-upgrade.spec.ts`。
+
+## 媒体库相册交互与排序（2026-09-22）
+
+- **新建默认跟随当前相册**：点「+」时父级默认取**当前正在浏览的相册**（`selectedAlbumId > 0`）；「全部」（`null`）与「未分类」（`0`）不是具体相册 → 根级。仍可在下拉里改。
+- **建完就地定位**：创建成功后 `selectAlbum(新 id)` + 用 `albumChainIds()` 展开其**全部祖先**（此前新相册藏在折叠的父节点里，看起来像「没建成」）。
+- **父级下拉按层级路径展示**：选项文案用 `albumPath()`（`Products / dc226`）而非裸 name；编辑时用 `descendantIds()`（含自身）过滤掉自身与全部子孙，并在下方提示「已隐藏该相册自身及其 N 个子相册（挂上去会形成循环）」。挂到自己子孙下会成环、整棵子树会从侧边栏消失——后端也拒绝（`C400001`）。
+- **同级重名只提示不阻断**（`duplicateAlbum`）：文案「同级已有同名相册「x」，仍可创建，但建议改名以便区分。」同名相册是合理场景（如两次导入同一产品），不要改成硬拦截。
+- **别名提示按 `slugifyAlbumName()`（与后端 `_slugify` 同规则）**：非法 →「别名只能包含英文字母、数字，请修改或留空（中文会被自动去掉）。」；已填 →「实际保存为：xxx」；留空 →「留空则自动生成：xxx」，纯中文名则提示「留空则由系统按名称生成（纯中文名会生成随机别名）。」
+- **排序数字输入已移除**：相册弹窗只剩名称 / 别名 / 父级三项（`albumForm` 不再有 `sort_order`），后端参数保留、老数据继续生效。排序改由**同级拖动**（仅同一父相册内，跨父级拖动直接忽略——改父级仍走编辑弹窗）与**上移/下移**完成，落库走 `PUT /admin/albums/sort`（**数组下标即 `sort_order`**）。上移/下移按钮 `aria-label` 为 `上移 {name}` / `下移 {name}`，首/末项分别置灰。
+- **排序的乐观更新**：拖动或上下移先 `mutate(albumsKey, ..., { revalidate: false })` 就地改顺序，再发请求；失败 `toast.error`；**无论成败都 `await mutate(albumsKey)` 以服务端为准重拉**（失败即回滚），不要让本地顺序与服务端分叉。
+- **`AlbumNode` 的扩展 props 全部可选**（不传时行为与渲染出的 DOM 与旧版一致；`MediaPicker` 只传 `album/selectedAlbumId/onSelect`，因此不渲染拖拽与上下移——改这几个 props 必须复核媒体选择器）：`openIds`/`onToggleOpen`（受控展开，**只有两者都传**才受控，只传 `openIds` 会回退内部 state，避免「点了没反应」）、`index`（默认 0）、`siblingCount`（默认 1）、`sortable`（`AlbumSortable`：`busy`/`draggingId`/`overId`/`onDragStart`/`onDragOver`/`onDrop`/`onDragEnd`/`onMove`）；`onEdit`/`onDelete` 同样是可选、不传即不渲染操作条。
+- **行模板常量必须共用**：`ALBUM_ROW_PAD`(12) / `ALBUM_INDENT`(16) / `ALBUM_ARROW_SLOT`(18) / `ALBUM_ICON_CLASS` / `ALBUM_ROW_GAP_CLASS`。节点行固定占「展开箭头槽」，而「全部 / 未分类」两个虚拟行没有箭头——历史问题正是根级相册比「全部」右移一级、看起来像「没有父相册却低了一级」；`admin-album-sort.spec.ts` 断言根级与「全部」的 x 差 ≤1、子级缩进 16px。
+- **e2e 保留的可访问名（契约）**：`新建相册`（按钮 **`title` 与 `aria-label` 都要有**，用例用 `getByTitle` 定位）、`父级相册`（断言触发器的 `data-value`）、`编辑相册 {name}` / `删除相册 {name}` / `上移 {name}` / `下移 {name}`、展开开关 `展开|折叠 {name}`、选中态 `aria-current="true"`。回归：`frontend/e2e/admin-album-tree.spec.ts`（3 项）与 `frontend/e2e/admin-album-sort.spec.ts`（4 项）。
 
 <!-- BEGIN:nextjs-agent-rules -->
 

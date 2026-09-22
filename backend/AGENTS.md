@@ -87,6 +87,7 @@ backend/
 | `/admin/login` `/admin/refresh` | — | 登录/刷新令牌（**注意：路径无 `/auth` 段**） |
 | `/admin/products` `/admin/news` `/admin/categories` `/admin/users` `/admin/users/list` `/admin/roles` `/admin/inquiries` `/admin/upload` `/admin/settings` `/admin/stats` `/admin/audit-logs` | JWT+RBAC | 后台 CRUD 与管理 |
 | `/admin/categories/{id}/migrate-and-delete`、`/admin/news-categories/{id}/migrate-and-delete` | JWT+RBAC | 事务内迁移内容后删除分类；直接删除在仍有未删除内容时返回 `C400001` + 关联数量 |
+| `/admin/albums`、`/admin/albums/sort`、`/admin/albums/{album_id}` | JWT+RBAC | 媒体库相册（树形）：列表 `GET`、新建 `POST`、同级拖动排序 `PUT /sort`、更新 `PUT`、删除 `DELETE`（DB 级联）。`PUT` 的 `parent_id` 三态、环校验、别名与排序口径见下方「相册接口约定（2026-09-22）」 |
 
 ---
 
@@ -181,3 +182,14 @@ P0 级审计修复（相关行为已合入当前代码）：
 - 替换图片优先使用新 URL：已有 URL 在一小时窗口内可能仍返回浏览器缓存的旧图；不要通过缩短该 TTL 来规避，也不要改成永久缓存。
 - 容器启动由 `scripts/start.sh` 负责：`mkdir -p uploads_data` → 同步 `uploads/products|news|2026` 图片子目录（`cp -rn`，不覆盖运营上传）→ 清理媒体根目录残留的代码/配置后缀文件 → 解析 `TRUSTED_PROXIES` → `exec uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --workers "${WEB_CONCURRENCY:-2}"`。
 - 本轮改动不涉及数据库结构，本地与生产升级都不需要新迁移；本地开发启动仍可用 `uv run uvicorn main:app --port 8000`，与容器路径无冲突。
+
+## 相册接口约定（2026-09-22）
+
+- **路由声明顺序是硬约束**：`PUT /admin/albums/sort` 必须声明在 `PUT /admin/albums/{album_id}` **之前**（`uploads/routers.py`），否则 `sort` 会被当成 `album_id="sort"` 命中、返回参数校验错误。相册路由共 5 条：`GET /admin/albums`（含直系 `count` 与子树 `total_count`）、`POST /admin/albums`、`PUT /admin/albums/sort`、`PUT /admin/albums/{album_id}`、`DELETE /admin/albums/{album_id}`。
+- **`PUT /admin/albums/{id}` 的 `parent_id` 是三态**（`uploads/services.py` 模块级哨兵 `UNSET` + 路由按 `body.model_fields_set` 只透传客户端**真正提交过**的字段）：**不传** = 保持原父级；**显式 `null`** = 移到根级（此前统一按「参数为 `None` 即不修改」判断，选「无（根级）」会被静默忽略、相册永远回不到根）；**`id`** = 换父级。注意 `name` / `sort_order` 的显式 `null` 仍是「忽略」，`slug` 的 `null` 也是「保持原值」（slug 有唯一约束，无清空语义）——**只有 `parent_id` 的 `null` 带移动语义**，加字段时不要照抄三态。
+- **换父级必须做环校验**（`_assert_reparent_ok`）：不能移到自己或自己的子孙下——成环后 `buildTree` 从根遍历不到该节点，**整棵子树会从侧边栏消失**。上溯用 `seen` 集合 + `_ALBUM_DEPTH_LIMIT = 100` 收敛（撞到历史脏数据形成的环或走到根时放行该链），命中自身 → `C400001`「不能把相册移动到自己或自己的子相册下」，超限 → `C400001`「相册层级存在循环引用，无法移动，请先修正层级」。父相册不存在 → `C404001`「父相册不存在」。
+- **slug 口径**：`_slugify` 把非 `[a-zA-Z0-9]` 折叠为 `-`、去首尾 `-`、转小写；`create_album` 显式传别名但归一化后为空（纯中文等）→ `C400001`「别名只能包含英文字母、数字，请修改后重试」，未传别名且名称归一化为空 → 回退 `album-{6 位随机}`，并 `while exists` 追加随机后缀保证唯一；`update_album` 撞到其他相册已用别名 → `C400001`「别名「x」已被其他相册占用，请换一个」；落库阶段的 `IntegrityError`（并发写入撞唯一约束）同样转 `C400001`，不再冒 500 `B999001`。
+- **排序口径**：`create_album` 未显式传排序时取**同级最前**——`_front_sibling_sort_order`：同级有值则 `max(SORT_ORDER_MIN, min(同级) - 1)`、同级为空取 `0.0`，**允许负值**；`update_album` 换父级（含移到根级）且未显式传 `sort_order` 时按新同级重算，避免沿用旧父级数值让位置不可预期；显式 `sort_order` 走 `_validate_sort_order`（`math.isfinite` + `[SORT_ORDER_MIN, SORT_ORDER_MAX] = ±1_000_000`，**裸 `NaN` 也拦**）→ 违规 `C400001`（NaN 落库会让前端相减得 NaN、排序彻底错乱）。`list_albums` 固定 `order_by("sort_order", "id")`，与前端 `buildTree` 的 `sort_order asc || id asc` 同口径（并列按 id 升序）。
+- **例外**：`auto_categorize_uploads` / `_resolve_categorize_hint` 仍写死排序值（`Products` = 1.0、`News` = 2.0、自动归档子相册 = 0.0），不走「同级最前」逻辑；改动这两处前先确认自动归档的稳定顺序。
+- **`PUT /admin/albums/sort`**（schema `AlbumReorderRequest { parent_id, ids }`，service `reorder_albums`）：**数组下标即 `sort_order`**，整体包在 `in_transaction()` 内；校验空列表 / 重复 / 相册不存在 / 跨父级（`found[id] != parent_id`）→ 均 `C400001`；**未列出的同级保持原值**。
+- 覆盖用例（`tests/test_media_albums.py`）：`test_update_album_can_move_back_to_root`、`test_reparent_into_own_descendant_is_rejected`、`test_reparent_rides_out_pre_existing_cycle`、`test_reorder_albums_writes_index_order`、`test_reorder_albums_rejects_foreign_parent`、`test_reorder_albums_rejects_duplicates_and_empty`、`test_reorder_albums_partial_subset_keeps_unlisted_values`、`test_create_album_defaults_to_front_of_siblings`、`test_album_sort_order_must_be_finite_and_in_range`、`test_list_albums_tie_break_by_id`、`test_update_album_slug_conflict_returns_friendly_error`、`test_album_slug_format_is_validated`、`test_create_album_normalizes_uppercase_slug`。

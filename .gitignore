@@ -51,3 +51,6 @@ reports/**/*.webp
 
 # Disposable backend integration databases and local verification scripts
 .qa/
+
+# Local frontend development output
+/frontend/devserver_desktop.log

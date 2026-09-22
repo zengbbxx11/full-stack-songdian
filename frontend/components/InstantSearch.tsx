@@ -22,8 +22,15 @@ function modelLabel(item: SearchResultItem): string {
   return item.sku || item.title;
 }
 
-export default function InstantSearch({ className }: { className?: string }) {
+export default function InstantSearch({ className, compact = false }: { className?: string; compact?: boolean }) {
   const router = useRouter();
+  const [expanded, setExpanded] = useState(!compact);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const searchPanelId = useId();
+  useEffect(() => {
+    if (compact && expanded) inputRef.current?.focus();
+  }, [compact, expanded]);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,11 +48,12 @@ export default function InstantSearch({ className }: { className?: string }) {
     function onPointerDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        if (compact) setExpanded(false);
       }
     }
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
-  }, []);
+  }, [compact]);
 
   // 卸载清理
   useEffect(() => {
@@ -106,12 +114,17 @@ export default function InstantSearch({ className }: { className?: string }) {
       router.push(`/search?q=${encodeURIComponent(q)}`);
     }
     setOpen(false);
+    if (compact) setExpanded(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.nativeEvent.isComposing) return;
     if (e.key === "Escape") {
       e.preventDefault(); // 原生 search 输入默认会清空关键词；此处只关闭建议框。
+      if (compact && !open) {
+        setExpanded(false);
+        toggleRef.current?.focus();
+      }
       setOpen(false);
       setActiveIndex(-1);
       return;
@@ -130,7 +143,28 @@ export default function InstantSearch({ className }: { className?: string }) {
   const showDropdown = open && hasQuery;
 
   return (
-    <div ref={containerRef} className={`relative ${className ?? ""}`}>
+    <div ref={containerRef} className={`relative ${className ?? ""}`} onBlur={(event) => {
+      if (compact && !event.currentTarget.contains(event.relatedTarget as Node | null)) {
+        setExpanded(false);
+        setOpen(false);
+      }
+    }}>
+      {compact && (
+        <button
+          ref={toggleRef}
+          type="button"
+          aria-label={expanded ? "Close search" : "Open search"}
+          aria-expanded={expanded}
+          aria-controls={searchPanelId}
+          onClick={() => { setExpanded(!expanded); setOpen(false); }}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--foreground)] transition-colors hover:bg-black/5 hover:text-[var(--accent)]"
+        >
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={expanded ? "M6 6l12 12M6 18L18 6" : "M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"} />
+          </svg>
+        </button>
+      )}
+      <div id={searchPanelId} hidden={compact && !expanded} className={compact ? "header-search-panel relative" : undefined}>
       <form onSubmit={handleSubmit} role="search">
         <div className="relative">
           {/* 搜索图标 */}
@@ -149,6 +183,7 @@ export default function InstantSearch({ className }: { className?: string }) {
             />
           </svg>
           <input
+            ref={inputRef}
             type="search"
             role="combobox"
             aria-autocomplete="list"
@@ -220,7 +255,7 @@ export default function InstantSearch({ className }: { className?: string }) {
                     <Link
                       href={item.url}
                       prefetch={false}
-                      onClick={() => setOpen(false)}
+                      onClick={() => { setOpen(false); if (compact) setExpanded(false); }}
                       onMouseEnter={() => setActiveIndex(i)}
                       className={`flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2 transition-colors active:bg-[#eceef1] ${
                         isActive ? "bg-[var(--muted)]" : "hover:bg-[var(--muted)]"
@@ -240,6 +275,7 @@ export default function InstantSearch({ className }: { className?: string }) {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

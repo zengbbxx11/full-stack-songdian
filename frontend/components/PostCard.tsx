@@ -25,20 +25,20 @@ const imageFallback = (
 );
 
 /**
- * 新闻文章卡片 — hover 蓝框 + 轻微浮起 + 图片亮度变化
+ * 新闻文章卡片 — 品牌色标题反馈 + 轻微浮起 + 图片缩放
  *
  * 说明：本组件为服务端组件（RSC）。图片加载失败占位由 SafeImage 客户端子组件处理。
  *
  * - 默认：淡边框 #EEEEEE，无阴影
- * - Hover：Electric Blue 边框 + shadow-sm + 图片 brightness(1.05)
- * - 标题 hover 变蓝
+ * - Hover：淡边框 + shadow-sm + 图片 scale(1.025)
+ * - 标题 hover 使用品牌强调色
  */
 export default function PostCard({ post, showAuthor = true, preload = false, sizes = "(max-width: 767px) calc(100vw - 48px), (max-width: 1279px) calc(33.333vw - 32px), 395px" }: PostCardProps) {
   return (
     <Link
       prefetch={false}
       href={`/news/${post.slug}`}
-      className="group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[var(--accent)]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
+      className="news-card group flex h-full touch-manipulation flex-col overflow-hidden rounded-2xl border border-black/8 bg-white transition-[transform,border-color,box-shadow] duration-300 motion-safe:hover:-translate-y-1 hover:border-black/20 hover:shadow-[0_24px_60px_rgba(17,19,22,0.1)] focus-visible:border-[var(--accent)]/60 focus-visible:shadow-[0_18px_45px_rgba(17,19,22,0.08)] active:translate-y-0 active:shadow-sm"
     >
       {/* 图片区域 */}
       <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
@@ -49,7 +49,7 @@ export default function PostCard({ post, showAuthor = true, preload = false, siz
             fill
             sizes={sizes}
             preload={preload}
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.025]"
             style={{ transitionDuration: "0.3s" }}
             fallback={imageFallback}
           />
@@ -57,16 +57,12 @@ export default function PostCard({ post, showAuthor = true, preload = false, siz
           imageFallback
         )}
 
-        {post.categories.length > 0 && (
-          <span className="absolute left-3 top-3 rounded-lg border-l-2 border-[var(--accent)] bg-white/92 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-700 backdrop-blur-sm">
-            {post.categories[0].name}
-          </span>
-        )}
+
       </div>
 
       {/* 内容区域 */}
       <div className="flex flex-1 flex-col p-4 md:p-5">
-        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-[var(--accent)] md:text-xl">
+        <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug tracking-[-0.025em] text-gray-900 transition-colors duration-300 group-hover:text-[var(--accent)] group-focus-visible:text-[var(--accent)] md:text-xl">
           {post.title}
         </h3>
 
@@ -75,7 +71,7 @@ export default function PostCard({ post, showAuthor = true, preload = false, siz
         </p>
 
         {/* mt-auto：无论标题/摘要几行，时间行始终贴卡片底部，保证等高对齐 */}
-        <div className="flex items-center gap-3 text-xs md:text-sm text-gray-400 mt-auto pt-1">
+        <div className="flex items-center gap-3 text-xs md:text-sm text-[var(--muted-foreground)] mt-auto pt-1">
           <span>{post.date}</span>
           {showAuthor && (
             <>

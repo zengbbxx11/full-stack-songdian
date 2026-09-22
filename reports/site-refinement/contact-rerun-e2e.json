@@ -1,0 +1,1108 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "playwright",
+      "test",
+      "home-layout.spec.ts",
+      "list-query-seo.spec.ts",
+      "public-quality.spec.ts",
+      "responsive-images.spec.ts",
+      "--workers=1",
+      "--reporter=line,json"
+    ],
+    "configFile": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\playwright.config.ts",
+    "rootDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "home-layout.spec.ts",
+      "file": "home-layout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "homepage conversion paths remain usable at 320px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 908,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:34.857Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "843dbd5c749186b380e0-66a47434f76db55a04af",
+          "file": "home-layout.spec.ts",
+          "line": 5,
+          "column": 7
+        },
+        {
+          "title": "homepage conversion paths remain usable at 390px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 709,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:35.883Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "843dbd5c749186b380e0-77fee7e968ff2a943f0e",
+          "file": "home-layout.spec.ts",
+          "line": 5,
+          "column": 7
+        },
+        {
+          "title": "homepage conversion paths remain usable at 1024px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 834,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:36.608Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "843dbd5c749186b380e0-780a7a859a080782b0d6",
+          "file": "home-layout.spec.ts",
+          "line": 5,
+          "column": 7
+        },
+        {
+          "title": "homepage conversion paths remain usable at 1440px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 950,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:37.449Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "843dbd5c749186b380e0-40370263820cd40cc346",
+          "file": "home-layout.spec.ts",
+          "line": 5,
+          "column": 7
+        }
+      ]
+    },
+    {
+      "title": "list-query-seo.spec.ts",
+      "file": "list-query-seo.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "list parameters use the first value and reject unsafe page numbers",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:38.410Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ab92cbb78a3c44b84f49-c86e55cd2c816ce1544c",
+          "file": "list-query-seo.spec.ts",
+          "line": 6,
+          "column": 5
+        },
+        {
+          "title": "repeated product filters do not crash and pagination matches canonical",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 15927,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"List fixture fixture-products-muc770ebaspy\"\u001b[39m\nReceived: \u001b[31m\"Camera Products\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"interior-heading-title mt-3\">Camera Products</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Products\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"List fixture fixture-products-muc770ebaspy\"\u001b[39m\nReceived: \u001b[31m\"Camera Products\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"interior-heading-title mt-3\">Camera Products</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Products\"\u001b[22m\n\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts:36:43",
+                    "location": {
+                      "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                      "column": 43,
+                      "line": 36
+                    },
+                    "snippet": "  34 |   try {\n  35 |     await gotoHydrated(page, `/products?category=${fixture.category.slug}&category=${fixture.category.slug}-other&page=2&page=3`);\n> 36 |     await expect(page.locator(\"main h1\")).toHaveText(fixture.category.name);\n     |                                           ^\n  37 |     await expect(page).toHaveTitle(/Page 2/);\n  38 |     await expect(page.locator('link[rel=\"canonical\"]')).toHaveAttribute(\"href\", new RegExp(`/products\\\\?category=${fixture.category.slug}&page=2$`));\n  39 |     await expect(page.getByRole(\"link\", { name: \"Previous\", exact: true })).toHaveAttribute(\"href\", `/products?category=${fixture.category.slug}`);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                        "column": 43,
+                        "line": 36
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"List fixture fixture-products-muc770ebaspy\"\u001b[39m\nReceived: \u001b[31m\"Camera Products\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"interior-heading-title mt-3\">Camera Products</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Products\"\u001b[22m\n\n\n  34 |   try {\n  35 |     await gotoHydrated(page, `/products?category=${fixture.category.slug}&category=${fixture.category.slug}-other&page=2&page=3`);\n> 36 |     await expect(page.locator(\"main h1\")).toHaveText(fixture.category.name);\n     |                                           ^\n  37 |     await expect(page).toHaveTitle(/Page 2/);\n  38 |     await expect(page.locator('link[rel=\"canonical\"]')).toHaveAttribute(\"href\", new RegExp(`/products\\\\?category=${fixture.category.slug}&page=2$`));\n  39 |     await expect(page.getByRole(\"link\", { name: \"Previous\", exact: true })).toHaveAttribute(\"href\", `/products?category=${fixture.category.slug}`);\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts:36:43"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:38.419Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-repeated-pr-a1b04-agination-matches-canonical-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-repeated-pr-a1b04-agination-matches-canonical-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-repeated-pr-a1b04-agination-matches-canonical-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-repeated-pr-a1b04-agination-matches-canonical-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                    "column": 43,
+                    "line": 36
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ab92cbb78a3c44b84f49-367294441714b5f4fd2a",
+          "file": "list-query-seo.spec.ts",
+          "line": 32,
+          "column": 5
+        },
+        {
+          "title": "unknown product filters show the all-products selection and clean links",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5673,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:52:54.831Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ab92cbb78a3c44b84f49-cb09c8caf424e328403a",
+          "file": "list-query-seo.spec.ts",
+          "line": 46,
+          "column": 5
+        },
+        {
+          "title": "News resolves repeated filters consistently with metadata",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 14524,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"News list fixture fixture-news-muc77hbds5m3\"\u001b[39m\nReceived: \u001b[31m\"Camera Manufacturing News & Insights\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"text-[var(--foreground)]\">…</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Manufacturing News & Insights\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"News list fixture fixture-news-muc77hbds5m3\"\u001b[39m\nReceived: \u001b[31m\"Camera Manufacturing News & Insights\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"text-[var(--foreground)]\">…</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Manufacturing News & Insights\"\u001b[22m\n\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts:66:43",
+                    "location": {
+                      "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                      "column": 43,
+                      "line": 66
+                    },
+                    "snippet": "  64 |   try {\n  65 |     await gotoHydrated(page, `/news?category=${category.slug}&category=${category.slug}&page=2&page=1`);\n> 66 |     await expect(page.locator(\"main h1\")).toHaveText(category.name);\n     |                                           ^\n  67 |     await expect(page).toHaveTitle(/Page 2/);\n  68 |     await expect(page.locator('link[rel=\"canonical\"]')).toHaveAttribute(\"href\", new RegExp(`/news\\\\?category=${category.slug}&page=2$`));\n  69 |     await expect(page.getByRole(\"link\", { name: \"Previous\", exact: true })).toHaveAttribute(\"href\", `/news?category=${category.slug}`);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                        "column": 43,
+                        "line": 66
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('main h1')\nExpected: \u001b[32m\"News list fixture fixture-news-muc77hbds5m3\"\u001b[39m\nReceived: \u001b[31m\"Camera Manufacturing News & Insights\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('main h1')\u001b[22m\n\u001b[2m    23 × locator resolved to <h1 class=\"text-[var(--foreground)]\">…</h1>\u001b[22m\n\u001b[2m       - unexpected value \"Camera Manufacturing News & Insights\"\u001b[22m\n\n\n  64 |   try {\n  65 |     await gotoHydrated(page, `/news?category=${category.slug}&category=${category.slug}&page=2&page=1`);\n> 66 |     await expect(page.locator(\"main h1\")).toHaveText(category.name);\n     |                                           ^\n  67 |     await expect(page).toHaveTitle(/Page 2/);\n  68 |     await expect(page.locator('link[rel=\"canonical\"]')).toHaveAttribute(\"href\", new RegExp(`/news\\\\?category=${category.slug}&page=2$`));\n  69 |     await expect(page.getByRole(\"link\", { name: \"Previous\", exact: true })).toHaveAttribute(\"href\", `/news?category=${category.slug}`);\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts:66:43"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:00.608Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-News-resolv-de60e--consistently-with-metadata-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-News-resolv-de60e--consistently-with-metadata-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-News-resolv-de60e--consistently-with-metadata-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\list-query-seo-News-resolv-de60e--consistently-with-metadata-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\list-query-seo.spec.ts",
+                    "column": 43,
+                    "line": 66
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ab92cbb78a3c44b84f49-1518aaaf157ca7478ce1",
+          "file": "list-query-seo.spec.ts",
+          "line": 59,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "public-quality.spec.ts",
+      "file": "public-quality.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "missing news uses the standard noindex boundary",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 643,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:15.642Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-57b2d1f5c2a49b739c03",
+          "file": "public-quality.spec.ts",
+          "line": 5,
+          "column": 5
+        },
+        {
+          "title": "published news emits ISO dates and sitemap excludes drafts",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1787,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"/news/quality-public-1790052796739\"\u001b[39m\nReceived string:    \u001b[31m\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\u001b[39m\n\u001b[31m<urlset xmlns=\\\"http://www.sitemaps.org/schemas/sitemap/0.9\\\">\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>1</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/about</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions/faq</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.5</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/contact</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/privacy-policy</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.3</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc226</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-22T01:48:31.940487Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc202</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221902Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc417x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-17T07:17:31.313915Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc105</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221514Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc106</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221692Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc103w</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222014Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc201s</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.244738Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc203</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222241Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc205x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.255511Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc101l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256002Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc206x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256562Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc208n</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257020Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc209x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257815Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc218l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.271994Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/860a</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.550456Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/go9</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.563850Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/wdc901</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565694Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/lens/w3</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565861Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc325</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031286Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc408x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.062453Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc402</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075462Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc305x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075195Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc302</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.043015Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc306l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075718Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc403</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031446Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc312x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.032204Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc309x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.076277Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc503j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.624623Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc308</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075991Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc310</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.084059Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc506</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.629820Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc311</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.097235Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv255k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.636426Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc406</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121581Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/ve418</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031602Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc320</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121783Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc317l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121969Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc422x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031824Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc413l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.122129Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv284k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.679615Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv544km</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.682775Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc501j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.685050Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-oem-partner-for-kenko</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncdian-wins-guangdong-quality-trust-recognition</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-joins-m43-standard-group</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-named-2025-china-made-trusted-brand</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m</urlset>\u001b[39m\n\u001b[31m\"\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"/news/quality-public-1790052796739\"\u001b[39m\nReceived string:    \u001b[31m\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\u001b[39m\n\u001b[31m<urlset xmlns=\\\"http://www.sitemaps.org/schemas/sitemap/0.9\\\">\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>1</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/about</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions/faq</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.5</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/contact</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/privacy-policy</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.3</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc226</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-22T01:48:31.940487Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc202</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221902Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc417x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-17T07:17:31.313915Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc105</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221514Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc106</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221692Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc103w</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222014Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc201s</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.244738Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc203</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222241Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc205x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.255511Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc101l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256002Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc206x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256562Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc208n</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257020Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc209x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257815Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc218l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.271994Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/860a</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.550456Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/go9</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.563850Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/wdc901</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565694Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/lens/w3</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565861Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc325</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031286Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc408x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.062453Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc402</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075462Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc305x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075195Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc302</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.043015Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc306l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075718Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc403</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031446Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc312x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.032204Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc309x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.076277Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc503j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.624623Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc308</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075991Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc310</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.084059Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc506</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.629820Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc311</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.097235Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv255k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.636426Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc406</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121581Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/ve418</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031602Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc320</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121783Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc317l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121969Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc422x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031824Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc413l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.122129Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv284k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.679615Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv544km</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.682775Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc501j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.685050Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-oem-partner-for-kenko</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncdian-wins-guangdong-quality-trust-recognition</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-joins-m43-standard-group</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-named-2025-china-made-trusted-brand</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m</urlset>\u001b[39m\n\u001b[31m\"\u001b[39m\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\public-quality.spec.ts:47:17",
+                    "location": {
+                      "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\public-quality.spec.ts",
+                      "column": 17,
+                      "line": 47
+                    },
+                    "snippet": "  45 |     expect(response.ok()).toBeTruthy();\n  46 |     const xml = await response.text();\n> 47 |     expect(xml).toContain(`/news/${slugs[0]}`);\n     |                 ^\n  48 |     expect(xml).not.toContain(`/news/${slugs[1]}`);\n  49 |   } finally {\n  50 |     for (const id of ids) await admin.delete(`/api/v1/admin/news/${id}`);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\public-quality.spec.ts",
+                        "column": 17,
+                        "line": 47
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"/news/quality-public-1790052796739\"\u001b[39m\nReceived string:    \u001b[31m\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\u001b[39m\n\u001b[31m<urlset xmlns=\\\"http://www.sitemaps.org/schemas/sitemap/0.9\\\">\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>1</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/about</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news</loc>\u001b[39m\n\u001b[31m<changefreq>daily</changefreq>\u001b[39m\n\u001b[31m<priority>0.9</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.8</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/solutions/faq</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.5</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/contact</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/privacy-policy</loc>\u001b[39m\n\u001b[31m<changefreq>monthly</changefreq>\u001b[39m\n\u001b[31m<priority>0.3</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc226</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-22T01:48:31.940487Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc202</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221902Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc417x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-09-17T07:17:31.313915Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc105</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221514Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc106</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.221692Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc103w</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222014Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc201s</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.244738Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc203</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.222241Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc205x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.255511Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc101l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256002Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc206x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.256562Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc208n</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257020Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc209x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.257815Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/mirrorless-camera/dc218l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:03:48.271994Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/860a</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.550456Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/go9</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.563850Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/action-camera/wdc901</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565694Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/lens/w3</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.565861Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc325</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031286Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc408x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.062453Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc402</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075462Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc305x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075195Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc302</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.043015Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc306l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075718Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc403</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031446Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc312x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.032204Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc309x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.076277Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc503j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.624623Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc308</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.075991Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc310</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.084059Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc506</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.629820Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc311</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.097235Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv255k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.636426Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc406</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121581Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/ve418</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031602Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc320</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121783Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc317l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.121969Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc422x</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.031824Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/compact-camera/dc413l</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-29T01:04:32.122129Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv284k</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.679615Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/video-camera/hdv544km</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.682775Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/products/kids-camera/dc501j</loc>\u001b[39m\n\u001b[31m<lastmod>2026-07-28T09:15:13.685050Z</lastmod>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.7</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-unveils-dc106y-flip-top-camera-your-oem-odm-partner</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-oem-partner-for-kenko</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncdian-wins-guangdong-quality-trust-recognition</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-joins-m43-standard-group</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-named-2025-china-made-trusted-brand</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m<url>\u001b[39m\n\u001b[31m<loc>http://localhost:3000/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners</loc>\u001b[39m\n\u001b[31m<changefreq>weekly</changefreq>\u001b[39m\n\u001b[31m<priority>0.6</priority>\u001b[39m\n\u001b[31m</url>\u001b[39m\n\u001b[31m</urlset>\u001b[39m\n\u001b[31m\"\u001b[39m\n\n  45 |     expect(response.ok()).toBeTruthy();\n  46 |     const xml = await response.text();\n> 47 |     expect(xml).toContain(`/news/${slugs[0]}`);\n     |                 ^\n  48 |     expect(xml).not.toContain(`/news/${slugs[1]}`);\n  49 |   } finally {\n  50 |     for (const id of ids) await admin.delete(`/api/v1/admin/news/${id}`);\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\public-quality.spec.ts:47:17"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:16.394Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\public-quality-published-n-29550-and-sitemap-excludes-drafts-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\public-quality-published-n-29550-and-sitemap-excludes-drafts-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\public-quality-published-n-29550-and-sitemap-excludes-drafts-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\public-quality-published-n-29550-and-sitemap-excludes-drafts-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\public-quality.spec.ts",
+                    "column": 17,
+                    "line": 47
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-85e36934de6279958074",
+          "file": "public-quality.spec.ts",
+          "line": 11,
+          "column": 5
+        },
+        {
+          "title": "map requests wait until the map approaches the viewport",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1524,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:18.627Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-9abdb377031801ffc258",
+          "file": "public-quality.spec.ts",
+          "line": 55,
+          "column": 5
+        },
+        {
+          "title": "public pages fit the 390px viewport",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3706,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:20.258Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-999bb3b8f9f5ef0fe2a7",
+          "file": "public-quality.spec.ts",
+          "line": 70,
+          "column": 7
+        },
+        {
+          "title": "public pages fit the 768px viewport",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3918,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:23.970Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-06d2feaba5a0137bad30",
+          "file": "public-quality.spec.ts",
+          "line": 70,
+          "column": 7
+        },
+        {
+          "title": "public pages fit the 1440px viewport",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4373,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:27.895Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "dabc2f2cdf9dcb1d01df-25f9c9ddce40c1969c1a",
+          "file": "public-quality.spec.ts",
+          "line": 70,
+          "column": 7
+        }
+      ]
+    },
+    {
+      "title": "responsive-images.spec.ts",
+      "file": "responsive-images.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "product gallery selects an appropriate source at 390px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2423,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m258\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m384\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:32.284Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-d6e954dcb043a35df4ec",
+          "file": "responsive-images.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "product gallery selects an appropriate source at 768px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2182,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m298\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m384\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:34.715Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-e7a8078725960b6ea75b",
+          "file": "responsive-images.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "product gallery selects an appropriate source at 900px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2206,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m298\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m384\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:36.905Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-4a83b6887c1e6c6fd6ae",
+          "file": "responsive-images.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "product gallery selects an appropriate source at 1440px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2258,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m562\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m640\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:39.119Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-295dfff3585c6a8afd38",
+          "file": "responsive-images.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "product gallery selects an appropriate source at 1920px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2296,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m562\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m640\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:41.386Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-5dd59bed291a943d5b63",
+          "file": "responsive-images.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "home news cards stop growing their image requests on wide screens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2522,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m669.109375\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m768\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:43.689Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-5456cfcd8ea8b76733ae",
+          "file": "responsive-images.spec.ts",
+          "line": 91,
+          "column": 5
+        },
+        {
+          "title": "related news cards use their narrower article container",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2412,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "responsive-image { rendered: \u001b[33m307.328125\u001b[39m, density: \u001b[33m1\u001b[39m, selected: \u001b[33m384\u001b[39m }\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:46.222Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-5fa435640d9b4fdd3237",
+          "file": "responsive-images.spec.ts",
+          "line": 112,
+          "column": 5
+        },
+        {
+          "title": "gallery switching keeps the selected photo description",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2209,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T04:53:48.644Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "04189eb816cb2e8ea709-16674ab643d63f6b27a6",
+          "file": "responsive-images.spec.ts",
+          "line": 126,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "high density gallery",
+          "file": "responsive-images.spec.ts",
+          "line": 144,
+          "column": 6,
+          "specs": [
+            {
+              "title": "gallery stays sharp at 390px and 2x density",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2244,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "responsive-image { rendered: \u001b[33m258\u001b[39m, density: \u001b[33m2\u001b[39m, selected: \u001b[33m640\u001b[39m }\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-22T04:53:50.860Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "04189eb816cb2e8ea709-a4b58d7dd1d723cde4d4",
+              "file": "responsive-images.spec.ts",
+              "line": 147,
+              "column": 9
+            },
+            {
+              "title": "gallery stays sharp at 900px and 2x density",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2177,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "responsive-image { rendered: \u001b[33m298\u001b[39m, density: \u001b[33m2\u001b[39m, selected: \u001b[33m640\u001b[39m }\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-22T04:53:53.112Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "04189eb816cb2e8ea709-62fdea7afa66d230a3fd",
+              "file": "responsive-images.spec.ts",
+              "line": 147,
+              "column": 9
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-22T04:52:34.484Z",
+    "duration": 80937.213,
+    "expected": 21,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  }
+}

@@ -50,23 +50,15 @@ export default function SolutionsPage() {
         <div className="relative max-w-7xl mx-auto px-6 pt-5">
           <Breadcrumbs items={breadcrumbs} variant="dark" />
         </div>
-        {/* 核心主张 */}
-        <div className="relative max-w-4xl mx-auto px-6 pb-12 pt-4 text-center md:pb-14 md:pt-2">
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.22em] mb-4"
-            style={{ color: "var(--accent)" }}
-          >
-            {hero.eyebrow}
-          </p>
-          <h1 className="text-[2.35rem] font-bold leading-[1.08] tracking-[-0.035em] text-white md:text-5xl">
-            {hero.title}
-          </h1>
-          <p
-            className="mt-5 text-base md:text-lg leading-relaxed mx-auto max-w-2xl"
-            style={{ color: "#C7C9CE" }}
-          >
-            {hero.subtitle}
-          </p>
+        {/* 标题与说明在桌面端分栏，窄屏按阅读顺序堆叠。 */}
+        <div className="site-container relative pb-10 pt-6 md:pb-12 md:pt-8">
+          <p className="interior-heading-kicker">{hero.eyebrow}</p>
+          <div className="mt-3 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-end lg:gap-14">
+            <h1 className="interior-heading-title max-w-3xl text-white">{hero.title}</h1>
+            <p className="max-w-2xl text-base leading-relaxed text-white/75 lg:border-l lg:border-white/15 lg:pl-8 lg:text-[17px]">
+              {hero.subtitle}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -83,17 +75,18 @@ export default function SolutionsPage() {
           </div>
 
           <div className="space-y-6 md:space-y-8">
-            {SOLUTIONS.map((sol) => {
+            {SOLUTIONS.map((sol, index) => {
               const Icon = SOLUTION_ICONS[sol.icon as keyof typeof SOLUTION_ICONS];
               return (
                 <article
                   key={sol.id}
                   id={sol.id}
-                  className="scroll-mt-24 rounded-2xl border border-[var(--border)] bg-white p-8 md:p-10 transition-all duration-300 hover:border-[var(--accent)]/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+                  className="solution-panel scroll-mt-24 rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-8 md:p-10 transition-[border-color,box-shadow] duration-300 hover:border-[var(--accent)]/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
                 >
-                  <div className="md:grid md:grid-cols-2 md:gap-10 md:items-center">
+                  <div className="solution-layout grid gap-8 lg:grid-cols-2 lg:gap-12 lg:items-center">
                     {/* 左：标识 + 文案 + CTA */}
-                    <div>
+                    <div className="solution-summary">
+                      <span className="solution-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                       <div className="flex items-center gap-4 mb-5">
                         <span
                           className="flex items-center justify-center w-12 h-12 rounded-xl text-white shrink-0"
@@ -123,7 +116,7 @@ export default function SolutionsPage() {
                     </div>
 
                     {/* 右：功能要点 */}
-                    <ul className="mt-8 md:mt-0 space-y-3">
+                    <ul className="solution-features space-y-4 rounded-xl bg-[var(--surface-soft)] p-5 sm:p-7">
                       {sol.features.map((f) => (
                         <li
                           key={f}

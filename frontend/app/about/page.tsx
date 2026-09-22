@@ -47,17 +47,15 @@ export default function AboutPage() {
       </section>
 
       {/* 区块 2+3 —— 品牌故事 + 数据统计（合并） */}
-      <section id="factory-tour" className="scroll-mt-24 py-16 md:py-24 bg-white">
+      <section id="factory-tour" className="scroll-mt-24 py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
+          <header className="mb-8 border-b border-black/10 pb-7 sm:mb-10 sm:pb-9">
+            <p className="interior-heading-kicker interior-heading-kicker-light mb-3 sm:mb-4">Who We Are</p>
+            <h1 className="interior-heading-title max-w-4xl text-[var(--foreground)]">{ABOUT.hero.title}</h1>
+          </header>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
             {/* 左栏 —— 品牌故事 */}
             <div className="lg:col-span-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
-                Who We Are
-              </p>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-6">
-                {ABOUT.hero.title}
-              </h1>
               <div className="space-y-5 text-gray-600 leading-relaxed">
                 {ABOUT.story.content.map((p, i) => (
                   <p
@@ -76,8 +74,8 @@ export default function AboutPage() {
 
             {/* 右栏 —— 紧凑数据统计条（细线网格，无卡片） */}
             {/* lg 以上用左侧细竖线 + 左内边距，与左栏品牌故事形成「两栏一体」的视觉关系 */}
-            <div className="lg:col-span-5 lg:border-l lg:border-[var(--border)] lg:pl-16">
-              {/* 与左栏 "Who We Are" 呼应的小标题，建立左右两栏的对称节奏 */}
+            <div className="about-facts lg:col-span-5 lg:border-l lg:border-[var(--border)] lg:pl-16">
+              {/* 数据区标题与公司介绍共同承接页头 */}
               <p className="text-xs font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: "var(--accent)" }}>
                 By the Numbers
               </p>
@@ -134,11 +132,11 @@ export default function AboutPage() {
 
           {/* 三大能力卡片：Mega Factory / Production Capability / Innovation Technology
               沿用「价值观」同款白卡 + 细灰边 + 圆角，保持整站组件语言统一 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="capability-grid grid grid-cols-1 gap-0 mb-12 md:grid-cols-3">
             {ABOUT.manufacturing.map((block) => (
               <div
                 key={block.title}
-                className="p-8 bg-white border border-[var(--border)] hover:border-[#D0D1D2] transition-colors"
+                className="capability-item p-6 md:p-8 bg-white border border-[var(--border)] hover:border-[#D0D1D2] transition-colors"
                 style={{ borderRadius: "12px", transitionDuration: "0.33s" }}
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">{block.title}</h3>

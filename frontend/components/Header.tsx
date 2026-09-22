@@ -216,7 +216,7 @@ export default function Header() {
 
           {/* 右侧：搜索 + CTA + 汉堡 */}
           <div className="flex-1 flex items-center justify-end gap-3">
-            <InstantSearch className="hidden lg:block" />
+            <InstantSearch compact className="hidden lg:flex lg:items-center lg:gap-1" />
             <InteractiveHoverLink
               href="/contact"
               fill="bg-[var(--accent)]"

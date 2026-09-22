@@ -1,0 +1,588 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "playwright",
+      "test",
+      "admin-album-sort",
+      "product-news-upgrade",
+      "news-prefetch",
+      "--reporter=line,json"
+    ],
+    "configFile": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\playwright.config.ts",
+    "rootDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/Administrator/Desktop/Front-end project/full-stack-project/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 2,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "admin-album-sort.spec.ts",
+      "file": "admin-album-sort.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "media album: dragging inside one parent persists the order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2578,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:40.924Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f06aa3faed61b193b11-2ea57b1ced59d639f602",
+          "file": "admin-album-sort.spec.ts",
+          "line": 62,
+          "column": 5
+        },
+        {
+          "title": "media album: move up/down buttons reorder siblings and disable at the edges",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 11820,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '下移 QA Move C mucemluztazw' })\nExpected: disabled\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '下移 QA Move C mucemluztazw' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '下移 QA Move C mucemluztazw' })\nExpected: disabled\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '下移 QA Move C mucemluztazw' })\u001b[22m\n\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\admin-album-sort.spec.ts:127:72",
+                    "location": {
+                      "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\admin-album-sort.spec.ts",
+                      "column": 72,
+                      "line": 127
+                    },
+                    "snippet": "  125 |     });\n  126 |     await page.getByRole(\"button\", { name: `下移 ${names[2]}` }).click();\n> 127 |     await expect(page.getByRole(\"button\", { name: `下移 ${names[2]}` })).toBeDisabled();\n      |                                                                        ^\n  128 |     await expect(albumNode(page, names[2]).locator(\"..\")).toHaveAttribute(\"draggable\", \"false\");\n  129 |     releaseSort!();\n  130 |     await expect.poll(() => renderedOrder(page, names)).toEqual([names[1], names[2], names[0]]);"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\admin-album-sort.spec.ts",
+                        "column": 72,
+                        "line": 127
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '下移 QA Move C mucemluztazw' })\nExpected: disabled\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '下移 QA Move C mucemluztazw' })\u001b[22m\n\n\n  125 |     });\n  126 |     await page.getByRole(\"button\", { name: `下移 ${names[2]}` }).click();\n> 127 |     await expect(page.getByRole(\"button\", { name: `下移 ${names[2]}` })).toBeDisabled();\n      |                                                                        ^\n  128 |     await expect(albumNode(page, names[2]).locator(\"..\")).toHaveAttribute(\"draggable\", \"false\");\n  129 |     releaseSort!();\n  130 |     await expect.poll(() => renderedOrder(page, names)).toEqual([names[1], names[2], names[0]]);\n    at C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\admin-album-sort.spec.ts:127:72"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:43.622Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\admin-album-sort-media-alb-a1c9e-gs-and-disable-at-the-edges-chromium\\test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\admin-album-sort-media-alb-a1c9e-gs-and-disable-at-the-edges-chromium\\video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\admin-album-sort-media-alb-a1c9e-gs-and-disable-at-the-edges-chromium\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\test-results\\admin-album-sort-media-alb-a1c9e-gs-and-disable-at-the-edges-chromium\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\Administrator\\Desktop\\Front-end project\\full-stack-project\\frontend\\e2e\\admin-album-sort.spec.ts",
+                    "column": 72,
+                    "line": 127
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "2f06aa3faed61b193b11-22526d705711b0421a06",
+          "file": "admin-album-sort.spec.ts",
+          "line": 98,
+          "column": 5
+        },
+        {
+          "title": "media album: root rows align with the「全部」row and the editor has no sort input",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1642,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:56.121Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f06aa3faed61b193b11-9de9849701d9750527cf",
+          "file": "admin-album-sort.spec.ts",
+          "line": 146,
+          "column": 5
+        },
+        {
+          "title": "media album: row actions keep their own column and never cover the album name",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3839,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:57.912Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "2f06aa3faed61b193b11-34eb0bf1f792eecc4127",
+          "file": "admin-album-sort.spec.ts",
+          "line": 185,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "news-prefetch.spec.ts",
+      "file": "news-prefetch.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "home News cards do not prefetch articles before a click",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 7034,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:40.922Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ac02a567f33f7255d9fc-dbc7d138a44e4199f6dc",
+          "file": "news-prefetch.spec.ts",
+          "line": 6,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "product-news-upgrade.spec.ts",
+      "file": "product-news-upgrade.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "detail image extraction removes unsafe sources and retains dimensions and order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:48.179Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-144f7f0f330806c0e3bd",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 8,
+          "column": 5
+        },
+        {
+          "title": "mobile product keeps model, gallery, inquiry row and summary in order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 2169,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:48.201Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-a5bbc00eddda092edfa3",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "title": "related products come from the manual admin selection",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 3730,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:50.379Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-9ceab3d93d5a04c6d261",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 96,
+          "column": 5
+        },
+        {
+          "title": "News pagination canonical persists and invalid pages are noindex",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 5024,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:54.117Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-9c52f107fab08289f694",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 142,
+          "column": 5
+        },
+        {
+          "title": "detail image upload blocks save, preserves old text, and saves image order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1295,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:20:59.153Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-8e53f76adb0b7f215968",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 161,
+          "column": 5
+        },
+        {
+          "title": "detail image block keeps empty state, drag upload, progress and unsaved guard",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1327,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:21:00.469Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-93b1cabcfe68ec65bed3",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 255,
+          "column": 5
+        },
+        {
+          "title": "news body code editor inserts library images at the caret",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1038,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:21:01.806Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-53fc3b3e310954cc030a",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 300,
+          "column": 5
+        },
+        {
+          "title": "news body code preview is sandboxed and saved verbatim",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 45000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 1225,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-22T08:21:02.852Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "036283b7fa2d274769c2-239bb027bf7fe11edaf4",
+          "file": "product-news-upgrade.spec.ts",
+          "line": 339,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-22T08:20:40.306Z",
+    "duration": 23867.666,
+    "expected": 12,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

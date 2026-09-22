@@ -8,12 +8,12 @@
 
 import Link from "next/link";
 import { readListQuery, listUrl, type ListSearchParams } from "@/lib/list-query";
-import Image from "next/image";
+import SafeImage from "@/components/SafeImage";
+import PostCard from "@/components/PostCard";
 import type { Metadata } from "next";
 import { superMeta } from "@/lib/site-meta";
 import { getNewsPage } from "@/lib/api/list-pages";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import SpotlightCard from "@/components/SpotlightCard";
 import { generateBreadcrumbs } from "@/lib/seo";
 import { COMPANY } from "@/lib/content-data";
 
@@ -62,7 +62,23 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       {/* 文章列表 */}
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <h1 className="mb-8 text-3xl font-semibold tracking-tight text-[var(--foreground)] md:text-4xl">{category?.name || "Camera Manufacturing News & Insights"}</h1>
+          <header className="mb-8 border-b border-black/10 pb-7 sm:mb-10 sm:pb-9">
+            <h1 className="text-[var(--foreground)]">
+              {category ? (
+                <span className="block max-w-4xl text-[clamp(2rem,4.5vw,3.75rem)] font-semibold leading-[1.1] tracking-[-0.045em] text-balance">{category.name}</span>
+              ) : (
+                <>
+                  <span className="mb-3 flex items-center gap-3 text-[10px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-[var(--muted-foreground)] sm:mb-4 sm:text-xs sm:tracking-[0.22em]">
+                    <span aria-hidden="true" className="h-px w-7 shrink-0 bg-[var(--accent)] sm:w-10" />
+                    Camera Manufacturing
+                  </span>{" "}
+                  <span className="block text-[clamp(2rem,4.5vw,3.75rem)] font-semibold leading-[1.1] tracking-[-0.045em] text-balance">
+                    News <span className="font-normal text-[var(--accent)]">&amp;</span> Insights
+                  </span>
+                </>
+              )}
+            </h1>
+          </header>
           {loadError ? (
             <div className="text-center py-24 bg-gray-50 border border-[var(--border)]" style={{ borderRadius: "12px" }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">News Unavailable</h3>
@@ -76,88 +92,51 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
             </div>
           ) : posts.length > 0 ? (
             <>
-              {/* 精选 */}
+              {/* 有封面时突出图文；无封面时保持紧凑的文字头条。 */}
               {featured && (
-                <SpotlightCard>
                 <Link
+                  prefetch={false}
                   href={`/news/${featured.slug}`}
-                  className="group block relative overflow-hidden mb-10 border border-transparent hover:border-[#3E6AE1] hover:shadow-sm transition-all h-full w-full"
-                  style={{ backgroundColor: "var(--muted)", borderRadius: "12px", transitionDuration: "0.3s" }}
+                  className={`group mb-10 grid overflow-hidden rounded-2xl border border-black/8 bg-[var(--muted)] transition-[border-color,box-shadow] duration-300 hover:border-black/20 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)] ${featured.featuredImage ? "md:grid-cols-2" : ""}`}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 min-h-[320px]">
-                    <div className="relative aspect-[4/3] md:aspect-auto bg-gray-800 overflow-hidden" style={{ borderRadius: "12px 0 0 12px" }}>
-                      {featured.featuredImage ? (
-                        <Image
-                          src={featured.featuredImage}
-                          alt={featured.featuredImageAlt}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          className="object-cover group-hover:brightness-[1.06] transition-all"
-                          style={{ transitionDuration: "0.3s" }}
-                          preload
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-                          <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-                        </div>
-                      )}
+                  {featured.featuredImage && (
+                    <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 md:aspect-auto md:min-h-[300px]">
+                      <SafeImage
+                        src={featured.featuredImage}
+                        alt={featured.featuredImageAlt}
+                        fill
+                        sizes="(max-width: 767px) calc(100vw - 48px), (max-width: 1279px) calc(50vw - 24px), 616px"
+                        className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.025]"
+                        preload
+                        fallback={<div className="absolute inset-0 bg-[var(--muted)]" />}
+                      />
                     </div>
-                    <div className="flex flex-col justify-center p-8 md:p-10 relative z-10" style={{ backgroundColor: "var(--muted)" }}>
-                      <div className="flex items-center gap-3 mb-3">
-                        {featured.categories.length > 0 && (
-                          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full" style={{ backgroundColor: "rgba(62,106,225,0.2)", color: "#3E6AE1" }}>
-                            {featured.categories[0].name}
-                          </span>
-                        )}
-                        <span className="text-xs text-gray-400">{featured.date}</span>
-                      </div>
-                      <h2 className="text-xl md:text-2xl font-medium leading-snug mb-3" style={{ color: "var(--foreground)" }}>
-                        {featured.title}
-                      </h2>
-                      <p className="text-sm line-clamp-3 leading-relaxed mb-5" style={{ color: "var(--muted-foreground)" }}>{featured.excerpt}</p>
-                      <span className="inline-flex items-center text-sm font-medium transition-colors" style={{ color: "#3E6AE1", transitionDuration: "0.33s" }}>
-                        Read Article
-                        <svg className="w-4 h-4 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                      </span>
-                    </div>
+                  )}
+                  <div className="flex min-w-0 flex-col justify-center p-6 sm:p-8 lg:p-10">
+                    <span className="mb-4 text-xs font-medium tracking-wide text-[var(--muted-foreground)]">{featured.date}</span>
+                    <h2 className="mb-3 max-w-3xl text-2xl font-semibold leading-snug tracking-tight text-[var(--foreground)] transition-colors group-hover:text-[var(--accent)] group-focus-visible:text-[var(--accent)] lg:text-3xl">
+                      {featured.title}
+                    </h2>
+                    <p className="mb-6 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)] line-clamp-3 sm:text-base">{featured.excerpt}</p>
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)]">
+                      Read Article
+                      <svg aria-hidden="true" className="h-4 w-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    </span>
                   </div>
                 </Link>
-                </SpotlightCard>
               )}
 
-              {/* 网格 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
                 {remaining.map((post) => (
-                  <SpotlightCard key={post.id} className="h-full">
-                  <Link
-                    href={`/news/${post.slug}`}
-                    className="group flex flex-col sm:flex-row gap-5 bg-white border border-[var(--border)] hover:border-[#3E6AE1] hover:shadow-sm overflow-hidden transition-all h-full w-full"
-                    style={{ borderRadius: "12px", transitionDuration: "0.3s" }}
-                  >
-                    <div className="relative sm:w-48 shrink-0 aspect-[4/3] sm:aspect-auto bg-gray-100 overflow-hidden">
-                      {post.featuredImage ? (
-                        <Image src={post.featuredImage} alt={post.featuredImageAlt} fill sizes="(max-width: 639px) calc(100vw - 48px), 192px" className="object-cover group-hover:brightness-[1.06] transition-all" style={{ transitionDuration: "0.3s" }} />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-300"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg></div>
-                      )}
-                    </div>
-                    <div className="flex flex-col justify-center p-4 sm:py-4 sm:pr-5 sm:pl-0 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        {post.categories.length > 0 && <span className="text-[11px] md:text-xs font-medium" style={{ color: "#3E6AE1" }}>{post.categories[0].name}</span>}
-                        <span className="text-[11px] md:text-xs text-gray-400">{post.date}</span>
-                      </div>
-                      <h3 className="text-sm md:text-base font-semibold text-gray-900 leading-snug line-clamp-2 transition-colors mb-1.5" style={{ transitionDuration: "0.33s" }}>{post.title}</h3>
-                      <p className="text-xs md:text-sm text-gray-500 line-clamp-2 leading-relaxed">{post.excerpt}</p>
-                    </div>
-                  </Link>
-                  </SpotlightCard>
+                  <PostCard key={post.id} post={post} showAuthor={false} sizes="(max-width: 767px) calc(100vw - 48px), (max-width: 1023px) calc(50vw - 36px), (max-width: 1279px) calc(33.333vw - 32px), 395px" />
                 ))}
               </div>
 
               {pagination && pagination.totalPages > 1 && (
-                <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-12">
+                <nav aria-label="Pagination" className="mt-12 flex flex-wrap items-center justify-center gap-2">
                   {currentPage > 1 && (
                     <Link
+                      prefetch={false}
                       href={listUrl("/news", currentPage - 1, category?.slug)}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}
@@ -168,6 +147,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
                   <span className="px-4 py-2.5 text-sm" style={{ color: "var(--muted-foreground)" }}>Page {currentPage} / {pagination.totalPages}</span>
                   {currentPage < pagination.totalPages && (
                     <Link
+                      prefetch={false}
                       href={listUrl("/news", currentPage + 1, category?.slug)}
                       className="px-5 py-2.5 text-sm md:text-base font-medium rounded transition-colors inline-block w-[90px] text-center"
                       style={{ color: "var(--graphite)", backgroundColor: "var(--muted)", borderRadius: "4px", transitionDuration: "0.33s" }}

@@ -85,14 +85,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </div>
       </section>
 
-      <section className="bg-[var(--surface-dark)] pb-7 pt-4 text-white md:pb-8 md:pt-5">
-        <div className="site-container grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="max-w-3xl">
-            <p className="section-eyebrow">Product Portfolio</p>
-            <h1 className="mt-2.5 text-[clamp(2.35rem,4vw,3.5rem)] font-semibold leading-[1] tracking-[-0.045em]">
+      <section className="bg-[var(--surface-dark)] pb-8 pt-6 text-white md:pb-10 md:pt-8">
+        <div className="site-container grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="min-w-0 max-w-3xl">
+            <p className="interior-heading-kicker">Product Portfolio</p>
+            <h1 className="interior-heading-title mt-3">
               {matchedCategory?.name || "Camera Products"}
             </h1>
-            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/62 md:text-base">
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-white/70 md:text-base">
               Explore our current camera portfolio for OEM and ODM projects. Select a category to narrow the collection.
             </p>
           </div>
@@ -107,46 +107,29 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <div className="site-container">
           {/* 产品分类筛选 */}
           {categories.length > 0 && (
-            <div className="mb-7 overflow-hidden rounded-2xl border border-black/[0.08] bg-white md:mb-10">
-              <div className="border-b border-black/[0.06] bg-gradient-to-r from-[#fafafa] to-white px-4 py-3 md:px-6 md:py-4">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)]/10 text-[var(--accent)]">
-                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[15px] font-semibold text-[var(--foreground)]">Browse by category</p>
-                    <p className="text-sm text-[var(--muted-foreground)]">Choose a camera type to refine the collection</p>
-                  </div>
+            <div className="mb-7 md:mb-10">
+              <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <p className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                  <SlidersHorizontal className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
+                  Browse by category
+                </p>
+                <p className="text-xs text-[var(--muted-foreground)]">Choose a camera type to refine the collection</p>
+              </div>
+              <HorizontalScrollArea ariaLabel="Product categories" className="border-b border-black/10 md:overflow-visible">
+                <div className="flex gap-1 md:flex-wrap md:gap-x-3">
+                  <Link prefetch={false} href="/products" aria-current={!matchedCategory ? "page" : undefined} className="product-category-tab">All Products</Link>
+                  {categories.map((cat) => (
+                    <Link
+                      prefetch={false}
+                      key={cat.id}
+                      href={`/products?category=${encodeURIComponent(cat.slug)}`}
+                      aria-current={matchedCategory?.id === cat.id ? "page" : undefined}
+                      className="product-category-tab"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
                 </div>
-              </div>
-              <HorizontalScrollArea ariaLabel="Product categories" className="px-4 pt-4 md:overflow-visible md:px-6 md:pb-4">
-              <div className="flex gap-2 pb-1 md:flex-wrap">
-                <Link
-                  prefetch={false}
-                  href="/products"
-                  aria-current={!matchedCategory ? "page" : undefined}
-                  className={`inline-flex min-h-11 shrink-0 snap-start touch-manipulation items-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98] ${!matchedCategory ? "border-[var(--foreground)] bg-[var(--foreground)] text-white shadow-sm" : "border-black/10 bg-[#f8f8f9] text-[var(--graphite)] hover:border-[var(--accent)]/50 hover:bg-white hover:text-[var(--accent)]"}`}
-                >
-                  All Products
-                </Link>
-              {categories.map((cat) => {
-                const isActive = !!categorySlug && categorySlug.toLowerCase() === cat.slug.toLowerCase();
-                return (
-                  <Link
-                  prefetch={false}
-                    key={cat.id}
-                    href={`/products?category=${cat.slug}`}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`flex min-h-11 shrink-0 snap-start touch-manipulation items-center justify-center rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all duration-300 active:scale-[0.98]
-                      ${isActive
-                        ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(212,52,62,0.22)]"
-                        : "border-black/10 bg-[#f8f8f9] text-[var(--graphite)] hover:border-[var(--accent)]/50 hover:bg-white hover:text-[var(--accent)]"}`}
-                  >
-                    {cat.name}
-                  </Link>
-                );
-              })}
-              </div>
               </HorizontalScrollArea>
             </div>
           )}

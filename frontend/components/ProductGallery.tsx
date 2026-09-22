@@ -81,6 +81,17 @@ export default function ProductGallery({
             aria-pressed={selected === img.src}
             // 点击缩略图切换大图
             onClick={() => setSelected(img.src)}
+            onKeyDown={(event) => {
+              const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"];
+              if (!keys.includes(event.key)) return;
+              event.preventDefault();
+              const index = thumbs.findIndex((thumb) => thumb.id === img.id);
+              const next = event.key === "Home" ? 0 : event.key === "End" ? thumbs.length - 1
+                : (index + (event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) + thumbs.length) % thumbs.length;
+              setSelected(thumbs[next].src);
+              const buttons = event.currentTarget.parentElement?.querySelectorAll("button");
+              buttons?.[next]?.focus({ preventScroll: true });
+            }}
             className={`relative h-16 w-16 shrink-0 snap-start touch-manipulation overflow-hidden border-2 bg-gray-50 transition-colors cursor-pointer active:scale-[0.98] md:h-20 md:w-20 ${thumbsSideOnMobile ? "max-sm:h-14 max-sm:w-14" : ""} ${
               selected === img.src
                 ? "border-[var(--accent)]"
@@ -115,6 +126,7 @@ export default function ProductGallery({
             </div>
           ) : (
             <Image
+              key={selected}
               src={selected}
               alt={thumbs.find(img => img.src === selected)?.alt || mainAlt}
               fill
@@ -122,6 +134,14 @@ export default function ProductGallery({
               className="object-contain"
               preload={selected === mainImage}
               loading={selected === mainImage ? undefined : "eager"}
+              onLoad={(event) => {
+                if (selected !== mainImage && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                  event.currentTarget.animate(
+                    [{ opacity: 0.65, transform: "scale(0.985)" }, { opacity: 1, transform: "scale(1)" }],
+                    { duration: 240, easing: "ease-out" },
+                  );
+                }
+              }}
               onError={() => setFailedImage(selected)}
             />
           )}

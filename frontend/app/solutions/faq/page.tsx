@@ -66,10 +66,12 @@ export default function FAQPage() {
       {/* 主体：左侧粘性目录 + 右侧分类问答 */}
       <section className="py-12 md:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          {/* 页面主标题：此前整页只有 h2，缺 h1（文档结构 + 主题词信号） */}
-          <h1 className="mb-8 text-2xl md:text-3xl font-bold tracking-tight text-[var(--foreground)]">
-            Camera OEM &amp; ODM FAQ
-          </h1>
+          <header className="mb-8 border-b border-black/10 pb-7 sm:mb-10 sm:pb-9">
+            <h1 className="text-[var(--foreground)]">
+              <span className="interior-heading-kicker interior-heading-kicker-light mb-3 sm:mb-4">Camera OEM &amp; ODM</span>{" "}
+              <span className="interior-heading-title block">FAQ</span>
+            </h1>
+          </header>
           <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-12">
             {/* 分类目录 —— 桌面端粘性侧栏 / 移动端粘性横向胶囊条 */}
             <aside className="sticky top-16 z-30 -mx-6 mb-8 self-start lg:top-24 lg:mx-0 lg:mb-0">

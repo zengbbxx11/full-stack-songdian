@@ -13,14 +13,14 @@ export default function StatsBand() {
       <div className="site-container">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-6">
           {ABOUT.stats.map((s) => (
-            <div key={s.label} className="border-l border-white/12 pl-4 text-left md:pl-6">
+            <div key={s.label} className="stat-item border-l border-white/12 pl-4 text-left md:pl-6">
               <dd className="text-4xl md:text-5xl font-semibold tracking-tight text-white tabular-nums">
                 <span className="fact-reveal">
                   {s.format ? s.value.toLocaleString("en-US") : s.value}
                 </span>
                 {s.suffix}
               </dd>
-              <dt className="mt-2 text-sm font-medium text-white/55">{s.label}</dt>
+              <dt className="mt-2 text-sm font-medium text-white/70">{s.label}</dt>
             </div>
           ))}
         </dl>

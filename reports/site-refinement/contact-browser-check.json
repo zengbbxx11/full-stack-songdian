@@ -1,0 +1,32 @@
+{
+  "rows": [
+    {
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "links": {
+    "AMap View": "https://uri.amap.com/marker?position=113.28204,22.75499&name=Room%20801%2C%20Building%2017%2C%20Tongde%20Intelligent%20Manufacturing%20Park%2C%20No.%209%20Guizhou%20Avenue%20East%2C%20Shangjiashi%20Community%2C%20Ronggui%20Subdistrict%2C%20Shunde%20District%2C%20Foshan%2C%20Guangdong%2C%20China&src=sonida&coordinate=wgs84&callnative=1",
+    "AMap Navigate": "https://uri.amap.com/navigation?to=113.28204,22.75499,Room%20801%2C%20Building%2017%2C%20Tongde%20Intelligent%20Manufacturing%20Park%2C%20No.%209%20Guizhou%20Avenue%20East%2C%20Shangjiashi%20Community%2C%20Ronggui%20Subdistrict%2C%20Shunde%20District%2C%20Foshan%2C%20Guangdong%2C%20China&mode=car&policy=1&src=sonida&coordinate=wgs84&callnative=1",
+    "Google View": "https://www.google.com/maps/search/?api=1&query=22.75499,113.28204",
+    "Google Navigate": "https://www.google.com/maps/dir/?api=1&destination=22.75499,113.28204"
+  },
+  "invalidFields": 4,
+  "pageErrors": []
+}

@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 interface AnimatedSectionProps {
   children: ReactNode;
   className?: string;
+  effect?: "rise" | "fade";
 }
 
 /**
@@ -21,6 +22,7 @@ interface AnimatedSectionProps {
 export default function AnimatedSection({
   children,
   className = "",
+  effect = "rise",
 }: AnimatedSectionProps) {
-  return <div className={`section-reveal ${className}`}>{children}</div>;
+  return <div data-reveal={effect} className={`section-reveal ${className}`}>{children}</div>;
 }

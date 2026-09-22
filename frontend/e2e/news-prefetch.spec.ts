@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { adminRequest, cleanup, createNews, createNewsCategory, removeNews, removeUploads } from "./fixtures";
-import { gotoHydrated } from "./hydration";
+import { waitForHydration } from "./hydration";
 
 test("home News cards do not prefetch articles before a click", async ({ page }) => {
   // 自建夹具：首页卡片必须真有内容，不能依赖某台机器上的既有文章。
@@ -24,7 +24,8 @@ test("home News cards do not prefetch articles before a click", async ({ page })
       const url = new URL(request.url());
       if (url.pathname.startsWith("/news/") && url.searchParams.has("_rsc")) requests.push(url.pathname);
     });
-    await gotoHydrated(page, "/");
+    // 保留已出现夹具的当前页面；再次导航可能被其他并行用例发布的新闻挤出首页。
+    await waitForHydration(page);
     await page.getByRole("button", { name: "Reject", exact: true }).click();
     await card.scrollIntoViewIfNeeded();
     await card.hover();

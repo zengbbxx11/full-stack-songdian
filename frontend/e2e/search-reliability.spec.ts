@@ -7,7 +7,10 @@ import { gotoHydrated } from "./hydration";
 // 输入不会触发防抖搜索请求，表现为「填了内容却没有任何请求、也没有报错」——
 // 这是本文件三条用例失败的真实原因（不是拦截失效，也不是后端问题）。
 // 注意：不能用 waitUntil: "networkidle" 代替，dev 下网络静默早于注水完成。
-const openHomeHydrated = (page: import("@playwright/test").Page) => gotoHydrated(page, "/");
+const openHomeHydrated = async (page: import("@playwright/test").Page) => {
+  await gotoHydrated(page, "/");
+  await page.getByRole("button", { name: "Open search", exact: true }).click();
+};
 
 const result = (title: string) => ({ code: "0", data: {
   items: [{ id: 1, kind: "product", title, slug: title.toLowerCase(), summary: "", rank: 1, cover_image: null }],
@@ -53,7 +56,8 @@ test("search errors persist until retry and Escape closes an empty popup", async
   await input.press("Escape");
   await expect(input).toHaveAttribute("aria-expanded", "false");
   await input.blur();
-  await input.focus();
+  await page.getByRole("button", { name: "Open search", exact: true }).click();
+  await expect(input).toBeFocused();
   failed = false;
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await page.clock.fastForward(350);

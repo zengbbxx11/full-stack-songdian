@@ -165,7 +165,7 @@ async function ExhibitionSection() {
   if (exhibitions.length === 0) return null;
 
   return (
-    <AnimatedSection>
+    <AnimatedSection effect="fade">
     <section className="py-16 md:py-24 bg-white border-y border-[var(--border)]">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-12">
@@ -303,7 +303,7 @@ export default function HomePage() {
       </Suspense>
 
       {/* ═══ 静态区块：核心优势 — 零 API ═══ */}
-      <AnimatedSection>
+      <AnimatedSection effect="fade">
       <section className="section-shell bg-white">
         <div className="site-container">
           <div className="mb-14 max-w-3xl md:mb-16">

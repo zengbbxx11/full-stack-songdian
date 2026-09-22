@@ -43,16 +43,17 @@ for (const resource of ["news", "products"] as const) {
         }
       }
       await gotoHydrated(page, `${adminBase}/${route}`);
-      await page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true }).fill(title);
-      await page.getByPlaceholder(isNews ? "文章别名" : "dc105-4k-digital-camera", { exact: true }).fill(slug);
+      // Next 页面切换期间可能暂存隐藏表单，只操作当前可见表单。
+      await page.getByPlaceholder(isNews ? "文章标题" : "e.g. DC105 4K Digital Camera", { exact: true }).filter({ visible: true }).fill(title);
+      await page.getByPlaceholder(isNews ? "文章别名" : "dc105-4k-digital-camera", { exact: true }).filter({ visible: true }).fill(slug);
       // 分类/状态已改为自绘 listbox（非原生 select）：展开后在对应 listbox 内点选项。
       const category = await openListbox(page, page.locator(isNews ? "#news-category" : "#product-category"), "options");
       const categoryOptions = category.getByRole("option");
       await expect(categoryOptions).not.toHaveCount(1);
       await categoryOptions.nth(1).click();
       await page.locator("textarea").first().fill("Lifecycle fixture summary");
-      // 产品正文改由「商品详情图」编辑器管理（只处理图片，原文字保留在数据中），新闻仍用富文本编辑器。
-      if (isNews) await page.locator('[contenteditable="true"]').fill("Lifecycle fixture body");
+      // 产品正文改由「商品详情图」编辑器管理（只处理图片，原文字保留在数据中），新闻正文是纯 HTML 代码框。
+      if (isNews) await page.getByRole("textbox", { name: "HTML 源码" }).fill("<p>Lifecycle fixture body</p>");
       const statusListbox = await openListbox(page, page.getByRole("button", { name: "内容状态", exact: true }), "内容状态 options");
       await statusListbox.getByRole("option", { name: "已发布", exact: true }).click();
       if (!isNews) {

@@ -297,18 +297,25 @@ test("detail image block keeps empty state, drag upload, progress and unsaved gu
   await expect(zone.getByText("暂无详情图", { exact: false })).toBeVisible();
 });
 
-test("news body editor inserts uploaded images with alt and dimensions", async ({ page }) => {
+test("news body code editor inserts library images at the caret", async ({ page }) => {
   const editor = await mockAdminEditor(page, "/news-form?id=888", {
     "/api/v1/admin/news/888": {
       title: "Fixture article", slug: "fixture-article", category: { id: 1 }, status: "DRAFT",
       summary: "", content_html: "<p>正文开头</p>", author: "", cover_image: "", published_at: "",
     },
   });
-  const body = page.getByRole("textbox", { name: "请输入文章内容..." });
-  await expect(body).toContainText("正文开头");
+  // 纯代码编辑器：正文只剩一个 HTML 代码框，模式页签（可视化 / HTML 源码）已删除
+  const body = page.getByRole("textbox", { name: "HTML 源码" });
+  await expect(body).toHaveValue("<p>正文开头</p>");
+  await expect(page.getByRole("tab", { name: "可视化" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "HTML 源码" })).toHaveCount(0);
+
+  // 光标放到 <p> 之后：插图应落在光标处，而不是追加到末尾
+  await body.click();
+  await body.evaluate((el) => (el as HTMLTextAreaElement).setSelectionRange(3, 3));
 
   editor.gateUploads();
-  // 正文插图改从媒体库插入：选择器内上传 → 确定后按顺序插入光标位置
+  // 正文插图从媒体库插入：选择器内上传 → 确定后插入光标位置
   const inlineBuffer = await pngFixture(24, 48);
   await page.route("**/uploads/new.png", route => route.fulfill({ contentType: "image/png", body: inlineBuffer }));
   await page.getByTitle("从媒体库插入图片").click();
@@ -318,15 +325,19 @@ test("news body editor inserts uploaded images with alt and dimensions", async (
   await expect(page.getByRole("button", { name: "正文图片上传中..." })).toBeDisabled();
   editor.releaseUpload();
   await page.getByRole("button", { name: /^确定（1）$/ }).click();
-  await expect.poll(async () => await body.innerHTML()).toContain("/uploads/new.png");
-  const html = await body.innerHTML();
-  expect(html).toContain('alt="inline.png"');
-  expect(html).toContain('width="24"');
-  expect(html).toContain('height="48"');
+
+  await expect.poll(async () => await body.inputValue()).toContain("/uploads/new.png");
+  const source = await body.inputValue();
+  expect(source).toContain('alt="inline.png"');
+  expect(source).toContain('width="24"');
+  expect(source).toContain('height="48"');
+  // 插在光标处（<p> 之后），而不是追加到末尾
+  expect(source.indexOf("<img")).toBe(3);
+  expect(source.endsWith("正文开头</p>")).toBe(true);
 });
 
-test("news body HTML source mode edits the same content", async ({ page }) => {
-  // 新增「HTML 源码」模式：运营可直接粘贴代码确定内容与格式；默认仍为可视化模式（既有定位依赖）。
+test("news body code preview is sandboxed and saved verbatim", async ({ page }) => {
+  // 代码编辑 → 右侧沙箱预览（按入库白名单清洗）→ 保存时客户端不清洗，原文交后端权威清洗。
   await mockAdminEditor(page, "/news-form?id=888", {
     "/api/v1/admin/news/888": {
       title: "Fixture article", slug: "fixture-article", category: { id: 1 }, status: "DRAFT",
@@ -334,38 +345,55 @@ test("news body HTML source mode edits the same content", async ({ page }) => {
     },
   });
 
-  // 默认可视化：既有断言用的编辑区仍在
-  await expect(page.getByRole("textbox", { name: "请输入文章内容..." })).toBeVisible();
-
-  // 切到源码：等宽 textarea 直接承载 content_html
-  await page.getByRole("tab", { name: "HTML 源码" }).click();
   const source = page.getByRole("textbox", { name: "HTML 源码" });
   await expect(source).toHaveValue("<p>源码初始内容</p>");
+  const frame = page.locator('iframe[title="正文预览"]');
+  const preview = page.frameLocator('iframe[title="正文预览"]');
 
-  // 粘贴代码 → 切回可视化即渲染（两模式共用同一份数据）
+  // 1) 合法结构照常渲染（预览与官网共用同一份白名单）
   await source.fill(
     '<h2>贴代码标题</h2><figure><img src="/uploads/x.webp" alt="图注图" width="1200" height="800"><figcaption>图注文字</figcaption></figure>',
   );
-  await page.getByRole("tab", { name: "可视化" }).click();
-  const body = page.getByRole("textbox", { name: "请输入文章内容..." });
-  await expect(body).toContainText("贴代码标题");
-  await expect(body.locator("figure img")).toHaveAttribute("src", "/uploads/x.webp");
-  await expect(body.locator("figcaption")).toHaveText("图注文字");
+  await expect(preview.locator("h2")).toHaveText("贴代码标题");
+  await expect(preview.locator("figure img")).toHaveAttribute("src", "/uploads/x.webp");
+  await expect(preview.locator("figcaption")).toHaveText("图注文字");
+  // 安全边界**独立验证**（不经过清洗器）：空 sandbox（无 allow-scripts / allow-same-origin）
+  // + 文档处于不透明源（window.origin === "null"）+ 文档内嵌 CSP。这三条任何一条被改坏都会失败，
+  // 与下面"危险内容"那组（证明的是清洗层）各管一段。
+  await expect(frame).toHaveAttribute("sandbox", "");
+  expect(await preview.locator("html").evaluate(() => window.origin)).toBe("null");
+  await expect(preview.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute("content", /default-src 'none'/);
 
-  // 守卫：源码模式下隐藏的可视化区若派发 blur，不得用旧 innerHTML 覆盖刚粘贴的代码
-  // （隐藏元素不在 a11y 树里，getByRole 匹配不到，这里用 CSS 定位派发事件）
-  await page.locator('div[contenteditable="true"]').dispatchEvent("blur");
-  await page.getByRole("tab", { name: "HTML 源码" }).click();
-  await expect(source).toHaveValue(/贴代码标题/);
-  await expect(source).toHaveValue(/figcaption/);
+  // 2) 危险内容：预览 DOM 里必须被清洗掉，并且一次都不能执行
+  await source.fill(
+    '<h2>安全标题</h2>'
+    + '<p style="color:red" onclick="parent.__pwned=1">正文段落</p>'
+    + '<script>parent.__pwned=2;document.documentElement.setAttribute("data-pwned","1")</script>'
+    + '<img src="/uploads/ok.webp" alt="合法图" onerror="parent.__pwned=3">'
+    + '<a href="javascript:parent.__pwned=4">危险链接</a>'
+    + '<svg onload="parent.__pwned=5"></svg>',
+  );
+  await expect(preview.locator("h2")).toHaveText("安全标题");
+  // 合法图保留，危险标签/属性/协议全部不在预览 DOM 里
+  await expect(preview.locator('img[alt="合法图"]')).toHaveCount(1);
+  await expect(preview.locator("script")).toHaveCount(0);
+  await expect(preview.locator("svg")).toHaveCount(0);
+  await expect(preview.locator("p[onclick]")).toHaveCount(0);
+  await expect(preview.locator("img[onerror]")).toHaveCount(0);
+  await expect(preview.locator('a[href^="javascript"]')).toHaveCount(0);
+  await expect(preview.locator("p").first()).not.toHaveAttribute("style", /color/);
+  // 清洗层已把 script 整段丢弃，所以下面两条断言的是「没有被执行」这一事实：
+  // 标记既没写进预览文档，也没写进后台页面（父窗口）。
+  await expect(preview.locator("html")).not.toHaveAttribute("data-pwned", "1");
+  expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
 
-  // 反向路径：可视化里改内容 → 切到源码应看到同一份内容
-  // （用原生 input 事件驱动 React 的 onInput，避免依赖键盘/输入法行为）
-  await page.getByRole("tab", { name: "可视化" }).click();
-  await body.evaluate((el) => {
-    el.innerHTML = "<p>反向路径内容</p>";
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  await page.getByRole("tab", { name: "HTML 源码" }).click();
-  await expect(source).toHaveValue(/反向路径内容/);
+  // 3) 保存：客户端不清洗，PUT 的 content_html 与代码框原文一致（权威清洗在后端）
+  const typed = await source.inputValue();
+  const [putRequest] = await Promise.all([
+    page.waitForRequest(request => request.url().endsWith("/api/v1/admin/news/888") && request.method() === "PUT"),
+    page.getByRole("button", { name: "保存", exact: true }).click(),
+  ]);
+  const payload = putRequest.postDataJSON() as { content_html: string };
+  expect(payload.content_html).toBe(typed);
+  expect(payload.content_html).toContain("<script>");
 });

@@ -139,7 +139,8 @@ function NewsFormInner() {
   </div>;
 
   return (
-    <div className="max-w-3xl">
+    // ≥1280px 放宽到 5xl：正文的「代码 / 预览」两栏并排需要宽度，窄屏仍按 3xl
+    <div className="max-w-3xl xl:max-w-5xl">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-6">{isEdit ? "编辑新闻" : "新建文章"}</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <p className="text-sm text-gray-500">草稿和定时内容可在后台编辑，并通过“打开预览”查看；只有已发布内容在官网公开。发布时间按当前设备时区填写。</p>
@@ -164,7 +165,7 @@ function NewsFormInner() {
             <div><Label htmlFor="publication-time">发布时间</Label><DateTimeField id="publication-time" value={form.published_at} onChange={e => setForm({...form, published_at: e.target.value})} /></div>
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
-          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder="请输入文章内容..." pickFromLibrary={openRichPicker} onBusyChange={setContentUploading} /></div>
+          <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder={'在此编写 HTML，例如：<h2>小标题</h2><p>正文段落…</p>'} pickFromLibrary={openRichPicker} onBusyChange={setContentUploading} /></div>
         </div>
 
         {/* 封面图 */}

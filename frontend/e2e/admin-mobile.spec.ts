@@ -209,19 +209,12 @@ test("news form fits the mobile width and keeps the save bar reachable", async (
     await page.setViewportSize(MOBILE);
     await gotoHydrated(page, `${adminBase}/news-form?id=${news.ids[0]}`);
     await expectNoHorizontalOverflow(page);
-    // 富文本工具栏在窄屏换行（不撑宽页面），且工具按钮加大到 ≥36px 便于手指点
-    const editor = page.locator('[contenteditable="true"]').first();
-    await expect(editor).toBeVisible();
-    const toolbar = await page.evaluate(() => {
-      const bars = [...document.querySelectorAll("div.flex-wrap")].filter((el) => el.querySelectorAll("button").length > 3);
-      const buttons = bars.flatMap((bar) => [...bar.querySelectorAll("button")]);
-      return {
-        overflow: bars.reduce((max, el) => Math.max(max, el.scrollWidth - el.clientWidth), 0),
-        minButtonHeight: buttons.length ? Math.min(...buttons.map((button) => Math.round(button.getBoundingClientRect().height))) : 0,
-      };
-    });
-    expect(toolbar.overflow).toBeLessThanOrEqual(1);
-    expect(toolbar.minButtonHeight).toBeGreaterThanOrEqual(40);
+    // 正文改纯代码编辑器：代码框可见，插图按钮加大到 ≥40px 便于手指点
+    await expect(page.getByRole("textbox", { name: "HTML 源码" })).toBeVisible();
+    const insertButton = page.getByTitle("从媒体库插入图片");
+    await expect(insertButton).toBeVisible();
+    const insertButtonHeight = await insertButton.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    expect(insertButtonHeight).toBeGreaterThanOrEqual(40);
     // 提交条吸底
     const save = page.getByRole("button", { name: "保存", exact: true });
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

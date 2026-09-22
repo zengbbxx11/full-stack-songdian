@@ -41,7 +41,9 @@ export default function ConfirmDialog({
       {/* 对话框 */}
       <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 w-full max-w-md mx-4">
         <h3 id={titleId} className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-2">{title}</h3>
-        <p id={messageId} className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
+        {/* message 支持块级 JSX（如媒体库批量删除的引用明细列表），容器必须是 div：
+            <p> 不能作为 <p>/<ul> 的父元素，否则触发非法嵌套与 hydration 报错。 */}
+        <div id={messageId} className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</div>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}

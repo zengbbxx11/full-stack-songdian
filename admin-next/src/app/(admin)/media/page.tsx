@@ -10,7 +10,7 @@
 "use client";
 // 缩略图统一走 components/media/MediaThumb（原生 img 的 eslint 豁免也在那里）。
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import { useToast } from "@/context/ToastContext";
@@ -21,10 +21,19 @@ import { Modal } from "@/components/ui/modal";
 import AlbumNode from "@/components/media/AlbumTree";
 import MediaThumb from "@/components/media/MediaThumb";
 import {
+  ALBUM_ARROW_SLOT,
+  ALBUM_ICON_CLASS,
+  ALBUM_ROW_GAP_CLASS,
+  ALBUM_ROW_PAD,
+  albumChainIds,
+  albumPath,
   buildTree,
   checkUploadSize,
+  descendantIds,
   formatSize,
   isVideoUrl,
+  reorderSiblings,
+  slugifyAlbumName,
   type Album,
   type AlbumListData,
   type PaginatedRecords,
@@ -74,7 +83,7 @@ export default function MediaPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [confirm, setConfirm] = useState<{ title: string; message: React.ReactNode; onConfirm: () => void; confirmText?: string } | null>(null);
   const [albumModal, setAlbumModal] = useState<{ open: boolean; editing: Album | null }>({ open: false, editing: null });
-  const [albumForm, setAlbumForm] = useState({ name: "", slug: "", parent_id: "", sort_order: "0" });
+  const [albumForm, setAlbumForm] = useState({ name: "", slug: "", parent_id: "" });
   const [usageModal, setUsageModal] = useState<{
     record: UploadRecord | null; info: UsageInfo | null; loading: boolean; error: string | null;
   }>({ record: null, info: null, loading: false, error: null });
@@ -85,6 +94,14 @@ export default function MediaPage() {
   const [previewDuration, setPreviewDuration] = useState<number | null>(null);
   // 移动端（<768px）相册筛选面板是否展开；桌面端侧栏常驻，该 state 不生效
   const [albumsOpen, setAlbumsOpen] = useState(false);
+  // 相册树的展开集合：受控传给 AlbumNode。新建相册后要把祖先链一次性展开，否则新相册
+  // 藏在折叠的父节点里，看起来像「没建成」。
+  const [expandedAlbumIds, setExpandedAlbumIds] = useState<Set<number>>(new Set());
+  // 同级拖动排序：正在拖的相册与当前悬停的目标（纯本地状态，松手才发一次请求）
+  const albumOrderSavingRef = useRef(false);
+  const [albumOrderSaving, setAlbumOrderSaving] = useState(false);
+  const [dragAlbumId, setDragAlbumId] = useState<number | null>(null);
+  const [dragOverAlbumId, setDragOverAlbumId] = useState<number | null>(null);
 
   // ---- 数据 ----
   const albumsKey = "/admin/albums";
@@ -112,6 +129,13 @@ export default function MediaPage() {
     selectAlbum(albumId);
     setAlbumsOpen(false);
   };
+
+  const toggleAlbumOpen = (albumId: number) => setExpandedAlbumIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(albumId)) next.delete(albumId);
+    else next.add(albumId);
+    return next;
+  });
 
   // 移动端筛选开关上显示的当前相册（桌面端不展示这个开关）
   const currentAlbumLabel = selectedAlbumId === null
@@ -263,20 +287,40 @@ export default function MediaPage() {
     }
   };
 
-  // 相册 CRUD（sort_order：接口早已支持，这里把它暴露到编辑弹窗）
-  const openCreateAlbum = () => { setAlbumForm({ name: "", slug: "", parent_id: "", sort_order: "0" }); setAlbumModal({ open: true, editing: null }); };
-  const openEditAlbum = (a: Album) => { setAlbumForm({ name: a.name, slug: a.slug, parent_id: a.parent_id?.toString() ?? "", sort_order: String(a.sort_order ?? 0) }); setAlbumModal({ open: true, editing: a }); };
+  // 相册 CRUD（排序已改为侧栏拖动 / 上移下移，弹窗不再暴露排序数字）
+  const openCreateAlbum = () => {
+    // 默认挂在「当前正在浏览的相册」下（全部 / 未分类不是具体相册 → 根级），仍可在下拉里改
+    const currentParent = selectedAlbumId !== null && selectedAlbumId > 0 ? String(selectedAlbumId) : "";
+    setAlbumForm({ name: "", slug: "", parent_id: currentParent });
+    setAlbumModal({ open: true, editing: null });
+  };
+  const openEditAlbum = (a: Album) => { setAlbumForm({ name: a.name, slug: a.slug, parent_id: a.parent_id?.toString() ?? "" }); setAlbumModal({ open: true, editing: a }); };
   const saveAlbum = async () => {
     if (!albumForm.name.trim()) { toast.error("请输入名称"); return; }
+    // 别名只允许英文/数字（后端同规则，中文会被剥成空串）：先在本地拦下，免得多跑一次请求
+    if (albumForm.slug.trim() && !slugifyAlbumName(albumForm.slug)) { toast.error("别名只能包含英文字母、数字（中文请留空，系统会自动生成）"); return; }
     const body: Record<string, unknown> = { name: albumForm.name.trim(), slug: albumForm.slug.trim() || undefined };
-    const parsedSort = Number(albumForm.sort_order);
-    if (albumForm.sort_order.trim() !== "" && Number.isFinite(parsedSort)) body.sort_order = parsedSort;
     const pid = albumForm.parent_id ? Number(albumForm.parent_id) : null;
     if (albumModal.editing) { body.parent_id = pid === albumModal.editing.id ? undefined : pid; } else { body.parent_id = pid || undefined; }
     try {
       if (albumModal.editing) { await apiFetch(`/admin/albums/${albumModal.editing.id}`, { method: "PUT", body }); toast.success("相册已更新"); }
-      else { await apiFetch("/admin/albums", { method: "POST", body }); toast.success("相册已创建"); }
-      setAlbumModal({ open: false, editing: null }); await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
+      else {
+        const created = await apiFetch<Album>("/admin/albums", { method: "POST", body });
+        toast.success("相册已创建");
+        setAlbumModal({ open: false, editing: null });
+        // 相册已落库，后面的列表重新校验只影响新鲜度：失败不能把「已创建」报成「保存失败」。
+        await mutate(albumsKey).catch(() => undefined);
+        // 建完就地定位：选中新相册并展开它的父级链，否则新相册藏在折叠的父节点里，像「没建成」
+        if (created?.id) {
+          selectAlbum(created.id);
+          const ancestorIds = albumChainIds(albums, created.parent_id ?? null);
+          if (ancestorIds.length > 0) setExpandedAlbumIds((prev) => new Set([...prev, ...ancestorIds]));
+        }
+        void mutate(recordsKey).catch(() => undefined);
+        return;
+      }
+      setAlbumModal({ open: false, editing: null });
+      await Promise.all([mutate(albumsKey), mutate(recordsKey)]);
     } catch (err) { toast.error(err instanceof Error ? err.message : "保存失败"); }
   };
   const deleteAlbum = async (a: Album) => {
@@ -286,6 +330,94 @@ export default function MediaPage() {
     setConfirm({ title: "删除相册", message: `确定删除「${a.name}」吗？其中的 ${affected} 个素材将变为"未分类"，所有子相册也将被级联删除。`, confirmText: "删除相册",
       onConfirm: async () => { try { await apiFetch(`/admin/albums/${a.id}`, { method: "DELETE" }); toast.success("已删除"); if (selectedAlbumId === a.id) setSelectedAlbumId(null); await Promise.all([mutate(albumsKey), mutate(recordsKey)]); } catch (err) { toast.error(err instanceof Error ? err.message : "删除失败"); } setConfirm(null); } });
   };
+
+  // ── 同级拖动排序（仅同一父相册内生效；跨父级拖动一律忽略，改父级走编辑弹窗） ──
+  // 同级按与 buildTree 相同的键排序（sort_order 升序、并列按 id），这样无论缓存数组顺序如何，
+  // 拖动的 from/to 下标都与侧栏渲染顺序一致。
+  const albumSiblings = (album: Album) => albums
+    .filter((a) => (a.parent_id ?? null) === (album.parent_id ?? null))
+    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+
+  const applyAlbumOrder = async (parentId: number | null, ordered: Album[]) => {
+    if (albumOrderSavingRef.current) return;
+    albumOrderSavingRef.current = true;
+    setAlbumOrderSaving(true);
+    const ids = ordered.map((a) => a.id);
+    const orderOf = new Map(ids.map((id, index) => [id, index]));
+    // 侧栏按 sort_order 渲染：先就地把下标写进缓存，顺序立刻变化，再发请求持久化
+    try {
+      await mutate<AlbumListData>(
+        albumsKey,
+        (current) => current
+          ? { ...current, list: current.list.map((a) => (orderOf.has(a.id) ? { ...a, sort_order: orderOf.get(a.id)! } : a)) }
+          : current,
+        { revalidate: false },
+      );
+      await apiFetch("/admin/albums/sort", { method: "PUT", body: { parent_id: parentId, ids } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "排序保存失败");
+    }
+    // 无论成功与否都以服务端顺序为准：失败即回滚，成功即拿回最新数据
+    await mutate(albumsKey).catch(() => undefined);
+    albumOrderSavingRef.current = false;
+    setAlbumOrderSaving(false);
+  };
+
+  const moveAlbum = (albumId: number, delta: number) => {
+    const album = albums.find((a) => a.id === albumId);
+    if (!album) return;
+    const siblings = albumSiblings(album);
+    const from = siblings.findIndex((a) => a.id === albumId);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= siblings.length) return;
+    void applyAlbumOrder(album.parent_id ?? null, reorderSiblings(siblings, from, to));
+  };
+
+  const dropAlbum = (targetId: number) => {
+    const sourceId = dragAlbumId;
+    setDragAlbumId(null);
+    setDragOverAlbumId(null);
+    const source = sourceId === null ? undefined : albums.find((a) => a.id === sourceId);
+    const target = albums.find((a) => a.id === targetId);
+    if (!source || !target || source.id === target.id) return;
+    // 跨父级拖动不改父子关系（把相册拖进别的相册请用「编辑相册」里的父级下拉）
+    if ((source.parent_id ?? null) !== (target.parent_id ?? null)) return;
+    const siblings = albumSiblings(source);
+    const from = siblings.findIndex((a) => a.id === source.id);
+    const to = siblings.findIndex((a) => a.id === target.id);
+    if (from < 0 || to < 0) return;
+    void applyAlbumOrder(source.parent_id ?? null, reorderSiblings(siblings, from, to));
+  };
+
+  const albumSortable = {
+    busy: albumOrderSaving,
+    draggingId: dragAlbumId,
+    overId: dragOverAlbumId,
+    onDragStart: (id: number) => setDragAlbumId(id),
+    onDragOver: (id: number) => setDragOverAlbumId(id),
+    onDragEnd: () => { setDragAlbumId(null); setDragOverAlbumId(null); },
+    onDrop: dropAlbum,
+    onMove: moveAlbum,
+  };
+
+  // ── 相册弹窗的派生状态：父级候选 / 同级重名提示 / 别名预览 ──
+  const editingAlbumId = albumModal.editing?.id;
+  // 编辑时排除自身与全部子孙：挂到自己的子孙下会成环，成环的子树会从树视图整体消失（后端也拒绝）
+  const blockedParentIds = editingAlbumId === undefined ? new Set<number>() : descendantIds(albums, editingAlbumId);
+  // 下拉按完整层级路径展示，避免同名/深层相册无法分辨
+  const parentAlbumOptions = albums
+    .filter((a) => !blockedParentIds.has(a.id))
+    .map((a) => ({ album: a, path: albumPath(albums, a.id) }))
+    .sort((a, b) => a.path.localeCompare(b.path, "zh-CN"));
+  const selectedParentId = albumForm.parent_id ? Number(albumForm.parent_id) : null;
+  const trimmedAlbumName = albumForm.name.trim();
+  // 同级重名只提示不阻断（同名相册是合理场景：两次导入同一个产品）
+  const duplicateAlbum = trimmedAlbumName
+    ? albums.find((a) => a.name === trimmedAlbumName && (a.parent_id ?? null) === selectedParentId && a.id !== editingAlbumId)
+    : undefined;
+  const slugPreview = slugifyAlbumName(albumForm.slug);
+  const slugInvalid = albumForm.slug.trim() !== "" && slugPreview === "";
+  const suggestedSlug = slugifyAlbumName(trimmedAlbumName);
 
   // ─────────────────────── 渲染 ───────────────────────
   return (
@@ -302,18 +434,26 @@ export default function MediaPage() {
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`shrink-0 transition-transform ${albumsOpen ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
       {/* 左侧树形相册（移动端折叠、桌面端固定宽度侧栏） */}
-      <aside aria-label="相册" className={`w-full shrink-0 bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-4 max-h-[60vh] overflow-y-auto md:block md:w-56 md:max-h-[calc(100vh-120px)] ${albumsOpen ? "" : "max-md:hidden"}`}>
+      {/* 相册名 + 计数 + 4 个操作按钮在 224px 下太挤（名字只剩几个字），故加宽：
+          ≥1024px 用 288px；768–1023px 这段主内容区本来就窄，退回 256px 免得把图片网格压得太小。 */}
+      <aside aria-label="相册" className={`w-full shrink-0 bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-4 max-h-[60vh] overflow-y-auto md:block md:w-64 lg:w-72 md:max-h-[calc(100vh-120px)] ${albumsOpen ? "" : "max-md:hidden"}`}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">相册</h3>
-          <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="新建相册"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
+          <button onClick={openCreateAlbum} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" title="新建相册" aria-label="新建相册"><PlusIcon className="w-4 h-4 text-gray-400" /></button>
         </div>
         <ul className="space-y-0.5">
-          <li><button onClick={() => selectAlbumFromPanel(null)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4" />全部</span><span className="text-xs tabular-nums">{albumData ? albumData.list.filter((a) => a.parent_id === null).reduce((s, a) => s + (a.total_count ?? a.count), 0) + uncategorized : 0}</span></button></li>
+          {/* 「全部 / 未分类」用与相册节点一致的行模板（左侧同样留出展开箭头槽），
+              否则它们的文字会比根级相册靠左，看起来像「相册低了一级」 */}
+          <li><button onClick={() => selectAlbumFromPanel(null)} style={{ paddingLeft: ALBUM_ROW_PAD, paddingRight: 4 }} className={`w-full text-left py-1.5 rounded-lg text-sm flex items-center justify-between gap-1 ${selectedAlbumId === null ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className={`flex items-center min-w-0 ${ALBUM_ROW_GAP_CLASS}`}><span className="shrink-0" style={{ width: ALBUM_ARROW_SLOT }} /><FolderIcon className={ALBUM_ICON_CLASS} /><span className="truncate">全部</span></span><span className="text-xs tabular-nums shrink-0">{albumData ? albumData.list.filter((a) => a.parent_id === null).reduce((s, a) => s + (a.total_count ?? a.count), 0) + uncategorized : 0}</span></button></li>
           {uncategorized > 0 && (
-            <li><button onClick={() => selectAlbumFromPanel(0)} className={`w-full text-left px-2.5 py-1.5 rounded-lg text-sm flex items-center justify-between gap-2 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className="flex items-center gap-2"><FolderIcon className="w-4 h-4 opacity-50" />未分类</span><span className="text-xs tabular-nums">{uncategorized}</span></button></li>
+            <li><button onClick={() => selectAlbumFromPanel(0)} style={{ paddingLeft: ALBUM_ROW_PAD, paddingRight: 4 }} className={`w-full text-left py-1.5 rounded-lg text-sm flex items-center justify-between gap-1 ${selectedAlbumId === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}><span className={`flex items-center min-w-0 ${ALBUM_ROW_GAP_CLASS}`}><span className="shrink-0" style={{ width: ALBUM_ARROW_SLOT }} /><FolderIcon className={`${ALBUM_ICON_CLASS} opacity-50`} /><span className="truncate">未分类</span></span><span className="text-xs tabular-nums shrink-0">{uncategorized}</span></button></li>
           )}
-          {tree.map((node) => <AlbumNode key={node.id} album={node} selectedAlbumId={selectedAlbumId} onSelect={selectAlbumFromPanel} onEdit={openEditAlbum} onDelete={deleteAlbum} />)}
+          {tree.map((node, nodeIndex) => <AlbumNode key={node.id} album={node} selectedAlbumId={selectedAlbumId} onSelect={selectAlbumFromPanel} onEdit={openEditAlbum} onDelete={deleteAlbum} openIds={expandedAlbumIds} onToggleOpen={toggleAlbumOpen} index={nodeIndex} siblingCount={tree.length} sortable={albumSortable} />)}
         </ul>
+        <p className="mt-3 text-[11px] leading-4 text-gray-400 dark:text-gray-500">
+          <span className="max-md:hidden">拖动相册可调整同级顺序</span>
+          <span className="md:hidden">用 ↑ ↓ 按钮调整同级顺序</span>
+        </p>
       </aside>
 
       {/* 主内容 */}
@@ -528,9 +668,26 @@ export default function MediaPage() {
         <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-gray-900 p-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">{albumModal.editing ? "编辑相册" : "新建相册"}</h3>
           <div className="space-y-3">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label><input type="text" value={albumForm.name} onChange={(e) => setAlbumForm({ ...albumForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="相册名称" autoFocus /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">别名（可选）</label><input type="text" value={albumForm.slug} onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="url-友好别名" /></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">排序（越小越靠前）</label><input type="number" step="0.1" value={albumForm.sort_order} onChange={(e) => setAlbumForm({ ...albumForm, sort_order: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="0" /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label>
+              <input type="text" value={albumForm.name} onChange={(e) => setAlbumForm({ ...albumForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="相册名称" autoFocus />
+              {duplicateAlbum && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">同级已有同名相册「{duplicateAlbum.name}」，仍可创建，但建议改名以便区分。</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">别名（可选）</label>
+              <input
+                type="text" value={albumForm.slug} onChange={(e) => setAlbumForm({ ...albumForm, slug: e.target.value })}
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 ${slugInvalid ? "border-red-400 dark:border-red-500" : "border-gray-300 dark:border-gray-700"}`}
+                placeholder={suggestedSlug || "留空自动生成"}
+              />
+              <p className={`mt-1 text-xs ${slugInvalid ? "text-red-500" : "text-gray-400 dark:text-gray-500"}`}>
+                {slugInvalid
+                  ? "别名只能包含英文字母、数字，请修改或留空（中文会被自动去掉）。"
+                  : albumForm.slug.trim()
+                    ? `实际保存为：${slugPreview}`
+                    : suggestedSlug ? `留空则自动生成：${suggestedSlug}` : "留空则由系统按名称生成（纯中文名会生成随机别名）。"}
+              </p>
+            </div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">父级相册</label>
               <SelectField
                 aria-label="父级相册"
@@ -538,8 +695,9 @@ export default function MediaPage() {
                 onChange={(e) => setAlbumForm({ ...albumForm, parent_id: e.target.value })}
               >
                 <option value="">无（根级）</option>
-                {albums.filter((a) => a.id !== albumModal.editing?.id).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {parentAlbumOptions.map(({ album: option, path }) => <option key={option.id} value={option.id}>{path}</option>)}
               </SelectField>
+              {blockedParentIds.size > 1 && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">已隐藏该相册自身及其 {blockedParentIds.size - 1} 个子相册（挂上去会形成循环）。</p>}
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6"><button onClick={() => setAlbumModal({ open: false, editing: null })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">取消</button><button onClick={saveAlbum} className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600">{albumModal.editing ? "保存" : "创建"}</button></div>

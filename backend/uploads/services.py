@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import json
+import math
 import mimetypes
 import asyncio
 import os
@@ -24,7 +25,9 @@ from pathlib import Path
 from typing import Protocol
 
 from fastapi import UploadFile
+from tortoise.exceptions import IntegrityError
 from tortoise.expressions import Q
+from tortoise.transactions import in_transaction
 
 from common.config import MEDIA_ROOT, settings
 from common.exceptions import BizException, ErrorCode
@@ -518,59 +521,188 @@ async def remove_physical_file(url: str) -> None:
         logger.warning("删除上传文件失败（忽略）：%s -> %s", path, exc)
 
 
+# sort_order 允许范围（security-audit F-18 口径，与 product / news 一致）：拒绝 NaN / 非有限 / 极端值
+SORT_ORDER_MIN = -1_000_000.0
+SORT_ORDER_MAX = 1_000_000.0
+
+
+def _validate_sort_order(value: float) -> float:
+    """校验显式传入的 sort_order（security-audit F-18 口径）。
+
+    注意 JSON 允许裸 `NaN` / `Infinity` 被解析成 float，落库后前端
+    `a.sort_order - b.sort_order` 会得到 NaN 让排序彻底错乱，所以必须挡住。
+    """
+    if not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise BizException(ErrorCode.C400001, "sort_order 必须为有限数值")
+    if value < SORT_ORDER_MIN or value > SORT_ORDER_MAX:
+        raise BizException(ErrorCode.C400001, "sort_order 超出允许范围")
+    return float(value)
+
+
+UNSET: object = object()
+"""「未传」哨兵（更新接口专用）。
+
+``PUT /admin/albums/{id}`` 的字段全部可选，但 ``parent_id=None`` 有真实语义
+（移到根级），因此不能再拿 ``None`` 表示"不修改"——否则用户选「无（根级）」时
+改动会被静默丢弃，相册永远回不到根级。路由层按 pydantic 的 ``model_fields_set``
+只透传客户端真正提交过的字段，未提交的字段保持本哨兵。
+"""
+
+_ALBUM_DEPTH_LIMIT = 100
+"""环校验的上溯步数上限：兼容历史脏数据，保证极端情况下也能收敛。"""
+
+
 def _slugify(text: str) -> str:
     """生成 URL 友好 slug（中文等非 ASCII 会被剥离，回退到随机串）。"""
     s = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
     return s
 
 
+def _normalize_album_slug(raw: str) -> str:
+    """归一化用户提交的 slug；只允许英文/数字/连字符（空串=非法，由调用方报友好错误）。"""
+    return _slugify(raw)
+
+
 async def list_albums() -> list[Album]:
-    """列出全部相册（按 sort_order 升序，其次创建时间倒序）。"""
-    return await Album.all().order_by("sort_order", "-created_time")
+    """列出全部相册（按 sort_order 升序，并列时按 id 升序＝先建的在前）。
+
+    次级排序必须与前端 ``buildTree``（``sort_order asc || id asc``）一致：此前这里是
+    `-created_time`（新的在前），被前端覆盖后表现为「新建的相册排到最后」。
+    """
+    return await Album.all().order_by("sort_order", "id")
+
+
+async def _assert_reparent_ok(album_id: int, new_parent_id: int) -> Album:
+    """换父级前的校验：父相册须存在，且不能是自己或自己的子孙（否则成环）。
+
+    环的危险在于 ``buildTree`` 从根节点出发遍历不到环上的节点，整棵子树会从
+    侧边栏「消失」。所以必须在写库前拦住，不能只挡自引用。
+    上溯用 seen 集合 + 步数上限收敛，无需递归。
+    """
+    parent = await Album.get_or_none(id=new_parent_id)
+    if parent is None:
+        raise BizException(ErrorCode.C404001, "父相册不存在")
+    seen: set[int] = set()
+    cursor: int | None = new_parent_id
+    for _ in range(_ALBUM_DEPTH_LIMIT):
+        # 走到根、或撞上前置的历史环（该链不含自身，挂上去不会产生环）→ 允许
+        if cursor is None or cursor in seen:
+            return parent
+        if cursor == album_id:
+            raise BizException(ErrorCode.C400001, "不能把相册移动到自己或自己的子相册下")
+        seen.add(cursor)
+        ancestor = await Album.get_or_none(id=cursor)
+        cursor = getattr(ancestor, "parent_id", None) if ancestor is not None else None
+    raise BizException(ErrorCode.C400001, "相册层级存在循环引用，无法移动，请先修正层级")
+
+
+async def _front_sibling_sort_order(parent_id: int | None) -> float:
+    """同级最前的排序值：同级最小值再减 1（可为负）；同级为空时为 0。
+
+    供「新建相册默认排同级最前」使用。不能再用 0：自动归档生成的子相册写死 0.0，
+    默认值 0 会与它们并列，并列时按 id 升序 → 新建的反而落到最后。
+    下限对齐 F-18 允许范围，保证库里不会出现越界值。
+    """
+    query = Album.filter(parent_id__isnull=True) if parent_id is None else Album.filter(parent_id=parent_id)
+    current = await query.values_list("sort_order", flat=True)
+    return max(SORT_ORDER_MIN, min(current) - 1) if current else 0.0
 
 
 async def create_album(name: str, slug: str | None = None, parent_id: int | None = None, sort_order: float | None = None) -> Album:
     """创建相册；slug 缺省按名称生成，冲突则追加随机后缀保证唯一。
 
     支持指定父相册 parent_id 挂入树形结构；若父相册不存在则报错。
-    sort_order 为排序权重（越小越靠前），缺省 0。
+    sort_order 为排序权重（越小越靠前）；缺省排在同级最前（见 `_front_sibling_sort_order`）。
     """
     if parent_id is not None:
         parent = await Album.get_or_none(id=parent_id)
         if parent is None:
             raise BizException(ErrorCode.C404001, "父相册不存在")
-    base = (slug or _slugify(name) or f"album-{uuid.uuid4().hex[:6]}").strip("-").lower()
+    if slug is not None:
+        # 显式指定别名时要求可归一化（中文等会被剥成空串），避免落库一个不可读的 slug
+        base = _normalize_album_slug(slug)
+        if not base:
+            raise BizException(ErrorCode.C400001, "别名只能包含英文字母、数字，请修改后重试")
+    else:
+        base = _slugify(name) or f"album-{uuid.uuid4().hex[:6]}"
     unique = base
     while await Album.filter(slug=unique).exists():
         unique = f"{base}-{uuid.uuid4().hex[:6]}"
-    return await Album.create(name=name.strip(), slug=unique, sort_order=sort_order if sort_order is not None else 0.0, parent_id=parent_id)
+    resolved_sort = await _front_sibling_sort_order(parent_id) if sort_order is None else _validate_sort_order(sort_order)
+    return await Album.create(name=name.strip(), slug=unique, sort_order=resolved_sort, parent_id=parent_id)
 
 
 async def update_album(
     album_id: int,
-    name: str | None = None,
-    slug: str | None = None,
-    sort_order: float | None = None,
-    parent_id: int | None = None,
+    name: str | None | object = UNSET,
+    slug: str | None | object = UNSET,
+    sort_order: float | None | object = UNSET,
+    parent_id: int | None | object = UNSET,
 ) -> Album:
-    """更新相册（名称 / slug / 排序 / 父相册）。"""
+    """更新相册（名称 / slug / 排序 / 父相册）。
+
+    可选参数用 ``UNSET`` 区分「未传」（保持原值）与「显式 null」：
+    - ``parent_id=None`` → 移到根级；``parent_id=<id>`` → 换父级（含环校验）；
+    - ``slug=None`` → 保持原 slug（slug 有唯一约束，无清空语义）。
+    """
     album = await Album.get_or_none(id=album_id)
     if album is None:
         raise BizException(ErrorCode.C404001, "相册不存在")
-    if parent_id is not None and parent_id != album_id:
-        # 防止自引用
-        parent = await Album.get_or_none(id=parent_id)
-        if parent is None:
-            raise BizException(ErrorCode.C404001, "父相册不存在")
-        album.parent = parent
-    if name is not None:
-        album.name = name.strip()
-    if slug is not None:
-        album.slug = slug.strip().lower()
-    if sort_order is not None:
-        album.sort_order = sort_order
-    await album.save()
+    if name is not UNSET and name is not None:
+        album.name = str(name).strip()
+    if sort_order is not UNSET and sort_order is not None:
+        album.sort_order = _validate_sort_order(sort_order)
+    if slug is not UNSET and slug is not None:
+        candidate = _normalize_album_slug(str(slug))
+        if not candidate:
+            raise BizException(ErrorCode.C400001, "别名只能包含英文字母、数字，请修改后重试")
+        if candidate != album.slug and await Album.filter(slug=candidate).exclude(id=album_id).exists():
+            raise BizException(ErrorCode.C400001, f"别名「{candidate}」已被其他相册占用，请换一个")
+        album.slug = candidate
+    if parent_id is not UNSET:
+        if parent_id is None:
+            moved_to_root = album.parent_id is not None
+            album.parent = None
+            if moved_to_root and sort_order is UNSET:
+                album.sort_order = await _front_sibling_sort_order(None)
+        else:
+            new_parent_id = int(parent_id)
+            if album.parent_id != new_parent_id:
+                album.parent = await _assert_reparent_ok(album_id, new_parent_id)
+                # 换父级后排序值跟着落到新同级最前：沿用旧父级的数值只会让位置不可预期
+                # （同级并列时按 id 排，旧值可能恰好把相册排到中间）。显式传 sort_order 时以传入值为准。
+                if sort_order is UNSET:
+                    album.sort_order = await _front_sibling_sort_order(new_parent_id)
+    try:
+        await album.save()
+    except IntegrityError as exc:
+        # 并发写入撞 slug 唯一约束：转成友好业务错误，而不是 B999001 500
+        raise BizException(ErrorCode.C400001, "别名已被其他相册占用，请换一个") from exc
     return album
+
+
+async def reorder_albums(parent_id: int | None, ids: list[int]) -> None:
+    """按目标顺序回写同一父级下相册的 sort_order（数组下标即顺序）。
+
+    只允许同级重排：``ids`` 必须非空、无重复、全部存在，且每个相册的 ``parent_id``
+    与请求一致，否则返回 C400001（跨父级拖动改的是父子关系，应走更新接口的父级校验）。
+    未列出的同级相册保持原值。
+    包在事务里，避免并发重排写出一组重复的 sort_order（同 ``reorder_category`` 的 F-17 结论）。
+    """
+    if not ids:
+        raise BizException(ErrorCode.C400001, "排序列表不能为空")
+    if len(set(ids)) != len(ids):
+        raise BizException(ErrorCode.C400001, "排序列表存在重复相册")
+    found = {album.id: album.parent_id for album in await Album.filter(id__in=ids)}
+    missing = [album_id for album_id in ids if album_id not in found]
+    if missing:
+        raise BizException(ErrorCode.C400001, f"相册不存在：{missing}")
+    foreign = [album_id for album_id in ids if found[album_id] != parent_id]
+    if foreign:
+        raise BizException(ErrorCode.C400001, "只能在同一父相册内排序；跨父相册请用「编辑相册」改父级")
+    async with in_transaction():
+        for index, album_id in enumerate(ids):
+            await Album.filter(id=album_id).update(sort_order=index)
 
 
 async def delete_album(album_id: int) -> None:

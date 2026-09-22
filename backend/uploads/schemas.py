@@ -112,3 +112,10 @@ class AlbumUpdateRequest(BaseModel):
     slug: str | None = Field(None, max_length=120)
     sort_order: float | None = None
     parent_id: int | None = Field(None, description="父相册 ID")
+
+
+class AlbumReorderRequest(BaseModel):
+    """同级拖动排序请求（数组下标即目标顺序）。"""
+
+    parent_id: int | None = Field(None, description="目标父相册（null=根级相册之间排序）")
+    ids: list[int] = Field(default_factory=list, description="该父相册下相册的目标顺序（须与 parent_id 一致）")

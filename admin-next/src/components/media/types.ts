@@ -77,3 +77,76 @@ export function buildTree(albums: Album[]): TreeAlbum[] {
   }
   return walk(null, 0);
 }
+
+/** 从某个相册向上到根的链（根→叶顺序，含自身）；id 缺失或数据成环时提前收敛。 */
+export function albumChain(albums: Album[], albumId: number | null): Album[] {
+  if (albumId === null) return [];
+  const byId = new Map(albums.map((a) => [a.id, a]));
+  const chain: Album[] = [];
+  const seen = new Set<number>();
+  let cursor: number | null = albumId;
+  while (cursor !== null && !seen.has(cursor)) {
+    const album = byId.get(cursor);
+    if (!album) break;
+    seen.add(cursor);
+    chain.unshift(album);
+    cursor = album.parent_id;
+  }
+  return chain;
+}
+
+/** 相册的完整层级路径（如「Products / dc226」）——父级下拉与重名提示据此区分同名相册。 */
+export function albumPath(albums: Album[], albumId: number): string {
+  return albumChain(albums, albumId).map((a) => a.name).join(" / ");
+}
+
+/** 展开定位用：某相册的全部祖先/自身 id（父级传 null 时为空，即新相册在根层级无需展开）。 */
+export function albumChainIds(albums: Album[], albumId: number | null): number[] {
+  return albumChain(albums, albumId).map((a) => a.id);
+}
+
+/** 某相册的全部子孙 id（**含自身**）：用于禁止把相册挂到自己的子孙下（会成环导致子树从树视图消失）。 */
+export function descendantIds(albums: Album[], rootId: number): Set<number> {
+  const childrenOf = new Map<number | null, number[]>();
+  for (const a of albums) {
+    const siblings = childrenOf.get(a.parent_id);
+    if (siblings) siblings.push(a.id);
+    else childrenOf.set(a.parent_id, [a.id]);
+  }
+  const result = new Set<number>();
+  const stack: number[] = [rootId];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    if (result.has(current)) continue; // 防御历史脏数据成环导致的死循环
+    result.add(current);
+    stack.push(...(childrenOf.get(current) ?? []));
+  }
+  return result;
+}
+
+/** 与后端 `_slugify` 同规则：非 [a-zA-Z0-9] 折叠为连字符、去首尾、转小写。 */
+export function slugifyAlbumName(text: string): string {
+  return text.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
+}
+
+/**
+ * 相册树行模板：`AlbumNode` 与媒体页「全部 / 未分类」两个虚拟行必须共用同一套数值。
+ * 历史问题：节点行固定占用展开箭头槽（18px），虚拟行没有 → 根级相册的文字比「全部」右移一级，
+ * 看起来像「没有父相册却低了一级」。文字左缘 = ALBUM_ROW_PAD + depth * ALBUM_INDENT + 箭头槽 + 图标 + 间距。
+ */
+export const ALBUM_ROW_PAD = 12;
+export const ALBUM_INDENT = 16;
+export const ALBUM_ARROW_SLOT = 18;
+export const ALBUM_ICON_CLASS = "w-3.5 h-3.5 shrink-0";
+export const ALBUM_ROW_GAP_CLASS = "gap-1";
+
+/** 同级重排：把 `fromIndex` 处的项插到 `toIndex` 处（数组下标即新顺序）。拖动与上移/下移共用。 */
+export function reorderSiblings<T>(list: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex < 0 || fromIndex >= list.length) return list;
+  const target = Math.max(0, Math.min(toIndex, list.length - 1));
+  if (fromIndex === target) return list;
+  const next = [...list];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(target, 0, moved);
+  return next;
+}

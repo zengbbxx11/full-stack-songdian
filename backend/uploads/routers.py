@@ -8,6 +8,7 @@
 - ``POST /admin/upload/batch``：多文件上传（media:upload）。
 - ``GET /admin/albums``：相册列表（media:upload）。
 - ``POST /admin/albums``：新建相册（media:upload）。
+- ``PUT /admin/albums/sort``：同级拖动排序（media:upload）。
 - ``PUT /admin/albums/{id}``：更新相册（media:upload）。
 - ``DELETE /admin/albums/{id}``：删除相册（media:upload）。
 成功后写 ``UploadRecord`` 溯源，返回 ``UploadVO`` / ``list[UploadVO]``。
@@ -28,6 +29,7 @@ from uploads import services
 from uploads.models import UploadRecord
 from uploads.schemas import (
     AlbumCreateRequest,
+    AlbumReorderRequest,
     AlbumUpdateRequest,
     AlbumVO,
     UploadRecordVO,
@@ -233,6 +235,18 @@ async def create_album(
     return Result.ok(AlbumVO.from_model(album).model_dump(mode="json"))
 
 
+# 必须声明在 ``/admin/albums/{album_id}`` 之前：否则 PUT /admin/albums/sort 会被当成
+# album_id="sort" 命中，返回参数校验错误。
+@router.put("/admin/albums/sort", summary="同级拖动排序相册")
+async def reorder_albums(
+    body: AlbumReorderRequest,
+    request: Request = None,  # noqa: ARG001 - 供将来审计使用
+    current_user: AdminUser = Depends(require_permission("media:upload")),
+) -> Result:
+    await services.reorder_albums(body.parent_id, body.ids)
+    return Result.ok(msg="已排序")
+
+
 @router.put("/admin/albums/{album_id}", summary="更新相册")
 async def update_album(
     album_id: int,
@@ -240,9 +254,14 @@ async def update_album(
     request: Request = None,  # noqa: ARG001
     current_user: AdminUser = Depends(require_permission("media:upload")),
 ) -> Result:
-    album = await services.update_album(
-        album_id=album_id, name=body.name, slug=body.slug, sort_order=body.sort_order, parent_id=body.parent_id
-    )
+    # 只透传客户端真正提交过的字段：`parent_id` 的「未传」与「显式 null」语义不同
+    # （未传 = 保持原父级；null = 移到根级），统一按 body.xxx 取值会丢掉这个区别。
+    updates: dict[str, object] = {
+        field: getattr(body, field)
+        for field in ("name", "slug", "sort_order", "parent_id")
+        if field in body.model_fields_set
+    }
+    album = await services.update_album(album_id=album_id, **updates)
     return Result.ok(AlbumVO.from_model(album).model_dump(mode="json"))
 
 

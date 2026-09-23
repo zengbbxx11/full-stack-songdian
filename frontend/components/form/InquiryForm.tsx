@@ -287,8 +287,8 @@ export default function InquiryForm() {
             <details open={Boolean(errors.phone || errors.company || errors.country || errors.quantity) || undefined} className="group rounded-md border border-dashed border-gray-200 px-4 py-2">
               <summary className="min-h-11 touch-manipulation text-sm font-medium text-gray-600 cursor-pointer select-none list-none flex items-center justify-between">
                 <span>Add more details (optional)</span>
-                <span className="text-gray-400 text-xs group-open:hidden">Show</span>
-                <span className="text-gray-400 text-xs hidden group-open:inline">Hide</span>
+                <span className="text-gray-600 text-xs group-open:hidden">Show</span>
+                <span className="text-gray-600 text-xs hidden group-open:inline">Hide</span>
               </summary>
               <div className="pt-4 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -345,7 +345,7 @@ export default function InquiryForm() {
                   "Get My Free Quote"
                 )}
               </Button>
-              <p className="text-xs text-gray-400 mt-3">
+              <p className="text-xs text-gray-600 mt-3">
                 We respect your privacy. Your details are only used to prepare your quote.
               </p>
             </div>

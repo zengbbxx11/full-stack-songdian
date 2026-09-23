@@ -94,9 +94,9 @@ export default function Footer() {
             { title: "Support", links: FOOTER_LINKS.support },
           ].map((col) => (
             <div key={col.title}>
-              <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]">
+              <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--foreground)]">
                 {col.title}
-              </h4>
+              </h2>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
@@ -115,18 +115,18 @@ export default function Footer() {
 
         {/* 底部栏 */}
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-black/10 pt-8 sm:flex-row">
-          <p className="text-[14px] text-[#777b81]">
+          <p className="text-[14px] text-[#62676e]">
             &copy; {year} {COMPANY.fullName} All rights reserved.
           </p>
           <div className="flex items-center gap-5">
-            <Link prefetch={false} href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#62676e] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Sitemap
             </Link>
-            <Link prefetch={false} href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/privacy-policy" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#62676e] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               Privacy
             </Link>
             <CookieSettingsTrigger />
-            <Link prefetch={false} href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#777b81] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
+            <Link prefetch={false} href="/solutions/faq" className="inline-flex min-h-11 touch-manipulation items-center text-[14px] text-[#62676e] transition-colors duration-[330ms] hover:text-[var(--foreground)] active:text-[var(--accent)]">
               FAQ
             </Link>
           </div>

@@ -67,42 +67,42 @@ export default async function ContactPage() {
 
           <div className="contact-details order-2 min-w-0 lg:order-1 lg:pt-3">
             <h2 className="mb-7 text-2xl font-semibold tracking-tight text-[var(--foreground)]">Contact Information</h2>
-            <dl className="space-y-6">
+            <div className="space-y-6">
               <div className="contact-detail flex gap-4">
                 <Mail aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-[var(--accent)]" strokeWidth={1.5} />
-                <div className="min-w-0">
+                <dl className="min-w-0">
                   <dt className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Email</dt>
                   <dd>
                     <a href={`mailto:${email}`} className="inline-flex min-h-11 items-center text-lg font-medium tracking-tight transition-colors hover:text-[var(--accent)]">{email}</a>
                     <a href={`mailto:${emailAlt}`} className="flex min-h-11 items-center text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]">{emailAlt}</a>
                   </dd>
-                </div>
+                </dl>
               </div>
               <div className="contact-detail flex gap-4">
                 <Phone aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-[var(--accent)]" strokeWidth={1.5} />
-                <div className="min-w-0">
+                <dl className="min-w-0">
                   <dt className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Phone / WhatsApp</dt>
                   <dd>
                     <a href={phoneHref} className="flex min-h-11 items-center text-base font-medium transition-colors hover:text-[var(--accent)]">Phone: {phone}</a>
                     <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]">WhatsApp: {whatsapp}</a>
                   </dd>
-                </div>
+                </dl>
               </div>
               <div className="contact-detail flex gap-4">
                 <MapPin aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-[var(--muted-foreground)]" strokeWidth={1.5} />
-                <div className="min-w-0">
+                <dl className="min-w-0">
                   <dt className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Address</dt>
                   <dd className="text-sm leading-7 text-[var(--muted-foreground)]">{address}</dd>
-                </div>
+                </dl>
               </div>
               <div className="contact-detail flex gap-4">
                 <Clock aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-[var(--muted-foreground)]" strokeWidth={1.5} />
-                <div className="min-w-0">
+                <dl className="min-w-0">
                   <dt className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Business Hours</dt>
                   <dd className="text-sm leading-7 text-[var(--muted-foreground)]">{COMPANY.contact.hours}</dd>
-                </div>
+                </dl>
               </div>
-            </dl>
+            </div>
           </div>
         </div>
       </section>

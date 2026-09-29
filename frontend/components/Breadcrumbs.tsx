@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
 import type { BreadcrumbItem } from "@/lib/types";
+import { absoluteSiteUrl } from "@/lib/site-url";
 import { safeJsonLd } from "@/lib/seo";
 
 /**
@@ -31,7 +32,7 @@ export default function Breadcrumbs({
       position: i + 1,
       name: item.label,
       item: item.href
-        ? `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}${item.href}`
+        ? absoluteSiteUrl(item.href)
         : undefined,
     })),
   };

@@ -46,7 +46,7 @@ import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
 import { getPublicSettings } from "@/lib/api/settings";
 import { organizationSchema, webSiteSchema, safeJsonLd } from "@/lib/seo";
-import { SITE_URL } from "@/lib/site-meta";
+import { SITE_URL, pageRobots } from "@/lib/site-url";
 import "./globals.css";
 
 // next-super-meta 的初始化已统一收敛到 @/lib/site-meta（导入该模块即生效）。
@@ -80,24 +80,6 @@ const baseMetadata: Metadata = {
   },
   description: COMPANY.description,
 
-  // SEO keywords targeting B2B camera manufacturing buyers
-  keywords: [
-    "digital camera manufacturer",
-    "OEM camera factory",
-    "ODM camera supplier",
-    "Songdian Technology",
-    "松典相机",
-    "compact digital camera OEM",
-    "mirrorless camera factory",
-    "action camera manufacturer",
-    "kids camera supplier",
-    "video camera OEM",
-    "custom camera development",
-    "China camera factory",
-    "B2B camera manufacturing",
-    "private label cameras",
-  ],
-
   authors: [{ name: COMPANY.fullName }],
   creator: COMPANY.name,
   publisher: COMPANY.name,
@@ -124,18 +106,7 @@ const baseMetadata: Metadata = {
     images: [{ url: MEDIA.ogImage, width: 1200, height: 630 }],
   },
 
-  // Robots: allow all indexing and crawling by both generic + Google crawlers
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
+  robots: pageRobots(),
 
   // Canonical URL to prevent duplicate-content SEO penalties
   alternates: {

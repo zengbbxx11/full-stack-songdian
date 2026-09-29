@@ -22,6 +22,8 @@ import { generateBreadcrumbs, articleSchema, safeJsonLd } from "@/lib/seo";
 import { formatDate } from "@/lib/api/client";
 import { cleanPostContent } from "@/lib/html-cleaner";
 import { MEDIA } from "@/lib/media";
+import { newsSeo } from "@/lib/content-seo";
+import { pageRobots } from "@/lib/site-url";
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成文章详情
 export const revalidate = 60;
@@ -42,26 +44,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post) notFound();
-  // 摘要为空时不能让整条 meta description 消失（否则 Lighthouse 的 meta-description 审计失败）：
-  // 回退到「文章标题 + 站点定位」，与列表页描述口径保持一致。
-  const desc = (
-    post.excerpt?.trim() ||
-    `${post.title} — camera manufacturing insights from Songdian Technology, an OEM/ODM digital camera factory.`
-  ).slice(0, 160);
+  const { title, description: desc } = newsSeo(post);
   const socialImage = post.featuredImage || MEDIA.ogImage;
   return {
-    title: post.title,
+    title,
+    robots: pageRobots(),
     description: desc,
     alternates: { canonical: `/news/${slug}` },
     openGraph: {
-      title: post.title, description: desc,
+      title, description: desc,
       url: `/news/${slug}`,
-      images: [{ url: socialImage, width: 1200, height: 630 }],
+      images: [{ url: socialImage, ...(post.featuredImage ? {} : { width: 1200, height: 630 }) }],
       type: "article", publishedTime: post.date || undefined, modifiedTime: post.modified || undefined, authors: [post.author],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
+      title,
       description: desc,
       images: [socialImage],
     },
@@ -79,7 +77,7 @@ export default async function NewsDetailPage({
   const breadcrumbs = generateBreadcrumbs([{ label: "News", href: "/news" }, { label: post.title }]);
 
   const schema = articleSchema({
-    title: post.title, description: post.excerpt?.slice(0, 160) || "",
+    title: post.title, description: newsSeo(post).description,
     image: post.featuredImage, datePublished: post.date, dateModified: post.modified,
     author: post.author, url: `/news/${slug}`,
   });

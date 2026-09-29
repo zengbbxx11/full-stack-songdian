@@ -103,7 +103,7 @@ for (const resource of ["news", "products"] as const) {
           await expect.poll(async () => {
             await publicPage.reload();
             return publicPage.locator('meta[name="description"]').getAttribute("content");
-          }).toContain(`${title}, manufactured by `);
+          }).toContain("Lifecycle fixture summary");
           await expect(publicPage).toHaveTitle(new RegExp(`^${title} \\| `));
           const detail = await adminDetail();
           // The backend's plain-text sanitizer normalizes cleared values to empty strings.

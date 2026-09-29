@@ -183,6 +183,8 @@ async def create_news(
         content_html=cleaned,
         category_id=data.category_id,
         author=clean_text(data.author),
+        seo_title=clean_text(data.seo_title),
+        seo_description=clean_text(data.seo_description),
         cover_image=data.cover_image,
         status=status,
         created_by=operator or None, updated_by=operator or None,
@@ -224,11 +226,11 @@ async def update_news(
     requested_status = data.status or news.status
     requested_time = data.published_at if data.published_at is not None else news.published_at
     normalized_status, normalized_time = _publishing_values(requested_status, requested_time, can_publish)
-    for field in ["title", "summary", "slug", "category_id", "author", "sort_order", "cover_image"]:
+    for field in ["title", "summary", "slug", "category_id", "author", "sort_order", "cover_image", "seo_title", "seo_description"]:
         val = getattr(data, field)
-        if field in data.model_fields_set and (val is not None or field in {"author", "cover_image"}):
+        if field in data.model_fields_set and (val is not None or field in {"author", "cover_image", "seo_title", "seo_description"}):
             # security-audit F-01：标题/摘要/作者作为纯文本清洗。
-            if field in ("title", "summary", "author"):
+            if field in ("title", "summary", "author", "seo_title", "seo_description"):
                 val = clean_text(val)
             setattr(news, field, val)
     if data.status is not None or data.published_at is not None:
@@ -382,6 +384,9 @@ async def restore_news_revision(news_id: int, revision_id: int, operator: str, c
     revision = await revision_services.get_revision("news", news_id, revision_id)
     old_slug = news.slug
     snapshot = dict(revision.snapshot)
+    # Pre-SEO revisions represent automatic metadata, not the current manual override.
+    snapshot.setdefault("seo_title", None)
+    snapshot.setdefault("seo_description", None)
     if snapshot.get("status") in {"PUBLISHED", "SCHEDULED"} and not can_publish:
         raise BizException(ErrorCode.C403001, "恢复已发布或定时版本需要发布权限")
     category_id = snapshot.get("category_id")

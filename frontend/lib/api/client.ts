@@ -208,6 +208,9 @@ export interface NewsPageDTO {
 }
 
 export interface NewsDetailDTO extends NewsPageDTO {
+  seo_title?: string | null;
+  seo_description?: string | null;
+  updated_time?: string | null;
   content_html: string;
 }
 

@@ -410,7 +410,7 @@ export default function ProductsPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">SEO 标题 <span className="text-xs text-gray-400">（推荐 60 字以内）</span></label>
                 <div className="relative">
-                  <input aria-label="SEO 标题" disabled={seoSaving} value={seoEdit.seoTitle} onChange={e => setSeoEdit(p => ({ ...p, seoTitle: e.target.value }))} placeholder="留空使用产品标题，无需追加品牌名" maxLength={120} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                  <input aria-label="SEO 标题" disabled={seoSaving} value={seoEdit.seoTitle} onChange={e => setSeoEdit(p => ({ ...p, seoTitle: e.target.value }))} placeholder="留空按产品数据自动生成，无需追加品牌名" maxLength={120} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
                   <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${seoEdit.seoTitle.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{seoEdit.seoTitle.length}/120</span>
                 </div>
               </div>

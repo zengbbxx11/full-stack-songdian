@@ -203,8 +203,9 @@ function toPostDetail(n: NewsDetailDTO): PostDetail {
     featuredImage: toAbsoluteUrl(n.cover_image),
     featuredImageAlt: normalizePublicText(n.title),
     date: n.published_at || n.created_time || "",
-    // API 尚未提供实际更新时间，不能将创建时间冒充修改时间。
-    modified: "",
+    modified: n.updated_time || "",
+    seoTitle: n.seo_title ?? null,
+    seoDescription: n.seo_description ?? null,
     author: n.author || COMPANY.name,
     authorAvatar: "",
     categories: n.category

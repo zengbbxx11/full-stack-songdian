@@ -356,9 +356,9 @@ function ProductFormInner() {
         {/* SEO 元数据 */}
         <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
           <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">SEO 元数据 <span className="text-xs text-gray-400 font-normal">（选填，用于官网页面及分享元数据）</span></h3>
-          <p className="text-xs text-gray-500">保存后更新官网元数据，不改变正文中的产品名称。页面标题会自动追加品牌名；草稿仍需通过预览查看。</p>
+          <p className="text-xs text-gray-500">保存后更新官网元数据，不改变正文中的产品名称；清空后恢复自动生成。页面标题会自动追加品牌名；草稿仍需通过预览查看。</p>
           <div>
-            <Label htmlFor="product-seo-title">SEO 标题 <span className="text-xs text-gray-400 font-normal">（推荐 60 字符以内，留空则用产品标题）</span></Label>
+            <Label htmlFor="product-seo-title">SEO 标题 <span className="text-xs text-gray-400 font-normal">（推荐 60 字符以内，留空自动组合名称、分类和真实规格）</span></Label>
             <div className="relative">
               <Input id="product-seo-title" value={form.seo_title} onChange={e => setForm({...form, seo_title: e.target.value})} placeholder="填写准确的产品页面标题，无需追加品牌名" maxLength={120} />
               <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs ${form.seo_title.length > 60 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_title.length}/120</span>
@@ -370,7 +370,7 @@ function ProductFormInner() {
               <textarea
                 id="product-seo-description" value={form.seo_description} onChange={e => setForm({...form, seo_description: e.target.value})}
                 rows={3} maxLength={300}
-                placeholder="准确概括本产品；留空时使用产品名、公司介绍和简介生成默认描述"
+                placeholder="准确概括本产品；留空根据产品名称、简介或真实规格自动生成"
                 className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               />
               <span className={`absolute right-2 bottom-2 text-xs ${form.seo_description.length > 160 ? "text-amber-500" : "text-gray-400"}`}>{form.seo_description.length}/300</span>

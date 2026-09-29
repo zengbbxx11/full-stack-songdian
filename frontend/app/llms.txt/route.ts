@@ -7,11 +7,12 @@
  */
 
 import { COMPANY } from "@/lib/content-data";
+import { SITE_URL } from "@/lib/site-url";
 
 export const revalidate = 3600;
 
 export function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = SITE_URL;
   const generated = new Date().toISOString().slice(0, 10);
 
   const body = `# ${COMPANY.fullName}

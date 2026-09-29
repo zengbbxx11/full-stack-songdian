@@ -7,10 +7,10 @@
  *
  * 支持的 schema 类型：
  * - Organization（组织）
- * - WebSite（含站点链接搜索框）
+ * - WebSite（站点与搜索入口）
  * - BreadcrumbList（面包屑列表）
  * - Article（博客文章）
- * - Product（WooCommerce 产品）
+ * - Product（产品）
  * - FAQPage（常见问题页面）
  * - Organization（本地商家/制造商）
  */
@@ -18,6 +18,7 @@
 import type { BreadcrumbItem, StructuredData } from "@/lib/types";
 import { COMPANY } from "@/lib/content-data";
 import { MEDIA } from "@/lib/media";
+import { SITE_URL, absoluteSiteUrl } from "@/lib/site-url";
 
 /**
  * 安全地序列化 JSON-LD。
@@ -29,9 +30,6 @@ import { MEDIA } from "@/lib/media";
 export function safeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
-
-/** 规范站点 URL，在构建/运行时从环境中解析 */
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 // ============================================================
 // 面包屑生成器
@@ -109,7 +107,7 @@ export function organizationSchema(): StructuredData {
 
 /**
  * 生成带站点链接搜索框的 WebSite Schema.org 结构化数据对象。
- * 为博客搜索功能启用 Google 的站点链接搜索框（sitelinks searchbox）。
+ * 描述站点提供的搜索入口，不承诺搜索引擎展示特定富结果。
  *
  * @returns 符合 https://schema.org/WebSite 的 {@link StructuredData} 对象
  */
@@ -154,7 +152,7 @@ export function articleSchema(params: {
     "@type": "Article",
     headline: params.title,
     description: params.description,
-    image: params.image || undefined,
+    image: params.image ? absoluteSiteUrl(params.image) : undefined,
     datePublished: params.datePublished || undefined,
     dateModified: params.dateModified || undefined,
     author: {
@@ -165,16 +163,16 @@ export function articleSchema(params: {
       "@type": "Organization",
       name: COMPANY.name,
     },
-    url: `${SITE_URL}${params.url}`,
+    url: absoluteSiteUrl(params.url),
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${SITE_URL}${params.url}`,
+      "@id": absoluteSiteUrl(params.url),
     },
   };
 }
 
 /**
- * 为 WooCommerce 产品页生成 Product Schema.org 结构化数据对象。
+ * 为产品页生成 Product Schema.org 结构化数据对象。
  * 询盘产品没有公开价格和库存，不生成未经验证的 Offer。
  *
  * @param params - 产品元数据
@@ -197,7 +195,7 @@ export function productSchema(params: {
     "@type": "Product",
     name: params.name,
     description: params.description,
-    image: params.image || undefined,
+    image: params.image ? absoluteSiteUrl(params.image) : undefined,
     sku: params.sku || undefined,
     brand: {
       "@type": "Brand",
@@ -208,7 +206,7 @@ export function productSchema(params: {
       "@id": `${SITE_URL}/#manufacturer`,
       name: COMPANY.name,
     },
-    url: `${SITE_URL}${params.url}`,
+    url: absoluteSiteUrl(params.url),
   };
 }
 

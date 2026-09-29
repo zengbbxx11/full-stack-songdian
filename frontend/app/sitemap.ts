@@ -11,6 +11,8 @@
 import type { MetadataRoute } from "next";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
+import { SITE_URL, isSiteIndexable, absoluteSiteUrl } from "@/lib/site-url";
+import { listUrl } from "@/lib/list-query";
 import { getAllPostSlugs } from "@/lib/api/news";
 import { getAllProductSlugEntries } from "@/lib/api/products";
 
@@ -18,8 +20,8 @@ import { getAllProductSlugEntries } from "@/lib/api/products";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-  return getCachedSitemap(siteUrl);
+  if (!isSiteIndexable()) return [];
+  return getCachedSitemap(SITE_URL);
 }
 
 const getCachedSitemap = unstable_cache(async (siteUrl: string): Promise<MetadataRoute.Sitemap> => {
@@ -57,5 +59,8 @@ const getCachedSitemap = unstable_cache(async (siteUrl: string): Promise<Metadat
       priority: 0.6,
     }));
 
-  return [...staticRoutes, ...productRoutes, ...postRoutes];
-}, ["complete-sitemap-v1"], { revalidate: 60, tags: ["products", "news", "product-categories"] });
+  const categoryRoutes: MetadataRoute.Sitemap = [...new Set(entries.map(e => e.categorySlug).filter((slug): slug is string => Boolean(slug)))].map(slug => ({
+    url: absoluteSiteUrl(listUrl("/products", 1, slug)), changeFrequency: "weekly", priority: 0.8,
+  }));
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...postRoutes];
+}, ["complete-sitemap-v2"], { revalidate: 60, tags: ["products", "news", "product-categories"] });

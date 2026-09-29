@@ -39,6 +39,8 @@ NEWS_FIELDS = (
     "content_html",
     "category_id",
     "author",
+    "seo_title",
+    "seo_description",
     "published_at",
     "status",
     "cover_image",

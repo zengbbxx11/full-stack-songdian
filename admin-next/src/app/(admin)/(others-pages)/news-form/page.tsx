@@ -53,7 +53,7 @@ function NewsFormInner() {
   const richPickResolve = useRef<((picked: PickedMedia[]) => void) | null>(null);
   // 正文「插入图片」上传期间禁用保存，避免提交半成品正文。
   const [contentUploading, setContentUploading] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "", category_id: "" });
+  const [form, setForm] = useState({ title: "", slug: "", summary: "", content_html: "", author: "", status: "DRAFT", cover_image: "", published_at: "", category_id: "", seo_title: "", seo_description: "" });
   const [categories, setCategories] = useState<NewsCategory[]>([]);
   const [categoryError, setCategoryError] = useState("");
   const { error: showError, success: showSuccess } = useToast();
@@ -77,7 +77,7 @@ function NewsFormInner() {
       if (!active) return;
       setLoadError("");
       setLoadedKey(id + ":" + reloadKey);
-      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: toLocalDateTime(p.published_at), category_id: p.category ? String(p.category.id) : "" });
+      setForm({ title: p.title || "", slug: p.slug || "", summary: p.summary || "", content_html: p.content_html || "", author: p.author || "", status: p.status || "DRAFT", cover_image: p.cover_image || "", published_at: toLocalDateTime(p.published_at), category_id: p.category ? String(p.category.id) : "", seo_title: p.seo_title || "", seo_description: p.seo_description || "" });
     }).catch((err: unknown) => {
       if (!active) return;
       const msg: string = err instanceof Error ? err.message : "Unknown error";
@@ -166,6 +166,21 @@ function NewsFormInner() {
           </div>
           <div><Label>摘要</Label><textarea value={form.summary} onChange={e => setForm({...form, summary: e.target.value})} rows={3} className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" /></div>
           <div><Label>内容（HTML）</Label><RichTextEditor value={form.content_html} onChange={v => setForm({...form, content_html: v})} placeholder={'在此编写 HTML，例如：<h2>小标题</h2><p>正文段落…</p>'} pickFromLibrary={openRichPicker} onBusyChange={setContentUploading} /></div>
+        </div>
+
+        <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">SEO 元数据（可选）</h3>
+          <p className="text-xs text-gray-500">留空时，官网根据文章标题、摘要或正文自动生成。填写后仅覆盖搜索与分享信息，不改变正文标题；清空后恢复自动生成。</p>
+          <div>
+            <Label htmlFor="news-seo-title">SEO 标题</Label>
+            <Input id="news-seo-title" value={form.seo_title} onChange={e => setForm({...form, seo_title: e.target.value})} maxLength={120} placeholder="留空使用文章标题，无需追加品牌名" />
+            <p className="mt-1 text-xs text-gray-500">{form.seo_title.length}/120（建议约 60 字符）</p>
+          </div>
+          <div>
+            <Label htmlFor="news-seo-description">SEO 描述</Label>
+            <textarea id="news-seo-description" value={form.seo_description} onChange={e => setForm({...form, seo_description: e.target.value})} maxLength={300} rows={3} placeholder="留空根据摘要或正文自动生成" className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+            <p className="mt-1 text-xs text-gray-500">{form.seo_description.length}/300（建议 120–160 字符）</p>
+          </div>
         </div>
 
         {/* 封面图 */}

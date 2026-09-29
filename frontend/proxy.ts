@@ -16,11 +16,12 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isSiteIndexable } from "./lib/site-url";
 import { CANONICAL_MAP } from "./lib/generated/canonical-map";
 
-// 仅对 /products/* 生效；其余路由（含 /api、/_next、静态资源）不经过此代理。
+// Public HTML receives a runtime noindex header in non-indexable deployments.
 export const config = {
-  matcher: ["/products/:path*"],
+  matcher: ["/((?!api/|_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|webp|avif|svg|woff2|mp4|webm)$).*)"],
 };
 
 // 后端地址：容器内优先用 INTERNAL_API_URL（服务名直连），否则用构建期注入的公开地址。
@@ -95,7 +96,7 @@ async function resolveCanonical(slug: string): Promise<string | null> {
   return path;
 }
 
-export async function proxy(req: NextRequest) {
+async function resolveResponse(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 拆解路径段：["products", ...rest]
@@ -117,4 +118,10 @@ export async function proxy(req: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+export async function proxy(req: NextRequest) {
+  const response = await resolveResponse(req);
+  if (!isSiteIndexable()) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return response;
 }

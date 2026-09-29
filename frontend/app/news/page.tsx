@@ -12,6 +12,7 @@ import SafeImage from "@/components/SafeImage";
 import PostCard from "@/components/PostCard";
 import type { Metadata } from "next";
 import { superMeta } from "@/lib/site-meta";
+import { pageRobots } from "@/lib/site-url";
 import { getNewsPage } from "@/lib/api/list-pages";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { generateBreadcrumbs } from "@/lib/seo";
@@ -31,7 +32,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   });
 
   // 超范围页码：声明首页为规范页并禁止索引，避免低质重复页。
-  return failed || outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
+  return failed || outOfRange ? { ...meta, robots: pageRobots(false) } : meta;
 }
 
 // searchParams 使整页动态渲染；此值不代表整页 ISR，API 数据仍缓存 60 秒。

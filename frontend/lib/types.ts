@@ -81,6 +81,8 @@ export interface PostSummary {
  * 包含完整 HTML 正文及详情页与 SEO 所需的全部元数据。
  */
 export interface PostDetail {
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   /** 文章 ID */
   id: number;
   /** URL 安全的 slug */

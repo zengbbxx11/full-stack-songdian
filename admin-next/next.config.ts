@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["localhost", "127.0.0.1", "localhost:3001", "127.0.0.1:3001"],
   // 锁定本子项目根目录，避免上级 lockfile 被 Turbopack 误判为 workspace 根。
   turbopack: { root: __dirname },
+  async headers() {
+    return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${backendProxyUrl}/api/:path*` },

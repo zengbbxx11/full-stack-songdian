@@ -36,6 +36,8 @@ class News(TimestampedMixin, SoftDeleteMixin, AuditByMixin, Model):
     status = fields.CharField(max_length=30, default="DRAFT")  # DRAFT/PUBLISHED；默认草稿，需显式发布
     cover_image = fields.CharField(max_length=500, null=True)  # 新闻主图（封面），迁移自 WP featured_media
     sort_order = fields.FloatField(default=0.0)  # 排序权重，浮点数支持精准插入；admin 拖拽排序通过 PUT {sort_order: N} 写入
+    seo_title = fields.CharField(max_length=120, null=True)
+    seo_description = fields.CharField(max_length=300, null=True)
     search_vector = TSVectorField()
 
     class Meta:

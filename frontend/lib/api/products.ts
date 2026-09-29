@@ -163,12 +163,12 @@ function toProductSummary(p: ProductPageDTO): ProductSummary {
 
 function toProductDetail(p: ProductDetailDTO): ProductDetail {
   // 后端字段缺失时不抛错：galleries / attributes 与同函数的 tags 保持同样的兜底口径。
-  const galleries: WCProductImage[] = (p.galleries ?? []).map((g: GalleryDTO) => ({
+  const galleries: WCProductImage[] = (p.galleries ?? []).map((g: GalleryDTO, index: number) => ({
     id: g.id,
     date_created: "",
     src: toAbsoluteUrl(g.image_url) ?? "",
     name: g.alt || "",
-    alt: g.alt || "",
+    alt: g.alt?.trim() || normalizePublicText(p.title) + " — gallery image " + (index + 1),
   }));
   const cover = toAbsoluteUrl(p.cover_image);
   const images: WCProductImage[] = cover

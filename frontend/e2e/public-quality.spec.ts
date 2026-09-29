@@ -35,12 +35,12 @@ test("published news emits ISO dates and sitemap excludes drafts", async ({ page
     await gotoHydrated(page, `/news/${slugs[0]}`);
     await expect(page.locator("h1")).toHaveText("Quality regression article");
     await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute("content", /^2026-08-01T12:30:00/);
-    await expect(page.locator('meta[property="article:modified_time"]')).toHaveCount(0);
+    await expect(page.locator('meta[property="article:modified_time"]')).toHaveAttribute("content", /^\d{4}-\d{2}-\d{2}T/);
     await expect(page.locator("time").first()).toHaveAttribute("datetime", /^2026-08-01T12:30:00/);
     const schema = await page.locator('script[type="application/ld+json"]').evaluateAll(elements => elements.map(element => JSON.parse(element.textContent || "{}")));
     const article = schema.find(item => item["@type"] === "Article");
     expect(article.datePublished).toMatch(/^2026-08-01T12:30:00/);
-    expect(article).not.toHaveProperty("dateModified");
+    expect(article.dateModified).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const response = await request.get("/sitemap.xml");
     expect(response.ok()).toBeTruthy();
     const xml = await response.text();

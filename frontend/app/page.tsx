@@ -191,10 +191,10 @@ async function NewsSection() {
   if (posts.length === 0) return null;
 
   return (
-    <section className="py-16 md:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="py-12 md:py-16 bg-white">
+      <div className="max-w-6xl mx-auto px-6">
         <AnimatedSection>
-        <div className="flex items-end justify-between mb-12">
+        <div className="flex items-end justify-between mb-8">
           <div>
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>News &amp; Insights</span>
             <h2 className="mt-2 tracking-tight" style={{ fontSize: "30px", fontWeight: 500, color: "var(--foreground)" }}>Latest Updates</h2>

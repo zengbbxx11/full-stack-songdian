@@ -12,6 +12,8 @@ import Link from "next/link";
 import { readListQuery, listUrl, type ListSearchParams } from "@/lib/list-query";
 import type { Metadata } from "next";
 import { superMeta } from "@/lib/site-meta";
+import { categorySeo } from "@/lib/content-seo";
+import { pageRobots } from "@/lib/site-url";
 import { getProductsPage } from "@/lib/api/list-pages";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -31,8 +33,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
   const meta = cat
     ? await superMeta({
-        title: `${cat.name} for OEM & ODM` + pageTitle,
-        description: `Browse ${cat.name.toLowerCase()} products manufactured by Songdian Technology, an OEM/ODM digital camera factory.`,
+        title: categorySeo(cat).title + pageTitle,
+        description: categorySeo(cat).description,
         url: canonicalUrl,
       })
     : await superMeta({
@@ -42,7 +44,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
       });
 
   // 超范围页码：声明首页为规范页并禁止索引，避免低质重复页。
-  return failed || outOfRange ? { ...meta, robots: { index: false, follow: true } } : meta;
+  return failed || outOfRange ? { ...meta, robots: pageRobots(false) } : meta;
 }
 
 // searchParams 使整页动态渲染；此值不代表整页 ISR，API 数据仍缓存 60 秒。

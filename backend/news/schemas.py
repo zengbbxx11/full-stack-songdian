@@ -16,6 +16,8 @@ _SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 
 
 class NewsCreateRequest(BaseModel):
+    seo_title: str | None = Field(default=None, max_length=120)
+    seo_description: str | None = Field(default=None, max_length=300)
     title: str = Field(..., max_length=200)
     slug: str = Field(..., max_length=200)
     summary: str = Field(..., max_length=500)
@@ -42,6 +44,8 @@ class NewsCreateRequest(BaseModel):
 
 
 class NewsUpdateRequest(BaseModel):
+    seo_title: str | None = Field(default=None, max_length=120)
+    seo_description: str | None = Field(default=None, max_length=300)
     title: str | None = Field(default=None, max_length=200)
     slug: str | None = Field(default=None, max_length=200)
     summary: str | None = Field(default=None, max_length=500)
@@ -136,6 +140,9 @@ class NewsPageVO(BaseModel):
 
 
 class NewsDetailVO(NewsPageVO):
+    seo_title: str | None = None
+    seo_description: str | None = None
+    updated_time: datetime | None = None
     content_html: str = ""
 
     @classmethod
@@ -143,6 +150,9 @@ class NewsDetailVO(NewsPageVO):
         base = NewsPageVO.from_model(m)
         data = base.model_dump()
         data["content_html"] = m.content_html
+        data["seo_title"] = m.seo_title
+        data["seo_description"] = m.seo_description
+        data["updated_time"] = m.updated_time
         return cls(**data)
 
 

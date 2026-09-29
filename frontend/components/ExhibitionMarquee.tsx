@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { Pause, Play, X } from "lucide-react";
 import type { Exhibition } from "@/lib/exhibitions";
@@ -110,7 +111,7 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
       </div>
 
       {/* ====================== Lightbox 全屏查看 ====================== */}
-      {currentItem && (
+      {currentItem && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 sm:p-8"
           onClick={closeLightbox}
@@ -151,7 +152,8 @@ export default function ExhibitionMarquee({ items }: ExhibitionMarqueeProps) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

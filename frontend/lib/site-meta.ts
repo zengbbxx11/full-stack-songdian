@@ -15,12 +15,20 @@
  *   在本模块内先 init 再导出 superMeta，可保证「调用点与初始化永远在同一模块图」，与 worker/模块
  *   求值顺序、外部环境变量都无关。
  */
-import { initSuperMeta, superMeta } from "next-super-meta";
+import { initSuperMeta, superMeta as baseSuperMeta } from "next-super-meta";
 import { MEDIA } from "@/lib/media";
 
 /** 规范站点 URL；与 app/robots.ts、app/sitemap.ts、lib/seo.ts 使用同一回退口径 */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+import { SITE_URL, absoluteSiteUrl, pageRobots } from "@/lib/site-url";
+export { SITE_URL } from "@/lib/site-url";
 
 initSuperMeta({ siteUrl: SITE_URL, defaultImage: MEDIA.ogImage });
 
+async function superMeta(options: Parameters<typeof baseSuperMeta>[0]) {
+  const metadata = await baseSuperMeta({ ...options, ai: false });
+  // JSON-LD belongs in a script, never a meta name="script:ld+json" attribute.
+  const canonical = absoluteSiteUrl(options.url);
+  return { ...metadata, other: undefined, alternates: { ...metadata.alternates, canonical },
+    openGraph: { ...metadata.openGraph, url: canonical }, robots: pageRobots() };
+}
 export { superMeta };

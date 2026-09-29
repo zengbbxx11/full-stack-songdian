@@ -122,3 +122,33 @@ def test_news_soft_delete(client):
     det = client.get(f"/api/v1/news/{slug}")
     assert det.status_code == 200
     assert det.json()["code"] == "A020001", det.json()
+
+
+def test_news_seo_persists_clears_and_restores(client):
+    _admin_headers(client)
+    slug = "qa-news-seo-" + uuid.uuid4().hex[:8]
+    created = client.post("/api/v1/admin/news", json={
+        "title": "Visible title", "slug": slug, "summary": "Summary",
+        "content_html": "<p>Body</p>", "category_id": _first_category_id(client),
+        "status": "PUBLISHED", "seo_title": "Editorial title",
+        "seo_description": "Editorial description",
+    }).json()
+    assert created["code"] == "0", created
+    item = created["data"]
+    url = f"/api/v1/admin/news/{item['id']}"
+    public_url = f"/api/v1/news/{slug}"
+    published = client.get(public_url).json()["data"]
+    assert published["seo_title"] == "Editorial title"
+    assert published["updated_time"]
+    revisions = client.get(url + "/revisions").json()["data"]
+    revision_id = revisions[0]["id"]
+    assert client.put(url, json={"summary": "Changed summary"}).json()["code"] == "0"
+    assert client.get(public_url).json()["data"]["seo_description"] == "Editorial description"
+    assert client.put(url, json={"seo_title": None, "seo_description": ""}).json()["code"] == "0"
+    cleared = client.get(public_url).json()["data"]
+    assert not cleared["seo_title"] and not cleared["seo_description"]
+    assert cleared["title"] == "Visible title"
+    restored = client.post(url + f"/revisions/{revision_id}/restore").json()
+    assert restored["code"] == "0", restored
+    assert client.get(public_url).json()["data"]["seo_title"] == "Editorial title"
+    assert client.put(url, json={"seo_title": "x" * 121}).status_code == 400

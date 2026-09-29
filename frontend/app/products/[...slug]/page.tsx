@@ -29,8 +29,8 @@ import { ProductViewTracker } from "@/components/ProductViewTracker";
 import ProductDetailImages from "@/components/ProductDetailImages";
 import { MEDIA } from "@/lib/media";
 import { generateBreadcrumbs, productSchema, safeJsonLd } from "@/lib/seo";
-import { PRIORITY_PRODUCT_SEO } from "@/lib/priority-products";
-import { COMPANY } from "@/lib/content-data";
+import { productSeo } from "@/lib/content-seo";
+import { pageRobots } from "@/lib/site-url";
 
 // ISR 重新验证间隔（秒）：每 60 秒重新生成产品详情
 export const revalidate = 60;
@@ -69,15 +69,11 @@ export async function generateMetadata({
   if (!product) return { title: "Product Not Found" };
   // canonical 始终以产品真实主分类为准，避免 URL 分类段拼写偏差导致标签错乱
   const canonical = productPath(product);
-  const plainDesc = stripHtml(product.shortDescription || "");
-  // SEO 标题 & 描述：优先使用后端 seo_* 字段（运营精修），空则回退 title/shortDescription
-  const editorial = PRIORITY_PRODUCT_SEO[product.slug];
-  const seoTitle = product.seoTitle || editorial?.title || product.name;
-  const factoryDescription = `${product.name}, manufactured by ${COMPANY.name}, an OEM/ODM digital camera factory.${plainDesc ? ` ${plainDesc}` : ""}`;
-  const seoDesc = product.seoDescription || editorial?.description || factoryDescription.slice(0, 160).trim();
+  const { title: seoTitle, description: seoDesc } = productSeo(product);
   const socialImage = product.images?.[0]?.src || MEDIA.ogImage;
 
   return {
+    robots: pageRobots(),
     title: seoTitle,
     description: seoDesc,
     alternates: { canonical },
@@ -85,7 +81,7 @@ export async function generateMetadata({
       title: seoTitle,
       url: canonical,
       description: seoDesc,
-      images: [{ url: socialImage, width: product.images?.[0]?.src ? 800 : 1200, height: product.images?.[0]?.src ? 800 : 630 }],
+      images: [{ url: socialImage, ...(product.images?.[0]?.src ? {} : { width: 1200, height: 630 }) }],
       type: "website",
     },
     twitter: {
@@ -95,11 +91,6 @@ export async function generateMetadata({
       images: [socialImage],
     },
   };
-}
-
-// 去除 HTML 标签并压缩空白，用于生成纯文本描述（SEO description / Schema）
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // 从产品短描述 HTML 中提取要点列表（去标签、去项目符号）
@@ -224,7 +215,7 @@ export default async function ProductDetailPage({
 
     const schema = productSchema({
       name: product.name,
-      description: stripHtml(product.shortDescription || "").slice(0, 160),
+      description: productSeo(product).description,
       image: product.images?.[0]?.src || null,
       sku: product.sku,
       url: canonical,

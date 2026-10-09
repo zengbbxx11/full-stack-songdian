@@ -66,7 +66,7 @@ export async function generateMetadata({
       robots: { index: false, follow: false },
     };
   }
-  if (!product) return { title: "Product Not Found" };
+  if (!product) notFound();
   // canonical 始终以产品真实主分类为准，避免 URL 分类段拼写偏差导致标签错乱
   const canonical = productPath(product);
   const { title: seoTitle, description: seoDesc } = productSeo(product);

@@ -56,6 +56,7 @@ jobs:
           done
           test "$MOCK_READY" = "1"
           NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 npm run build
+          node scripts/verify-sitemap-cache.mjs
           npm run lighthouse
       # lhci assert 只报分类分数（例如 categories.seo 0.92 < 0.95），不说是哪一项审计失败；
       # 这里把各页 SEO 未通过项及其 details 打进日志，避免每次都靠下载 artifact 定位。
@@ -114,6 +115,8 @@ jobs:
       - run: cp .env.example .env
       - run: docker compose --profile tools config -q
       - run: bash -n scripts/backup.sh scripts/deploy.sh scripts/smoke-deploy.sh
+      - run: node --test scripts/verify-production-seo.test.mjs
+      - run: python3 -m unittest discover -s scripts -p 'test_seo_smoke.py'
 
   migration:
     runs-on: ubuntu-latest
@@ -318,6 +321,12 @@ jobs:
             type=sha,format=long
             type=ref,event=tag
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+      - name: Validate production frontend indexing configuration
+        if: matrix.component == 'frontend'
+        env:
+          SEO_INDEXABLE: ${{ vars.SEO_INDEXABLE }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://www.zsaki.icu' }}
+        run: node scripts/verify-production-seo.mjs
       - uses: docker/build-push-action@v7
         with:
           context: ./${{ matrix.component }}
@@ -326,7 +335,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'https://api.zsaki.icu' }}
-            SEO_INDEXABLE=${{ vars.SEO_INDEXABLE || 'false' }}
+            SEO_INDEXABLE=${{ vars.SEO_INDEXABLE }}
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://www.zsaki.icu' }}
             NEXT_PUBLIC_IMAGE_HOST=${{ vars.NEXT_PUBLIC_IMAGE_HOST || 'api.zsaki.icu' }}
             BACKEND_PROXY_URL=http://backend:8000

@@ -1,0 +1,1238 @@
+{
+  "checkedAt": "2026-10-09T07:41:52.657Z",
+  "robots": {
+    "url": "https://www.zsaki.icu/robots.txt",
+    "status": 200,
+    "headers": [
+      "HTTP/1.1 200 OK",
+      "Content-Type: text/plain",
+      "cache-control: public, max-age=0, must-revalidate"
+    ],
+    "body": "User-Agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\n\nSitemap: https://www.zsaki.icu/sitemap.xml\n"
+  },
+  "sitemap": {
+    "url": "https://www.zsaki.icu/sitemap.xml",
+    "status": 200,
+    "headers": [
+      "HTTP/1.1 200 OK",
+      "Content-Type: application/xml",
+      "cache-control: public, max-age=0, must-revalidate"
+    ],
+    "count": 64,
+    "counts": {
+      "static": 8,
+      "categories": 6,
+      "products": 42,
+      "news": 8
+    }
+  },
+  "pages": [
+    {
+      "url": "https://www.zsaki.icu",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/about",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=300, stale-while-revalidate=31535700"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/about"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/solutions",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=300, stale-while-revalidate=31535700"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/solutions"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/solutions/faq",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=300, stale-while-revalidate=31535700"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/solutions/faq"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/contact",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=300, stale-while-revalidate=31535700"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/contact"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/privacy-policy",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=300, stale-while-revalidate=31535700"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/privacy-policy"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=mirrorless-camera",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=mirrorless-camera"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=compact-camera",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=compact-camera"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=action-camera",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=action-camera"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=lens",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=lens"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=kids-camera",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=kids-camera"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=video-camera",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products?category=video-camera"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc226",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc226"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc202",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc202"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc417x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc417x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc105",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc105"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc106",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc106"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc103w",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc103w"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc201s",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc201s"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc203",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc203"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc205x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc205x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc101l",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc101l"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc206x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc206x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc208n",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc208n"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc209x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc209x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/mirrorless-camera/dc218l",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/mirrorless-camera/dc218l"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/action-camera/860a",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/action-camera/860a"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/action-camera/go9",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/action-camera/go9"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/action-camera/wdc901",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/action-camera/wdc901"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/lens/w3",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/lens/w3"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc325",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc325"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc408x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc408x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc402",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc402"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc305x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc305x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc302",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc302"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc306l",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc306l"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc403",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc403"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc312x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc312x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc309x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc309x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/kids-camera/dc503j",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/kids-camera/dc503j"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc308",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc308"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc310",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc310"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/kids-camera/dc506",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/kids-camera/dc506"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc311",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc311"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/video-camera/hdv255k",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/video-camera/hdv255k"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc406",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc406"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/ve418",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/ve418"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc320",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc320"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc317l",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc317l"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc422x",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc422x"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/dc413l",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/compact-camera/dc413l"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/video-camera/hdv284k",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/video-camera/hdv284k"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/video-camera/hdv544km",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/video-camera/hdv544km"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products/kids-camera/dc501j",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/products/kids-camera/dc501j"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-manufacturing-oem-partner-for-kenko",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-manufacturing-oem-partner-for-kenko"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/soncdian-wins-guangdong-quality-trust-recognition",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/soncdian-wins-guangdong-quality-trust-recognition"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-joins-m43-standard-group",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-joins-m43-standard-group"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-named-2025-china-made-trusted-brand",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-named-2025-china-made-trusted-brand"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-awarded-brand-value-certificate-at-2026-boao-global-competitiveness-summit"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/soncian-shines-at-2025-china-brand-day-awarded-top-500-global-brand-competitiveness"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-manufacturing-unveils-the-dc325w-an-8k-imaging-powerhouse-built-on-advanced-engineering-and-local-supply-chain-excellence"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "canonical": [
+        "https://www.zsaki.icu/news/songdian-manufacturing-unveils-dc417x-with-7x-optical-zoom-for-oem-odm-partners"
+      ],
+      "robots": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>"
+      ]
+    }
+  ],
+  "api": {
+    "products": {
+      "status": 200,
+      "code": "0",
+      "total": 42,
+      "page": 1,
+      "page_size": 50,
+      "count": 42,
+      "missingInSitemap": []
+    },
+    "news": {
+      "status": 200,
+      "code": "0",
+      "total": 8,
+      "page": 1,
+      "page_size": 50,
+      "count": 8,
+      "missingInSitemap": []
+    }
+  },
+  "extra": [
+    {
+      "url": "http://www.zsaki.icu/",
+      "status": 301,
+      "headers": [
+        "HTTP/1.1 301 Moved Permanently",
+        "Content-Type: text/html",
+        "Location: https://www.zsaki.icu/"
+      ],
+      "tlsVerified": true
+    },
+    {
+      "url": "http://zsaki.icu/",
+      "status": 301,
+      "headers": [
+        "HTTP/1.1 301 Moved Permanently",
+        "Content-Type: text/html",
+        "Location: https://zsaki.icu/"
+      ],
+      "tlsVerified": true
+    },
+    {
+      "url": "https://zsaki.icu/",
+      "tlsVerified": true,
+      "error": "curl: (35) schannel: SNI or certificate check failed: SEC_E_WRONG_PRINCIPAL (0x80090322) - Ŀ����Ҫ���Ʋ���ȷ��\r\n"
+    },
+    {
+      "url": "https://zsaki.icu/",
+      "status": 301,
+      "headers": [
+        "HTTP/1.1 301 Moved Permanently",
+        "Content-Type: text/html",
+        "Location: https://www.zsaki.icu//"
+      ],
+      "tlsVerified": false
+    },
+    {
+      "url": "https://www.zsaki.icu/products/dc417x",
+      "status": 308,
+      "headers": [
+        "HTTP/1.1 308 Permanent Redirect",
+        "location: /products/compact-camera/dc417x"
+      ],
+      "tlsVerified": true,
+      "metadata": []
+    },
+    {
+      "url": "https://www.zsaki.icu/products/wrong/dc417x",
+      "status": 308,
+      "headers": [
+        "HTTP/1.1 308 Permanent Redirect",
+        "location: /products/compact-camera/dc417x"
+      ],
+      "tlsVerified": true,
+      "metadata": []
+    },
+    {
+      "url": "https://www.zsaki.icu/products/compact-camera/seo-missing-20261009",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu\"/>",
+        "<meta name=\"robots\" content=\"noindex\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/news/seo-missing-20261009",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: s-maxage=60, stale-while-revalidate=31535940"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu\"/>",
+        "<meta name=\"robots\" content=\"noindex\"/>",
+        "<meta name=\"robots\" content=\"noindex\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?page=2",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu/products?page=2\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?page=99999",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"noindex, follow\"/>",
+        "<meta name=\"googlebot\" content=\"noindex, follow, max-image-preview:large\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu/products\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/products?category=invalid-seo",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"index, follow\"/>",
+        "<meta name=\"googlebot\" content=\"index, follow, max-image-preview:large\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu/products\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/search",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"noindex, follow\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu/search\"/>"
+      ]
+    },
+    {
+      "url": "https://www.zsaki.icu/preview/invalid-seo-token",
+      "status": 200,
+      "headers": [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate"
+      ],
+      "tlsVerified": true,
+      "metadata": [
+        "<meta name=\"robots\" content=\"noindex, nofollow, nocache\"/>",
+        "<link rel=\"canonical\" href=\"https://www.zsaki.icu\"/>"
+      ]
+    }
+  ]
+}

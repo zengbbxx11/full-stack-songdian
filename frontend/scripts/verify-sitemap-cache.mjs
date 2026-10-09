@@ -7,22 +7,32 @@ import { fileURLToPath } from "node:url";
 const cwd = fileURLToPath(new URL("../", import.meta.url));
 const port = Number(process.env.SITEMAP_TEST_PORT || 3002);
 const secret = randomUUID();
-let version = "first", incomplete = false, calls = 0;
+let version = "first", incomplete = false, failure = "", calls = 0;
 const api = createServer((req, res) => {
   calls++;
   res.setHeader("Content-Type", "application/json");
   const product = req.url.startsWith("/api/v1/products?");
-  res.end(JSON.stringify({ code: "0", data: {
+  const data = {
     list: incomplete ? [] : [product
-      ? { slug: "fixture-camera", category: { slug: "compact-camera" }, updated_time: "2026-08-10T12:00:00Z" }
-      : { slug: version }],
+      ? { slug: "fixture-camera", status: "PUBLISHED", category: { slug: "compact-camera" }, updated_time: "2026-08-10T12:00:00Z" }
+      : { slug: version, status: "PUBLISHED" }],
     total: incomplete ? 2 : 1,
-  } }));
+    page: Number(new URL(req.url, "http://fixture").searchParams.get("page")),
+    page_size: 50,
+  };
+  if (failure === "http") { res.statusCode = 503; res.end("{}"); return; }
+  if (failure === "json") { res.end("invalid-json"); return; }
+  if (failure === "missing") { delete data.list; delete data.total; }
+  if (failure === "duplicate") { data.list.push(data.list[0]); data.total = 2; }
+  if (product && failure === "category") data.list[0].category = null;
+  if (failure === "slug") data.list[0].slug = "../private";
+  if (failure === "total") data.total = "1";
+  res.end(JSON.stringify({ code: "0", data }));
 });
 await new Promise(resolve => api.listen(0, "127.0.0.1", resolve));
 const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(port)], {
   cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
-  env: { ...process.env, INTERNAL_API_URL: "http://127.0.0.1:" + api.address().port, REVALIDATE_SECRET: secret },
+  env: { ...process.env, SEO_INDEXABLE: "true", INTERNAL_API_URL: "http://127.0.0.1:" + api.address().port, REVALIDATE_SECRET: secret },
 });
 let output = "";
 server.stdout.on("data", b => { output += b; });
@@ -77,6 +87,16 @@ try {
   const recovered = await fetch(base + "/sitemap.xml");
   assert.equal(recovered.status, 200);
   assert.ok((await recovered.text()).includes("/news/recovered"));
+  for (const mode of ["http", "json", "missing", "duplicate", "category", "slug", "total"]) {
+    failure = mode;
+    await invalidate();
+    assert.equal((await fetch(base + "/sitemap.xml")).status, 500, mode + " must not return a successful partial sitemap");
+    failure = "";
+    const retry = await fetch(base + "/sitemap.xml");
+    assert.equal(retry.status, 200, mode + " errors must not be cached");
+    assert.ok((await retry.text()).includes("/news/recovered"));
+  }
+  console.log("PASS: strict malformed/duplicate/backend/category cases fail without caching; recovery succeeds.");
   console.log("PASS: warm cache avoids API calls; publish invalidates; incomplete pagination fails; recovery succeeds.");
 } finally {
   // Do not leave mock sitemap entries in the local production cache.

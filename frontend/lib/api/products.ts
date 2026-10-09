@@ -15,6 +15,7 @@ import type {
   WCAttribute,
 } from "@/lib/types";
 import { cache } from "react";
+import { getSitemapPages } from "./sitemap-pages";
 import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
   apiFetch,
@@ -107,26 +108,16 @@ export async function getAllProductSlugEntries({
   revalidate = 60,
 }: { strict?: boolean; revalidate?: number | false } = {}): Promise<ProductSlugEntry[]> {
   try {
-    const list: ProductPageDTO[] = [];
-    let page = 1;
-    let total = 0;
-    do {
-      const data = await apiFetch<PageDTO<ProductPageDTO>>(
+    const list = await getSitemapPages<ProductPageDTO>((page, pageSize, timeoutMs) =>
+      apiFetch<PageDTO<ProductPageDTO>>(
         "/api/v1/products",
-        {
-          page,
-          page_size: 50,
-          status: "PUBLISHED",
-        },
-        { revalidate, tags: ["products"] },
-      );
-      list.push(...(data.list ?? []));
-      total = data.total ?? 0;
-      page += 1;
-      if (!data.list?.length) break;
-    } while (list.length < total);
-    if (strict && list.length !== total) {
-      throw new Error("Incomplete sitemap pagination");
+        { page, page_size: pageSize, status: "PUBLISHED" },
+        { revalidate, timeoutMs, tags: ["products"] },
+      ),
+    );
+    if (strict && list.some(p => !p.category?.slug || !/^[a-z0-9-]+$/.test(p.category.slug) ||
+        (p.updated_time && !Number.isFinite(Date.parse(p.updated_time))))) {
+      throw new Error("Invalid product category or lastModified in sitemap");
     }
     return list.map((p) => ({
       slug: p.slug,

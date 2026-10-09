@@ -1,0 +1,31 @@
+[
+  {
+    "path": "/missing-seo-fixture",
+    "status": 404,
+    "metadata": [
+      "<meta name=\"robots\" content=\"noindex\"/>",
+      "<meta name=\"robots\" content=\"noindex, follow\"/>",
+      "<meta name=\"googlebot\" content=\"noindex, follow, max-image-preview:large\"/>"
+    ]
+  },
+  {
+    "path": "/products/compact-camera/missing-seo-fixture",
+    "status": 200,
+    "metadata": [
+      "<meta name=\"robots\" content=\"noindex, follow\"/>",
+      "<meta name=\"googlebot\" content=\"noindex, follow, max-image-preview:large\"/>",
+      "<meta name=\"robots\" content=\"noindex\"/>",
+      "<meta name=\"robots\" content=\"noindex\"/>"
+    ]
+  },
+  {
+    "path": "/news/missing-seo-fixture",
+    "status": 200,
+    "metadata": [
+      "<meta name=\"robots\" content=\"noindex, follow\"/>",
+      "<meta name=\"googlebot\" content=\"noindex, follow, max-image-preview:large\"/>",
+      "<meta name=\"robots\" content=\"noindex\"/>",
+      "<meta name=\"robots\" content=\"noindex\"/>"
+    ]
+  }
+]

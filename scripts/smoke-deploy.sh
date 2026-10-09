@@ -54,4 +54,10 @@ if any("\u4e00" <= char <= "\u9fff" for char in note):
     raise SystemExit("Search smoke failed: degraded note is not English-only")
 PY
 
-echo "Backend, website, admin and search smoke checks passed."
+# Public checks use the TLS edge; deployments also check loopback against the same canonical.
+# deploy.sh supplies the canonical origin from the running frontend; no secret .env is sourced.
+SITE_ORIGIN="${SEO_SITE_URL:-https://www.zsaki.icu}"
+SEO_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/seo-smoke.py"
+"$PYTHON_BIN" "$SEO_SCRIPT" --base-url "${SEO_INTERNAL_URL:-http://127.0.0.1:3000}" --site-url "$SITE_ORIGIN" --api-url "${SEO_API_URL:-http://127.0.0.1:8000}"
+"$PYTHON_BIN" "$SEO_SCRIPT" --base-url "${SEO_PUBLIC_URL:-$SITE_ORIGIN}" --site-url "$SITE_ORIGIN"
+echo "Backend, website, admin, search and public SEO smoke checks passed."

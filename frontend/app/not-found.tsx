@@ -5,6 +5,16 @@
  * Electric Blue CTA 按钮、4px 圆角、0.33s 过渡。
  */
 import Link from "next/link";
+import type { Metadata } from "next";
+import { pageRobots } from "@/lib/site-url";
+
+// Error metadata must override the layout's homepage canonical and indexing policy.
+// Next also applies this export when notFound() is raised by a detail route.
+export const metadata: Metadata = {
+  title: "Page Not Found",
+  alternates: { canonical: null },
+  robots: pageRobots(false),
+};
 
 export default function NotFoundPage() {
   return (

@@ -71,7 +71,7 @@ fi
 "${COMPOSE[@]}" --profile tools run --rm --no-deps migrate
 SWITCH_STARTED=1
 "${COMPOSE[@]}" up -d --no-build backend frontend admin-next
-bash scripts/smoke-deploy.sh
+SEO_SITE_URL="$("${COMPOSE[@]}" exec -T frontend node -p 'process.env.NEXT_PUBLIC_SITE_URL')" bash scripts/smoke-deploy.sh
 
 trap - ERR
 printf '%s\n' "$VERSION" > "$STATE_DIR/current-version"

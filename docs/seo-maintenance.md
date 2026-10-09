@@ -30,3 +30,7 @@ Organization、Product、Article、BreadcrumbList 复用现有组件并统一绝
 管理员继续设置真实名称、摘要、规格、图片和 slug，再发布内容。新产品和新闻自动得到 metadata、canonical、OG/Twitter、结构化数据、既有 Breadcrumb 和 sitemap，无需改 SEO 代码。核心内容可人工填写两个 SEO 字段；清空回到自动模式。编辑应为正文图片填写有意义的 alt 并使用正确尺寸，避免把关键词堆进图片描述。
 
 上线后用真实域名检查 robots.txt、sitemap.xml、响应头与页面源 HTML，再提交 Search Console sitemap。实际收录、外部链接、搜索表现和真实用户 Core Web Vitals 需要上线后的观测，本地自动化不能证明。
+
+## 2026-10-09 索引与部署专项补充
+
+正式 frontend 镜像 CI 现要求显式 Repository Variable SEO_INDEXABLE=true，缺失不再默认构建禁止索引的正式镜像。本地默认保持 false。Sitemap 严格分页、404 metadata 与公开部署冒烟的改动、生产核对命令及 GSC 复核步骤见 [索引排查与上线操作](./gsc-indexing-deployment.md)。本轮无新数据库迁移，未执行生产部署。

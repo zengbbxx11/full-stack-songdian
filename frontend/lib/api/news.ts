@@ -9,6 +9,7 @@
 
 import type { PostSummary, PostDetail, WCProductCategory } from "@/lib/types";
 import { cache } from "react";
+import { getSitemapPages } from "./sitemap-pages";
 import { COMPANY } from "@/lib/content-data";
 import { normalizeCategoryName, normalizePublicText } from "@/lib/display-text";
 import {
@@ -97,27 +98,13 @@ export async function getAllPostSlugs({
   revalidate = 60,
 }: { strict?: boolean; revalidate?: number | false } = {}): Promise<string[]> {
   try {
-    const list: NewsPageDTO[] = [];
-    let page = 1;
-    let total = 0;
-    do {
-      const data = await apiFetch<PageDTO<NewsPageDTO>>(
+    const list = await getSitemapPages<NewsPageDTO>((page, pageSize, timeoutMs) =>
+      apiFetch<PageDTO<NewsPageDTO>>(
         "/api/v1/news",
-        {
-          page,
-          page_size: 50,
-          status: "PUBLISHED",
-        },
-        { revalidate, tags: ["news"] },
-      );
-      list.push(...(data.list ?? []));
-      total = data.total ?? 0;
-      page += 1;
-      if (!data.list?.length) break;
-    } while (list.length < total);
-    if (strict && list.length !== total) {
-      throw new Error("Incomplete sitemap pagination");
-    }
+        { page, page_size: pageSize, status: "PUBLISHED" },
+        { revalidate, timeoutMs, tags: ["news"] },
+      ),
+    );
     return list.map((n) => n.slug);
   } catch (error) {
     if (strict) throw error;

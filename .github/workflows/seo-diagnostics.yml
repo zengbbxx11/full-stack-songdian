@@ -1,0 +1,121 @@
+name: SEO server diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      inspect_server:
+        description: Read server configuration using existing production SSH secrets
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-seo-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Test diagnostic and SEO checks
+        run: python3 -m unittest discover -s scripts -p 'test_seo_*.py'
+      - name: Inspect public TLS and redirects
+        id: public
+        continue-on-error: true
+        run: >-
+          python3 scripts/seo-diagnostics.py --mode public
+          --report diagnostics/public.json --summary diagnostics/public.md
+      - name: Check public sitemap and pages
+        id: seo
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p diagnostics
+          python3 scripts/seo-smoke.py \
+            --base-url https://www.zsaki.icu \
+            --site-url https://www.zsaki.icu \
+            --api-url https://api.zsaki.icu 2>&1 | tee diagnostics/seo-smoke.log
+      - name: Configure diagnostic SSH identity
+        id: ssh_setup
+        if: inputs.inspect_server
+        shell: bash
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          for name in PROD_HOST PROD_USER PROD_SSH_KEY PROD_KNOWN_HOSTS; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing production SSH secret: $name" >&2
+              exit 1
+            fi
+          done
+          install -m 700 -d "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$PROD_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/seo_diagnostics_key"
+          printf '%s\n' "$PROD_KNOWN_HOSTS" | tr -d '\r' > "$HOME/.ssh/seo_diagnostics_known_hosts"
+          ssh-keygen -y -P '' -f "$HOME/.ssh/seo_diagnostics_key" > /dev/null
+          ssh-keygen -l -f "$HOME/.ssh/seo_diagnostics_known_hosts" > /dev/null
+      - name: Inspect active server configuration
+        id: server
+        if: inputs.inspect_server && steps.ssh_setup.outcome == 'success'
+        continue-on-error: true
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PATH: ${{ secrets.PROD_PATH }}
+          PROD_SSH_PORT: ${{ vars.PROD_SSH_PORT || '22' }}
+        run: >-
+          python3 scripts/seo-diagnostics.py --mode ssh
+          --project-dir "$PROD_PATH"
+          --report diagnostics/server.json --summary diagnostics/server.md
+      - name: Publish diagnostic summary
+        if: always()
+        shell: bash
+        run: |
+          for report in diagnostics/public.md diagnostics/server.md; do
+            if [[ -f "$report" ]]; then
+              cat "$report" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          echo 'Detailed JSON and SEO smoke output are in the seo-diagnostics artifact.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload filtered diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-diagnostics
+          path: diagnostics/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Remove temporary runner SSH files
+        if: always()
+        shell: bash
+        run: rm -f "$HOME/.ssh/seo_diagnostics_key" "$HOME/.ssh/seo_diagnostics_known_hosts"
+      - name: Report incomplete or failed checks
+        if: always()
+        env:
+          PUBLIC_OUTCOME: ${{ steps.public.outcome }}
+          SEO_OUTCOME: ${{ steps.seo.outcome }}
+          INSPECT_SERVER: ${{ inputs.inspect_server }}
+          SSH_OUTCOME: ${{ steps.ssh_setup.outcome }}
+          SERVER_OUTCOME: ${{ steps.server.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PUBLIC_OUTCOME" = success
+          test "$SEO_OUTCOME" = success
+          if [[ "$INSPECT_SERVER" = true ]]; then
+            test "$SSH_OUTCOME" = success
+            test "$SERVER_OUTCOME" = success
+          fi
